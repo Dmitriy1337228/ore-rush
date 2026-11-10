@@ -1,0 +1,1141 @@
+﻿{
+    "ui_kit":  {
+                   "kit_id":  "d148273c-9d4f-485a-87ae-a0405078482c",
+                   "name":  "Mine Clicker UI",
+                   "spritecook_project_id":  "59839421-83b7-4704-957e-bc8a991ba095",
+                   "review_url":  "https://app.spritecook.ai/ui-kits?kitId=d148273c-9d4f-485a-87ae-a0405078482c"
+               },
+    "assets":  [
+                   {
+                       "asset_id":  "4595d2bb-9ac2-4754-8706-061090fb7d77",
+                       "sha12":  "167cb6cac662",
+                       "label":  "test-sword-64x64",
+                       "file":  "assets/sword_64x64.png"
+                   },
+                   {
+                       "asset_id":  "4e7e8475-75a9-403b-b089-9389ae062380",
+                       "sha12":  "575dd3f28e6c",
+                       "label":  "pickaxe_stone",
+                       "file":  "assets/ui/pickaxe_stone.png",
+                       "group":  "pickaxe_tiers"
+                   },
+                   {
+                       "asset_id":  "d39c993c-f960-491d-b99d-17befff89456",
+                       "sha12":  "d956df68990b",
+                       "label":  "pickaxe_iron",
+                       "file":  "assets/ui/pickaxe_iron.png",
+                       "group":  "pickaxe_tiers"
+                   },
+                   {
+                       "asset_id":  "9954c82d-d25f-4822-b161-7d9b832d60a7",
+                       "sha12":  "3e7e086501f8",
+                       "label":  "pickaxe_wooden",
+                       "file":  "assets/ui/pickaxe_wooden.png",
+                       "group":  "pickaxe_tiers"
+                   },
+                   {
+                       "asset_id":  "cd627f39-291d-4542-8f78-30b8c652d5eb",
+                       "sha12":  "7676a888fe00",
+                       "label":  "pickaxe_diamond",
+                       "file":  "assets/ui/pickaxe_diamond.png",
+                       "group":  "pickaxe_tiers"
+                   },
+                   {
+                       "asset_id":  "dccd0a1b-162e-42e3-a076-566e15e0241d",
+                       "sha12":  "db01574822b4",
+                       "label":  "dynamite_bundle",
+                       "file":  "assets/ui/dynamite_bundle.png",
+                       "group":  "upgrades"
+                   },
+                   {
+                       "asset_id":  "96e874e8-916e-414c-b2e2-8101f97603bd",
+                       "sha12":  "047bed2b54f5",
+                       "label":  "miner_portrait",
+                       "file":  "assets/ui/miner_portrait.png",
+                       "group":  "upgrades"
+                   },
+                   {
+                       "asset_id":  "aabb0a5b-76f6-4c2d-b7b9-166abb96f0cd",
+                       "sha12":  "5eb5edaae16a",
+                       "label":  "coal_nugget",
+                       "file":  "assets/ui/coal_nugget.png",
+                       "group":  "ores"
+                   },
+                   {
+                       "asset_id":  "b1286e4b-79c4-46ea-863e-09f7b9c569d0",
+                       "sha12":  "ddfea6e9d8a0",
+                       "label":  "iron_nugget",
+                       "file":  "assets/ui/iron_nugget.png",
+                       "group":  "ores"
+                   },
+                   {
+                       "asset_id":  "d92ff640-9e25-4436-aead-45d0c83c8d27",
+                       "sha12":  "eb4e1eeddb62",
+                       "label":  "gold_nugget",
+                       "file":  "assets/ui/gold_nugget.png",
+                       "group":  "ores"
+                   },
+                   {
+                       "asset_id":  "c448e7d9-ee38-4c4e-b273-eed6829926c4",
+                       "sha12":  "9805908ed050",
+                       "label":  "diamond_nugget",
+                       "file":  "assets/ui/diamond_nugget.png",
+                       "group":  "ores"
+                   },
+                   {
+                       "asset_id":  "d50c5d67-9ac2-4157-b4db-39eb1f2392d1",
+                       "sha12":  "6b9daef7b77f",
+                       "label":  "hand_cursor",
+                       "file":  "assets/ui/hand_cursor.png"
+                   },
+                   {
+                       "asset_id":  "f4fca752-945a-417f-80ff-8f3a20c1db29",
+                       "sha12":  "b9177363653a",
+                       "label":  "gear_icon",
+                       "file":  "assets/ui/gear_icon.png"
+                   },
+                   {
+                       "asset_id":  "19d91b41-94cc-42d4-9b10-5f2f1903044d",
+                       "sha12":  "384d70071477",
+                       "label":  "close_button_square",
+                       "file":  "assets/ui/close_button_square.png",
+                       "group":  "utility_buttons",
+                       "state":  "normal",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  45,
+                                          "top":  45,
+                                          "right":  45,
+                                          "bottom":  45
+                                      }
+                   },
+                   {
+                       "asset_id":  "01d9d0a0-e7e2-4922-9142-35b3335c2128",
+                       "sha12":  "fce70067047c",
+                       "label":  "settings_button_square",
+                       "file":  "assets/ui/settings_button_square.png",
+                       "group":  "utility_buttons",
+                       "state":  "normal",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  45,
+                                          "top":  45,
+                                          "right":  45,
+                                          "bottom":  45
+                                      }
+                   },
+                   {
+                       "asset_id":  "bc42999a-d904-4cf2-9909-ec53c8f6833e",
+                       "sha12":  "29594d9b09d5",
+                       "label":  "close_button",
+                       "file":  "assets/ui/close_button.png",
+                       "group":  "icon_buttons",
+                       "state":  "normal",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  45,
+                                          "top":  45,
+                                          "right":  45,
+                                          "bottom":  45
+                                      }
+                   },
+                   {
+                       "asset_id":  "6ccc8442-e4f8-4199-aa65-a931546bb3ba",
+                       "sha12":  "7c55dd5b5b13",
+                       "label":  "settings_button_wide",
+                       "file":  "assets/ui/settings_button_wide.png",
+                       "group":  "utility_buttons",
+                       "state":  "normal",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  45,
+                                          "top":  50,
+                                          "right":  45,
+                                          "bottom":  50
+                                      }
+                   },
+                   {
+                       "asset_id":  "fbf5db28-c660-4979-958d-e1b53b6cb093",
+                       "sha12":  "20fe371a0b74",
+                       "label":  "buy_button_lg_normal",
+                       "file":  "assets/ui/buy_button_lg_normal.png",
+                       "group":  "buy_button_large",
+                       "state":  "normal",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  45,
+                                          "top":  50,
+                                          "right":  45,
+                                          "bottom":  50
+                                      }
+                   },
+                   {
+                       "asset_id":  "bb70e829-006d-4a35-ad3b-a6c5aa55140e",
+                       "sha12":  "00d1f1a03a63",
+                       "label":  "buy_button_lg_hover",
+                       "file":  "assets/ui/buy_button_lg_hover.png",
+                       "group":  "buy_button_large",
+                       "state":  "hover",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  45,
+                                          "top":  50,
+                                          "right":  45,
+                                          "bottom":  50
+                                      }
+                   },
+                   {
+                       "asset_id":  "830081e8-4aa1-46fe-918f-6ef0a87089f5",
+                       "sha12":  "cdb2eb02c8ea",
+                       "label":  "buy_button_lg_pressed",
+                       "file":  "assets/ui/buy_button_lg_pressed.png",
+                       "group":  "buy_button_large",
+                       "state":  "pressed",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  45,
+                                          "top":  50,
+                                          "right":  45,
+                                          "bottom":  50
+                                      }
+                   },
+                   {
+                       "asset_id":  "8994705c-216b-4b2b-8470-f74ed7dea936",
+                       "sha12":  "3914aaa534c5",
+                       "label":  "buy_button_lg_disabled",
+                       "file":  "assets/ui/buy_button_lg_disabled.png",
+                       "group":  "buy_button_large",
+                       "state":  "disabled",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  45,
+                                          "top":  50,
+                                          "right":  45,
+                                          "bottom":  50
+                                      }
+                   },
+                   {
+                       "asset_id":  "d51f4971-597c-445e-bebe-56b4c98a6147",
+                       "sha12":  "fa2608990192",
+                       "label":  "buy_button_normal",
+                       "file":  "assets/ui/buy_button_normal.png",
+                       "group":  "buy_button",
+                       "state":  "normal",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  40,
+                                          "top":  40,
+                                          "right":  40,
+                                          "bottom":  40
+                                      }
+                   },
+                   {
+                       "asset_id":  "ac035c03-7598-4ccb-b2b6-2657ba916d91",
+                       "sha12":  "8ef5ab144c1e",
+                       "label":  "buy_button_hover",
+                       "file":  "assets/ui/buy_button_hover.png",
+                       "group":  "buy_button",
+                       "state":  "hover",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  40,
+                                          "top":  40,
+                                          "right":  40,
+                                          "bottom":  40
+                                      }
+                   },
+                   {
+                       "asset_id":  "b9ace81d-9c14-4ff1-83a2-d99135696bc7",
+                       "sha12":  "8ec6f03a189b",
+                       "label":  "buy_button_pressed",
+                       "file":  "assets/ui/buy_button_pressed.png",
+                       "group":  "buy_button",
+                       "state":  "pressed",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  40,
+                                          "top":  40,
+                                          "right":  40,
+                                          "bottom":  40
+                                      }
+                   },
+                   {
+                       "asset_id":  "cb4fc4d7-7ab4-4859-b545-4753a8821287",
+                       "sha12":  "95402f381a36",
+                       "label":  "buy_button_disabled_gray",
+                       "file":  "assets/ui/buy_button_disabled_gray.png",
+                       "group":  "buy_button",
+                       "state":  "disabled",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  40,
+                                          "top":  40,
+                                          "right":  40,
+                                          "bottom":  40
+                                      }
+                   },
+                   {
+                       "asset_id":  "f6ae0b48-a6fa-4fa3-83c0-307264b00d23",
+                       "sha12":  "ff73511e7f7c",
+                       "label":  "buy_button_ru_kupit",
+                       "file":  "assets/ui/buy_button_ru_kupit.png",
+                       "note":  "RU text \u0027РљРЈРџРРўР¬\u0027, edit of buy_button_lg_normal"
+                   },
+                   {
+                       "asset_id":  "8a232ec2-fca4-4c52-ba23-867f9064bc87",
+                       "sha12":  "37494e807da3",
+                       "label":  "close_button_ru_zakryt",
+                       "file":  "assets/ui/close_button_ru_zakryt.png",
+                       "note":  "RU text \u0027Р—РђРљР Р«РўР¬\u0027, edit of close_button"
+                   },
+                   {
+                       "asset_id":  "2dd826f6-c16d-4387-b631-95e893eb28a4",
+                       "sha12":  "38895fc166c4",
+                       "label":  "settings_button_ru_nastroyki",
+                       "file":  "assets/ui/settings_button_ru_nastroyki.png",
+                       "note":  "RU text \u0027РќРђРЎРўР РћР™РљР\u0027, edit of settings_button_wide"
+                   },
+                   {
+                       "asset_id":  "7e222477-7928-46b6-a4fa-b8ebb68fad16",
+                       "sha12":  "44aa933ff52b",
+                       "label":  "hud_bar_background",
+                       "file":  "assets/ui/hud_bar_background.png",
+                       "group":  "hud",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  55,
+                                          "top":  55,
+                                          "right":  55,
+                                          "bottom":  55
+                                      }
+                   },
+                   {
+                       "asset_id":  "53bafbd0-55a5-45f3-9918-dd7aa8abc5c0",
+                       "sha12":  "f93ffc1f8507",
+                       "label":  "meter_track_metal",
+                       "file":  "assets/ui/meter_track_metal.png",
+                       "group":  "hud_meter",
+                       "state":  "empty",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  45,
+                                          "top":  40,
+                                          "right":  45,
+                                          "bottom":  40
+                                      }
+                   },
+                   {
+                       "asset_id":  "c12ac139-96f3-4cc5-885e-58d9d8d9412c",
+                       "sha12":  "1750b4cb901f",
+                       "label":  "meter_fill_green",
+                       "file":  "assets/ui/meter_fill_green.png",
+                       "group":  "hud_meter",
+                       "state":  "fill"
+                   },
+                   {
+                       "asset_id":  "1c4f287e-cf66-459f-9b15-dea3fc9f5c37",
+                       "sha12":  "d976331ec7df",
+                       "label":  "meter_track_small",
+                       "file":  "assets/ui/meter_track_small.png",
+                       "group":  "progress_meter",
+                       "state":  "empty",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  40,
+                                          "top":  25,
+                                          "right":  40,
+                                          "bottom":  25
+                                      }
+                   },
+                   {
+                       "asset_id":  "03c792a6-d8af-4f6a-b8e4-c0c00b18fdd0",
+                       "sha12":  "43d066d7a1c3",
+                       "label":  "meter_fill_small_green",
+                       "file":  "assets/ui/meter_fill_small_green.png",
+                       "group":  "progress_meter",
+                       "state":  "fill"
+                   },
+                   {
+                       "asset_id":  "c677ddbc-9611-4d35-8b6a-37fea5a40ed1",
+                       "sha12":  "048e95262895",
+                       "label":  "modal_panel_metal",
+                       "file":  "assets/ui/modal_panel_metal.png",
+                       "group":  "panels",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  60,
+                                          "top":  60,
+                                          "right":  60,
+                                          "bottom":  60
+                                      }
+                   },
+                   {
+                       "asset_id":  "e83540d7-14c0-48ef-bc4f-e46143cc1b1d",
+                       "sha12":  "2e9e4b2c8190",
+                       "label":  "upgrades_panel_wood",
+                       "file":  "assets/ui/upgrades_panel_wood.png",
+                       "group":  "panels",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  65,
+                                          "top":  65,
+                                          "right":  65,
+                                          "bottom":  65
+                                      }
+                   },
+                   {
+                       "asset_id":  "9ca48734-6790-458e-a2a4-57079ec3cfd5",
+                       "sha12":  "f28023da6429",
+                       "label":  "square_inset_panel",
+                       "file":  "assets/ui/square_inset_panel.png",
+                       "group":  "panels",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  40,
+                                          "top":  40,
+                                          "right":  40,
+                                          "bottom":  40
+                                      }
+                   },
+                   {
+                       "asset_id":  "709e2970-a531-4b62-a711-09146eb0665f",
+                       "sha12":  "3cf20c83d093",
+                       "label":  "wide_inset_panel",
+                       "file":  "assets/ui/wide_inset_panel.png",
+                       "group":  "panels",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  40,
+                                          "top":  40,
+                                          "right":  40,
+                                          "bottom":  40
+                                      }
+                   },
+                   {
+                       "asset_id":  "bde7f803-b555-4d86-9b68-d54940a93953",
+                       "sha12":  "4dede1914706",
+                       "label":  "icon_slot_frame",
+                       "file":  "assets/ui/icon_slot_frame.png",
+                       "group":  "panels",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  40,
+                                          "top":  40,
+                                          "right":  40,
+                                          "bottom":  40
+                                      }
+                   },
+                   {
+                       "asset_id":  "b1e058d6-de45-4f48-a395-3eef1b0a39df",
+                       "sha12":  "6c25608205a1",
+                       "label":  "upgrade_row_card_1",
+                       "file":  "assets/ui/upgrade_row_card_1.png",
+                       "group":  "list_rows",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  30,
+                                          "top":  30,
+                                          "right":  30,
+                                          "bottom":  30
+                                      }
+                   },
+                   {
+                       "asset_id":  "38490e2e-69d5-4988-bed3-7cf67210f9d1",
+                       "sha12":  "e8ca59807223",
+                       "label":  "upgrade_row_card_2",
+                       "file":  "assets/ui/upgrade_row_card_2.png",
+                       "group":  "list_rows",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  30,
+                                          "top":  30,
+                                          "right":  30,
+                                          "bottom":  30
+                                      }
+                   },
+                   {
+                       "asset_id":  "cc9f665a-bea3-4ec8-b84e-987c0777d8d1",
+                       "sha12":  "6c430a2d9e24",
+                       "label":  "upgrade_row_card_3",
+                       "file":  "assets/ui/upgrade_row_card_3.png",
+                       "group":  "list_rows",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  30,
+                                          "top":  30,
+                                          "right":  30,
+                                          "bottom":  30
+                                      }
+                   },
+                   {
+                       "asset_id":  "d69be950-f163-4f3c-9dc3-21d501dc502a",
+                       "sha12":  "a643079b0f45",
+                       "label":  "upgrade_row_card_4",
+                       "file":  "assets/ui/upgrade_row_card_4.png",
+                       "group":  "list_rows",
+                       "scalable":  true,
+                       "nine_slice":  {
+                                          "left":  30,
+                                          "top":  30,
+                                          "right":  30,
+                                          "bottom":  30
+                                      }
+                   },
+                   {
+                       "asset_id":  "abb373c1-ce95-4f18-8bde-5036d0d92c0c",
+                       "sha12":  "54752852bff4",
+                       "label":  "block_damage_grid",
+                       "file":  "assets/ui/block_damage_grid.png",
+                       "note":  "2x2 source grid, 4 damage stages"
+                   },
+                   {
+                       "asset_id":  "eb9faf9e-6283-4f39-8575-036fba4b840e",
+                       "sha12":  "8bfeb0cec77d",
+                       "label":  "block_stage_1_intact",
+                       "file":  "assets/ui/block_stage_1_intact.png",
+                       "group":  "click_block"
+                   },
+                   {
+                       "asset_id":  "b9abe109-5d79-4c69-b6c6-c9633248be66",
+                       "sha12":  "4edc74adff61",
+                       "label":  "block_stage_2_cracked",
+                       "file":  "assets/ui/block_stage_2_cracked.png",
+                       "group":  "click_block"
+                   },
+                   {
+                       "asset_id":  "c691a4c5-4431-4a93-9b0d-41db66cd5b68",
+                       "sha12":  "27ae00d14a7c",
+                       "label":  "block_stage_3_heavy_cracks",
+                       "file":  "assets/ui/block_stage_3_heavy_cracks.png",
+                       "group":  "click_block"
+                   },
+                   {
+                       "asset_id":  "8213bf21-b91a-4dd5-aa0c-466aed7ee2f1",
+                       "sha12":  "1cd0792f17b8",
+                       "label":  "block_stage_4_shattered",
+                       "file":  "assets/ui/block_stage_4_shattered.png",
+                       "group":  "click_block"
+                   },
+                   {
+                       "asset_id":  "a8d48569-8875-453e-b517-009db9cbb1cb",
+                       "sha12":  "d7e13e3fd43d",
+                       "label":  "ore_particle_debris",
+                       "file":  "assets/ui/ore_particle_debris.png",
+                       "group":  "click_block"
+                   },
+                   {
+                       "asset_id":  "eea42550-3a7e-4392-9dff-da2c7fd35043",
+                       "sha12":  "9eda535c427e",
+                       "label":  "iron_block_grid",
+                       "file":  "assets/ui/iron_block_grid.png",
+                       "note":  "2x2 grid source, sliced locally"
+                   },
+                   {
+                       "asset_id":  "8c49bef3-4dc8-4b88-8bff-38b30ebe7244",
+                       "sha12":  "4c8f1b2ea3d8",
+                       "label":  "gold_block_grid",
+                       "file":  "assets/ui/gold_block_grid.png",
+                       "note":  "2x2 grid source, sliced locally"
+                   },
+                   {
+                       "asset_id":  "3e6707b5-8cdc-45d9-8c9c-4d4d507773c3",
+                       "sha12":  "d4b7347cb2e6",
+                       "label":  "emerald_block_grid",
+                       "file":  "assets/ui/emerald_block_grid.png",
+                       "note":  "2x2 grid source, sliced locally"
+                   },
+                   {
+                       "asset_id":  "34068475-6bd4-4422-8a51-10d22c41068a",
+                       "sha12":  "75ec9e03d938",
+                       "label":  "diamond_block_grid",
+                       "file":  "assets/ui/diamond_block_grid.png",
+                       "note":  "2x2 grid source, sliced locally"
+                   },
+                   {
+                       "asset_id":  "eea42550-3a7e-4392-9dff-da2c7fd35043",
+                       "sha12":  "a296d014aa2f",
+                       "label":  "iron_stage_1",
+                       "file":  "assets/ui/iron_stage_1.png",
+                       "note":  "slice of iron_block_grid"
+                   },
+                   {
+                       "asset_id":  "eea42550-3a7e-4392-9dff-da2c7fd35043",
+                       "sha12":  "c689caf50bb0",
+                       "label":  "iron_stage_2",
+                       "file":  "assets/ui/iron_stage_2.png",
+                       "note":  "slice of iron_block_grid"
+                   },
+                   {
+                       "asset_id":  "eea42550-3a7e-4392-9dff-da2c7fd35043",
+                       "sha12":  "33269d651b8d",
+                       "label":  "iron_stage_3",
+                       "file":  "assets/ui/iron_stage_3.png",
+                       "note":  "slice of iron_block_grid"
+                   },
+                   {
+                       "asset_id":  "eea42550-3a7e-4392-9dff-da2c7fd35043",
+                       "sha12":  "5a19ec7c6edf",
+                       "label":  "iron_stage_4",
+                       "file":  "assets/ui/iron_stage_4.png",
+                       "note":  "slice of iron_block_grid"
+                   },
+                   {
+                       "asset_id":  "8c49bef3-4dc8-4b88-8bff-38b30ebe7244",
+                       "sha12":  "bfbf9a2791c6",
+                       "label":  "gold_stage_1",
+                       "file":  "assets/ui/gold_stage_1.png",
+                       "note":  "slice of gold_block_grid"
+                   },
+                   {
+                       "asset_id":  "8c49bef3-4dc8-4b88-8bff-38b30ebe7244",
+                       "sha12":  "9c8544e5bf0b",
+                       "label":  "gold_stage_2",
+                       "file":  "assets/ui/gold_stage_2.png",
+                       "note":  "slice of gold_block_grid"
+                   },
+                   {
+                       "asset_id":  "8c49bef3-4dc8-4b88-8bff-38b30ebe7244",
+                       "sha12":  "054455f4fbad",
+                       "label":  "gold_stage_3",
+                       "file":  "assets/ui/gold_stage_3.png",
+                       "note":  "slice of gold_block_grid"
+                   },
+                   {
+                       "asset_id":  "8c49bef3-4dc8-4b88-8bff-38b30ebe7244",
+                       "sha12":  "e7969c2410b2",
+                       "label":  "gold_stage_4",
+                       "file":  "assets/ui/gold_stage_4.png",
+                       "note":  "slice of gold_block_grid"
+                   },
+                   {
+                       "asset_id":  "3e6707b5-8cdc-45d9-8c9c-4d4d507773c3",
+                       "sha12":  "be69ca033ff6",
+                       "label":  "emerald_stage_1",
+                       "file":  "assets/ui/emerald_stage_1.png",
+                       "note":  "slice of emerald_block_grid"
+                   },
+                   {
+                       "asset_id":  "3e6707b5-8cdc-45d9-8c9c-4d4d507773c3",
+                       "sha12":  "a78cf6d0c1a0",
+                       "label":  "emerald_stage_2",
+                       "file":  "assets/ui/emerald_stage_2.png",
+                       "note":  "slice of emerald_block_grid"
+                   },
+                   {
+                       "asset_id":  "3e6707b5-8cdc-45d9-8c9c-4d4d507773c3",
+                       "sha12":  "a9311b141c1f",
+                       "label":  "emerald_stage_3",
+                       "file":  "assets/ui/emerald_stage_3.png",
+                       "note":  "slice of emerald_block_grid"
+                   },
+                   {
+                       "asset_id":  "3e6707b5-8cdc-45d9-8c9c-4d4d507773c3",
+                       "sha12":  "50d953f328bb",
+                       "label":  "emerald_stage_4",
+                       "file":  "assets/ui/emerald_stage_4.png",
+                       "note":  "slice of emerald_block_grid"
+                   },
+                   {
+                       "asset_id":  "34068475-6bd4-4422-8a51-10d22c41068a",
+                       "sha12":  "d1e176ee99a1",
+                       "label":  "diamond_stage_1",
+                       "file":  "assets/ui/diamond_stage_1.png",
+                       "note":  "slice of diamond_block_grid"
+                   },
+                   {
+                       "asset_id":  "34068475-6bd4-4422-8a51-10d22c41068a",
+                       "sha12":  "07ceae2154a1",
+                       "label":  "diamond_stage_2",
+                       "file":  "assets/ui/diamond_stage_2.png",
+                       "note":  "slice of diamond_block_grid"
+                   },
+                   {
+                       "asset_id":  "34068475-6bd4-4422-8a51-10d22c41068a",
+                       "sha12":  "75afa47451d0",
+                       "label":  "diamond_stage_3",
+                       "file":  "assets/ui/diamond_stage_3.png",
+                       "note":  "slice of diamond_block_grid"
+                   },
+                   {
+                       "asset_id":  "34068475-6bd4-4422-8a51-10d22c41068a",
+                       "sha12":  "7513e5348bf1",
+                       "label":  "diamond_stage_4",
+                       "file":  "assets/ui/diamond_stage_4.png",
+                       "note":  "slice of diamond_block_grid"
+                   },
+                   {
+                       "asset_id":  "cc67d077-35ff-4b20-b77e-55be5697d90e",
+                       "sha12":  "38fad0389279",
+                       "label":  "emerald_nugget",
+                       "file":  "assets/ui/emerald_nugget.png"
+                   },
+                   {
+                       "asset_id":  "eb16b988-184f-4448-8649-eec9e0f4e2f4",
+                       "sha12":  "1ef160fc1d0f",
+                       "label":  "icon_hammer",
+                       "file":  "assets/ui/icon_hammer.png"
+                   },
+                   {
+                       "asset_id":  "a6ffa92f-3c46-4f3f-8175-0697559d5dc1",
+                       "sha12":  "acecf127ef4c",
+                       "label":  "icon_drill",
+                       "file":  "assets/ui/icon_drill.png"
+                   },
+                   {
+                       "asset_id":  "6249b6cc-4e22-427b-9102-f50070778494",
+                       "sha12":  "15cfe0b1e3ef",
+                       "label":  "icon_excavator",
+                       "file":  "assets/ui/icon_excavator.png"
+                   },
+                   {
+                       "asset_id":  "42039cce-5970-456a-8c0b-dd5b58ad7962",
+                       "sha12":  "5c9ef62e4c08",
+                       "label":  "icon_factory",
+                       "file":  "assets/ui/icon_factory.png"
+                   },
+                   {
+                       "asset_id":  "10197442-d00f-41bb-a7e9-8ff7b91920ec",
+                       "sha12":  "ba329b88d143",
+                       "label":  "icon_lantern",
+                       "file":  "assets/ui/icon_lantern.png"
+                   },
+                   {
+                       "asset_id":  "02969da0-59aa-4027-9714-f72bfe0bb981",
+                       "sha12":  "c46bb35f632a",
+                       "label":  "icon_warehouse",
+                       "file":  "assets/ui/icon_warehouse.png"
+                   },
+                   {
+                       "asset_id":  "93561414-c6bb-4d4a-b849-8e6b8c4912de",
+                       "sha12":  "60a350fe9573",
+                       "label":  "icon_vein",
+                       "file":  "assets/ui/icon_vein.png"
+                   },
+                   {
+                       "asset_id":  "7dc81d9a-660e-45f7-8414-19ce4494c0e4",
+                       "sha12":  "568fefc56eb9",
+                       "label":  "icon_robot_arm",
+                       "file":  "assets/ui/icon_robot_arm.png"
+                   },
+                   {
+                       "asset_id":  "39fb8337-5294-4301-9809-0343170e8f50",
+                       "sha12":  "b5f710ebca8c",
+                       "label":  "copper_block_grid",
+                       "file":  "assets/ui/copper_block_grid.png",
+                       "group":  "ore_tiers",
+                       "notes":  "2x2 set, 4 damage stages (copper)"
+                   },
+                   {
+                       "asset_id":  "e56727a3-c498-4674-8c2e-1c9310524f19",
+                       "sha12":  "f168f4052ce3",
+                       "label":  "silver_block_grid",
+                       "file":  "assets/ui/silver_block_grid.png",
+                       "group":  "ore_tiers",
+                       "notes":  "2x2 set, 4 damage stages (silver)"
+                   },
+                   {
+                       "asset_id":  "1f00f686-3e10-4a64-8c17-fc2206904be5",
+                       "sha12":  "94060b6b18db",
+                       "label":  "platinum_block_grid",
+                       "file":  "assets/ui/platinum_block_grid.png",
+                       "group":  "ore_tiers",
+                       "notes":  "2x2 set, 4 damage stages (platinum)"
+                   },
+                   {
+                       "asset_id":  "989ead99-4441-4594-ae9b-94eee407bbf9",
+                       "sha12":  "4bb3e4fc59f9",
+                       "label":  "uranium_block_grid",
+                       "file":  "assets/ui/uranium_block_grid.png",
+                       "group":  "ore_tiers",
+                       "notes":  "2x2 set, 4 damage stages (uranite)"
+                   },
+                   {
+                       "asset_id":  "b7cae90b-b58c-4866-89f0-051b39fd02bd",
+                       "sha12":  "d5cf48e2863b",
+                       "label":  "amethyst_block_grid",
+                       "file":  "assets/ui/amethyst_block_grid.png",
+                       "group":  "ore_tiers",
+                       "notes":  "2x2 set, 4 damage stages (amethyst)"
+                   },
+                   {
+                       "asset_id":  "869afc59-56e8-4551-a07a-ba2eeee87c5f",
+                       "sha12":  "a6d5578018de",
+                       "label":  "ruby_block_grid",
+                       "file":  "assets/ui/ruby_block_grid.png",
+                       "group":  "ore_tiers",
+                       "notes":  "2x2 set, 4 damage stages (ruby)"
+                   },
+                   {
+                       "asset_id":  "d88f05ef-e546-4871-939a-6c175d6b1d94",
+                       "sha12":  "a238f6759fdd",
+                       "label":  "sapphire_block_grid",
+                       "file":  "assets/ui/sapphire_block_grid.png",
+                       "group":  "ore_tiers",
+                       "notes":  "2x2 set, 4 damage stages (sapphire)"
+                   },
+                   {
+                       "asset_id":  "45e5c835-dd0c-492d-8f72-e51999f806b2",
+                       "sha12":  "95f1be643c9c",
+                       "label":  "copper_nugget",
+                       "file":  "assets/ui/copper_nugget.png",
+                       "group":  "ore_tiers"
+                   },
+                   {
+                       "asset_id":  "80932914-8444-419d-b0ac-f9ab77188887",
+                       "sha12":  "c306afb66d3c",
+                       "label":  "silver_nugget",
+                       "file":  "assets/ui/silver_nugget.png",
+                       "group":  "ore_tiers"
+                   },
+                   {
+                       "asset_id":  "70109bd9-3c99-4937-8e4e-d75a1a3c208b",
+                       "sha12":  "df839f047d5a",
+                       "label":  "platinum_nugget",
+                       "file":  "assets/ui/platinum_nugget.png",
+                       "group":  "ore_tiers"
+                   },
+                   {
+                       "asset_id":  "3e0b8a75-9ee2-4af5-bfdf-d27b16900efc",
+                       "sha12":  "db024eab5687",
+                       "label":  "uranium_nugget",
+                       "file":  "assets/ui/uranium_nugget.png",
+                       "group":  "ore_tiers"
+                   },
+                   {
+                       "asset_id":  "c50e3ba0-02cb-4295-bc49-fce6331fff45",
+                       "sha12":  "6543bec8b1a1",
+                       "label":  "amethyst_nugget",
+                       "file":  "assets/ui/amethyst_nugget.png",
+                       "group":  "ore_tiers"
+                   },
+                   {
+                       "asset_id":  "c4289672-9ca3-4753-8b05-f05403e9ea0f",
+                       "sha12":  "b23cbc079e29",
+                       "label":  "ruby_nugget",
+                       "file":  "assets/ui/ruby_nugget.png",
+                       "group":  "ore_tiers"
+                   },
+                   {
+                       "asset_id":  "feaa20ac-1d9a-4e1b-bca1-704c0f9735f8",
+                       "sha12":  "4cb9a2bd97cf",
+                       "label":  "sapphire_nugget",
+                       "file":  "assets/ui/sapphire_nugget.png",
+                       "group":  "ore_tiers"
+                   },
+                   {
+                       "asset_id":  "39fb8337-5294-4301-9809-0343170e8f50#stage1",
+                       "sha12":  "fd91801df32b",
+                       "label":  "copper_stage_1",
+                       "file":  "assets/ui/copper_stage_1.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "39fb8337-5294-4301-9809-0343170e8f50#stage2",
+                       "sha12":  "6ff0f4b24419",
+                       "label":  "copper_stage_2",
+                       "file":  "assets/ui/copper_stage_2.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "39fb8337-5294-4301-9809-0343170e8f50#stage3",
+                       "sha12":  "c49d1cc51bd3",
+                       "label":  "copper_stage_3",
+                       "file":  "assets/ui/copper_stage_3.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "39fb8337-5294-4301-9809-0343170e8f50#stage4",
+                       "sha12":  "a5ad17331f64",
+                       "label":  "copper_stage_4",
+                       "file":  "assets/ui/copper_stage_4.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "e56727a3-c498-4674-8c2e-1c9310524f19#stage1",
+                       "sha12":  "24945bad1d30",
+                       "label":  "silver_stage_1",
+                       "file":  "assets/ui/silver_stage_1.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "e56727a3-c498-4674-8c2e-1c9310524f19#stage2",
+                       "sha12":  "31452185ce2b",
+                       "label":  "silver_stage_2",
+                       "file":  "assets/ui/silver_stage_2.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "e56727a3-c498-4674-8c2e-1c9310524f19#stage3",
+                       "sha12":  "9825d68b8543",
+                       "label":  "silver_stage_3",
+                       "file":  "assets/ui/silver_stage_3.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "e56727a3-c498-4674-8c2e-1c9310524f19#stage4",
+                       "sha12":  "056a993d45c9",
+                       "label":  "silver_stage_4",
+                       "file":  "assets/ui/silver_stage_4.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "b7cae90b-b58c-4866-89f0-051b39fd02bd#stage1",
+                       "sha12":  "9c00010aeb90",
+                       "label":  "amethyst_stage_1",
+                       "file":  "assets/ui/amethyst_stage_1.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "b7cae90b-b58c-4866-89f0-051b39fd02bd#stage2",
+                       "sha12":  "4b527a9a37f3",
+                       "label":  "amethyst_stage_2",
+                       "file":  "assets/ui/amethyst_stage_2.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "b7cae90b-b58c-4866-89f0-051b39fd02bd#stage3",
+                       "sha12":  "cae34f6d0848",
+                       "label":  "amethyst_stage_3",
+                       "file":  "assets/ui/amethyst_stage_3.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "b7cae90b-b58c-4866-89f0-051b39fd02bd#stage4",
+                       "sha12":  "5cdc3d425341",
+                       "label":  "amethyst_stage_4",
+                       "file":  "assets/ui/amethyst_stage_4.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "869afc59-56e8-4551-a07a-ba2eeee87c5f#stage1",
+                       "sha12":  "76323fe119f7",
+                       "label":  "ruby_stage_1",
+                       "file":  "assets/ui/ruby_stage_1.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "869afc59-56e8-4551-a07a-ba2eeee87c5f#stage2",
+                       "sha12":  "a308ea240dc6",
+                       "label":  "ruby_stage_2",
+                       "file":  "assets/ui/ruby_stage_2.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "869afc59-56e8-4551-a07a-ba2eeee87c5f#stage3",
+                       "sha12":  "dd760022b5c8",
+                       "label":  "ruby_stage_3",
+                       "file":  "assets/ui/ruby_stage_3.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "869afc59-56e8-4551-a07a-ba2eeee87c5f#stage4",
+                       "sha12":  "c22e03bc5c64",
+                       "label":  "ruby_stage_4",
+                       "file":  "assets/ui/ruby_stage_4.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "d88f05ef-e546-4871-939a-6c175d6b1d94#stage1",
+                       "sha12":  "1b6daf31fa3d",
+                       "label":  "sapphire_stage_1",
+                       "file":  "assets/ui/sapphire_stage_1.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "d88f05ef-e546-4871-939a-6c175d6b1d94#stage2",
+                       "sha12":  "294d2723b339",
+                       "label":  "sapphire_stage_2",
+                       "file":  "assets/ui/sapphire_stage_2.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "d88f05ef-e546-4871-939a-6c175d6b1d94#stage3",
+                       "sha12":  "2fdf68a3a877",
+                       "label":  "sapphire_stage_3",
+                       "file":  "assets/ui/sapphire_stage_3.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "d88f05ef-e546-4871-939a-6c175d6b1d94#stage4",
+                       "sha12":  "c26b25e4dda2",
+                       "label":  "sapphire_stage_4",
+                       "file":  "assets/ui/sapphire_stage_4.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "1f00f686-3e10-4a64-8c17-fc2206904be5#stage1",
+                       "sha12":  "883ed2294f96",
+                       "label":  "platinum_stage_1",
+                       "file":  "assets/ui/platinum_stage_1.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "1f00f686-3e10-4a64-8c17-fc2206904be5#stage2",
+                       "sha12":  "6f6257d4cd90",
+                       "label":  "platinum_stage_2",
+                       "file":  "assets/ui/platinum_stage_2.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "1f00f686-3e10-4a64-8c17-fc2206904be5#stage3",
+                       "sha12":  "44e93585d19b",
+                       "label":  "platinum_stage_3",
+                       "file":  "assets/ui/platinum_stage_3.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "1f00f686-3e10-4a64-8c17-fc2206904be5#stage4",
+                       "sha12":  "30555730ebad",
+                       "label":  "platinum_stage_4",
+                       "file":  "assets/ui/platinum_stage_4.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "989ead99-4441-4594-ae9b-94eee407bbf9#stage1",
+                       "sha12":  "7b7e4a3e913c",
+                       "label":  "uranium_stage_1",
+                       "file":  "assets/ui/uranium_stage_1.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "989ead99-4441-4594-ae9b-94eee407bbf9#stage2",
+                       "sha12":  "8924ae07e596",
+                       "label":  "uranium_stage_2",
+                       "file":  "assets/ui/uranium_stage_2.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "989ead99-4441-4594-ae9b-94eee407bbf9#stage3",
+                       "sha12":  "3a641f044f76",
+                       "label":  "uranium_stage_3",
+                       "file":  "assets/ui/uranium_stage_3.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "989ead99-4441-4594-ae9b-94eee407bbf9#stage4",
+                       "sha12":  "1c952d7fdb29",
+                       "label":  "uranium_stage_4",
+                       "file":  "assets/ui/uranium_stage_4.png",
+                       "group":  "ore_tiers",
+                       "notes":  null
+                   },
+                   {
+                       "asset_id":  "f83b9eda-7fb4-4d03-be6f-a91142f92bde",
+                       "sha12":  "fe2c56870f97",
+                       "label":  "icon_hydraulic",
+                       "file":  "assets/ui/icon_hydraulic.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "007d814b-530e-4d16-bc25-aa7c8ecffa58",
+                       "sha12":  "e19d3bec6953",
+                       "label":  "icon_plasma",
+                       "file":  "assets/ui/icon_plasma.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "dd10b7bb-63a6-416a-a777-141c8c3efddd",
+                       "sha12":  "e867d5a9d7d9",
+                       "label":  "icon_disintegrator",
+                       "file":  "assets/ui/icon_disintegrator.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "0f2687d8-87d9-45e7-87d2-a5aabe0e08aa",
+                       "sha12":  "ac009e6bb55c",
+                       "label":  "icon_quarry",
+                       "file":  "assets/ui/icon_quarry.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "38887409-017a-4f07-8306-7c532c4f6c5a",
+                       "sha12":  "1c34eb7829b8",
+                       "label":  "icon_megafactory",
+                       "file":  "assets/ui/icon_megafactory.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "9bb4878a-f01a-4af4-863e-ede6db1523a4",
+                       "sha12":  "bd510dc609cf",
+                       "label":  "icon_orbital",
+                       "file":  "assets/ui/icon_orbital.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "a8aa5f63-108d-40ae-b9fa-6a0038d7e029",
+                       "sha12":  "b4b29bb30965",
+                       "label":  "icon_quantumlab",
+                       "file":  "assets/ui/icon_quantumlab.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "f76c5926-29ff-48e8-9d11-10b3d1623b55",
+                       "sha12":  "0994a7f50c37",
+                       "label":  "icon_wormhole",
+                       "file":  "assets/ui/icon_wormhole.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "f35b54ef-c6f8-4c88-9368-613b2c25ca90",
+                       "sha12":  "5961a4c54952",
+                       "label":  "icon_singularity",
+                       "file":  "assets/ui/icon_singularity.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "5c6d0d45-04c8-4fe4-8b86-2376ba73652f",
+                       "sha12":  "dbcb27f2a4d5",
+                       "label":  "icon_dyson",
+                       "file":  "assets/ui/icon_dyson.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "bbbf78d8-4952-42d0-a620-d6d4aa5eed1c",
+                       "sha12":  "d3b2f241b2e0",
+                       "label":  "icon_aicore",
+                       "file":  "assets/ui/icon_aicore.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "41ad5ea6-f8fa-4584-ac80-9e2bfe70db0f",
+                       "sha12":  "5857bdb15205",
+                       "label":  "icon_focuslens",
+                       "file":  "assets/ui/icon_focuslens.png",
+                       "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "12274c48-c252-4421-85df-0a4513fab430",
+                       "sha12":  "5be6de0ba87d",
+                       "label":  "icon_magnet",
+                       "file":  "assets/ui/icon_magnet.png",
+                       "group":  "icons"
+                   }
+               ]
+}

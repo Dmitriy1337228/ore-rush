@@ -1,0 +1,13 @@
+# Зависимости и сборка
+node_modules/
+dist/
+
+# Локальная конфигурация Kilo с MCP-ключами (СЕКРЕТЫ, не коммитить)
+kilo.json
+
+# Артефакты автопроверки UI (регенерируются scripts/ui-review.mjs)
+shots_v*/
+
+# Прочее
+*.local
+.DS_Store
