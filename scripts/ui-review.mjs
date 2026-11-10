@@ -1,9 +1,12 @@
 // UI review runner (по воркфлоу web-design-reviewer): снимает состояние игры
-// в разных сценариях. Запуск: node scripts/ui-review.mjs (dev-сервер уже поднят)
+// в разных сценариях. Запуск: node scripts/ui-review.mjs — dev-сервер поднимается
+// сам и гасится после проверки (если порт уже занят, подключается к чужому).
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 
+const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./lib/dev-server.cjs');
 const BASE = process.env.BASE_URL || 'http://localhost:5174';
 const OUT = path.resolve(process.env.OUT_DIR || 'shots');
 fs.mkdirSync(OUT, { recursive: true });
@@ -13,6 +16,9 @@ const SAVE_SEED = JSON.stringify({
     tierEarned: [8000, 5000, 0, 0, 0],
     levels: { pickaxe: 13, sledge: 0, dynamite: 2, lucky: 0, resonance: 0, miner: 5, drill: 0, excavator: 0, factory: 0, tech: 0, lantern: 0, warehouse: 0 }
 });
+
+const server = await ensureDevServer();
+process.on('exit', () => releaseDevServer(server));
 
 const browser = await chromium.launch();
 

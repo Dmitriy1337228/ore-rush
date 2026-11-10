@@ -1,6 +1,10 @@
-// Временная проверка DevPanel (удалить после верификации)
+// Проверка DevPanel: активация, ресурсы, тиры, офлайн-симуляция, полный сброс.
+// Dev-сервер поднимается сам и гасится после проверки (чужой не трогается).
 const { chromium } = require('playwright');
+const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
 (async () => {
+    const server = await ensureDevServer();
+    process.on('exit', () => releaseDevServer(server));
     const b = await chromium.launch();
     const page = await b.newPage({ viewport: { width: 1280, height: 720 } });
     const errors = [];
