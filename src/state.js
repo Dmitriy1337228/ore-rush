@@ -202,6 +202,7 @@ export function createInitialState() {
         lifetimeMined: 0,
         tierEarned: TIERS.map(() => 0),
         tierAnchorRate: 0, // доход при входе в тир; 0 = зафиксируется лениво
+        tutorialDone: false,
         levels
     };
 }
@@ -523,6 +524,7 @@ export function applySave(data) {
             miner: Math.max(0, Number(data.levels && data.levels.miner) || 0)
         };
         gameState.version = SAVE_VERSION;
+        gameState.tutorialDone = true; // старые игроки — обучение не показываем
         return;
     }
 
@@ -558,6 +560,8 @@ export function applySave(data) {
     gameState.lifetimeMined = Math.max(0, Number(data.lifetimeMined) || 0);
     gameState.tierEarned = TIERS.map((_, i) => Math.max(0, Number(data.tierEarned && data.tierEarned[i]) || 0));
     gameState.tierAnchorRate = Math.max(0, Number(data.tierAnchorRate) || 0);
+    // Сейвы без флага (старые игроки) — обучение пропускается; false = продолжить
+    gameState.tutorialDone = data.tutorialDone !== false;
     gameState.levels = { ...init.levels };
     if (data.levels && typeof data.levels === 'object') {
         for (const def of UPGRADES) {

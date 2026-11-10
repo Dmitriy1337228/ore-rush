@@ -84,9 +84,9 @@ function makeLabel(scene, x, y, text, size, color, style = {}) {
 
 // Вьюпорт списка: по внутренней зоне деревянной панели.
 // Панель 364x582 (image): face source x73..964, y208..1058 -> drawn x 926..1241, y 232..674
-// Заголовок на планке (143..200), вкладки на раме (200..232), строка тира+мультипокупки
-// на верхней кромке фаски (232..258), список — 262..666.
-const VIEWPORT = { x: 934, y: 262, w: 296, h: 402 };
+// Заголовок на планке (143..200), вкладки и строка тира в одной ширине со списком
+// (934..1230), вертикаль: вкладки 192..224 -> тир 237..261 -> список 270..662.
+const VIEWPORT = { x: 934, y: 270, w: 296, h: 392 };
 const ROW_H = 96;
 const ROW_GAP = 6;
 
@@ -133,6 +133,7 @@ export class UIScene extends Phaser.Scene {
         this.buildModal();
         this.buildOfflineModal();
         this.setupListCamera();
+        this.buildTutorial();
 
         this.input.on('wheel', (pointer, over, dx, dy) => {
             if (pointer.x >= VIEWPORT.x - 10 && pointer.x <= VIEWPORT.x + VIEWPORT.w + 10
@@ -227,13 +228,13 @@ export class UIScene extends Phaser.Scene {
         // Планка с заклёпками (143..200): заголовок по её центру
         makeLabel(this, px + pw / 2, 171, 'Улучшения', 24, '#ffe9b0').setOrigin(0.5).setDepth(11);
 
-        // Вкладки на раме (200..232): Оборудование | Усиления
-        this.tabBtns = TABS.map((tab, i) => this.buildTabButton(px + 11 + i * 174, 200, tab));
+        // Вкладки: одна ширина со списком (934..1230), две по 145 + зазор 6
+        this.tabBtns = TABS.map((tab, i) => this.buildTabButton(VIEWPORT.x + i * 151, 192, tab));
 
-        // Строка тира + переключатель мультипокупки (верхняя кромка фаски 232..258)
-        this.tierLabel = makeLabel(this, 930, 247, '', 13, '#c8b78e');
+        // Строка тира + переключатель мультипокупки (в границах списка)
+        this.tierLabel = makeLabel(this, VIEWPORT.x + 2, 249, '', 13, '#c8b78e');
         this.tierLabel.setOrigin(0, 0.5).setDepth(11);
-        this.buildAmountButton(1197, 247);
+        this.buildAmountButton(VIEWPORT.x + VIEWPORT.w - 38, 249);
 
         // Фон вьюпорта (для драга). Клиппинг списка — через отдельную камеру с viewport
         // (GeometryMask в Phaser 4 работает только в Canvas; в WebGL игнорируется).
@@ -249,11 +250,11 @@ export class UIScene extends Phaser.Scene {
     }
 
     buildTabButton(x, y, tab) {
-        const w = 168;
+        const w = 145;
         const h = 32;
         const c = this.add.container(x + w / 2, y + h / 2).setDepth(11);
         const bg = addImgC(this, 0, 0, 'buy_button_disabled_gray', w, h);
-        const lbl = makeLabel(this, 0, 0, tab.label, 15, '#b0b0b0').setOrigin(0.5);
+        const lbl = makeLabel(this, 0, 0, tab.label, 14, '#b0b0b0').setOrigin(0.5);
         c.add([bg, lbl]);
         c.setInteractive(new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h), Phaser.Geom.Rectangle.Contains);
         c.on('pointerdown', () => this.switchTab(tab.id));
@@ -789,7 +790,112 @@ export class UIScene extends Phaser.Scene {
         }
     }
 
+    // ---------- Псевдо-обучение (только первый запуск) ----------
+
+    buildTutorial() {
+        if (gameState.tutorialDone) return;
+        this.tutorialStep = 0;
+        this.tutClickStart = gameState.clicks;
+        this.tutShownAt = 0;
+        this.tutTabClicked = -1;
+        this.tutDim = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.45).setDepth(55);
+        this.tutRing = this.add.graphics().setDepth(56);
+        this.tutArrow = this.add.graphics().setDepth(56);
+        this.tutBubble = this.add.rectangle(0, 0, 1, 1, 0x1c1620, 0.92).setDepth(56).setStrokeStyle(2, 0xffd75e, 1);
+        this.tutText = makeLabel(this, 0, 0, '', 15, '#ffe9b0', { align: 'center' }).setOrigin(0.5).setDepth(56);
+        this.tutFinal = makeLabel(this, 0, 0, 'Приятной игры!', 26, '#ffe9b0').setOrigin(0.5).setDepth(56).setVisible(false);
+        this.tutBtn = this.add.image(640, 400, 'buy_button_normal').setDisplaySize(200, 56).setDepth(56).setVisible(false);
+        this.tutBtnLbl = makeLabel(this, 640, 400, 'Играть', 18, '#ffffff').setOrigin(0.5).setDepth(56).setVisible(false);
+        this.tutBtn.setInteractive({ useHandCursor: true });
+        this.tutBtn.on('pointerdown', () => this.finishTutorial());
+        // клики по вкладкам: учебный шаг ждёт клик по нужной вкладке
+        this.tabBtns[0].c.on('pointerdown', () => { this.tutTabClicked = 0; });
+        this.tabBtns[1].c.on('pointerdown', () => { this.tutTabClicked = 1; });
+        // список рендерит вторая камера — учебные объекты исключаем из неё
+        this.listCam.ignore([this.tutDim, this.tutRing, this.tutArrow, this.tutBubble, this.tutText, this.tutFinal, this.tutBtn, this.tutBtnLbl]);
+        this.tutPulse = this.tweens.add({ targets: this.tutRing, alpha: { from: 1, to: 0.4 }, duration: 700, yoyo: true, repeat: -1 });
+        this.tutBob = this.tweens.add({ targets: this.tutArrow, y: { from: 0, to: 10 }, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        this.layoutTutorial();
+    }
+
+    layoutTutorial() {
+        this.tutRing.clear();
+        this.tutArrow.clear();
+        if (this.tutorialStep === 0) {
+            // блок: подсветка + стрелка сверху + подпись
+            this.tutRing.fillStyle(0xffd75e, 0.12);
+            this.tutRing.fillRect(240, 240, 320, 320);
+            this.tutRing.lineStyle(3, 0xffd75e, 1);
+            this.tutRing.strokeRect(240, 240, 320, 320);
+            this.tutBubble.setPosition(400, 120).setSize(440, 52);
+            this.tutText.setText('Кликай по кубику — добывай руду!');
+            this.tutText.setPosition(400, 120);
+            this.tutArrow.fillStyle(0xffd75e, 1);
+            this.tutArrow.fillTriangle(386, 165, 414, 165, 400, 205);
+        } else if (this.tutorialStep === 1) {
+            // вкладка «Оборудование»
+            this.tutRing.fillStyle(0xffd75e, 0.12);
+            this.tutRing.fillRect(928, 186, 157, 44);
+            this.tutRing.lineStyle(3, 0xffd75e, 1);
+            this.tutRing.strokeRect(928, 186, 157, 44);
+            this.tutBubble.setPosition(700, 200).setSize(380, 66);
+            this.tutText.setText('Покупай оборудование здесь —\nоно усиливает каждый клик');
+            this.tutText.setPosition(700, 200);
+            this.tutArrow.fillStyle(0xffd75e, 1);
+            this.tutArrow.fillTriangle(895, 186, 895, 214, 925, 200);
+        } else if (this.tutorialStep === 2) {
+            // вкладка «Усиления»
+            this.tutRing.fillStyle(0xffd75e, 0.12);
+            this.tutRing.fillRect(1079, 186, 157, 44);
+            this.tutRing.lineStyle(3, 0xffd75e, 1);
+            this.tutRing.strokeRect(1079, 186, 157, 44);
+            this.tutBubble.setPosition(1000, 130).setSize(360, 46);
+            this.tutText.setText('А здесь — усиления: криты и жилы');
+            this.tutText.setPosition(1000, 130);
+            this.tutArrow.fillStyle(0xffd75e, 1);
+            this.tutArrow.fillTriangle(1157, 156, 1185, 156, 1171, 186);
+        }
+    }
+
+    stepTutorial() {
+        if (!this.tutDim) return;
+        const now = this.time.now;
+        if (this.tutorialStep === 0 && gameState.clicks >= this.tutClickStart + 3) {
+            this.tutorialStep = 1;
+            this.tutShownAt = now;
+            this.layoutTutorial();
+        } else if (this.tutorialStep === 1 && (this.tutTabClicked === 0 || now - this.tutShownAt >= 6000)) {
+            this.tutorialStep = 2;
+            this.tutShownAt = now;
+            this.layoutTutorial();
+        } else if (this.tutorialStep === 2 && (this.tutTabClicked === 1 || now - this.tutShownAt >= 6000)) {
+            this.showTutorialFinal();
+        }
+    }
+
+    showTutorialFinal() {
+        this.tutorialStep = 3;
+        this.tutRing.clear().setVisible(false);
+        this.tutArrow.clear().setVisible(false);
+        this.tutBubble.setVisible(false);
+        this.tutText.setVisible(false);
+        this.tutFinal.setPosition(640, 320).setVisible(true);
+        this.tutBtn.setPosition(640, 400).setVisible(true);
+        this.tutBtnLbl.setVisible(true);
+    }
+
+    finishTutorial() {
+        gameState.tutorialDone = true;
+        saveGame();
+        if (this.tutPulse) this.tutPulse.stop();
+        if (this.tutBob) this.tutBob.stop();
+        [this.tutDim, this.tutRing, this.tutArrow, this.tutBubble, this.tutText, this.tutFinal, this.tutBtn, this.tutBtnLbl]
+            .forEach((o) => o.destroy());
+        this.tutDim = null;
+    }
+
     update() {
+        this.stepTutorial();
         this.refreshUi();
     }
 }
