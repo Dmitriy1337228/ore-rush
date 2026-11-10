@@ -43,14 +43,15 @@ async function auditLayout(page) {
                         if (b.width <= 1 && b.height <= 1) continue;
                         let x = b.x, y = b.y, r = b.right, bt = b.bottom;
                         // Ряды живут в мировых координатах и рисуются камерой списка:
-                        // переводим в экранные координаты и отсеиваем невидимые строки
+                        // переводим в экранные координаты (viewport самой камеры)
+                        // и отсеиваем невидимые строки
                         let inList = false;
                         if (scene.scene.key === 'UIScene' && ui && ui.listContent && inTree(ui.listContent, go)) {
                             inList = true;
-                            const vy = y - listCam.scrollY + 232;
-                            if (bt - listCam.scrollY + 232 < 230 || vy > 668) continue; // вне видимой полосы
-                            y = vy; bt = bt - listCam.scrollY + 232;
-                            x = x - listCam.scrollX + 934; r = r - listCam.scrollX + 934;
+                            const vy = y - listCam.scrollY + listCam.y;
+                            if (bt - listCam.scrollY + listCam.y < listCam.y - 2 || vy > listCam.y + listCam.height + 2) continue; // вне видимой полосы
+                            y = vy; bt = bt - listCam.scrollY + listCam.y;
+                            x = x - listCam.scrollX + listCam.x; r = r - listCam.scrollX + listCam.x;
                         }
                         // Текстовый бокс выше/ниже глифов на ~3px — приближаем к глифам
                         if (go.type === 'Text') { y += 3; bt -= 3; }
@@ -92,17 +93,17 @@ async function auditLayout(page) {
             const cards = ui.listContent.list.filter((go) => go.texture && go.texture.key === 'upgrade_row_card_1');
             for (const card of cards) {
                 const cb = card.getBounds();
-                const csx = cb.x - listCam.scrollX + 934, csy = cb.y - listCam.scrollY + 232;
-                const csrx = cb.right - listCam.scrollX + 934, csby = cb.bottom - listCam.scrollY + 232;
-                if (csby < 230 || csy > 668) continue; // карточка вне экрана
+                const csx = cb.x - listCam.scrollX + listCam.x, csy = cb.y - listCam.scrollY + listCam.y;
+                const csrx = cb.right - listCam.scrollX + listCam.x, csby = cb.bottom - listCam.scrollY + listCam.y;
+                if (csby < listCam.y - 2 || csy > listCam.y + listCam.height + 2) continue; // карточка вне экрана
                 const inner = { x: csx + 5, y: csy + 5, r: csrx - 5, b: csby - 5 };
                 for (const go of ui.listContent.list) {
                     if (go === card || go.type === 'Rectangle') continue;
                     const gb = go.getBounds();
                     if (!gb || gb.width === 0) continue;
                     if (gb.bottom < cb.y || gb.y > cb.bottom) continue;
-                    const gy = gb.y - listCam.scrollY + 232, gby = gb.bottom - listCam.scrollY + 232;
-                    const gx = gb.x - listCam.scrollX + 934, grx = gb.right - listCam.scrollX + 934;
+                    const gy = gb.y - listCam.scrollY + listCam.y, gby = gb.bottom - listCam.scrollY + listCam.y;
+                    const gx = gb.x - listCam.scrollX + listCam.x, grx = gb.right - listCam.scrollX + listCam.x;
                     const adj = go.type === 'Text' ? 3 : 0;
                     if (gx < inner.x - 1 || grx > inner.r + 1 || gy + adj < inner.y - 1 || gby - adj > inner.b + 1) {
                         violations.push(`OUTSIDE-CARD row@${Math.round(csy)}: "${go.text || go.texture?.key || go.type}" (${Math.round(gx)},${Math.round(gy)})..(${Math.round(grx)},${Math.round(gby)}) вне зоны (${Math.round(inner.x)},${Math.round(inner.y)})..(${Math.round(inner.r)},${Math.round(inner.b)})`);
