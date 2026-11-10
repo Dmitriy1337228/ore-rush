@@ -17,11 +17,22 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     const res = await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
         const gs = JSON.parse(document.querySelector('#dev-admin-panel .dev-state').textContent);
-        return ui.rows.map((r) => {
-            const def = r.def;
-            const expected = def.maxLevel !== null ? 'макс' : window.__fmt(Math.ceil(def.baseCost * Math.pow(def.growth, gs.levels[def.id])));
-            return `${def.id}: показано "${r.priceText.text}" / ожидается "${expected}" => ${r.priceText.text === expected ? 'OK' : 'FAIL'}`;
-        });
+        // Ряды скрытой вкладки не рендерятся — цены читаем по вкладкам через switchTab
+        const readRows = (tabId) => {
+            ui.switchTab(tabId);
+            return ui.rows.flatMap((r) => {
+                const def = r.def;
+                if (def.tab !== tabId) return [];
+                // Гейт-запертые ряды (текущий тир ниже def.tier) показывают
+                // «нужно: шахта N» вместо цены
+                if (def.tier !== undefined && gs.tier < def.tier) {
+                    return [`${def.id}: показано "${r.priceText.text}" / ожидается "" (гейт: шахта ${def.tier}) => ${r.priceText.text === '' ? 'OK' : 'FAIL'}`];
+                }
+                const expected = def.maxLevel !== null ? 'макс' : window.__fmt(Math.ceil(def.baseCost * Math.pow(def.growth, gs.levels[def.id])));
+                return [`${def.id}: показано "${r.priceText.text}" / ожидается "${expected}" => ${r.priceText.text === expected ? 'OK' : 'FAIL'}`];
+            });
+        };
+        return [...readRows('equipment'), ...readRows('enhance')];
     });
     console.log(res.join('\n'));
     await b.close();

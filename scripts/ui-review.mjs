@@ -110,6 +110,17 @@ async function auditLayout(page) {
                 }
             }
         }
+        // Имена рядов: детерминированная проверка ширины, независимо от видимости
+        // ряда (длинные имена машин видны только на глубоких тирах и не всегда
+        // попадают в сценарии). Ограничение: имя не правее 282 (край поля карточки).
+        if (ui && ui.rows) {
+            for (const row of ui.rows) {
+                if (!row.nameText || !row.nameText.width) continue;
+                if (row.nameText.width > 183) {
+                    violations.push(`NAME-TOO-LONG "${row.nameText.text}" width=${Math.round(row.nameText.width)} > 182 (правый край имени 282)`);
+                }
+            }
+        }
         return { violations };
     });
 }
@@ -222,6 +233,28 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null } 
 {
     const { ctx, page } = await newPage({ viewport: { width: 900, height: 506 } });
     await shoot(page, '09_viewport_900');
+    await ctx.close();
+}
+
+// 9. Глубокие ряды: длинные имена машин (Орбитальная станция, Квантовая лаборатория,
+// Гравитационный резак) видны только на глубоких тирах — отдельный сценарий с тиром 6,
+// скролл к «Орбитальной станции» (ряд 11) и гейт-анонсу «Квантовой лаборатории» (ряд 12).
+{
+    const deep = {
+        version: 4, ore: 5e5, tier: 6, stars: 0, clicks: 500, lifetimeMined: 5e6,
+        tierEarned: TIERS_SEED_EARNED(), tierAnchorRate: 0,
+        levels: { pickaxe: 20, sledge: 5, hydraulic: 5, plasma: 2, miner: 30, robotarm: 2, drill: 20, excavator: 15, factory: 10, quarry: 8, megafactory: 5, tech: 2, dynamite: 10, lucky: 8, resonance: 5, lantern: 2, warehouse: 1 }
+    };
+    function TIERS_SEED_EARNED() { return Array.from({ length: 12 }, (_, i) => (i <= 6 ? 1e5 : 0)); }
+    const { ctx, page } = await newPage({ seed: { 'minecraft-clicker-save': JSON.stringify(deep) } });
+    await page.mouse.move(1082, 430);
+    await page.mouse.wheel(0, 2200); // scrollY ~1100: «Орбитальная» и «Квантовая» целиком в окне 262..664
+    await page.waitForTimeout(400);
+    const auditDeep = await auditLayout(page);
+    fs.writeFileSync(path.join(OUT, 'layout_audit_deep.txt'), auditDeep.violations.join('\n') || 'layout audit (deep rows, tier 6): 0 violations');
+    console.log('deep violations:', auditDeep.violations.length);
+    auditDeep.violations.forEach((v) => console.log('  ' + v));
+    await shoot(page, '10_deep_rows');
     await ctx.close();
 }
 
