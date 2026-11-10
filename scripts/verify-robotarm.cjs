@@ -1,6 +1,9 @@
-// Временная проверка Робо-руки (удалить после приёмки этапа 2)
+// Проверка Робо-руки: авто-клики дают доход в реальном времени (этап 2)
 const { chromium } = require('playwright');
+const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
 (async () => {
+    const server = await ensureDevServer();
+    process.on('exit', () => releaseDevServer(server));
     const b = await chromium.launch();
     const page = await b.newPage({ viewport: { width: 1280, height: 720 } });
     const errors = [];

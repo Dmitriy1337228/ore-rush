@@ -1,6 +1,9 @@
-// Временная проверка пересчёта цен (удалить после приёмки этапа 1)
+// Проверка пересчёта цен в UI без перезагрузки сцены (ребаланс этапа 1)
 const { chromium } = require('playwright');
+const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
 (async () => {
+    const server = await ensureDevServer();
+    process.on('exit', () => releaseDevServer(server));
     const b = await chromium.launch();
     const page = await b.newPage({ viewport: { width: 1280, height: 720 } });
     const save = JSON.stringify({ version: 2, ore: 1e7, tier: 0, stars: 0, clicks: 0, lifetimeMined: 0, tierEarned: [0, 0, 0, 0, 0], levels: { pickaxe: 5, sledge: 3, dynamite: 0, lucky: 0, resonance: 0, miner: 10, drill: 0, excavator: 0, factory: 0, tech: 0, lantern: 0, warehouse: 0 } });
