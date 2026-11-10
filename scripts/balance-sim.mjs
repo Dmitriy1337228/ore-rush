@@ -1,14 +1,17 @@
-// Симулятор баланса: импортирует РЕАЛЬНУЮ экономику из src/state.js.
-// Жадная закупка (лучший ROI), спуск когда unlock дешевле любой осмысленной
-// закупки или исчерпан лимит терпения (150 закупок на тир).
+﻿// Симулятор баланса: импортирует РЕАЛЬНУЮ экономику из src/state.js.
+// Два режима в одном прогоне:
+//   greedy — жадная закупка (лучший ROI), спуск когда нечего купить с окупаемостью
+//            быстрее фактического времени до спуска (цена - руда) / ставка,
+//            либо исчерпан лимит терпения (150 закупок на тир);
+//   lazy   — без единой покупки, чистое накопление (базлайн).
 // Запуск: node scripts/balance-sim.mjs [cps] [maxHours]
 import {
     gameState, UPGRADES, TIERS, addOre, resetGame,
     getUpgradeLevel, getUpgradeCost,
     canBuy, buyUpgrade,
-    getClickDamage, getOrePerSecond, getAutoClicksPerSecond,
+    getClickDamage, getOrePerSecond, getAutoClicksPerSecond, getEarningRate,
     getCritChance, getLuckyChance,
-    unlockTier, TIER_INCOME_MULT, getPrestigeMult, getNextUnlockPrice, unlockSecondsFor
+    unlockTier, TIER_INCOME_MULT, getPrestigeMult, getNextUnlockPrice
 } from '../src/state.js';
 
 const ARGS = process.argv.slice(2);
@@ -70,59 +73,109 @@ function deltaIncome(id) {
     return 0;
 }
 
-let time = 0;
-let tierStart = 0;
-let buysThisTier = 0; // лимит терпения считается НА ТИР, не на шаг сима
-const durations = [];
-const buys = {};
+function runSimulation(mode) {
+    resetGame();
+    let time = 0;
+    let tierStart = 0;
+    let buysThisTier = 0; // лимит терпения считается НА ТИР, не на шаг сима
+    let oreAtEntry = 0;      // баланс на входе в тир
+    let earnedAtEntry = 0;   // tierEarned тира на входе
+    const durations = [];
+    const buys = {};
+    const tierStats = [];
 
-resetGame();
+    while (gameState.tier < TIERS.length - 1 && time < MAX_H * 3600) {
+        // доход за шаг: пассив + ожидание кликов + авто-клики
+        addOre(getOrePerSecond() * DT);
+        addOre(clickIncome() * DT);
+        time += DT;
 
-while (gameState.tier < TIERS.length - 1 && time < MAX_H * 3600) {
-    // доход за шаг: пассив + ожидание кликов + авто-клики
-    addOre(getOrePerSecond() * DT);
-    addOre(clickIncome() * DT);
-    time += DT;
-
-    // жадная закупка: лучший ROI из доступных. Спуск: unlock дешевле любой
-    // осмысленной закупки ИЛИ лимит терпения исчерпан (иначе положительная
-    // обратная связь «кирка <-> цепочка множителей» разгоняет доход до Infinity).
-    for (let guard = 0; guard < 60; guard++) {
-        // Рациональный игрок: покупает только улучшения с окупаемостью быстрее
-        // ожидания спуска (payback <= N секунд текущего дохода)
-        const maxPayback = unlockSecondsFor(gameState.tier);
-        let best = null, bestRoi = 0;
-        for (const def of UPGRADES) {
-            if (!canBuy(def.id)) continue;
-            const d = deltaIncome(def.id);
-            const c = getUpgradeCost(def.id);
-            if (d > 0 && c / d <= maxPayback) {
-                const roi = d / c;
-                if (roi > bestRoi) { bestRoi = roi; best = def.id; }
+        if (mode === 'lazy') {
+            const uc = getNextUnlockPrice();
+            if (uc != null && gameState.ore >= uc) {
+                durations.push({ tier: gameState.tier, dur: time - tierStart });
+                tierStart = time;
+                unlockTier();
+                buysThisTier = 0;
             }
+            continue;
         }
-        const uc = getNextUnlockPrice();
-        const canDescend = uc != null && gameState.ore >= uc;
-        if (canDescend && (!best || buysThisTier >= PATIENCE)) {
-            durations.push({ tier: gameState.tier, dur: time - tierStart });
-            tierStart = time;
-            unlockTier();
-            buysThisTier = 0;
-            break;
+
+        // жадная закупка: лучший ROI из доступных. Спуск: нечего купить с
+        // окупаемостью быстрее времени до спуска, или лимит терпения исчерпан.
+        for (let guard = 0; guard < 60; guard++) {
+            // фактическое время до спуска: дефицит / ставка
+            const uc = getNextUnlockPrice();
+            const rate = Math.max(getEarningRate(), 1e-9);
+            const eta = Math.max(0, (uc - gameState.ore) / rate);
+            let best = null, bestRoi = 0;
+            for (const def of UPGRADES) {
+                if (!canBuy(def.id)) continue;
+                const d = deltaIncome(def.id);
+                const c = getUpgradeCost(def.id);
+                if (d > 0 && c / d <= eta) {
+                    const roi = d / c;
+                    if (roi > bestRoi) { bestRoi = roi; best = def.id; }
+                }
+            }
+            const canDescend = uc != null && gameState.ore >= uc;
+            if (canDescend && (!best || buysThisTier >= PATIENCE)) {
+                durations.push({ tier: gameState.tier, dur: time - tierStart });
+                tierStats.push({
+                    tier: gameState.tier,
+                    price: uc,
+                    anchor: gameState.tierAnchorRate,
+                    rateOut: getEarningRate(),
+                    oreIn: gameState.ore - oreAtEntry,          // прирост баланса за тир (после трат)
+                    earnedIn: gameState.tierEarned[gameState.tier] - earnedAtEntry // валовая добыча за тир
+                });
+                tierStart = time;
+                unlockTier();
+                buysThisTier = 0;
+                oreAtEntry = gameState.ore;
+                earnedAtEntry = gameState.tierEarned[gameState.tier];
+                break;
+            }
+            if (!best || buysThisTier >= PATIENCE) break; // лимит терпения: ко-петля
+            buyUpgrade(best);
+            buys[best] = (buys[best] || 0) + 1;
+            buysThisTier++;
         }
-        if (!best || buysThisTier >= PATIENCE) break; // лимит терпения: ко-петля
-        // кликовой цепочки не даёт остановиться на фильтре окупаемости
-        buyUpgrade(best);
-        buys[best] = (buys[best] || 0) + 1;
-        buysThisTier++;
     }
+    return { durations, buys, time, finished: gameState.tier >= TIERS.length - 1, tierStats };
 }
 
-console.log('тир  руда       длительность');
-const NAMES = TIERS.map((t) => t.name);
-for (const d of durations) {
-    console.log(`${String(d.tier).padStart(2)} ${NAMES[d.tier].padEnd(8)} ${((d.dur / 60).toFixed(1)).padStart(9)} мин`);
+function fmtLike(n) {
+    if (!isFinite(n)) return 'inf';
+    if (n >= 1e15) return n.toExponential(2);
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return n.toFixed(1);
 }
-if (gameState.tier < TIERS.length - 1) console.log(`!! оборвалась на ${MAX_H}ч, тир ${gameState.tier} (${NAMES[gameState.tier]})`);
-const totalBuys = Object.values(buys).reduce((a, b) => a + b, 0);
-console.log(`Итого до алмазов: ${(time / 3600).toFixed(1)} ч активной игры, покупок: ${totalBuys}`);
+
+function printResult(label, r) {
+    console.log(`\n=== ${label} ===`);
+    console.log('тир  руда       длительность   цена(якорь N сек)  якорь        ставка вых   рост   добыча за тир / цена');
+    const NAMES = TIERS.map((t) => t.name);
+    const stat = (t) => r.tierStats.find((s) => s.tier === t);
+    for (const d of r.durations) {
+        const s = stat(d.tier);
+        if (!s) {
+            console.log(`${String(d.tier).padStart(2)} ${NAMES[d.tier].padEnd(8)} ${((d.dur / 60).toFixed(1)).padStart(9)} мин`);
+            continue;
+        }
+        const growth = 'x' + (s.rateOut / Math.max(s.anchor, 1e-9)).toFixed(1);
+        const ratio = (s.earnedIn / Math.max(s.price, 1e-9)).toFixed(2);
+        console.log(`${String(d.tier).padStart(2)} ${NAMES[d.tier].padEnd(8)} ${((d.dur / 60).toFixed(1)).padStart(9)} мин ${fmtLike(s.price).padStart(12)} ${fmtLike(s.anchor).padStart(12)} ${fmtLike(s.rateOut).padStart(12)} ${growth.padStart(7)}  ${ratio}`);
+    }
+    if (!r.finished) console.log(`!! оборвалась на ${MAX_H}ч, тир ${gameState.tier} (${NAMES[gameState.tier]})`);
+    const totalBuys = Object.values(r.buys).reduce((a, b) => a + b, 0);
+    const top = Object.entries(r.buys).sort((a, b) => b[1] - a[1]).slice(0, 8)
+        .map(([id, n]) => `${id}:${n}`).join(' ');
+    console.log(`Итого до алмазов: ${(r.time / 3600).toFixed(1)} ч активной игры, покупок: ${totalBuys}`);
+    console.log(`Топ закупок: ${top}`);
+}
+
+printResult(`БЕЗ ПОКУПОК (чистое накопление, клики ${CPS_MANUAL}/с)`, runSimulation('lazy'));
+printResult(`ЖАДНАЯ ЗАКУПКА (окупаемость быстрее времени до спуска, клики ${CPS_MANUAL}/с)`, runSimulation('greedy'));

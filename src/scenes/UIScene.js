@@ -3,14 +3,23 @@ import {
     gameState, TIERS, UPGRADES, getUpgradeDef, getUpgradeLevel, getUpgradeCost,
     isMaxed, isUpgradeAvailable, canBuy, buyUpgrade, buyBulk, getAffordableBulk,
     isUpgradeVisible,
-    getClickDamage, getOrePerSecond, getCritChance,
+    getClickDamage, getOrePerSecond, getSynergyGain, getCritChance,
     getOfflineRate, getOfflineCapSeconds, OFFLINE_CAP_HOURS,
-    canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice,
+    canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice, getUnlockEtaSeconds,
     canPrestige, getStarsGain, doPrestige, PRESTIGE_REQUIREMENT, getPrestigeMult, DIAMOND_INDEX,
     resetGame, saveGame, fmt, fmtDuration
 } from '../state.js';
 
 const FONT = '"Monocraft", "Inter", "Consolas", monospace';
+
+// ETA до спуска на подсказке: «12:34» до часа, дальше «1 ч 23 мин».
+function formatEta(seconds) {
+    if (seconds >= 3600) return fmtDuration(seconds);
+    const total = Math.max(0, Math.round(seconds));
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 // 9-slice: исходные размеры и отступы из манифеста spritecook-assets.json
 const NS_SRC = {
@@ -94,14 +103,16 @@ const ROW = {
     iconY: 50,          // (source y44..181 -> drawn 19.4..79.7)
     textX: 100,         // колонка текста
     descSize: 11,       // 11px: вместимость ~12+ символов на строку при вариативности метрик шрифта
+    nameMaxW: 182,      // имя: вся ширина до правого поля (282) — «ур.» переехало в нижнюю полосу
     btnW: 84,
     btnH: 40,
     // Вертикальный стек ряда (y от верха карточки, зазоры заданы явно):
-    // имя 8..25 -> описание 30..58 -> цена 62.5..77.5; «ур.» 8..22 -> кнопка 28..68.
+    // имя 8..25 (ужимается 15->10px под ширину) -> описание 30..58 ->
+    // цена 68..84 (слева) + «ур. N» 68..84 (справа, под кнопкой). Кнопка 28..68.
     // face карточки 7..89: всё содержимое внутри с запасом >= 4px.
     nameY: 8,
     descY: 30,
-    priceY: 72,
+    priceY: 76,
     btnY: 28
 };
 
@@ -383,6 +394,12 @@ export class UIScene extends Phaser.Scene {
 
         const nameText = makeLabel(this, textX, ROW.nameY, def.name, 15, '#ffffff');
         nameText.setOrigin(0, 0);
+        // Длинные имена («Квантовая лаборатория», «Гравитационный резак») ужимаются
+        // кеглем под всю ширину карточки — раньше они наезжали на «ур. N» и край.
+        for (const size of [15, 14, 13, 12, 11, 10]) {
+            nameText.setFontSize(size);
+            if (nameText.width <= ROW.nameMaxW) break;
+        }
         const descText = makeLabel(this, textX, ROW.descY, def.effect, ROW.descSize, '#cfcfcf', { wordWrap: { width: descWrap } });
         descText.setOrigin(0, 0);
         const priceIcon = this.add.image(0, 0, 'coal_nugget');
@@ -391,8 +408,9 @@ export class UIScene extends Phaser.Scene {
         const priceCY = ROW.priceY;
         const priceText = makeLabel(this, textX + 16, ROW.priceY, '', 13, '#ffd75e');
         priceText.setOrigin(0, 0.5);
-        const levelText = makeLabel(this, w - 14, ROW.nameY, 'ур. 0', 12, '#e8e8e8');
-        levelText.setOrigin(1, 0);
+        // «ур. N» — нижняя правая полоса ряда (под кнопкой): название занимает всю ширину
+        const levelText = makeLabel(this, w - 12, ROW.priceY, 'ур. 0', 12, '#e8e8e8');
+        levelText.setOrigin(1, 0.5);
 
         const btn = this.add.image(btnX + btnW / 2, ROW.btnY + btnH / 2, 'buy_button_normal').setDisplaySize(btnW, btnH).setDepth(11);
         btn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
@@ -625,7 +643,9 @@ export class UIScene extends Phaser.Scene {
         this.oreName.x = 112 + this.coalText.width + 10;
         if (this.gpsIcon.texture.key !== tier.iconKey) this.placeIcon(this.gpsIcon, tier.iconKey, 420, 62, 26);
         this.gpsText.setText(`+${fmt(getOrePerSecond())} руды/сек`);
-        this.statsLine.setText(`клик: ${fmt(getClickDamage())} · крит: ${Math.round(getCritChance() * 100)}%`);
+        // «клик» = фактическая добыча обычного клика: базовый урон + синергия
+        // (% от пассива) — совпадает с всплывающими цифрами без крита/жилы.
+        this.statsLine.setText(`клик: ${fmt(getClickDamage() + getSynergyGain())} · крит: ${Math.round(getCritChance() * 100)}%`);
         this.statsLine.x = 450 + this.gpsText.width + 26;
         this.starsText.setText(gameState.stars > 0 ? `★ ${gameState.stars} (x${getPrestigeMult().toFixed(1)})` : '');
         // x звёзд фиксирован (правый край перед кнопкой «Настройки»), не двигается от статов
@@ -648,12 +668,30 @@ export class UIScene extends Phaser.Scene {
                 this.unlockText.setColor('#c8c8c8');
                 if (this.unlockPulse) { this.unlockPulse.stop(); this.unlockPulse = null; this.unlockBtn.setAlpha(1); }
             }
-            this.hint.setText(`оплата рудой текущего уровня — блок станет ${next.adj}`);
+            // Пока спуск не доступен — показываем ETA: цена-снапшот постоянна,
+            // каждая покупка сокращает время на глазах.
+            let hintTxt;
+            if (canUnlockTier()) {
+                hintTxt = `оплата рудой текущего уровня — блок станет ${next.adj}`;
+            } else {
+                const eta = getUnlockEtaSeconds();
+                hintTxt = eta != null
+                    ? `оплата рудой текущего уровня · спуск через ≈${formatEta(eta)}`
+                    : `оплата рудой текущего уровня`;
+            }
+            if (hintTxt !== this._hintText) {
+                this.hint.setText(hintTxt);
+                this._hintText = hintTxt;
+            }
             this.hint.setVisible(true);
         } else {
             this.unlockBtn.setVisible(false);
             this.unlockText.setVisible(false);
-            this.hint.setText(`Кликай по блоку, чтобы добывать ${tier.name.toLowerCase()}!`);
+            const idleTxt = `Кликай по блоку, чтобы добывать ${tier.name.toLowerCase()}!`;
+            if (idleTxt !== this._hintText) {
+                this.hint.setText(idleTxt);
+                this._hintText = idleTxt;
+            }
             this.hint.setVisible(!this.registry.get('blockLocked'));
         }
 
@@ -691,7 +729,12 @@ export class UIScene extends Phaser.Scene {
             if (!available) {
                 row.btn.setTexture('buy_button_disabled_gray');
                 row.btnText.setText('—').setColor('#b0b0b0');
-                row.lockText.setText(`нужно: ${getUpgradeDef(def.requires.id).name} ${def.requires.level}`);
+                // Гейт глубины приоритетнее: пока шахта мелкая, цепочку всё равно не докрутить.
+                // Нумерация как в ярлыке «уровень шахты: N — Руда» (с единицы: уголь = 1).
+                const lockTxt = def.tier !== undefined && gameState.tier < def.tier
+                    ? `нужно: шахта ${def.tier + 1}`
+                    : `нужно: ${getUpgradeDef(def.requires.id).name} ${def.requires.level}`;
+                row.lockText.setText(lockTxt);
                 row.priceIcon.setVisible(false);
                 row.priceText.setVisible(false);
             } else if (maxed) {

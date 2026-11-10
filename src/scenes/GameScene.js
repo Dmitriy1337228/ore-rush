@@ -161,6 +161,8 @@ export class GameScene extends Phaser.Scene {
 
         // Робо-рука: бюджетный аккумулятор авто-кликов (0.5 клика/сек за уровень).
         // Копим доли кликов каждые 200мс — целые исполняем; устойчиво к смене уровня.
+        // Во время анимации разрушения/блокировки клики не списываются — бюджет
+        // сохраняется и исполняется после (иначе редкие удары терялись).
         this.autoBudget = 0;
         this.autoTimer = this.time.addEvent({
             delay: 200,
@@ -171,6 +173,7 @@ export class GameScene extends Phaser.Scene {
                 this.autoBudget += aps * 0.2;
                 let guard = 0;
                 while (this.autoBudget >= 1 && guard < 100) {
+                    if (this.blockBusy || this.registry.get('blockLocked')) break;
                     this.autoBudget -= 1;
                     guard++;
                     this.autoMine();
@@ -277,9 +280,14 @@ export class GameScene extends Phaser.Scene {
             });
         }
 
-        // Если по блоку долго не бить — трещины затягиваются
+        // Если по блоку долго не бить — трещины затягиваются. Окно заживления не
+        // короче интервала авто-кликов: иначе редкие удары Робо-руки (0.5/с на
+        // 1 ур. = раз в 2с) гаснут о зажившие трещины (окно 1.2с) и блок никогда
+        // не накапливает стадии — не разрушается вовсе.
+        const aps = getAutoClicksPerSecond();
+        const healMs = aps > 0 ? Math.max(1200, 1000 / aps + 400) : 1200;
         if (this.streakTimer) this.streakTimer.remove();
-        this.streakTimer = this.time.delayedCall(1200, () => {
+        this.streakTimer = this.time.delayedCall(healMs, () => {
             if (!this.blockBusy) {
                 this.blockStage = 0;
                 this.block.setTexture(blockStageKey(gameState.tier, 1));

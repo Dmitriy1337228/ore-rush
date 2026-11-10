@@ -1,4 +1,4 @@
-// Игровое состояние, экономика тиров, улучшения, престиж, офлайн-доход, сохранение.
+﻿// Игровое состояние, экономика тиров, улучшения, престиж, офлайн-доход, сохранение.
 // Сохранение: localStorage (minecraft-clicker-save), время выхода — через YandexSDKStub
 // (player.setStats/getStats, localStorage-mock) + дублирующий ключ minecraft-clicker-lastExit.
 
@@ -6,7 +6,7 @@ import { YandexSDKStub } from './sdk-stub.js';
 
 export const SAVE_KEY = 'minecraft-clicker-save';
 export const LAST_EXIT_KEY = 'minecraft-clicker-lastExit';
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 // ---------- Тиры руды ----------
 
@@ -35,26 +35,37 @@ export const TIERS = [
 // дешевле (x1.2 за тир) — покупки остаются выгодными на всей лестнице,
 // симуляция (scripts/../balance) даёт рост длительности тира x1.4-1.9.
 export const TIER_STEP = {
-    cost: 2.5,
+    // cost = income (3.0): окупаемость улучшений инвариантна тиру. Раньше цены
+    // росли медленнее дохода (2.5 vs 3) — на глубине всё становилось на 17x/тир
+    // дешевле относительно дохода, и накопленный каталог взрывал внутр-тировой
+    // разгон (блиц спуска даже с гейтами глубины).
+    cost: 3.0,
     income: 3
 };
 export const TIER_COST_MULT = (tier) => Math.pow(TIER_STEP.cost, tier);
 export const TIER_INCOME_MULT = (tier) => Math.pow(TIER_STEP.income, tier);
 
-// ---------- Цена спуска (динамическая, от текущего дохода) ----------
-// Цена = N секунд ТЕКУЩЕГО дохода, пересчитывается при каждом обращении.
-// Почему НЕ фиксация при входе: каталог с глубокими цепочками машин (карьер ->
-// сфера Дайсона, x10 дохода каждая) даёт рост дохода в миллионы раз ВНУТРИ
-// одного тира — зафиксированная при входе цена становится ничтожной, тиры
-// пролетаются за секунды. Пересчёт от текущего дохода самобалансируется
-// против любого каталога: спуск всегда стоит N секунд добычи «сейчас»,
-// прокачка не может его обесценить. Углубление тиров — ростом N (x1.45 за тир).
+// ---------- Цена спуска (снапшот при входе) ----------
+// Цена = N секунд дохода-якоря, зафиксированного ПРИ ВХОДЕ В ТИР
+// (gameState.tierAnchorRate), и НЕ меняется до следующего спуска.
+// Пока прокачка не купила всё, доступное на тире, каждая покупка строго
+// приближает спуск (цена константна, дефицит тает) — и покупка никогда не
+// «отбрасывает» накопления. «Переход неизбежен» возникает сам: каталог тира
+// ограничен гейтами tier (см. UPGRADES), внутри-тировой разгон ограничен
+// десятками раз, после выкупа доступного спуск наступает за минуты.
+// Заморозки/догона нет; углубление тиров — ростом N (x1.7 за тир).
 export const UNLOCK_BASE_SECONDS = 180;    // спуск из тира 0 стоит 180 сек дохода
-export const UNLOCK_SECONDS_GROWTH = 1.45; // требования растут за каждый тир
+export const UNLOCK_SECONDS_GROWTH = 2.95; // требования растут за каждый тир
 export const UNLOCK_FLOOR = 2500;          // минимум (старт с нулевым доходом)
 
 export function unlockSecondsFor(tier) {
     return UNLOCK_BASE_SECONDS * Math.pow(UNLOCK_SECONDS_GROWTH, tier);
+}
+
+// Синергия: прибавка к каждому клику = 1% пассивного дохода за уровень.
+// Без пассива не даёт ничего — это мост между пассивными и кликовыми билдами.
+export function getSynergyGain() {
+    return getOrePerSecond() * 0.01 * getUpgradeLevel('resonance');
 }
 
 // Матожидание одного клика (крит/жила/синергия — ожидания, без рандома):
@@ -64,8 +75,7 @@ export function getExpectedClickGain() {
     const veinMult = 10 + 1 * getUpgradeLevel('magnet');
     const critF = 1 + getCritChance() * (critMult - 1);
     const veinF = 1 + getLuckyChance() * (veinMult - 1);
-    const synergy = getOrePerSecond() * 0.01 * getUpgradeLevel('resonance');
-    return getClickDamage() * critF * veinF + synergy;
+    return getClickDamage() * critF * veinF + getSynergyGain();
 }
 
 // Активный игрок для оценки цены спуска: ~3 ручных клика/сек (константа дизайна —
@@ -79,52 +89,86 @@ export function getEarningRate() {
     return getOrePerSecond() + (getAutoClicksPerSecond() + MANUAL_CPS_ASSUME) * getExpectedClickGain();
 }
 
+// Якорь дохода текущего тира: фиксируется при входе (unlockTier / forceNextTier /
+// doPrestige) либо лениво при первом обращении (новая игра, сейв старой версии).
+// 0/NaN = «ещё не зафиксирован».
+export function resetTierAnchor() {
+    gameState.tierAnchorRate = 0;
+}
+
+function getTierAnchorRate() {
+    const a = Number(gameState.tierAnchorRate);
+    if (!(a > 0) || !isFinite(a)) {
+        gameState.tierAnchorRate = Math.max(getEarningRate(), 1e-9);
+    }
+    return gameState.tierAnchorRate;
+}
+
+// Время до спуска при текущей ставке добычи, сек (оценка для активного игрока).
+// Используется для ETA на кнопке спуска и фильтра «окупаемость» в симуляторе.
+export function getUnlockEtaSeconds() {
+    if (gameState.tier >= TIERS.length - 1) return null;
+    const price = getNextUnlockPrice();
+    const deficit = Math.max(0, price - gameState.ore);
+    return deficit / Math.max(getEarningRate(), 1e-9);
+}
+
 // Цена спуска из тира `tier` в `tier + 1`; null для последнего тира.
-// Пересчитывается от ТЕКУЩЕГО дохода при каждом обращении — прокачка внутри
-// тира поднимает цену синхронно с доходом, блиц невозможен.
+// Снапшот от якоря (доход при входе): см. блок UNLOCK_* выше.
 export function computeNextUnlockPrice(tier) {
     if (tier >= TIERS.length - 1) return null;
-    const byRate = unlockSecondsFor(tier) * getEarningRate();
+    const anchor = getTierAnchorRate();
+    const byRate = unlockSecondsFor(tier) * anchor;
     return Math.ceil(Math.max(UNLOCK_FLOOR * getPrestigeMult(), byRate));
 }
 
-// Текущая цена спуска — всегда свежий пересчёт от текущего дохода.
+// Текущая цена спуска.
 export function getNextUnlockPrice() {
     return computeNextUnlockPrice(gameState.tier);
 }
 
 // ---------- Улучшения ----------
+// tier — минимальный уровень шахты для покупки (гейт глубины). Глубокие машины
+// и множители открываются по мере спуска: каждый тир даёт следующую ступень
+// машинной цепочки, внутри-тировой разгон дохода ограничен (~десятки раз),
+// поэтому цена спуска может быть чистым снапшотом — без догона и без заморозки.
 
 export const UPGRADES = [
     // --- ОБОРУДОВАНИЕ (Оборудование): урон клика ---
-    { id: 'pickaxe',   name: 'Кирка',              icon: null,               tab: 'equipment', baseCost: 15,      growth: 1.15, maxLevel: null, effect: '+1 руда за клик' },
-    { id: 'sledge',    name: 'Кувалда',            icon: 'icon_hammer',      tab: 'equipment', baseCost: 500,     growth: 2.5,  maxLevel: null, effect: 'урон клика x1.5' },
-    { id: 'hydraulic', name: 'Гидропресс',         icon: 'icon_hydraulic',   tab: 'equipment', baseCost: 8000,    growth: 3.5,  maxLevel: null, requires: { id: 'sledge', level: 5 }, effect: 'урон клика x1.6' },
-    { id: 'plasma',    name: 'Плазменный резак',   icon: 'icon_plasma',      tab: 'equipment', baseCost: 120000,  growth: 4.5,  maxLevel: null, requires: { id: 'hydraulic', level: 5 }, effect: 'урон клика x1.7' },
-    { id: 'disintegrator', name: 'Расщепитель',    icon: 'icon_disintegrator', tab: 'equipment', baseCost: 1.5e6, growth: 5.5, maxLevel: null, requires: { id: 'plasma', level: 5 }, effect: 'урон клика x1.8' },
+    // Капы на кликовой цепочке: ко-петля «кирка (+1 flat) ↔ множители» без капов
+    // даёт бесконечный ROI на любом тире (накопленная кирка умножается всей
+    // цепочкой) и взрывает внутр-тировой разгон. Конечный потолок клика ->
+    // поздняя игра опирается на машины. Гейты tier размазаны по лестнице:
+    // каждый спуск открывает ступень машин и/или звено цепочки — сопоставимый
+    // прирост инструмента на каждом тире (без «тонких» тиров-стен).
+    { id: 'pickaxe',   name: 'Кирка',              icon: null,               tab: 'equipment', baseCost: 15,      growth: 2.0, maxLevel: 30, effect: '+1 руда за клик' },
+    { id: 'sledge',    name: 'Кувалда',            icon: 'icon_hammer',      tab: 'equipment', baseCost: 500,     growth: 2.5,  maxLevel: 10, effect: 'урон клика x1.5' },
+    { id: 'hydraulic', name: 'Гидропресс',         icon: 'icon_hydraulic',   tab: 'equipment', baseCost: 8000,    growth: 3.5,  maxLevel: 8, tier: 2, requires: { id: 'sledge', level: 5 }, effect: 'урон клика x1.6' },
+    { id: 'plasma',    name: 'Плазменный резак',   icon: 'icon_plasma',      tab: 'equipment', baseCost: 120000,  growth: 4.5,  maxLevel: 6, tier: 6, requires: { id: 'hydraulic', level: 5 }, effect: 'урон клика x1.7' },
+    { id: 'disintegrator', name: 'Расщепитель',    icon: 'icon_disintegrator', tab: 'equipment', baseCost: 1.5e6, growth: 5.5, maxLevel: 5, tier: 8, requires: { id: 'plasma', level: 5 }, effect: 'урон клика x1.8' },
 
     // --- ОБОРУДОВАНИЕ (Оборудование): пассивная добыча ---
-    { id: 'miner',     name: 'Шахтёр',             icon: 'miner_portrait',   tab: 'equipment', baseCost: 60,      growth: 1.15, maxLevel: null, effect: '+1 руда/сек' },
+    { id: 'miner',     name: 'Шахтёр',             icon: 'miner_portrait',   tab: 'equipment', baseCost: 60,      growth: 2.0, maxLevel: null, effect: '+1 руда/сек' },
     { id: 'robotarm',  name: 'Робо-рука',          icon: 'icon_robot_arm',   tab: 'equipment', baseCost: 5000,    growth: 1.8,  maxLevel: null, effect: 'Авто-клик: 0.5/сек' },
-    { id: 'drill',     name: 'Бур',                icon: 'icon_drill',       tab: 'equipment', baseCost: 600,     growth: 1.6,  maxLevel: null, requires: { id: 'miner', level: 5 }, effect: '+10 руды/сек' },
-    { id: 'excavator', name: 'Экскаватор',         icon: 'icon_excavator',   tab: 'equipment', baseCost: 6000,    growth: 1.7,  maxLevel: null, requires: { id: 'drill', level: 5 }, effect: '+100 руды/сек' },
-    { id: 'factory',   name: 'Фабрика',            icon: 'icon_factory',     tab: 'equipment', baseCost: 60000,   growth: 1.8,  maxLevel: null, requires: { id: 'excavator', level: 5 }, effect: '+1000 руды/сек' },
-    { id: 'quarry',    name: 'Карьер',             icon: 'icon_quarry',      tab: 'equipment', baseCost: 6e5,     growth: 1.85, maxLevel: null, requires: { id: 'factory', level: 5 }, effect: '+10K руды/сек' },
-    { id: 'megafactory', name: 'Мега-фабрика',     icon: 'icon_megafactory', tab: 'equipment', baseCost: 6e6,     growth: 1.9,  maxLevel: null, requires: { id: 'quarry', level: 5 }, effect: '+100K руды/сек' },
-    { id: 'orbital',   name: 'Орбитальная станция', icon: 'icon_orbital',   tab: 'equipment', baseCost: 6e7,     growth: 1.95, maxLevel: null, requires: { id: 'megafactory', level: 5 }, effect: '+1M руды/сек' },
-    { id: 'quantumlab', name: 'Квантовая лаборатория', icon: 'icon_quantumlab', tab: 'equipment', baseCost: 6e8,  growth: 2.0,  maxLevel: null, requires: { id: 'orbital', level: 5 }, effect: '+10M руды/сек' },
-    { id: 'wormhole',  name: 'Добыча через червоточину', icon: 'icon_wormhole', tab: 'equipment', baseCost: 6e9,   growth: 2.1,  maxLevel: null, requires: { id: 'quantumlab', level: 5 }, effect: '+100M руды/сек' },
-    { id: 'singularity', name: 'Гравитационный резак', icon: 'icon_singularity', tab: 'equipment', baseCost: 6e10, growth: 2.2, maxLevel: null, requires: { id: 'wormhole', level: 5 }, effect: '+1B руды/сек' },
-    { id: 'dyson',     name: 'Сфера Дайсона',      icon: 'icon_dyson',       tab: 'equipment', baseCost: 6e11,    growth: 2.3,  maxLevel: null, requires: { id: 'singularity', level: 5 }, effect: '+10B руды/сек' },
+    { id: 'drill',     name: 'Бур',                icon: 'icon_drill',       tab: 'equipment', baseCost: 600,     growth: 1.6,  maxLevel: null, tier: 1, requires: { id: 'miner', level: 5 }, effect: '+10 руды/сек' },
+    { id: 'excavator', name: 'Экскаватор',         icon: 'icon_excavator',   tab: 'equipment', baseCost: 6000,    growth: 1.7,  maxLevel: null, tier: 2, requires: { id: 'drill', level: 5 }, effect: '+100 руды/сек' },
+    { id: 'factory',   name: 'Фабрика',            icon: 'icon_factory',     tab: 'equipment', baseCost: 60000,   growth: 1.8,  maxLevel: null, tier: 3, requires: { id: 'excavator', level: 5 }, effect: '+1000 руды/сек' },
+    { id: 'quarry',    name: 'Карьер',             icon: 'icon_quarry',      tab: 'equipment', baseCost: 6e5,     growth: 1.85, maxLevel: null, tier: 4, requires: { id: 'factory', level: 5 }, effect: '+10K руды/сек' },
+    { id: 'megafactory', name: 'Мега-фабрика',     icon: 'icon_megafactory', tab: 'equipment', baseCost: 6e6,     growth: 1.9,  maxLevel: null, tier: 5, requires: { id: 'quarry', level: 5 }, effect: '+100K руды/сек' },
+    { id: 'orbital',   name: 'Орбитальная станция', icon: 'icon_orbital',   tab: 'equipment', baseCost: 6e7,     growth: 1.95, maxLevel: null, tier: 6, requires: { id: 'megafactory', level: 5 }, effect: '+1M руды/сек' },
+    { id: 'quantumlab', name: 'Квантовая лаборатория', icon: 'icon_quantumlab', tab: 'equipment', baseCost: 6e8,  growth: 2.0,  maxLevel: null, tier: 7, requires: { id: 'orbital', level: 5 }, effect: '+10M руды/сек' },
+    { id: 'wormhole',  name: 'Червоточина',        icon: 'icon_wormhole', tab: 'equipment', baseCost: 6e9,   growth: 2.1,  maxLevel: null, tier: 8, requires: { id: 'quantumlab', level: 5 }, effect: '+100M руды/сек' },
+    { id: 'singularity', name: 'Гравитационный резак', icon: 'icon_singularity', tab: 'equipment', baseCost: 6e10, growth: 2.2, maxLevel: null, tier: 9, requires: { id: 'wormhole', level: 5 }, effect: '+1B руды/сек' },
+    { id: 'dyson',     name: 'Сфера Дайсона',      icon: 'icon_dyson',       tab: 'equipment', baseCost: 6e11,    growth: 2.3,  maxLevel: null, tier: 10, requires: { id: 'singularity', level: 5 }, effect: '+10B руды/сек' },
     { id: 'tech',      name: 'Техника',            icon: 'gear_icon',        tab: 'equipment', baseCost: 8000,    growth: 5,    maxLevel: null, effect: 'пассив x1.25' },
-    { id: 'aicore',    name: 'ИИ-ядро',            icon: 'icon_aicore',      tab: 'equipment', baseCost: 5e5,     growth: 7,    maxLevel: null, requires: { id: 'tech', level: 5 }, effect: 'пассив x1.3' },
+    { id: 'aicore',    name: 'ИИ-ядро',            icon: 'icon_aicore',      tab: 'equipment', baseCost: 5e5,     growth: 7,    maxLevel: null, tier: 5, requires: { id: 'tech', level: 5 }, effect: 'пассив x1.3' },
 
     // --- УСИЛЕНИЯ (Усиления) ---
     { id: 'dynamite',  name: 'Динамит',            icon: 'dynamite_bundle',  tab: 'enhance',   baseCost: 100,     growth: 2.2,  maxLevel: 23,   effect: '+3% крит x5 (до 74%)' },
     { id: 'lucky',     name: 'Золотая жила',       icon: 'icon_vein',        tab: 'enhance',   baseCost: 1500,    growth: 3,    maxLevel: 25,   effect: '+2% шанс x10 (до 50%)' },
     { id: 'resonance', name: 'Синергия',           icon: 'hand_cursor',      tab: 'enhance',   baseCost: 2500,    growth: 2,    maxLevel: 25,   effect: 'клик +1% от пассива' },
-    { id: 'focuslens', name: 'Фокус-линза',        icon: 'icon_focuslens',   tab: 'enhance',   baseCost: 50000,   growth: 4,    maxLevel: 10,   requires: { id: 'dynamite', level: 8 }, effect: 'сила крита +0.5' },
-    { id: 'magnet',    name: 'Рудный магнит',      icon: 'icon_magnet',      tab: 'enhance',   baseCost: 150000,  growth: 4,    maxLevel: 10,   requires: { id: 'lucky', level: 8 }, effect: 'жила x10 -> x11' },
+    { id: 'focuslens', name: 'Фокус-линза',        icon: 'icon_focuslens',   tab: 'enhance',   baseCost: 50000,   growth: 4,    maxLevel: 10,   tier: 3, requires: { id: 'dynamite', level: 8 }, effect: '+0.5 к силе крита' },
+    { id: 'magnet',    name: 'Рудный магнит',      icon: 'icon_magnet',      tab: 'enhance',   baseCost: 150000,  growth: 4,    maxLevel: 10,   tier: 4, requires: { id: 'lucky', level: 8 }, effect: '+1 к множителю жилы' },
     { id: 'lantern',   name: 'Фонарь',             icon: 'icon_lantern',     tab: 'enhance',   baseCost: 300,     growth: 2.5,  maxLevel: 10,   effect: '+8% фонового дохода' },
     { id: 'warehouse', name: 'Склад',              icon: 'icon_warehouse',   tab: 'enhance',   baseCost: 1000,    growth: 10,   maxLevel: 3,    effect: 'запас: до 24 ч' }
 ];
@@ -157,6 +201,7 @@ export function createInitialState() {
         clicks: 0,
         lifetimeMined: 0,
         tierEarned: TIERS.map(() => 0),
+        tierAnchorRate: 0, // доход при входе в тир; 0 = зафиксируется лениво
         levels
     };
 }
@@ -207,6 +252,7 @@ export function getUpgradeCost(id) {
 
 export function isUpgradeAvailable(id) {
     const def = getUpgradeDef(id);
+    if (def.tier !== undefined && gameState.tier < def.tier) return false;
     if (!def.requires) return true;
     return getUpgradeLevel(def.requires.id) >= def.requires.level;
 }
@@ -342,8 +388,7 @@ export function getPrestigeMult() {
 
 // Один клик: базовый урон + крит x5(+линза) + золотая жила x10(+магнит) + синергия (% от пассива)
 export function rollClickGain() {
-    const synergy = getOrePerSecond() * 0.01 * getUpgradeLevel('resonance');
-    let gain = getClickDamage() + synergy;
+    let gain = getClickDamage() + getSynergyGain();
     const crit = Math.random() < getCritChance();
     const lucky = Math.random() < getLuckyChance();
     // Фокус-линза: +0.5 к силе крита за уровень (x5 -> x5.5...)
@@ -375,6 +420,7 @@ export function unlockTier() {
     if (!canUnlockTier()) return false;
     gameState.ore -= getNextUnlockPrice();
     gameState.tier += 1;
+    resetTierAnchor(); // якорь нового тира зафиксируется от дохода уже с множителем x3
     return true;
 }
 
@@ -383,6 +429,7 @@ export function forceNextTier() {
     if (gameState.tier >= TIERS.length - 1) return false;
     gameState.tier += 1;
     gameState.ore = 0;
+    resetTierAnchor();
     return true;
 }
 
@@ -403,6 +450,7 @@ export function doPrestige() {
     gameState.ore = 0;
     gameState.tier = 0;
     gameState.tierEarned = TIERS.map(() => 0);
+    gameState.tierAnchorRate = 0;
     gameState.levels = createInitialState().levels;
     return gain;
 }
@@ -494,6 +542,13 @@ export function applySave(data) {
         data = { ...data, version: SAVE_VERSION, tier: mappedTier, tierEarned: mappedEarned };
     }
 
+    // Миграция v3 -> v4: добавлен якорь дохода тира (tierAnchorRate). Старые сейвы
+    // принимаются как есть — якорь зафиксируется лениво от текущего дохода, что
+    // непрерывно с прежним поведением (цена от текущей ставки на момент загрузки).
+    if (data.version === 3) {
+        data = { ...data, version: SAVE_VERSION };
+    }
+
     if (data.version !== SAVE_VERSION) return;
 
     gameState.ore = Number(data.ore) || 0;
@@ -502,6 +557,7 @@ export function applySave(data) {
     gameState.clicks = Math.max(0, Number(data.clicks) || 0);
     gameState.lifetimeMined = Math.max(0, Number(data.lifetimeMined) || 0);
     gameState.tierEarned = TIERS.map((_, i) => Math.max(0, Number(data.tierEarned && data.tierEarned[i]) || 0));
+    gameState.tierAnchorRate = Math.max(0, Number(data.tierAnchorRate) || 0);
     gameState.levels = { ...init.levels };
     if (data.levels && typeof data.levels === 'object') {
         for (const def of UPGRADES) {
@@ -531,3 +587,4 @@ export function resetGame() {
     Object.assign(gameState, createInitialState());
     saveGame();
 }
+

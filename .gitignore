@@ -11,3 +11,5 @@ shots_v*/
 # Прочее
 *.local
 .DS_Store
+
+shots_devpanel/

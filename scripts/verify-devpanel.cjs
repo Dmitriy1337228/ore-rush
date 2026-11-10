@@ -33,11 +33,11 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     const after = await page.evaluate(() => window.__GAME.scene.getScene('UIScene').coalText.text);
     console.log('3. +1M works:', (before !== after) ? `OK (${before} -> ${after})` : 'FAIL');
 
-    // 4. Макс всё: динамит на макс, бесконечные на 50 (кирка/шахтёр не ограничены)
+    // 4. Макс всё: динамит на макс, кирка на свой кап (30), бесконечные на 50
     await page.click('#dev-admin-panel button:has-text("Макс всё")');
     await page.waitForTimeout(300);
     const st1 = await panelState();
-    console.log('4. max all:', (st1.levels.pickaxe === 50 && st1.levels.dynamite === 23 && st1.levels.miner === 50) ? `OK (pickaxe=${st1.levels.pickaxe}, dynamite=${st1.levels.dynamite}, miner=${st1.levels.miner})` : `FAIL (pickaxe=${st1.levels.pickaxe}, dynamite=${st1.levels.dynamite}, miner=${st1.levels.miner})`);
+    console.log('4. max all:', (st1.levels.pickaxe === 30 && st1.levels.dynamite === 23 && st1.levels.miner === 50) ? `OK (pickaxe=${st1.levels.pickaxe}, dynamite=${st1.levels.dynamite}, miner=${st1.levels.miner})` : `FAIL (pickaxe=${st1.levels.pickaxe}, dynamite=${st1.levels.dynamite}, miner=${st1.levels.miner})`);
 
     // 5. След. тир: принудительный переход (без оплаты)
     await page.click('#dev-admin-panel button:has-text("След. тир")');
