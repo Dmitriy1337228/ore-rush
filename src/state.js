@@ -203,6 +203,9 @@ export function createInitialState() {
         tierEarned: TIERS.map(() => 0),
         tierAnchorRate: 0, // доход при входе в тир; 0 = зафиксируется лениво
         tutorialDone: false,
+        soundOn: true, // тумблер звука в настройках (эффекты)
+        musicOn: true, // тумблер фоновой музыки
+        musicVolume: 0.5, // громкость фоновой музыки 0..1
         levels
     };
 }
@@ -312,9 +315,23 @@ export function getVisibleUpgrades(tab) {
 }
 
 // ---------- Мультипокупка ----------
-// Частичная покупка: x10/x100 покупает столько уровней, сколько хватает руды
-// (до указанного лимита). getAffordableBulk возвращает {n, total} — сколько
-// купится и сколько будет потрачено; buyBulk исполняет покупку.
+// x1/x10/x100 — СТРОГИЕ пакеты: покупается ровно запрошенное количество уровней
+// (ужимается только лимитом улучшения), иначе покупка не проходит вовсе.
+// 'max' — покупает максимум уровней, на которые хватает руды.
+// getBulkCost — стоимость полного пакета (для цены в UI независимо от баланса);
+// getAffordableBulk — сколько реально купится; buyBulk исполняет покупку.
+
+export function getBulkCost(id, want) {
+    const def = getUpgradeDef(id);
+    const tier = TIER_COST_MULT(gameState.tier);
+    const start = getUpgradeLevel(id);
+    const n = def.maxLevel === null ? want : Math.min(want, def.maxLevel - start);
+    let total = 0;
+    for (let i = 0; i < n; i++) {
+        total += Math.ceil(def.baseCost * Math.pow(def.growth, start + i) * tier);
+    }
+    return { n, total };
+}
 
 export function getAffordableBulk(id, want) {
     const def = getUpgradeDef(id);
@@ -335,8 +352,14 @@ export function getAffordableBulk(id, want) {
 
 export function buyBulk(id, want) {
     if (!isUpgradeAvailable(id) || isMaxed(id)) return false;
-    const r = getAffordableBulk(id, want);
+    const def = getUpgradeDef(id);
+    const remaining = def.maxLevel === null ? Infinity : def.maxLevel - getUpgradeLevel(id);
+    const r = getAffordableBulk(id, want === 'max' ? Infinity : want);
     if (r.n <= 0) return false;
+    if (want !== 'max') {
+        // Строгий пакет: нужно купить ровно min(want, остаток до лимита)
+        if (r.n < Math.min(want, remaining)) return false;
+    }
     gameState.ore -= r.total;
     gameState.levels[id] = getUpgradeLevel(id) + r.n;
     return true;
@@ -387,10 +410,37 @@ export function getPrestigeMult() {
     return 1 + STAR_BONUS * gameState.stars;
 }
 
-// Один клик: базовый урон + крит x5(+линза) + золотая жила x10(+магнит) + синергия (% от пассива)
-export function rollClickGain() {
+// ---------- Мутации блока (Этап 3) ----------
+// Временные события на блоке: триггер раз в 300с с шансом 30%, длительность ровно 10с.
+// Единственный терминатор — таймер: мутация переживает разрушение блока и смену тира
+// (новый блок наследует активную мутацию). Управление в GameScene.
+// tints — палитра tint: 1 цвет = статичный tint, 2 цвета = пульс/мерцание, 6+ = перебор (радуга).
+export const MUTATIONS = {
+    rainbow:   { name: 'Радужный блок',    desc: 'доход за клик x10',               clickGainMult: 10,
+                 tints: [0xff5050, 0xffa030, 0xffe840, 0x50e050, 0x40a0ff, 0xb050ff] },
+    frozen:    { name: 'Замороженный блок', desc: 'x3 кликов, каждый удар — крит',   hitsPerStage: 3, forceCrit: true,
+                 tints: [0xbfe8ff, 0x7fc4ff] },
+    explosive: { name: 'Взрывной блок',    desc: 'x2 кликов, взрыв при разрушении', hitsPerStage: 2, breakBonusMult: 25,
+                 tints: [0xffb060, 0xff5030] },
+    charged:   { name: 'Заряженный блок',  desc: 'фоновая добыча x3',               passiveMult: 3,
+                 tints: [0xd8a8ff, 0x9a50ff] }
+};
+export const MUTATION_DURATION_MS = 10000;
+export const MUTATION_CHECK_MS = 300000;
+export const MUTATION_CHANCE = 0.3;
+
+// Бонус взрывной мутации при разрушении блока: N урона клика
+export function getMutationBreakBonus(mutationId) {
+    const mut = mutationId ? MUTATIONS[mutationId] : null;
+    return mut && mut.breakBonusMult ? getClickDamage() * mut.breakBonusMult : 0;
+}
+
+// Один клик: базовый урон + крит x5(+линза) + золотая жила x10(+магнит) + синергия (% от пассива).
+// mutationId — активная мутация блока: замороженная форсирует крит, радужная множит весь доход.
+export function rollClickGain(mutationId) {
     let gain = getClickDamage() + getSynergyGain();
-    const crit = Math.random() < getCritChance();
+    const mut = mutationId ? MUTATIONS[mutationId] : null;
+    const crit = (mut && mut.forceCrit) || Math.random() < getCritChance();
     const lucky = Math.random() < getLuckyChance();
     // Фокус-линза: +0.5 к силе крита за уровень (x5 -> x5.5...)
     const critMult = 5 + 0.5 * getUpgradeLevel('focuslens');
@@ -398,6 +448,7 @@ export function rollClickGain() {
     const veinMult = 10 + 1 * getUpgradeLevel('magnet');
     if (crit) gain *= critMult;
     if (lucky) gain *= veinMult;
+    if (mut && mut.clickGainMult) gain *= mut.clickGainMult;
     return { gain, crit, lucky };
 }
 
@@ -525,6 +576,9 @@ export function applySave(data) {
         };
         gameState.version = SAVE_VERSION;
         gameState.tutorialDone = true; // старые игроки — обучение не показываем
+        gameState.soundOn = true;
+        gameState.musicOn = true;
+        gameState.musicVolume = 0.5;
         return;
     }
 
@@ -562,6 +616,10 @@ export function applySave(data) {
     gameState.tierAnchorRate = Math.max(0, Number(data.tierAnchorRate) || 0);
     // Сейвы без флага (старые игроки) — обучение пропускается; false = продолжить
     gameState.tutorialDone = data.tutorialDone !== false;
+    gameState.soundOn = data.soundOn !== false; // отсутствие флага = звук включён
+    gameState.musicOn = data.musicOn !== false; // отсутствие флага = музыка включена
+    const mv = Number(data.musicVolume); // 0 должен сохраняться как 0 — не через ||
+    gameState.musicVolume = Number.isFinite(mv) ? Math.min(1, Math.max(0, mv)) : 0.5;
     gameState.levels = { ...init.levels };
     if (data.levels && typeof data.levels === 'object') {
         for (const def of UPGRADES) {
@@ -588,7 +646,14 @@ export async function loadGame() {
 }
 
 export function resetGame() {
+    // Настройки звука/музыки — выбор игрока, сброс прогресса их не трогает
+    const prefs = {
+        soundOn: gameState.soundOn,
+        musicOn: gameState.musicOn,
+        musicVolume: gameState.musicVolume
+    };
     Object.assign(gameState, createInitialState());
+    Object.assign(gameState, prefs);
     saveGame();
 }
 

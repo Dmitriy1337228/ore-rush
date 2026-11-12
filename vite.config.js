@@ -9,7 +9,9 @@ function copyGameAssets() {
         name: 'copy-game-assets',
         apply: 'build',
         closeBundle() {
-            fs.cpSync(path.join(import.meta.dirname, 'assets', 'ui'), path.join(import.meta.dirname, 'dist', 'assets', 'ui'), { recursive: true });
+            for (const dir of ['ui', 'audio']) {
+                fs.cpSync(path.join(import.meta.dirname, 'assets', dir), path.join(import.meta.dirname, 'dist', 'assets', dir), { recursive: true });
+            }
         }
     };
 }

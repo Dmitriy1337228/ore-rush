@@ -1,12 +1,26 @@
 import Phaser from 'phaser';
 import {
     gameState, TIERS, rollClickGain, addOre, getOrePerSecond, getAutoClicksPerSecond,
-    saveGame, loadGame, saveLastExit, readLastExit, computeOfflineReward, fmt
+    saveGame, loadGame, saveLastExit, readLastExit, computeOfflineReward, fmt,
+    MUTATIONS, MUTATION_DURATION_MS, MUTATION_CHECK_MS, MUTATION_CHANCE, getMutationBreakBonus
 } from '../state.js';
+import { playSfx } from '../sfx.js';
 
 const FONT = '"Monocraft", "Inter", "Consolas", monospace';
 
 const BLOCK_STAGES = [1, 2, 3, 4];
+
+// Фоны локаций (пиксель-арт конверсия voxel-рендеров ComfyUI): один фон на тир руды.
+// При смене тира — плавный кроссфейд; фон на 8% больше экрана (страховка от тряски камеры).
+const BG_KEYS = ['bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver', 'bg_05_gold', 'bg_06_amethyst', 'bg_07_emerald', 'bg_08_ruby', 'bg_09_sapphire', 'bg_10_platinum', 'bg_11_uranium', 'bg_12_diamond'];
+const BG_FADE_MS = 800;
+const BG_SHADE_ALPHA = 0.32;
+const BG_OVER_W = 1382;
+const BG_OVER_H = 778;
+
+function tierBgKey(tier) {
+    return BG_KEYS[Math.min(tier, BG_KEYS.length - 1)];
+}
 
 function blockStageKey(tier, stage) {
     const prefix = TIERS[tier].blockPrefix;
@@ -35,6 +49,9 @@ export class GameScene extends Phaser.Scene {
         this.blockStage = 0;   // 0..3 — визуальная стадия трещин
         this.blockBusy = false;
         this.blockScale = 4.4;
+        this.mutation = null;  // { id, endsAt } — активная мутация блока (Этап 3); единственный терминатор — таймер
+        this.mutationUi = null;
+        this.hitProgress = 0;  // удары, накопленные на текущей стадии (для hitsPerStage > 1)
     }
 
     create() {
@@ -60,17 +77,66 @@ export class GameScene extends Phaser.Scene {
         this.wireEvents();
 
         this.scene.launch('UIScene');
+        this.startBgm();
         this.refreshTick();
     }
 
     // ---------- Мир ----------
 
     buildWorld() {
+        // Стартовый градиент остаётся подложкой под фоном (страховка на случай,
+        // если текстура фона ещё не готова) — ОБЯЗАТЕЛЬНО ниже bgCurrent/bgNext,
+        // иначе непрозрачный градиент закроет фон целиком.
         const g = this.add.graphics();
         g.fillGradientStyle(0x3a3f44, 0x3a3f44, 0x1c1e22, 0x1c1e22, 1);
-        g.fillRect(0, 0, 1280, 720);
+        g.fillRect(-80, -80, 1440, 880);
+        g.setDepth(-4);
+
+        // Слой фона локации: bgCurrent (видимый) + bgNext (невидимый верхний для кроссфейда).
+        // Фон на 8% больше экрана и центрирован: тряска камеры при разрушении блока
+        // (~6px) не открывает серые края по периметру.
+        // bgShade — лёгкое затемнение поверх фона: контент фона не спорит с блоком и HUD.
+        this.bgCurrent = this.add.image(640, 360, tierBgKey(gameState.tier))
+            .setOrigin(0.5).setDisplaySize(BG_OVER_W, BG_OVER_H).setDepth(-3);
+        this.bgNext = this.add.image(640, 360, tierBgKey(gameState.tier))
+            .setOrigin(0.5).setDisplaySize(BG_OVER_W, BG_OVER_H).setDepth(-2).setAlpha(0).setVisible(false);
+        this.bgShade = this.add.rectangle(640, 360, BG_OVER_W, BG_OVER_H, 0x000000, BG_SHADE_ALPHA)
+            .setDepth(-1);
 
         this.buildEmitters(TIERS[gameState.tier].iconKey);
+    }
+
+    // Плавная смена фона при переходе на новый тир (или «Полный сброс» на тир 1).
+    // ВСТРЕЧНЫЙ кроссфейд: старый фон гаснет (1->0), новый проявляется (0->1) —
+    // переход читается одинаково в обе стороны (на светлый и на тёмный фон):
+    // чистое fade-in поверх тёмного старого «не видно» в ранних кадрах, если новый фон светлее.
+    swapBg() {
+        const key = tierBgKey(gameState.tier);
+        const cur = this.bgCurrent, nxt = this.bgNext;
+        if (!nxt.visible && cur.texture.key === key) return;
+
+        // Незавершённый кроссфейд мгновенно доводим до конца: частично проявленный
+        // новый фон становится текущим, иначе новая смена стартует «с прыжка»
+        this.tweens.killTweensOf([cur, nxt]);
+        if (nxt.visible) {
+            cur.setTexture(nxt.texture.key).setAlpha(1).setVisible(true);
+            nxt.setVisible(false).setAlpha(0);
+            if (cur.texture.key === key) return;
+        }
+
+        // Фейд: новый слой проявляется сверху, старый под ним гаснет
+        nxt.setTexture(key).setAlpha(0).setVisible(true);
+        this.tweens.add({ targets: nxt, alpha: 1, duration: BG_FADE_MS, ease: 'Linear' });
+        this.tweens.add({
+            targets: cur,
+            alpha: 0,
+            duration: BG_FADE_MS,
+            ease: 'Linear',
+            onComplete: () => {
+                cur.setTexture(key).setAlpha(1).setVisible(true);
+                nxt.setVisible(false).setAlpha(0);
+            }
+        });
     }
 
     buildEmitters(oreIconKey) {
@@ -105,6 +171,7 @@ export class GameScene extends Phaser.Scene {
         this.blockX = 400;
         this.blockY = 400;
         this.blockStage = 0;
+        this.hitProgress = 0;
         this.blockBusy = false;
 
         if (this.block) this.block.destroy();
@@ -128,11 +195,17 @@ export class GameScene extends Phaser.Scene {
     }
 
     wireEvents() {
-        // Смена тира (от UIScene после покупки уровня шахты или престижа)
+        // Смена тира (от UIScene после покупки уровня шахты или престижа).
+        // Мутация не сбрасывается — живёт свои 10с; tint на новом блоке переустановит update().
         this.game.events.on('tier-changed', () => {
+            // Кроссфейд стартует первым — до пересборки блока/эмиттеров,
+            // чтобы смена фона не ждала тяжёлый кадр
+            this.swapBg();
             this.buildEmitters(TIERS[gameState.tier].iconKey);
             this.buildBlock();
             this.refreshTick();
+            // «Полный сброс» DevPanel тоже приходит сюда — синхронизируем mute BGM
+            this.syncBgm();
         });
 
         this.game.events.on('offline-applied', (info) => {
@@ -140,22 +213,61 @@ export class GameScene extends Phaser.Scene {
             float.setOrigin(0.5).setDepth(20);
             this.tweens.add({ targets: float, y: float.y - 50, alpha: 0, duration: 1100, onComplete: () => float.destroy() });
         });
+
+        // Тумблер «Музыка: вкл/выкл» и слайдер громкости (UIScene) — mute и volume BGM
+        this.game.events.on('music-changed', () => this.syncBgm());
+    }
+
+    // ---------- Фоновая музыка ----------
+
+    startBgm() {
+        if (!this.cache.audio.exists('bgm')) return;
+        this.bgm = this.sound.add('bgm', { loop: true, volume: gameState.musicVolume });
+        this.bgm.setMute(!gameState.musicOn);
+        // Автоплей-политика: до первого взаимодействия браузер блокирует звук —
+        // Phaser снимет lock при первом клике/клавише, тогда и стартуем
+        if (this.sound.locked) {
+            this.sound.once('unlocked', () => this.bgm.play());
+        } else {
+            this.bgm.play();
+        }
+    }
+
+    syncBgm() {
+        if (!this.bgm) return;
+        this.bgm.setMute(!gameState.musicOn);
+        this.bgm.setVolume(gameState.musicVolume);
     }
 
     setupTimers() {
-        // Пассивный доход — раз в секунду
+        // Пассивный доход — раз в секунду (заряженная мутация умножает ставку)
         this.gpsTimer = this.time.addEvent({
             delay: 1000,
             loop: true,
             callback: () => {
                 const gps = getOrePerSecond();
                 if (gps > 0) {
-                    addOre(gps);
-                    const float = makeLabel(this, this.blockX + 150, this.blockY - 90, `+${fmt(gps)}`, 16, TIERS[gameState.tier].floatColor);
+                    const mut = this.mutation ? MUTATIONS[this.mutation.id] : null;
+                    const mult = mut && mut.passiveMult ? mut.passiveMult : 1;
+                    addOre(gps * mult);
+                    const float = makeLabel(this, this.blockX + 150, this.blockY - 90, `+${fmt(gps * mult)}`, 16, TIERS[gameState.tier].floatColor);
                     float.setOrigin(0.5).setDepth(20).setAlpha(0.85);
                     this.tweens.add({ targets: float, y: float.y - 30, alpha: 0, duration: 900, onComplete: () => float.destroy() });
                     this.refreshTick();
                 }
+            }
+        });
+
+        // Мутации блока (Этап 3): раз в 5 минут шанс 30% — случайная мутация на 10с.
+        // Пока мутация активна, триггер ждёт; единственный терминатор — таймер.
+        this.mutationTimer = this.time.addEvent({
+            delay: MUTATION_CHECK_MS,
+            loop: true,
+            callback: () => {
+                if (this.mutation || this.registry.get('blockLocked')) return;
+                if (Math.random() >= MUTATION_CHANCE) return;
+                const types = Object.keys(MUTATIONS);
+                this.startMutation(types[Math.floor(Math.random() * types.length)]);
             }
         });
 
@@ -235,9 +347,18 @@ export class GameScene extends Phaser.Scene {
         if (this.blockBusy) return;
         if (this.registry.get('blockLocked')) return; // открыта модалка в UIScene
 
-        const { gain, crit, lucky } = rollClickGain();
+        const mut = this.mutation ? MUTATIONS[this.mutation.id] : null;
+        // ключ мутации = this.mutation.id (сеется из ключа MUTATIONS в startMutation)
+        const { gain, crit, lucky } = rollClickGain(this.mutation ? this.mutation.id : null);
         addOre(gain);
         if (!isAuto) gameState.clicks += 1;
+
+        // Звуки добычи — только ручные клики: авто-клики робо-руки работают в фоне
+        // и звучали бы какофонией; разрушение блока — исключение (звучит всегда)
+        if (!isAuto) {
+            playSfx(this, 'pickaxe');
+            if (crit || lucky) playSfx(this, 'crit');
+        }
 
         // Частицы руды из точки добычи
         this.oreEmitter.explode(crit || lucky ? 16 : 8, px, py);
@@ -262,22 +383,29 @@ export class GameScene extends Phaser.Scene {
 
         if ((crit || lucky) && !isAuto) this.cameras.main.shake(120, 0.004);
 
-        // Трещины: 3 удара -> визуально «разбит» -> 4-й удар ломает блок и рождает новый
+        // Трещины: 3 удара -> визуально «разбит» -> 4-й удар ломает блок и рождает новый.
+        // Мутации могут замедлить прогресс стадий (замороженная: 3 удара на стадию,
+        // взрывная: 2) — счётчик hitProgress копит удары до порога.
         if (this.blockStage >= BLOCK_STAGES.length) {
             this.breakBlock(isAuto);
         } else {
-            this.blockStage += 1;
-            this.block.setTexture(blockStageKey(gameState.tier, Math.min(this.blockStage + 1, 4)));
-            this.tweens.killTweensOf(this.block);
-            this.tweens.add({
-                targets: this.block,
-                scaleX: this.blockScale - 0.3,
-                scaleY: this.blockScale - 0.3,
-                duration: 50,
-                yoyo: true,
-                ease: 'Quad.easeOut',
-                onComplete: () => this.startBreathingTween()
-            });
+            this.hitProgress += 1;
+            const hitsPerStage = mut && mut.hitsPerStage ? mut.hitsPerStage : 1;
+            if (this.hitProgress >= hitsPerStage) {
+                this.hitProgress = 0;
+                this.blockStage += 1;
+                this.block.setTexture(blockStageKey(gameState.tier, Math.min(this.blockStage + 1, 4)));
+                this.tweens.killTweensOf(this.block);
+                this.tweens.add({
+                    targets: this.block,
+                    scaleX: this.blockScale - 0.3,
+                    scaleY: this.blockScale - 0.3,
+                    duration: 50,
+                    yoyo: true,
+                    ease: 'Quad.easeOut',
+                    onComplete: () => this.startBreathingTween()
+                });
+            }
         }
 
         // Если по блоку долго не бить — трещины затягиваются. Окно заживления не
@@ -290,6 +418,7 @@ export class GameScene extends Phaser.Scene {
         this.streakTimer = this.time.delayedCall(healMs, () => {
             if (!this.blockBusy) {
                 this.blockStage = 0;
+                this.hitProgress = 0;
                 this.block.setTexture(blockStageKey(gameState.tier, 1));
             }
         });
@@ -305,12 +434,37 @@ export class GameScene extends Phaser.Scene {
     }
 
     breakBlock(fromAuto) {
+        playSfx(this, 'break');
+        const mut = this.mutation ? MUTATIONS[this.mutation.id] : null;
+
+        // Взрывная мутация: бонус руды при разрушении блока + усиленный взрыв частиц
+        if (mut && mut.breakBonusMult) {
+            const bonus = getMutationBreakBonus(this.mutation.id);
+            addOre(bonus);
+            const boomFloat = makeLabel(this, this.blockX, this.blockY - 80, `ВЗРЫВ! +${fmt(bonus)}`, 30, '#ff9040');
+            boomFloat.setOrigin(0.5).setDepth(25);
+            this.tweens.add({
+                targets: boomFloat,
+                y: boomFloat.y - 60,
+                alpha: 0,
+                duration: 1100,
+                ease: 'Cubic.easeOut',
+                onComplete: () => boomFloat.destroy()
+            });
+            this.oreEmitter.explode(60, this.blockX, this.blockY);
+            this.debrisEmitter.explode(30, this.blockX, this.blockY);
+        }
+
+        // Мутация НЕ спадает при разрушении блока — длится ровно 10с (терминатор только таймер).
+        // Новый блок наследует активную мутацию; tint переустановит update(), счёт ударов — с нуля.
         this.blockBusy = true;
         this.blockStage = 0;
+        this.hitProgress = 0;
 
         this.oreEmitter.explode(26, this.blockX, this.blockY);
         this.debrisEmitter.explode(12, this.blockX, this.blockY);
-        if (!fromAuto) this.cameras.main.shake(160, 0.005);
+        // Тряска камеры при разрушении убрана по фидбеку — фон не должен дёргаться
+        // (фидбек разрушения: взрыв частиц + «Блок разрушен!» + звук)
 
         const bonusFloat = makeLabel(this, this.blockX, this.blockY - 120, 'Блок разрушен!', 24, '#ffe9b0', { fontStyle: 'bold' });
         bonusFloat.setOrigin(0.5).setDepth(20);
@@ -352,6 +506,97 @@ export class GameScene extends Phaser.Scene {
                 });
             }
         });
+    }
+
+    // ---------- Мутации блока (Этап 3) ----------
+
+    // Активирует мутацию на 10с (или указанную длительность — DevPanel/тесты).
+    // Единственный терминатор — таймер: мутация переживает разрушение блока и смену тира.
+    startMutation(typeId, duration = MUTATION_DURATION_MS) {
+        const def = MUTATIONS[typeId];
+        if (!def) return;
+        if (this.mutation) this.clearMutation(false);
+        // Конечные цвета пульса предвычисляем один раз — update() интерполирует числа без аллокаций
+        const c1 = Phaser.Display.Color.IntegerToColor(def.tints[0]);
+        const c2 = Phaser.Display.Color.IntegerToColor(def.tints[1]);
+        this.mutation = {
+            id: typeId,
+            endsAt: this.time.now + duration,
+            tints: def.tints,
+            c1: { r: c1.r, g: c1.g, b: c1.b },
+            c2: { r: c2.r, g: c2.g, b: c2.b }
+        };
+        this.hitProgress = 0;
+        // HUD-ставка (UIScene) должна показывать фактическую фоновую добычу — с множителем мутации
+        this.registry.set('passiveMult', def.passiveMult || 1);
+        playSfx(this, 'mutation');
+
+        // Подпись + таймер над блоком (парят)
+        this.mutationUi = this.add.container(this.blockX, this.blockY - 200).setDepth(25);
+        this.mutationName = makeLabel(this, 0, 0, def.name, 22, '#ffffff').setOrigin(0.5);
+        this.mutationTime = makeLabel(this, 0, 28, `${Math.ceil(duration / 1000)}с`, 16, '#ffe9b0').setOrigin(0.5);
+        this.mutationUi.add([this.mutationName, this.mutationTime]);
+        this.tweens.add({
+            targets: this.mutationUi,
+            y: this.blockY - 208,
+            duration: 900,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        // Всплывашка-объявление
+        const float = makeLabel(this, this.blockX, this.blockY - 120, `Мутация: ${def.name}!`, 26, '#ffe9b0', { fontStyle: 'bold' });
+        float.setOrigin(0.5).setDepth(25);
+        this.tweens.add({ targets: float, y: float.y - 55, alpha: 0, duration: 1200, ease: 'Cubic.easeOut', onComplete: () => float.destroy() });
+
+        this.refreshTick();
+    }
+
+    // Снимает мутацию: убирает подпись/tint, восстанавливает текстуру текущей стадии.
+    // restoreTexture=false — когда текстуру ставит другой код (анимация разрушения, buildBlock).
+    clearMutation(restoreTexture = true) {
+        if (this.mutationUi) {
+            this.tweens.killTweensOf(this.mutationUi);
+            this.mutationUi.destroy();
+            this.mutationUi = null;
+            this.mutationName = null;
+            this.mutationTime = null;
+        }
+        this.mutation = null;
+        this.hitProgress = 0;
+        this.registry.set('passiveMult', 1);
+        this.block.clearTint();
+        if (restoreTexture && !this.blockBusy) {
+            this.block.setTexture(blockStageKey(gameState.tier, Math.min(this.blockStage + 1, 4)));
+        }
+        this.refreshTick();
+    }
+
+    update() {
+        if (!this.mutation) return;
+        const remaining = this.mutation.endsAt - this.time.now;
+        if (remaining <= 0) {
+            this.clearMutation(true);
+            return;
+        }
+        if (this.mutationTime) this.mutationTime.setText(`${Math.ceil(remaining / 1000)}с`);
+
+        const palette = this.mutation.tints;
+        if (palette.length > 2) {
+            // Радуга: перебор цветов
+            this.block.setTint(palette[Math.floor(this.time.now / 120) % palette.length]);
+        } else {
+            // Пульс/мерцание между двумя цветами палитры (числа, без аллокаций)
+            const m = this.mutation;
+            const speed = this.mutation.id === 'explosive' ? 180 : 260;
+            const t = 0.5 + 0.5 * Math.sin(this.time.now / speed);
+            this.block.setTint(Phaser.Display.Color.GetColor(
+                Math.round(m.c1.r + (m.c2.r - m.c1.r) * t),
+                Math.round(m.c1.g + (m.c2.g - m.c1.g) * t),
+                Math.round(m.c1.b + (m.c2.b - m.c1.b) * t)
+            ));
+        }
     }
 
     refreshTick() {

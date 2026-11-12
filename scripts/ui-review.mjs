@@ -194,7 +194,7 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null } 
     fs.writeFileSync(path.join(OUT, 'layout_audit_modal.txt'), auditModal.violations.join('\n') || 'layout audit (modal): 0 violations');
     console.log('modal violations:', auditModal.violations.length);
     auditModal.violations.forEach((v) => console.log('  ' + v));
-    await page.mouse.click(864, 184); // закрыть
+    await page.mouse.click(860, 132); // закрыть (крестик в углу: контейнер 640,360 + (220,-228))
     await page.waitForTimeout(200);
     await ctx.close();
 }

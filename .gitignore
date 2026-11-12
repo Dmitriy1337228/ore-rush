@@ -13,3 +13,6 @@ shots_v*/
 .DS_Store
 
 shots_devpanel/
+
+# Исходники звука из audio-studio-mcp (кандидаты WAV; в игру идут выбранные OGG через assets/)
+audio-src/
