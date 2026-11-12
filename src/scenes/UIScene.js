@@ -1,25 +1,17 @@
 import Phaser from 'phaser';
 import {
     gameState, TIERS, UPGRADES, getUpgradeDef, getUpgradeLevel, getUpgradeCost,
-    isMaxed, isUpgradeAvailable, canBuy, buyUpgrade, buyBulk, getAffordableBulk,
+    isMaxed, isUpgradeAvailable, canBuy, buyUpgrade, buyBulk, getAffordableBulk, getBulkCost,
     isUpgradeVisible,
     getClickDamage, getOrePerSecond, getSynergyGain, getCritChance,
     getOfflineRate, getOfflineCapSeconds, OFFLINE_CAP_HOURS,
-    canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice, getUnlockEtaSeconds,
+    canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice,
     canPrestige, getStarsGain, doPrestige, PRESTIGE_REQUIREMENT, getPrestigeMult, DIAMOND_INDEX,
     resetGame, saveGame, fmt, fmtDuration
 } from '../state.js';
+import { playSfx } from '../sfx.js';
 
 const FONT = '"Monocraft", "Inter", "Consolas", monospace';
-
-// ETA до спуска на подсказке: «12:34» до часа, дальше «1 ч 23 мин».
-function formatEta(seconds) {
-    if (seconds >= 3600) return fmtDuration(seconds);
-    const total = Math.max(0, Math.round(seconds));
-    const m = Math.floor(total / 60);
-    const s = total % 60;
-    return `${m}:${String(s).padStart(2, '0')}`;
-}
 
 // 9-slice: исходные размеры и отступы из манифеста spritecook-assets.json
 const NS_SRC = {
@@ -94,7 +86,7 @@ const TABS = [
     { id: 'equipment', label: 'Оборудование' },
     { id: 'enhance',   label: 'Усиления' }
 ];
-const BUY_AMOUNTS = [1, 10, 100];
+const BUY_AMOUNTS = [1, 10, 100, 'max'];
 
 // Отступы ряда (карточка 296x96: face source x44..817, y16..202 -> drawn x16..290, y7..89)
 const ROW = {
@@ -122,7 +114,7 @@ export class UIScene extends Phaser.Scene {
         this.scrollPos = 0;
         this.maxScroll = 0;
         this.activeTab = 'equipment'; // вкладка панели улучшений
-        this.buyAmount = 1;           // мультипокупка: 1 / 10 / 100
+        this.buyAmount = 1;           // мультипокупка: 1 / 10 / 100 / 'max'
     }
 
     create() {
@@ -272,7 +264,7 @@ export class UIScene extends Phaser.Scene {
         c.on('pointerdown', () => {
             const idx = BUY_AMOUNTS.indexOf(this.buyAmount);
             this.buyAmount = BUY_AMOUNTS[(idx + 1) % BUY_AMOUNTS.length];
-            this.amountLbl.setText('x' + this.buyAmount);
+            this.amountLbl.setText(this.buyAmount === 'max' ? 'МАКС' : 'x' + this.buyAmount);
             this.refreshUi();
         });
     }
@@ -427,6 +419,7 @@ export class UIScene extends Phaser.Scene {
 
         btn.on('pointerdown', () => {
             if (buyBulk(def.id, this.buyAmount)) {
+                playSfx(this, 'purchase');
                 this.tweens.add({ targets: icon, scale: { from: iconScale, to: iconScale * 1.25 }, duration: 90, yoyo: true });
                 saveGame();
                 this.refreshUi();
@@ -478,6 +471,7 @@ export class UIScene extends Phaser.Scene {
             if (!canUnlockTier()) return;
             const next = getNextTier();
             unlockTier();
+            playSfx(this, 'tier');
             const float = this.spawnFloat(400, 560, `Уровень шахты: ${next.name}!`, 28, next.floatColor);
             float.setOrigin(0.5).setDepth(30);
             this.tweens.add({ targets: float, y: float.y - 60, alpha: 0, duration: 1400, ease: 'Cubic.easeOut', onComplete: () => float.destroy() });
@@ -495,7 +489,7 @@ export class UIScene extends Phaser.Scene {
 
     buildModal() {
         const pw = 560;
-        const ph = 460;
+        const ph = 600;
         this.modalDim = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.6)
             .setDepth(40).setVisible(false).setInteractive();
         this.modalDim.on('pointerdown', (pointer, lx, ly, event) => event.stopPropagation());
@@ -503,41 +497,120 @@ export class UIScene extends Phaser.Scene {
         this.modal = this.add.container(640, 360).setDepth(41).setVisible(false);
 
         const panel = addImgC(this, 0, 0, 'modal_panel_metal', pw, ph);
-        // Врезка панели (image): content y -200..191, x -216..216 (контейнерные координаты)
-        const title = makeLabel(this, 0, -180, 'Настройки', 30, '#ffe9b0').setOrigin(0.5);
+        // Врезка панели (image): content y -261..249, x -216..216 (контейнерные координаты)
+        const title = makeLabel(this, 0, -232, 'Настройки', 30, '#ffe9b0').setOrigin(0.5);
 
         const cbW = 44;
-        const closeBtn = addImgC(this, pw / 2 - 56, -ph / 2 + 54, 'close_button_square', cbW, cbW);
+        // Крестик в правом верхнем углу: заходит за врезку в зону рамки, не задевая заклёпку
+        const closeBtn = addImgC(this, pw / 2 - 60, -228, 'close_button_square', cbW, cbW);
         // Hit-area в координатах кадра текстуры (196x191)
         closeBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 196, 191), Phaser.Geom.Rectangle.Contains);
         closeBtn.on('pointerdown', () => this.closeModal());
 
-        this.modalStats = makeLabel(this, -pw / 2 + 56, -ph / 2 + 92, '', 15, '#d8d8d8', { lineSpacing: 8 });
+        this.modalStats = makeLabel(this, -pw / 2 + 56, -186, '', 15, '#d8d8d8', { lineSpacing: 5 });
         this.modalStats.setOrigin(0, 0);
 
+        // Звук (эффекты) и Музыка (фон): два тумблера в ряд
+        const tbW = 200;
+        const tbH = 44;
+        this.soundBtn = addNineC(this, -105, -34, 'buy_button_normal', tbW, tbH);
+        this.soundBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, tbW, tbH), Phaser.Geom.Rectangle.Contains);
+        this.soundText = makeLabel(this, -105, -34, 'Звук: вкл', 15, '#ffffff').setOrigin(0.5);
+        this.soundBtn.on('pointerdown', () => {
+            gameState.soundOn = !gameState.soundOn;
+            this.refreshSoundToggle();
+            if (gameState.soundOn) playSfx(this, 'purchase'); // подтверждение включения
+            saveGame();
+            this.refreshUi();
+        });
+
+        this.musicBtn = addNineC(this, 105, -34, 'buy_button_normal', tbW, tbH);
+        this.musicBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, tbW, tbH), Phaser.Geom.Rectangle.Contains);
+        this.musicText = makeLabel(this, 105, -34, 'Музыка: вкл', 15, '#ffffff').setOrigin(0.5);
+        this.musicBtn.on('pointerdown', () => {
+            gameState.musicOn = !gameState.musicOn;
+            this.refreshMusicControls();
+            this.game.events.emit('music-changed');
+            saveGame();
+            this.refreshUi();
+        });
+
+        // Громкость музыки: слайдер (musicVolume 0..1, применяется на каждый сдвиг)
+        const volLabel = makeLabel(this, -150, 14, 'Громкость:', 14, '#c8c8c8').setOrigin(0.5);
+        this.volG = this.add.graphics(); // трек -60..120 (180), заливка и ручка перерисовываются
+        this.volPct = makeLabel(this, 170, 14, '50%', 14, '#e8e8e8').setOrigin(0.5);
+        const volZone = this.add.zone(-66, -8, 192, 44).setOrigin(0, 0).setInteractive();
+        const seekVolume = (gameX) => {
+            // Контейнер модалки фиксирован в (640,360): левый край трека на экране 640-60 = 580
+            gameState.musicVolume = Phaser.Math.Clamp((gameX - 580) / 180, 0, 1);
+            this.refreshMusicControls();
+            this.game.events.emit('music-changed');
+        };
+        volZone.on('pointerdown', (p) => {
+            this.volDragging = true;
+            seekVolume(p.x);
+        });
+        this.input.on('pointermove', (p) => {
+            if (this.volDragging) seekVolume(p.x); // драг продолжается за пределами трека
+        });
+        this.input.on('pointerup', () => {
+            if (this.volDragging) {
+                this.volDragging = false;
+                saveGame();
+            }
+        });
+
         // Престиж
-        const presTitle = makeLabel(this, 0, 10, 'Сброс шахты (Rebirth)', 20, '#ffe9b0').setOrigin(0.5, 0);
-        this.prestigeInfo = makeLabel(this, 0, 44, '', 14, '#d8d8d8', { align: 'center', wordWrap: { width: pw - 120 }, lineSpacing: 6 });
+        const presTitle = makeLabel(this, 0, 48, 'Сброс шахты (Rebirth)', 20, '#ffe9b0').setOrigin(0.5, 0);
+        this.prestigeInfo = makeLabel(this, 0, 82, '', 14, '#d8d8d8', { align: 'center', wordWrap: { width: pw - 120 }, lineSpacing: 6 });
         this.prestigeInfo.setOrigin(0.5, 0);
 
-        const pbW = 240;
-        const pbH = 44;
-        this.prestigeBtn = addNineC(this, 0, 116, 'buy_button_disabled_gray', pbW, pbH);
+        const pbW = 300;
+        const pbH = 50;
+        this.prestigeBtn = addNineC(this, 0, 158, 'buy_button_disabled_gray', pbW, pbH);
         this.prestigeBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, pbW, pbH), Phaser.Geom.Rectangle.Contains);
         // addNineC ставит origin (0.5): координата кнопки = её центр, подпись — в тот же центр
-        this.prestigeText = makeLabel(this, 0, 116, 'Сбросить шахту', 16, '#ffffff').setOrigin(0.5);
+        this.prestigeText = makeLabel(this, 0, 158, 'Сбросить шахту', 17, '#ffffff').setOrigin(0.5);
         this.prestigeBtn.on('pointerdown', () => this.tryPrestige());
 
-        const rbW = 240;
-        const rbH = 40;
-        this.resetBtn = addNineC(this, 0, 168, 'buy_button_disabled_gray', rbW, rbH);
+        const rbW = 300;
+        const rbH = 46;
+        this.resetBtn = addNineC(this, 0, 216, 'buy_button_disabled_gray', rbW, rbH);
         this.resetBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, rbW, rbH), Phaser.Geom.Rectangle.Contains);
-        this.resetText = makeLabel(this, 0, 168, 'Сбросить весь прогресс', 14, '#ffffff').setOrigin(0.5);
+        this.resetText = makeLabel(this, 0, 216, 'Сбросить весь прогресс', 15, '#ffffff').setOrigin(0.5);
         this.resetBtn.on('pointerdown', () => this.tryReset());
 
-        this.modal.add([panel, title, closeBtn, this.modalStats, presTitle, this.prestigeInfo, this.prestigeBtn, this.prestigeText, this.resetBtn, this.resetText]);
+        this.modal.add([panel, title, closeBtn, this.modalStats, this.soundBtn, this.soundText, this.musicBtn, this.musicText, volLabel, this.volG, this.volPct, volZone, presTitle, this.prestigeInfo, this.prestigeBtn, this.prestigeText, this.resetBtn, this.resetText]);
         this.prestigeArmed = false;
         this.resetArmed = false;
+    }
+
+    refreshSoundToggle() {
+        if (!this.soundBtn) return;
+        this.soundBtn.setTexture(gameState.soundOn ? 'buy_button_normal' : 'buy_button_disabled_gray');
+        this.soundText.setText(gameState.soundOn ? 'Звук: вкл' : 'Звук: выкл');
+        this.soundText.setColor(gameState.soundOn ? '#ffffff' : '#b0b0b0');
+    }
+
+    refreshMusicControls() {
+        if (!this.musicBtn) return;
+        this.musicBtn.setTexture(gameState.musicOn ? 'buy_button_normal' : 'buy_button_disabled_gray');
+        this.musicText.setText(gameState.musicOn ? 'Музыка: вкл' : 'Музыка: выкл');
+        this.musicText.setColor(gameState.musicOn ? '#ffffff' : '#b0b0b0');
+        const v = gameState.musicVolume;
+        const g = this.volG;
+        g.clear();
+        // Трек: тёмная канавка + золотая заливка, ручка — светлая с тёмной обводкой (центр y=14)
+        g.fillStyle(0x1a1c1f, 1);
+        g.fillRect(-60, 9, 180, 10);
+        g.fillStyle(0xffd75e, 1);
+        g.fillRect(-60, 9, Math.max(4, Math.round(180 * v)), 10);
+        const kx = -60 + Math.round(180 * v);
+        g.fillStyle(0xe8e8e8, 1);
+        g.fillRect(kx - 6, 4, 12, 20);
+        g.lineStyle(2, 0x0e1012, 1);
+        g.strokeRect(kx - 6, 4, 12, 20);
+        this.volPct.setText(`${Math.round(v * 100)}%`);
     }
 
     openModal() {
@@ -545,6 +618,8 @@ export class UIScene extends Phaser.Scene {
         this.resetArmed = false;
         this.prestigeText.setText('Сбросить шахту');
         this.resetText.setText('Сбросить весь прогресс');
+        this.refreshSoundToggle();
+        this.refreshMusicControls();
         this.modalDim.setVisible(true);
         this.modal.setVisible(true);
         this.registry.set('blockLocked', true);
@@ -566,6 +641,7 @@ export class UIScene extends Phaser.Scene {
             return;
         }
         const gain = doPrestige();
+        playSfx(this, 'prestige');
         this.prestigeArmed = false;
         saveGame();
         this.closeModal();
@@ -643,7 +719,8 @@ export class UIScene extends Phaser.Scene {
         this.oreName.setText(tier.name.toLowerCase());
         this.oreName.x = 112 + this.coalText.width + 10;
         if (this.gpsIcon.texture.key !== tier.iconKey) this.placeIcon(this.gpsIcon, tier.iconKey, 420, 62, 26);
-        this.gpsText.setText(`+${fmt(getOrePerSecond())} руды/сек`);
+        // Ставка = фактическая фоновая добыча: пассив с множителем заряженной мутации (registry.passiveMult)
+        this.gpsText.setText(`+${fmt(getOrePerSecond() * (this.registry.get('passiveMult') || 1))} руды/сек`);
         // «клик» = фактическая добыча обычного клика: базовый урон + синергия
         // (% от пассива) — совпадает с всплывающими цифрами без крита/жилы.
         this.statsLine.setText(`клик: ${fmt(getClickDamage() + getSynergyGain())} · крит: ${Math.round(getCritChance() * 100)}%`);
@@ -675,10 +752,7 @@ export class UIScene extends Phaser.Scene {
             if (canUnlockTier()) {
                 hintTxt = `оплата рудой текущего уровня — блок станет ${next.adj}`;
             } else {
-                const eta = getUnlockEtaSeconds();
-                hintTxt = eta != null
-                    ? `оплата рудой текущего уровня · спуск через ≈${formatEta(eta)}`
-                    : `оплата рудой текущего уровня`;
+                hintTxt = `оплата рудой текущего уровня`;
             }
             if (hintTxt !== this._hintText) {
                 this.hint.setText(hintTxt);
@@ -745,9 +819,9 @@ export class UIScene extends Phaser.Scene {
                 row.priceIcon.setVisible(false);
                 row.priceText.setVisible(true);
                 row.priceText.setText('макс').setColor('#9a9a9a');
-            } else {
-                // Мультипокупка: покупаем сколько хватает (до x{amount})
-                const r = getAffordableBulk(def.id, amount);
+            } else if (amount === 'max') {
+                // МАКС: покупаем максимум уровней, на которые хватает руды
+                const r = getAffordableBulk(def.id, Infinity);
                 const afford = r.n > 0;
                 row.btn.setTexture(afford ? 'buy_button_normal' : 'buy_button_disabled_gray');
                 row.btnText.setText('Купить').setColor(afford ? '#ffffff' : '#b0b0b0');
@@ -755,10 +829,23 @@ export class UIScene extends Phaser.Scene {
                 this.placeIcon(row.priceIcon, tier.iconKey, row.priceCX, row.priceCY, 16);
                 row.priceIcon.setVisible(true);
                 row.priceText.setVisible(true);
-                // Цена: сколько будет потрачено; при частичной покупке — количество
                 const priceStr = r.n > 0
-                    ? (r.n < amount ? `${fmt(r.total)} x${r.n}` : fmt(r.total))
+                    ? (r.n > 1 ? `${fmt(r.total)} x${r.n}` : fmt(r.total))
                     : fmt(getUpgradeCost(def.id));
+                row.priceText.setText(priceStr).setColor('#ffd75e');
+            } else {
+                // Строгий пакет x{amount}: либо весь пакет целиком, либо ничего
+                // (ужимается только лимитом уровней самого улучшения)
+                const b = getBulkCost(def.id, amount);
+                const r = getAffordableBulk(def.id, amount);
+                const afford = b.n > 0 && r.n === b.n;
+                row.btn.setTexture(afford ? 'buy_button_normal' : 'buy_button_disabled_gray');
+                row.btnText.setText('Купить').setColor(afford ? '#ffffff' : '#b0b0b0');
+                row.lockText.setText('');
+                this.placeIcon(row.priceIcon, tier.iconKey, row.priceCX, row.priceCY, 16);
+                row.priceIcon.setVisible(true);
+                row.priceText.setVisible(true);
+                const priceStr = b.n < amount ? `${fmt(b.total)} x${b.n}` : fmt(b.total);
                 row.priceText.setText(priceStr).setColor('#ffd75e');
             }
         }

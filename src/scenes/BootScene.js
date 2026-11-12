@@ -3,6 +3,12 @@ import Phaser from 'phaser';
 // Загрузка всех сгенерированных ассетов из assets/ui.
 // Ключи текстур совпадают с именами файлов в манифесте spritecook-assets.json.
 
+const SFX = [
+    'pickaxe_1', 'pickaxe_2', 'crit_1', 'crit_2',
+    'break_1', 'break_2', 'mutation_1', 'mutation_2',
+    'purchase_1', 'purchase_2', 'tier_1', 'tier_2', 'prestige_1', 'prestige_2'
+];
+
 const IMAGES = [
     // Блоки: уголь (старый каменный) + 11 тиров, каждый — 4 стадии повреждения
     'block_stage_1_intact', 'block_stage_2_cracked', 'block_stage_3_heavy_cracks', 'block_stage_4_shattered',
@@ -40,7 +46,12 @@ const IMAGES = [
 
     // Панели
     'hud_bar_background', 'upgrades_panel_wood', 'modal_panel_metal',
-    'upgrade_row_card_1', 'icon_slot_frame'
+    'upgrade_row_card_1', 'icon_slot_frame',
+
+    // Фоны локаций (пиксель-арт конверсия voxel-рендеров ComfyUI, по одному на тир)
+    'bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver',
+    'bg_05_gold', 'bg_06_amethyst', 'bg_07_emerald', 'bg_08_ruby',
+    'bg_09_sapphire', 'bg_10_platinum', 'bg_11_uranium', 'bg_12_diamond'
 ];
 
 export class BootScene extends Phaser.Scene {
@@ -52,9 +63,16 @@ export class BootScene extends Phaser.Scene {
         for (const key of IMAGES) {
             this.load.image(key, `assets/ui/${key}.png`);
         }
+        for (const key of SFX) {
+            // Два формата: Safari/iOS не декодирует Ogg Vorbis — Phaser выберет первый playable
+            this.load.audio(key, [`assets/audio/${key}.ogg`, `assets/audio/${key}.mp3`]);
+        }
+        // Фоновая музыка — бесшовный луп, те же два формата
+        this.load.audio('bgm', ['assets/audio/bgm.ogg', 'assets/audio/bgm.mp3']);
     }
 
     create() {
         this.scene.start('GameScene');
     }
 }
+

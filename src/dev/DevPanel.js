@@ -5,7 +5,7 @@
 // сборщиком вместе с этим чанком. Код панели не попадает к игрокам.
 
 import {
-    gameState, UPGRADES, TIERS, getUpgradeDef, addOre, saveGame, computeOfflineReward, resetGame, forceNextTier
+    gameState, UPGRADES, TIERS, getUpgradeDef, addOre, saveGame, computeOfflineReward, resetGame, forceNextTier, MUTATIONS
 } from '../state.js';
 
 let panel = null;
@@ -74,6 +74,29 @@ function forceTier() {
     after(true);
 }
 
+// Мутации блока: навесить любую мутацию вручную (30с, сброс при разрушении блока)
+function applyMutation(typeId) {
+    const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
+    if (!gs) {
+        log('GameScene ещё не готов');
+        return;
+    }
+    gs.startMutation(typeId);
+    log(`мутация: ${MUTATIONS[typeId].name} (${MUTATIONS[typeId].desc})`);
+    after();
+}
+
+function removeMutation() {
+    const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
+    if (!gs || !gs.mutation) {
+        log('активной мутации нет');
+        return;
+    }
+    gs.clearMutation(true);
+    log('мутация снята');
+    after();
+}
+
 // Симуляция офлайна идёт по ТОМУ ЖЕ коду, что и реальный возврат:
 // computeOfflineReward -> addOre -> registry.offlineInfo -> событие offline-applied
 function simulateOffline(hours) {
@@ -112,6 +135,7 @@ function fullReset() {
         ui.closeModal();
     }
     if (gs) {
+        if (gs.mutation) gs.clearMutation(false);
         gs.registry.set('offlineInfo', null);
         gs.registry.set('blockLocked', false);
         gs.blockBusy = false;
@@ -156,6 +180,12 @@ function buildPanel(game) {
     // Офлайн-симуляция
     grid.appendChild(makeButton('Офлайн 1ч', () => simulateOffline(1)));
     grid.appendChild(makeButton('Офлайн 4ч', () => simulateOffline(4)));
+
+    // Мутации блока: навесить любую / убрать — для теста Этапа 3
+    for (const id of Object.keys(MUTATIONS)) {
+        grid.appendChild(makeButton(MUTATIONS[id].name, () => applyMutation(id)));
+    }
+    grid.appendChild(makeButton('Убрать мутацию', removeMutation));
 
     statusLine = document.createElement('div');
     statusLine.className = 'dev-status';
