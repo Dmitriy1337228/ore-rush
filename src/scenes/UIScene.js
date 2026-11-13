@@ -157,6 +157,7 @@ export class UIScene extends Phaser.Scene {
         this._offlineOpen = false;
         this._dailyOpen = false;
         this._pendingDaily = null; // награда ждёт, пока не закроются другие модалки
+        this._tutorialPending = false; // обучение ждёт закрытия окна дневной награды
     }
 
     create() {
@@ -173,7 +174,6 @@ export class UIScene extends Phaser.Scene {
         this.buildDailyModal();
         this.setupListCamera();
         this.setupListDrag();
-        this.buildTutorial();
         this.applyLayout();
 
         // Смена ориентации/размера окна (main.js) — переставляем весь UI
@@ -213,6 +213,15 @@ export class UIScene extends Phaser.Scene {
                 this.registry.set('dailyInfo', null);
                 this.tryShowDailyModal();
             });
+        }
+        // Порядок первого запуска: окно дневной награды показывается ПЕРЕД
+        // обучением — иначе учебные подсказки стартовали сразу, а награда
+        // вылезала поверх и перекрывала всю игру (скриншот игрока). Если награда
+        // придёт — обучение откладывается до её закрытия.
+        if (this.registry.get('dailyInfo') || this._pendingDaily) {
+            this._tutorialPending = true;
+        } else {
+            this.buildTutorial();
         }
 
         if (this.registry.get('offlineInfo')) {
@@ -1058,6 +1067,11 @@ export class UIScene extends Phaser.Scene {
             this.listContent.setVisible(true);
             this.registry.set('blockLocked', false);
         }
+        // Обучение, отложенное ради окна награды, стартует после его закрытия
+        if (this._tutorialPending && !gameState.tutorialDone) {
+            this._tutorialPending = false;
+            this.buildTutorial();
+        }
     }
 
     // Активные дневные бафы: строка под HUD-баром «x2 9:59 · жила 1:59 · крит 4:31».
@@ -1261,6 +1275,7 @@ export class UIScene extends Phaser.Scene {
 
     buildTutorial() {
         if (gameState.tutorialDone) return;
+        if (this.tutDim) return; // идемпотентность: не строим второй слой поверх
         this.tutorialStep = 0;
         this.tutClickStart = gameState.clicks;
         this.tutShownAt = 0;
@@ -1375,7 +1390,10 @@ export class UIScene extends Phaser.Scene {
         this.tutText.setVisible(false);
         this.tutFinal.setPosition(this.L.modal.cx, this.L.tutorial.finalY).setVisible(true);
         this.tutBtn.setPosition(this.L.modal.cx, this.L.tutorial.btnY).setVisible(true);
-        this.tutBtnLbl.setVisible(true);
+        // Ярлык переставляется ВМЕСТЕ с кнопкой: раньше он оставался на
+        // ландшафтных координатах создания (640, 400) — в портрете улетал
+        // вправо, кнопка оставалась пустой (скриншот игрока)
+        this.tutBtnLbl.setPosition(this.L.modal.cx, this.L.tutorial.btnY).setVisible(true);
     }
 
     finishTutorial() {

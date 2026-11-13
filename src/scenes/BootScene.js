@@ -60,6 +60,16 @@ export class BootScene extends Phaser.Scene {
     }
 
     preload() {
+        // Прогресс в HTML-лоадер: он виден до первого кадра Phaser (модуль +
+        // шрифты + 113 текстур грузятся заметное время, на Pages был серый фон)
+        const fill = document.getElementById('loader-fill');
+        const pctLabel = document.getElementById('loader-pct');
+        if (fill) {
+            this.load.on('progress', (v) => {
+                fill.style.width = `${Math.round(v * 100)}%`;
+                if (pctLabel) pctLabel.textContent = `загрузка… ${Math.round(v * 100)}%`;
+            });
+        }
         for (const key of IMAGES) {
             this.load.image(key, `assets/ui/${key}.png`);
         }
