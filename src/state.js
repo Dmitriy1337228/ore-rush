@@ -453,8 +453,11 @@ export const MUTATIONS = {
                  tints: [0xd8a8ff, 0x9a50ff] }
 };
 export const MUTATION_DURATION_MS = 10000;
+// Триггер: проверка раз в 5 мин, шанс 50% -> медиана первой мутации ~5 мин
+// (было 30%: медиана ~12 мин при 10-секундном окне — игроки её не видели,
+// фидбек 2026-11-13; механизм триггера проверен форсированным роллом — ок)
 export const MUTATION_CHECK_MS = 300000;
-export const MUTATION_CHANCE = 0.3;
+export const MUTATION_CHANCE = 0.5;
 
 // Бонус взрывной мутации при разрушении блока: N урона клика
 export function getMutationBreakBonus(mutationId) {
