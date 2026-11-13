@@ -6,7 +6,7 @@
 
 import {
     gameState, UPGRADES, TIERS, getUpgradeDef, addOre, saveGame, computeOfflineReward, resetGame,
-    forceNextTier, MUTATIONS, LAST_EXIT_KEY, LEGACY_LAST_EXIT_KEY
+    forceNextTier, MUTATIONS, LAST_EXIT_KEY, LEGACY_LAST_EXIT_KEY, getDailyDay
 } from '../state.js';
 import { MOCK_STATS_KEY } from '../sdk-stub.js';
 
@@ -99,6 +99,34 @@ function removeMutation() {
     after();
 }
 
+// Ежедневные награды: и «след. день», и сброс серии идут через ТОТ ЖЕ путь
+// (GameScene.claimDaily -> state.claimDailyReward -> событие 'daily-claimed'),
+// что и реальный первый заход за день
+function dailyNextDay() {
+    const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
+    if (!gs) {
+        log('GameScene ещё не готов');
+        return;
+    }
+    gameState.lastDailyDay = Math.max(0, getDailyDay() - 1); // «завтра» наступило
+    saveGame();
+    gs.claimDaily();
+    log(`daily: серия ${gameState.dailyStreak} — награда дня ${((gameState.dailyStreak - 1) % 7) + 1}/7`);
+}
+
+function dailyResetStreak() {
+    const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
+    if (!gs) {
+        log('GameScene ещё не готов');
+        return;
+    }
+    gameState.dailyStreak = 0;
+    gameState.lastDailyDay = 0;
+    saveGame();
+    gs.claimDaily();
+    log('daily: серия обнулена — показана награда 1-го дня');
+}
+
 // Симуляция офлайна идёт по ТОМУ ЖЕ коду, что и реальный возврат:
 // computeOfflineReward -> addOre -> registry.offlineInfo -> событие offline-applied
 function simulateOffline(hours) {
@@ -135,6 +163,8 @@ function fullReset() {
     } catch (e) { /* приватный режим — сейв уже сброшен */ }
     if (ui) {
         ui.hideOfflineModal();
+        ui.hideDailyModal(); // окно дневной награды тоже закрывается
+        ui._pendingDaily = null;
         ui.closeModal();
     }
     if (gs) {
@@ -190,6 +220,10 @@ function buildPanel(game) {
         grid.appendChild(makeButton(MUTATIONS[id].name, () => applyMutation(id)));
     }
     grid.appendChild(makeButton('Убрать мутацию', removeMutation));
+
+    // Ежедневные награды (Этап 6): приход «завтра» и сброс серии
+    grid.appendChild(makeButton('Дейли: след. день', dailyNextDay));
+    grid.appendChild(makeButton('Дейли: сброс серии', dailyResetStreak));
 
     statusLine = document.createElement('div');
     statusLine.className = 'dev-status';

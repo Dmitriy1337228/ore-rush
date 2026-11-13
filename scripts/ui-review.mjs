@@ -180,6 +180,10 @@ async function withState(page, fnBody) {
     console.log('layout violations:', audit.violations.length);
     audit.violations.forEach((v) => console.log('  ' + v));
     await shoot(page, '01_fresh');
+    // Свежий старт выдаёт дневную награду — модалка блокирует ввод (dim),
+    // закрываем перед сценариями кликов
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
+    await page.waitForTimeout(200);
     // 2. Серия кликов по блоку (всплывающие цифры, частицы)
     for (let i = 0; i < 10; i++) {
         await page.mouse.click(400, 390);

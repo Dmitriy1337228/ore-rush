@@ -36,6 +36,10 @@ function check(name, cond, detail = '') {
         await page.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'ore-rush-save': freshSave });
         await page.goto('http://localhost:5174', { waitUntil: 'load' });
         await page.waitForTimeout(3000);
+        // Свежий сейв выдаёт дневную награду — модалка блокирует canvas-клики;
+        // закрываем, награда уже применена
+        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
+        await page.waitForTimeout(300);
         return { ctx, page };
     };
 

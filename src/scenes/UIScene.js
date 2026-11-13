@@ -7,7 +7,8 @@ import {
     getOfflineRate, getOfflineCapSeconds, OFFLINE_CAP_HOURS,
     canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice,
     canPrestige, getStarsGain, doPrestige, PRESTIGE_REQUIREMENT, getPrestigeMult, DIAMOND_INDEX,
-    resetGame, saveGame, fmt, fmtDuration
+    resetGame, saveGame, fmt, fmtDuration,
+    DAILY_REWARDS, getDailyMult
 } from '../state.js';
 import { computeLayout } from '../layout.js';
 import { playSfx } from '../sfx.js';
@@ -149,11 +150,13 @@ export class UIScene extends Phaser.Scene {
         this.maxScroll = 0;
         this.activeTab = 'equipment'; // вкладка панели улучшений
         this.buyAmount = 1;           // мультипокупка: 1 / 10 / 100 / 'max'
-        // Владельцы blockLocked: настройки и офлайн-окно могут быть открыты
-        // одновременно (симуляция офлайна из DevPanel) — блокировку снимает
-        // только закрытие ПОСЛЕДНЕЙ модалки
+        // Владельцы blockLocked: настройки, офлайн-окно и окно дневной награды
+        // могут быть открыты одновременно — блокировку снимает только закрытие
+        // ПОСЛЕДНЕЙ модалки
         this._settingsOpen = false;
         this._offlineOpen = false;
+        this._dailyOpen = false;
+        this._pendingDaily = null; // награда ждёт, пока не закроются другие модалки
     }
 
     create() {
@@ -167,6 +170,7 @@ export class UIScene extends Phaser.Scene {
         this.buildUnlockButton();
         this.buildModal();
         this.buildOfflineModal();
+        this.buildDailyModal();
         this.setupListCamera();
         this.setupListDrag();
         this.buildTutorial();
@@ -194,6 +198,22 @@ export class UIScene extends Phaser.Scene {
             if (this.offlineModal.visible) return;
             this.showOfflineModal(info);
         });
+
+        // Ежедневная награда: и путь загрузки (registry 'dailyInfo'), и DevPanel
+        // («след. день» / «сброс серии») идут в одну очередь через 'daily-claimed'
+        this.game.events.on('daily-claimed', (info) => {
+            this._pendingDaily = info;
+            this.tryShowDailyModal();
+        });
+        if (this.registry.get('dailyInfo')) {
+            // после офлайн-модалки, если та тоже пришла при загрузке (delayedCall офлайна 400)
+            this.time.delayedCall(900, () => {
+                if (!this.registry.get('dailyInfo')) return;
+                this._pendingDaily = this.registry.get('dailyInfo');
+                this.registry.set('dailyInfo', null);
+                this.tryShowDailyModal();
+            });
+        }
 
         if (this.registry.get('offlineInfo')) {
             this.time.delayedCall(400, () => this.showOfflineModal(this.registry.get('offlineInfo')));
@@ -245,6 +265,12 @@ export class UIScene extends Phaser.Scene {
         this.settingsBtn.on('pointerdown', () => this.openModal());
         this.settingsBtn.on('pointerover', () => this.settingsBtn.setAlpha(0.9));
         this.settingsBtn.on('pointerout', () => this.settingsBtn.setAlpha(1));
+
+        // Активные дневные бафы с обратным отсчётом (под HUD-баром): «x2 9:59 · жила 1:59».
+        // Пустая строка, когда бафов нет; setText только при смене строки.
+        this.buffLine = makeLabel(this, 16, 128, '', 13, '#ffd75e');
+        this.buffLine.setOrigin(0, 0).setDepth(11);
+        this._buffLineText = '';
     }
 
     // ---------- Панель улучшений ----------
@@ -324,6 +350,8 @@ export class UIScene extends Phaser.Scene {
         const h = L.hud;
         this.hudBar.setPosition(h.barX + h.barW / 2, h.barY + h.barH / 2);
         this.hudBar.setDisplaySize(h.barW, h.barH);
+        // Строка бафов — сразу под нижней кромкой HUD-бара
+        this.buffLine.setPosition(h.barX + 10, h.barY + h.barH + 6);
         this.placeIcon(this.oreIcon, tierIcon, h.iconX, h.centerY, 48);
         this.coalText.setPosition(h.counterX, h.counterY);
         this.oreName.setPosition(h.counterX, h.counterY);
@@ -389,8 +417,10 @@ export class UIScene extends Phaser.Scene {
         // крупнее (FIT-даунскейл ~0.52 на телефонах съедает кегль)
         this.modalDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
         this.offlineDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
+        this.dailyDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
         this.modal.setPosition(L.modal.cx, L.modal.cy);
         this.offlineModal.setPosition(L.modal.cx, L.modal.cy);
+        this.dailyModal.setPosition(L.modal.cx, L.modal.cy);
         if (this.modalStats) {
             if (L.portrait) {
                 this.modalStats.setFontSize(17).setY(-196);
@@ -471,12 +501,11 @@ export class UIScene extends Phaser.Scene {
     // через setCrop, контент нормируется к 40px и центрируется в слоте.
     _iconMetrics = {};
 
-    // Ручная обрезка генеративного мусора по краям текстур: у pickaxe_diamond
-    // светлая полоса x0..6/y53..109 отсоединена визуально, но связана с телом
-    // по альфе (тонкий мостик) — BFS её не отсекает, поэтому режем колонку явно.
+    // Ручная обрезка генеративного мусора по краям текстур. У pickaxe_diamond/
+    // pickaxe_iron мусор листа (куски соседних спрайтов, связанные с телом по
+    // альфе) СТЁР ИЗ САМИХ PNG 2026-11-13 (art-src/*_before_edgefix.png — бэкапы),
+    // тримы больше не нужны — записей нет. Механизм остаётся для будущих текстур.
     ICON_TRIMS = {
-        pickaxe_diamond: { left: 17 },  // светлая стена x0..16 (яркая кромка x0..6 + тусклое продолжение)
-        pickaxe_iron: { left: 8 }       // тусклая полустена x0..7 (lum <=36, невидима, но убрана)
     };
 
     iconMetrics(key) {
@@ -854,11 +883,13 @@ export class UIScene extends Phaser.Scene {
         this.modalDim.setVisible(false);
         this.modal.setVisible(false);
         this._settingsOpen = false;
-        // Офлайн-модалка может быть открыта поверх — её закрытие снимает блокировку
-        if (!this._offlineOpen) {
+        // Офлайн-модалка и окно дневной награды могут быть открыты поверх —
+        // их закрытие снимает блокировку
+        if (!this._offlineOpen && !this._dailyOpen) {
             this.listContent.setVisible(true);
             this.registry.set('blockLocked', false);
         }
+        this.tryShowDailyModal(); // награда могла ждать очереди под настройками
     }
 
     tryPrestige() {
@@ -940,10 +971,110 @@ export class UIScene extends Phaser.Scene {
         this.offlineDim.setVisible(false);
         this.offlineModal.setVisible(false);
         this._offlineOpen = false;
-        // Настройки могут быть открыты — их закрытие снимает блокировку
-        if (!this._settingsOpen) {
+        // Настройки и окно дневной награды могут быть открыты — их закрытие
+        // снимает блокировку
+        if (!this._settingsOpen && !this._dailyOpen) {
             this.listContent.setVisible(true);
             this.registry.set('blockLocked', false);
+        }
+        this.tryShowDailyModal(); // награда могла ждать очереди под офлайн-окном
+    }
+
+    // ---------- Ежедневная награда (Этап 6) ----------
+
+    buildDailyModal() {
+        const pw = 520;
+        const ph = 420;
+        this.dailyDim = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.65)
+            .setDepth(50).setVisible(false).setInteractive();
+        this.dailyDim.on('pointerdown', (pointer, lx, ly, event) => event.stopPropagation());
+
+        this.dailyModal = this.add.container(640, 360).setDepth(51).setVisible(false);
+        const panel = addImgC(this, 0, 0, 'modal_panel_metal', pw, ph);
+        // Врезка контента: y -180..180 (контейнерные)
+        const title = makeLabel(this, 0, -170, 'Ежедневная награда', 26, '#ffe9b0').setOrigin(0.5);
+        this.dailyStreakText = makeLabel(this, 0, -132, '', 15, '#c8c8c8').setOrigin(0.5);
+        this.dailyIcon = this.add.image(0, -78, 'pickaxe_iron');
+        this.dailyName = makeLabel(this, 0, -18, '', 21, '#ffd75e').setOrigin(0.5);
+        // Верхний якорь (0.5, 0): конкретика дня добавляет 3-ю строку — текст
+        // растёт ВНИЗ и не наезжает на название (перекрытие «Накопителя» поймано
+        // скриншотом игрока)
+        this.dailyDesc = makeLabel(this, 0, 12, '', 15, '#d8d8d8', { align: 'center', lineSpacing: 8 }).setOrigin(0.5, 0);
+        // Серия: 7 слотов цикла, текущий день подсвечен. Иконки нормируем
+        // placeIcon'ом — текстуры ассетов разного разрешения (30..256px)
+        this.dailySlots = [];
+        for (let i = 0; i < 7; i++) {
+            const x = -114 + i * 38;
+            const slot = this.add.image(x, 82, 'icon_slot_frame').setDisplaySize(34, 34);
+            const ic = this.add.image(x, 82, DAILY_REWARDS[i].icon);
+            this.placeIcon(ic, DAILY_REWARDS[i].icon, x, 82, 22);
+            this.dailySlots.push({ slot, ic });
+        }
+        const okBtn = addNineC(this, 0, 152, 'buy_button_normal', 190, 46);
+        okBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 190, 46), Phaser.Geom.Rectangle.Contains);
+        const okText = makeLabel(this, 0, 152, 'Отлично!', 17, '#ffffff').setOrigin(0.5);
+        okBtn.on('pointerdown', () => this.hideDailyModal());
+
+        this.dailyModal.add([panel, title, this.dailyStreakText, this.dailyIcon, this.dailyName, this.dailyDesc, okBtn, okText, ...this.dailySlots.map((s) => s.slot), ...this.dailySlots.map((s) => s.ic)]);
+    }
+
+    // Награда не показывается поверх других модалок — очередь до их закрытия
+    tryShowDailyModal() {
+        if (!this._pendingDaily) return;
+        if (this.offlineModal.visible || this.modal.visible || this.dailyModal.visible) return;
+        const info = this._pendingDaily;
+        this._pendingDaily = null;
+        const idx = (info.streak - 1) % DAILY_REWARDS.length;
+        const reward = DAILY_REWARDS[idx];
+        this.dailyStreakText.setText(`Серия: ${info.streak} ${info.streak === 1 ? 'день' : info.streak < 5 ? 'дня' : 'дней'}`);
+        this.dailyIcon.setTexture(reward.icon);
+        this.placeIcon(this.dailyIcon, reward.icon, 0, -78, 64);
+        let desc = reward.desc;
+        // конкретика дня: сколько руды дал «Накопитель» / какое улучшение выбралось
+        if (info.extra && typeof info.extra === 'number') desc += `\n+${fmt(info.extra)} руды`;
+        else if (info.extra && info.extra.name) desc += `\nулучшение: ${info.extra.name}`;
+        this.dailyName.setText(reward.name);
+        this.dailyDesc.setText(desc);
+        for (let i = 0; i < this.dailySlots.length; i++) {
+            const s = this.dailySlots[i];
+            const active = i === idx;
+            s.ic.setTint(active ? 0xffffff : 0x606060);
+            s.slot.setTint(active ? 0xffffff : 0x909090);
+        }
+        this.dailyDim.setVisible(true);
+        this.dailyModal.setVisible(true);
+        this._dailyOpen = true;
+        // Ряды рендерит listCam поверх главной камеры — прячем под затемнение
+        this.listContent.setVisible(false);
+        this.registry.set('blockLocked', true);
+    }
+
+    hideDailyModal() {
+        this.dailyDim.setVisible(false);
+        this.dailyModal.setVisible(false);
+        this._dailyOpen = false;
+        // Другие модалки могут быть открыты — их закрытие снимает блокировку
+        if (!this._settingsOpen && !this._offlineOpen) {
+            this.listContent.setVisible(true);
+            this.registry.set('blockLocked', false);
+        }
+    }
+
+    // Активные дневные бафы: строка под HUD-баром «x2 9:59 · жила 1:59 · крит 4:31».
+    // setText только при смене строки (каждый кадр иначе перерисовывал бы канвас-текст).
+    updateBuffLine() {
+        const parts = [];
+        const left = (until) => {
+            const sec = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+            return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+        };
+        if (Date.now() < gameState.dailyBuffUntil) parts.push(`x${gameState.dailyBuffMult} ${left(gameState.dailyBuffUntil)}`);
+        if (Date.now() < gameState.dailyVeinUntil) parts.push(`жила ${left(gameState.dailyVeinUntil)}`);
+        if (Date.now() < gameState.dailyCritUntil) parts.push(`крит ${left(gameState.dailyCritUntil)}`);
+        const text = parts.join(' · ');
+        if (text !== this._buffLineText) {
+            this._buffLineText = text;
+            this.buffLine.setText(text);
         }
     }
 
@@ -970,6 +1101,7 @@ export class UIScene extends Phaser.Scene {
         this.statsLine.setText(`клик: ${fmt(getClickDamage() + getSynergyGain())} · крит: ${Math.round(getCritChance() * 100)}%`);
         // Ландшафт: в одну строку за ставкой; портрет: второй строкой под ставкой
         this.statsLine.x = this.L.portrait ? this.gpsText.x : this.gpsText.x + this.gpsText.width + 26;
+        this.updateBuffLine();
         this.starsText.setText(gameState.stars > 0 ? `★ ${gameState.stars} (x${getPrestigeMult().toFixed(1)})` : '');
         // x звёзд фиксирован (правый край перед кнопкой «Настройки»), не двигается от статов
         this.tierLabel.setText(`уровень шахты: ${gameState.tier + 1} — ${tier.name}`);
@@ -1101,13 +1233,19 @@ export class UIScene extends Phaser.Scene {
 
         // Модалка настроек (если открыта)
         if (this.modal.visible) {
-            this.modalStats.setText([
+            const statLines = [
                 `Уровень шахты: ${gameState.tier + 1} (${tier.name})`,
                 `Звёзды: ${gameState.stars} — множитель x${getPrestigeMult().toFixed(1)}`,
                 `Кликов: ${fmt(gameState.clicks)}`,
                 `Всего добыто: ${fmt(gameState.lifetimeMined)}`,
                 `Фоновая добыча: ${Math.round(getOfflineRate() * 100)}% / ${getOfflineCapSeconds() / 3600} ч`
-            ].join('\n'));
+            ];
+            // Активный дневной баф — остаток таймера в строке статов
+            if (getDailyMult() > 1) {
+                const sec = Math.ceil((gameState.dailyBuffUntil - Date.now()) / 1000);
+                statLines.push(`Дневной баф: x${getDailyMult()} — ещё ${fmtDuration(Math.max(0, sec))}`);
+            }
+            this.modalStats.setText(statLines.join('\n'));
 
             const gain = getStarsGain();
             if (canPrestige()) {
