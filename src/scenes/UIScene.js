@@ -269,8 +269,11 @@ export class UIScene extends Phaser.Scene {
         // Hit-area в координатах кадра текстуры (origin 0.5 + setDisplaySize:
         // локальные координаты ввода — кадр 260x133, не отображаемый размер)
         this.settingsBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 260, 133), Phaser.Geom.Rectangle.Contains);
-        this.settingsGear = this.add.image(btnX + 34, 62, 'gear_icon').setScale(0.22).setDepth(12);
-        this.settingsLbl = makeLabel(this, btnX + 98, 62, 'Настройки', 16, '#ffffff').setOrigin(0.5).setDepth(12);
+        // Шестерёнка + подпись: зазор 10px между иконкой и текстом. Иконка
+        // нормируется setDisplaySize (текстуры разного разрешения), подпись —
+        // с левым якорем: раньше она упиралась в шестерёнку вплотную (скрин игрока)
+        this.settingsGear = this.add.image(btnX + 29, 62, 'gear_icon').setDisplaySize(26, 26).setDepth(12);
+        this.settingsLbl = makeLabel(this, btnX + 52, 62, 'Настройки', 16, '#ffffff').setOrigin(0, 0.5).setDepth(12);
         this.settingsBtn.on('pointerdown', () => this.openModal());
         this.settingsBtn.on('pointerover', () => this.settingsBtn.setAlpha(0.9));
         this.settingsBtn.on('pointerout', () => this.settingsBtn.setAlpha(1));
