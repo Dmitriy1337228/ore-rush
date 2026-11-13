@@ -41,6 +41,50 @@
             user-select: none;
             -webkit-user-select: none;
         }
+        /* HTML-лоадер: виден с первого пикселя страницы (модуль и ассеты грузятся
+        с задержкой — раньше был серый фон), гасится первым кадром игры */
+        #loader {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            color: #ffe9b0;
+            font-family: 'Monocraft', monospace;
+            transition: opacity 0.4s;
+        }
+        #loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loader-title {
+            font-size: 26px;
+            letter-spacing: 1px;
+        }
+        .loader-sub {
+            font-size: 13px;
+            color: #c8c8c8;
+        }
+        .loader-bar {
+            width: min(320px, 64vw);
+            height: 16px;
+            border: 2px solid #6b5a34;
+            background: #12100c;
+        }
+        #loader-fill {
+            width: 0%;
+            height: 100%;
+            background: #57a05a;
+            transition: width 0.15s linear;
+        }
+        .loader-pct {
+            font-size: 12px;
+            color: #9a9a9a;
+        }
     </style>
     <!--
     Этап 2 (Яндекс Игры): раскомментировать для подключения SDK.
@@ -48,6 +92,12 @@
     -->
 </head>
 <body>
+    <div id="loader">
+        <div class="loader-title">Рудная лихорадка</div>
+        <div class="loader-sub">Тайна алмазных недр</div>
+        <div class="loader-bar"><div id="loader-fill"></div></div>
+        <div class="loader-pct" id="loader-pct">загрузка…</div>
+    </div>
     <div id="game"></div>
     <script type="module" src="/src/main.js"></script>
 </body>

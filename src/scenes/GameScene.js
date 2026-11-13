@@ -85,6 +85,17 @@ export class GameScene extends Phaser.Scene {
         this.setGameplay(true);
         this.refreshTick();
         this.claimDaily();
+        this.hidePageLoader();
+    }
+
+    // HTML-лоадер из index.html гасится, когда мир уже отрисован первым кадром —
+    // до этого он закрывал «серый фон» страницы на медленных соединениях
+    hidePageLoader() {
+        const el = document.getElementById('loader');
+        if (el) {
+            el.classList.add('hidden');
+            setTimeout(() => el.remove(), 500);
+        }
     }
 
     // Ежедневная награда при первом заходе за день: выдаётся сразу (state.js),
