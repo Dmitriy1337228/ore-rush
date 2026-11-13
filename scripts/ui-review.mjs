@@ -293,6 +293,29 @@ async function withState(page, fnBody) {
     await ctx.close();
 }
 
+// 10b. Настройки при активном дневном бафе: блок статов не должен наезжать на
+// тумблеры Звук/Музыка (наезд 6-й строки пойман скриншотом игрока с Pages —
+// layout-аудит внутренности модалок не проверяет, тут детерминированный зазор).
+{
+    const { ctx, page } = await newPage({ name: '12_settings_daily' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
+    await page.waitForTimeout(200);
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').settingsBtn.emit('pointerdown')); // «Настройки»
+    await page.waitForTimeout(400);
+    const check = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        const statsBottom = ui.modalStats.y + ui.modalStats.height;
+        const toggleTop = ui.soundBtn.y - ui.soundBtn.displayHeight / 2;
+        return { gap: toggleTop - statsBottom, lines: ui.modalStats.text.split('\n').length, buff: ui.buffLine.text };
+    });
+    console.log(`settings/daily: gap ${Math.round(check.gap)}px, stat lines ${check.lines}, hud buff "${check.buff}"`);
+    if (check.lines !== 5) scenarioFailures.push(`12_settings_daily: строк статов ${check.lines}, ожидалось 5 (баф не должен удлинять блок)`);
+    if (check.gap < 8) scenarioFailures.push(`12_settings_daily: тумблеры наезжают на статы (зазор ${Math.round(check.gap)}px)`);
+    if (!check.buff) scenarioFailures.push('12_settings_daily: HUD-таймер бафа пуст на свежем сейве');
+    await shoot(page, '12_settings_daily');
+    await ctx.close();
+}
+
 // 10. Портрет (мобилка 390x844 -> сетка 720x1280): аудит + модалка
 {
     const { ctx, page } = await newPage({ viewport: { width: 390, height: 844 }, name: '10_portrait' });
