@@ -670,7 +670,7 @@ export class UIScene extends Phaser.Scene {
 
         rc.add([card, icon, nameText, descText, priceIcon, priceText, levelText, btn, btnText, lockText]);
 
-        const row = { def, rc, icon, iconScale, iconCX, iconCY, nameText, descText, priceText, priceIcon, priceCX, priceCY, levelText, btn, btnText, lockText, nameMaxW };
+        const row = { def, rc, icon, iconScale, iconCX, iconCY, nameText, descText, priceText, priceIcon, priceCX, priceCY, levelText, btn, btnText, lockText, nameMaxW, textX };
 
         // Покупка на pointerup (а не pointerdown): драг списка, начатый на кнопке,
         // не должен покупать; тап = down+up на кнопке.
@@ -1202,6 +1202,7 @@ export class UIScene extends Phaser.Scene {
             const amount = this.buyAmount;
 
             row.levelText.setText(`ур. ${level}`);
+            row.levelText.setVisible(true); // гейт-ряды ниже прячут её (коллизия с «нужно: …»)
 
             // Иконка кирки меняется по уровню + нормируем контент под слот
             if (def.id === 'pickaxe') {
@@ -1219,6 +1220,17 @@ export class UIScene extends Phaser.Scene {
                     ? `нужно: шахта ${def.tier + 1}`
                     : `нужно: ${getUpgradeDef(def.requires.id).name} ${def.requires.level}`;
                 row.lockText.setText(lockTxt);
+                // «ур. 0» справа наезжала на длинное «нужно: …» (скриншот игрока) —
+                // у заблокированного улучшения уровень неинформативен, прячем бейдж
+                row.levelText.setVisible(false);
+                // и ужинаем кегль, если требование шире карточки до правого края
+                const lockMaxW = VIEWPORT.w - row.textX - 6;
+                let lockSize = this.rowGeom().lockSize;
+                row.lockText.setFontSize(lockSize);
+                while (lockSize > 9 && row.lockText.width > lockMaxW) {
+                    lockSize -= 1;
+                    row.lockText.setFontSize(lockSize);
+                }
                 row.priceIcon.setVisible(false);
                 row.priceText.setVisible(false);
             } else if (maxed) {
