@@ -4,6 +4,7 @@ import {
     saveGame, loadGame, saveLastExit, readLastExit, computeOfflineReward, fmt,
     MUTATIONS, MUTATION_DURATION_MS, MUTATION_CHECK_MS, MUTATION_CHANCE, getMutationBreakBonus
 } from '../state.js';
+import { computeLayout } from '../layout.js';
 import { playSfx } from '../sfx.js';
 
 const FONT = '"Monocraft", "Inter", "Consolas", monospace';
@@ -11,12 +12,13 @@ const FONT = '"Monocraft", "Inter", "Consolas", monospace';
 const BLOCK_STAGES = [1, 2, 3, 4];
 
 // Фоны локаций (пиксель-арт конверсия voxel-рендеров ComfyUI): один фон на тир руды.
-// При смене тира — плавный кроссфейд; фон на 8% больше экрана (страховка от тряски камеры).
+// При смене тира — плавный кроссфейд; фон обязан закрыть видимую зону (ландшафт —
+// весь экран, портрет — полоса до верхней кромки панели) с запасом 8% (страховка
+// от тряски камеры при крите).
 const BG_KEYS = ['bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver', 'bg_05_gold', 'bg_06_amethyst', 'bg_07_emerald', 'bg_08_ruby', 'bg_09_sapphire', 'bg_10_platinum', 'bg_11_uranium', 'bg_12_diamond'];
 const BG_FADE_MS = 800;
 const BG_SHADE_ALPHA = 0.32;
-const BG_OVER_W = 1382;
-const BG_OVER_H = 778;
+const BG_OVERSIZE = 1.08;
 
 function tierBgKey(tier) {
     return BG_KEYS[Math.min(tier, BG_KEYS.length - 1)];
@@ -84,26 +86,97 @@ export class GameScene extends Phaser.Scene {
     // ---------- Мир ----------
 
     buildWorld() {
+        this.applyLayout();
+
         // Стартовый градиент остаётся подложкой под фоном (страховка на случай,
         // если текстура фона ещё не готова) — ОБЯЗАТЕЛЬНО ниже bgCurrent/bgNext,
         // иначе непрозрачный градиент закроет фон целиком.
-        const g = this.add.graphics();
-        g.fillGradientStyle(0x3a3f44, 0x3a3f44, 0x1c1e22, 0x1c1e22, 1);
-        g.fillRect(-80, -80, 1440, 880);
-        g.setDepth(-4);
+        this.bgBase = this.add.graphics().setDepth(-4);
+        this.drawBase();
 
         // Слой фона локации: bgCurrent (видимый) + bgNext (невидимый верхний для кроссфейда).
-        // Фон на 8% больше экрана и центрирован: тряска камеры при разрушении блока
-        // (~6px) не открывает серые края по периметру.
+        // Позиция/размер — по раскладке (positionBg): cover видимой зоны + 8% оверсайз.
         // bgShade — лёгкое затемнение поверх фона: контент фона не спорит с блоком и HUD.
-        this.bgCurrent = this.add.image(640, 360, tierBgKey(gameState.tier))
-            .setOrigin(0.5).setDisplaySize(BG_OVER_W, BG_OVER_H).setDepth(-3);
-        this.bgNext = this.add.image(640, 360, tierBgKey(gameState.tier))
-            .setOrigin(0.5).setDisplaySize(BG_OVER_W, BG_OVER_H).setDepth(-2).setAlpha(0).setVisible(false);
-        this.bgShade = this.add.rectangle(640, 360, BG_OVER_W, BG_OVER_H, 0x000000, BG_SHADE_ALPHA)
+        this.bgCurrent = this.add.image(0, 0, tierBgKey(gameState.tier))
+            .setOrigin(0.5).setDepth(-3);
+        this.bgNext = this.add.image(0, 0, tierBgKey(gameState.tier))
+            .setOrigin(0.5).setDepth(-2).setAlpha(0).setVisible(false);
+        this.bgShade = this.add.rectangle(0, 0, 10, 10, 0x000000, BG_SHADE_ALPHA)
             .setDepth(-1);
+        // Тень над панелью (портрет): плавный градиент прячет нижнюю кромку фото
+        // (при зуме читается как серая полоса) — контент «уходит» под лист
+        this.bgFade = this.add.graphics().setDepth(-1);
+        this.drawFade();
+        this.positionBg();
 
         this.buildEmitters(TIERS[gameState.tier].iconKey);
+    }
+
+    // ---------- Адаптивная раскладка (см. src/layout.js) ----------
+
+    applyLayout() {
+        const L = computeLayout(this.scale.gameSize.width, this.scale.gameSize.height);
+        this.L = L;
+        if (this.bgBase) this.drawBase();
+        this.positionBg();
+        const bx = L.block.x, by = L.block.y;
+        const moved = this.blockX !== bx || this.blockY !== by;
+        this.blockX = bx;
+        this.blockY = by;
+        if (this.block && moved) {
+            this.block.setPosition(bx, by);
+            if (this.mutationUi) {
+                // Подпись мутации привязана к блоку — перезапускаем боб-твин от новой точки
+                this.tweens.killTweensOf(this.mutationUi);
+                this.mutationUi.setPosition(bx, by - 200);
+                this.tweens.add({ targets: this.mutationUi, y: by - 208, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+            }
+        }
+    }
+
+    drawBase() {
+        const g = this.bgBase;
+        g.clear();
+        g.fillGradientStyle(0x3a3f44, 0x3a3f44, 0x1c1e22, 0x1c1e22, 1);
+        g.fillRect(-80, -80, this.L.W + 160, this.L.H + 160);
+    }
+
+    positionBg() {
+        if (!this.bgCurrent || !this.L) return;
+        // Cover видимой зоны (0..bgCoverToY по вертикали, вся ширина) с запасом 8%:
+        // тряска камеры при крите (~5px) не открывает края. Ландшафт даёт ровно
+        // прежние 1382x778. Портрет — масштаб считается от ЗОНЫ УГЛУБЛЁННОЙ за панель
+        // (bgCoverToY + 250): нижняя кромка фото (плоский «пол») прячется ЗА панелью,
+        // а видимый низ прижимается к её верхней кромке.
+        const frame = this.textures.getFrame(this.bgCurrent.texture.key);
+        const coverDeep = this.L.portrait ? this.L.bgCoverToY + 250 : this.L.bgCoverToY;
+        const scale = Math.max(this.L.W / frame.width, coverDeep / frame.height);
+        const dw = Math.round(frame.width * scale * BG_OVERSIZE);
+        const dh = Math.round(frame.height * scale * BG_OVERSIZE);
+        const cx = this.L.W / 2;
+        const cy = this.L.portrait
+            ? coverDeep - dh / 2 + 2
+            : this.L.H / 2;
+        this.bgCurrent.setPosition(cx, cy).setDisplaySize(dw, dh);
+        this.bgNext.setPosition(cx, cy).setDisplaySize(dw, dh);
+        this.bgShade.setPosition(this.L.W / 2, this.L.H / 2).setSize(this.L.W, this.L.H);
+        this.drawFade();
+    }
+
+    // Тень над панелью (только портрет): 12 полос с нарастающим альфакрашиванием
+    // от прозрачного к чёрному — нижняя кромка фото «тонет» в тени перед листом.
+    drawFade() {
+        if (!this.bgFade || !this.L) return;
+        const g = this.bgFade;
+        g.clear();
+        if (!this.L.portrait) return;
+        const FH = 260;
+        const top = this.L.bgCoverToY - FH;
+        const steps = 16;
+        for (let i = 0; i < steps; i++) {
+            g.fillStyle(0x000000, Math.pow((i + 1) / steps, 1.7) * 0.88);
+            g.fillRect(0, Math.floor(top + (FH * i) / steps), this.L.W, Math.ceil(FH / steps) + 1);
+        }
     }
 
     // Плавная смена фона при переходе на новый тир (или «Полный сброс» на тир 1).
@@ -168,8 +241,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     buildBlock() {
-        this.blockX = 400;
-        this.blockY = 400;
+        // Координаты блока задаёт applyLayout (адаптивная раскладка)
         this.blockStage = 0;
         this.hitProgress = 0;
         this.blockBusy = false;
@@ -216,6 +288,9 @@ export class GameScene extends Phaser.Scene {
 
         // Тумблер «Музыка: вкл/выкл» и слайдер громкости (UIScene) — mute и volume BGM
         this.game.events.on('music-changed', () => this.syncBgm());
+
+        // Смена ориентации/размера окна (main.js) — перечитываем раскладку
+        this.game.events.on('layout-changed', () => this.applyLayout());
     }
 
     // ---------- Фоновая музыка ----------

@@ -113,12 +113,12 @@ async function auditLayout(page) {
         }
         // Имена рядов: детерминированная проверка ширины, независимо от видимости
         // ряда (длинные имена машин видны только на глубоких тирах и не всегда
-        // попадают в сценарии). Ограничение: имя не правее 282 (край поля карточки).
+        // попадают в сценарии). Лимит — от ширины карточки (row.nameMaxW).
         if (ui && ui.rows) {
             for (const row of ui.rows) {
                 if (!row.nameText || !row.nameText.width) continue;
-                if (row.nameText.width > 183) {
-                    violations.push(`NAME-TOO-LONG "${row.nameText.text}" width=${Math.round(row.nameText.width)} > 182 (правый край имени 282)`);
+                if (row.nameText.width > row.nameMaxW + 1) {
+                    violations.push(`NAME-TOO-LONG "${row.nameText.text}" width=${Math.round(row.nameText.width)} > ${row.nameMaxW}`);
                 }
             }
         }
@@ -256,6 +256,24 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null } 
     console.log('deep violations:', auditDeep.violations.length);
     auditDeep.violations.forEach((v) => console.log('  ' + v));
     await shoot(page, '10_deep_rows');
+    await ctx.close();
+}
+
+// 10. Портрет (мобилка 390x844 -> сетка 720x1280): аудит + модалка
+{
+    const { ctx, page } = await newPage({ viewport: { width: 390, height: 844 } });
+    const auditP = await auditLayout(page);
+    fs.writeFileSync(path.join(OUT, 'layout_audit_portrait.txt'), auditP.violations.join('\n') || 'layout audit (portrait 390x844): 0 violations');
+    console.log('portrait violations:', auditP.violations.length);
+    auditP.violations.forEach((v) => console.log('  ' + v));
+    await shoot(page, '11_portrait');
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').settingsBtn.emit('pointerdown'));
+    await page.waitForTimeout(300);
+    await shoot(page, '12_portrait_modal');
+    const auditPM = await auditLayout(page);
+    fs.writeFileSync(path.join(OUT, 'layout_audit_portrait_modal.txt'), auditPM.violations.join('\n') || 'layout audit (portrait modal): 0 violations');
+    console.log('portrait modal violations:', auditPM.violations.length);
+    auditPM.violations.forEach((v) => console.log('  ' + v));
     await ctx.close();
 }
 
