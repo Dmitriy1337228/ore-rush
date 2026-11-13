@@ -8,7 +8,7 @@ import {
     canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice,
     canPrestige, getStarsGain, doPrestige, PRESTIGE_REQUIREMENT, getPrestigeMult, DIAMOND_INDEX,
     resetGame, saveGame, fmt, fmtDuration,
-    DAILY_REWARDS, getDailyMult
+    DAILY_REWARDS
 } from '../state.js';
 import { computeLayout } from '../layout.js';
 import { playSfx } from '../sfx.js';
@@ -1233,19 +1233,15 @@ export class UIScene extends Phaser.Scene {
 
         // Модалка настроек (если открыта)
         if (this.modal.visible) {
-            const statLines = [
+            this.modalStats.setText([
                 `Уровень шахты: ${gameState.tier + 1} (${tier.name})`,
                 `Звёзды: ${gameState.stars} — множитель x${getPrestigeMult().toFixed(1)}`,
                 `Кликов: ${fmt(gameState.clicks)}`,
                 `Всего добыто: ${fmt(gameState.lifetimeMined)}`,
                 `Фоновая добыча: ${Math.round(getOfflineRate() * 100)}% / ${getOfflineCapSeconds() / 3600} ч`
-            ];
-            // Активный дневной баф — остаток таймера в строке статов
-            if (getDailyMult() > 1) {
-                const sec = Math.ceil((gameState.dailyBuffUntil - Date.now()) / 1000);
-                statLines.push(`Дневной баф: x${getDailyMult()} — ещё ${fmtDuration(Math.max(0, sec))}`);
-            }
-            this.modalStats.setText(statLines.join('\n'));
+            ].join('\n'));
+            // Дневной баф сознательно НЕ строкой в статах: 6-я строка удлиняла блок
+            // до наезда тумблеров (скриншот игрока с Pages) — таймер уже в HUD (buffLine)
 
             const gain = getStarsGain();
             if (canPrestige()) {
