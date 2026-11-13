@@ -11,7 +11,7 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
     const save = JSON.stringify({ version: 2, ore: 0, tier: 0, stars: 0, clicks: 0, lifetimeMined: 0, tierEarned: [0, 0, 0, 0, 0], levels: { pickaxe: 5, sledge: 0, dynamite: 0, lucky: 0, resonance: 0, miner: 0, drill: 0, excavator: 0, factory: 0, tech: 0, robotarm: 4, lantern: 0, warehouse: 0 } });
-    await page.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'minecraft-clicker-save': save });
+    await page.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'ore-rush-save': save });
     await page.goto('http://localhost:5174', { waitUntil: 'load' });
     await page.waitForTimeout(3000);
     const read = () => page.evaluate(() => {
@@ -36,7 +36,7 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     const page2 = await b.newPage({ viewport: { width: 1280, height: 720 } });
     page2.on('pageerror', (e) => errors.push(String(e)));
     const save2 = JSON.stringify({ version: 2, ore: 0, tier: 0, stars: 0, clicks: 0, lifetimeMined: 0, tierEarned: [0, 0, 0, 0, 0], levels: { pickaxe: 5, sledge: 0, dynamite: 0, lucky: 0, resonance: 0, miner: 0, drill: 0, excavator: 0, factory: 0, tech: 0, robotarm: 1, lantern: 0, warehouse: 0 } });
-    await page2.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'minecraft-clicker-save': save2 });
+    await page2.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'ore-rush-save': save2 });
     await page2.goto('http://localhost:5174', { waitUntil: 'load' });
     await page2.waitForTimeout(3000);
     // Сэмплируем стадию блока каждые 150мс ~14с (5 авто-ударов по 2с = ~10с на блок)

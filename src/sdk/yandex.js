@@ -27,7 +27,7 @@ export const YandexSDK = {
     async save(data) {
         if (!this.available || !this.player) return false;
         try {
-            await this.player.setData({ minecraftClickerSave: data });
+            await this.player.setData({ oreRushSave: data });
             return true;
         } catch (err) {
             console.warn('[YandexSDK] save не удался:', err);
@@ -38,8 +38,8 @@ export const YandexSDK = {
     async load() {
         if (!this.available || !this.player) return null;
         try {
-            const data = await this.player.getData(['minecraftClickerSave']);
-            return data && data.minecraftClickerSave ? data.minecraftClickerSave : null;
+            const data = await this.player.getData(['oreRushSave']);
+            return data && data.oreRushSave ? data.oreRushSave : null;
         } catch (err) {
             console.warn('[YandexSDK] load не удался:', err);
             return null;
@@ -58,11 +58,18 @@ export const YandexSDK = {
         }
     },
 
-    showFullscreenAdv(onClose) {
+    // callbacks: { onClose(wasShown), onError(err), onOpen() }.
+    // Реальный SDK при неудаче загрузки рекламы зовёт onError, а onClose не
+    // вызывается — без проброса onError ждущий код зависнет навсегда.
+    showFullscreenAdv(callbacks = {}) {
         if (!this.available || !this.sdk || !this.sdk.adv) {
-            if (onClose) onClose();
+            if (callbacks.onClose) callbacks.onClose(false);
             return;
         }
-        this.sdk.adv.showFullscreenAdv({ callbacks: { onClose: () => onClose && onClose() } });
+        this.sdk.adv.showFullscreenAdv({ callbacks: {
+            onOpen: () => callbacks.onOpen && callbacks.onOpen(),
+            onClose: (wasShown) => callbacks.onClose && callbacks.onClose(wasShown),
+            onError: (err) => callbacks.onError && callbacks.onError(err)
+        } });
     }
 };

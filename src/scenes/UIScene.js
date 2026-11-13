@@ -11,23 +11,58 @@ import {
 } from '../state.js';
 import { computeLayout } from '../layout.js';
 import { playSfx } from '../sfx.js';
+import manifest from '../../spritecook-assets.json';
 
 const FONT = '"Monocraft", "Inter", "Consolas", monospace';
 
-// 9-slice: исходные размеры и отступы из манифеста spritecook-assets.json
-const NS_SRC = {
-    hud_bar_background: { l: 55, t: 55, r: 55, b: 55, w: 1892, h: 225 },
-    upgrades_panel_wood: { l: 65, t: 65, r: 65, b: 65, w: 1029, h: 1119 },
-    modal_panel_metal: { l: 60, t: 60, r: 60, b: 60, w: 849, h: 656 },
-    upgrade_row_card_1: { l: 30, t: 30, r: 30, b: 30, w: 835, h: 218 },
-    icon_slot_frame: { l: 40, t: 40, r: 40, b: 40, w: 229, h: 236 },
-    buy_button_normal: { l: 40, t: 40, r: 40, b: 40, w: 267, h: 133 },
-    buy_button_hover: { l: 40, t: 40, r: 40, b: 40, w: 261, h: 133 },
-    buy_button_pressed: { l: 40, t: 40, r: 40, b: 40, w: 262, h: 133 },
-    buy_button_disabled_gray: { l: 40, t: 40, r: 40, b: 40, w: 260, h: 133 },
-    settings_button_wide: { l: 45, t: 50, r: 45, b: 50, w: 410, h: 161 },
-    close_button_square: { l: 45, t: 45, r: 45, b: 45, w: 196, h: 191 }
+// Размеры исходников 9-slice текстур (в манифесте их нет — держим рядом;
+// при регенерации ассета с новым размером обновить эту таблицу).
+const NS_SOURCE_SIZE = {
+    hud_bar_background: { w: 1892, h: 225 },
+    upgrades_panel_wood: { w: 1029, h: 1119 },
+    modal_panel_metal: { w: 849, h: 656 },
+    upgrade_row_card_1: { w: 835, h: 218 },
+    icon_slot_frame: { w: 229, h: 236 },
+    buy_button_normal: { w: 267, h: 133 },
+    buy_button_hover: { w: 261, h: 133 },
+    buy_button_pressed: { w: 262, h: 133 },
+    buy_button_disabled_gray: { w: 260, h: 133 },
+    settings_button_wide: { w: 410, h: 161 },
+    close_button_square: { w: 196, h: 191 }
 };
+
+// Фолбэк-борды на случай отсутствия ассета в манифесте (значения не должны
+// расходиться с spritecook-assets.json).
+const NS_FALLBACK = {
+    hud_bar_background: { l: 55, t: 55, r: 55, b: 55 },
+    upgrades_panel_wood: { l: 65, t: 65, r: 65, b: 65 },
+    modal_panel_metal: { l: 60, t: 60, r: 60, b: 60 },
+    upgrade_row_card_1: { l: 30, t: 30, r: 30, b: 30 },
+    icon_slot_frame: { l: 40, t: 40, r: 40, b: 40 },
+    buy_button_normal: { l: 40, t: 40, r: 40, b: 40 },
+    buy_button_hover: { l: 40, t: 40, r: 40, b: 40 },
+    buy_button_pressed: { l: 40, t: 40, r: 40, b: 40 },
+    buy_button_disabled_gray: { l: 40, t: 40, r: 40, b: 40 },
+    settings_button_wide: { l: 45, t: 50, r: 45, b: 50 },
+    close_button_square: { l: 45, t: 45, r: 45, b: 45 }
+};
+
+// 9-slice: борды — ЕДИНСТВЕННЫЙ источник = манифест spritecook-assets.json
+// (ключ текстуры = имя файла без .png). Регенерация ассета с другими фасками
+// подхватывается без правки кода.
+const NS_SRC = { ...NS_FALLBACK };
+for (const entry of manifest.assets || []) {
+    if (!entry.nine_slice || !entry.file) continue;
+    const key = entry.file.split('/').pop().replace(/\.png$/, '');
+    const size = NS_SOURCE_SIZE[key];
+    if (size) {
+        NS_SRC[key] = {
+            l: entry.nine_slice.left, t: entry.nine_slice.top,
+            r: entry.nine_slice.right, b: entry.nine_slice.bottom,
+            w: size.w, h: size.h
+        };
+    }
+}
 
 function nsBorders(key, w, h) {
     const s = NS_SRC[key];
@@ -114,10 +149,18 @@ export class UIScene extends Phaser.Scene {
         this.maxScroll = 0;
         this.activeTab = 'equipment'; // вкладка панели улучшений
         this.buyAmount = 1;           // мультипокупка: 1 / 10 / 100 / 'max'
+        // Владельцы blockLocked: настройки и офлайн-окно могут быть открыты
+        // одновременно (симуляция офлайна из DevPanel) — блокировку снимает
+        // только закрытие ПОСЛЕДНЕЙ модалки
+        this._settingsOpen = false;
+        this._offlineOpen = false;
     }
 
     create() {
-        if (import.meta.env.DEV) window.__fmt = fmt; // хук для автопроверок
+        if (import.meta.env.DEV) {
+            window.__fmt = fmt; // хук для автопроверок
+            window.__ec = { getUpgradeCost, getBulkCost, getAffordableBulk }; // хук для verify-rebalance
+        }
         this.L = computeLayout(this.scale.gameSize.width, this.scale.gameSize.height);
         this.buildHud();
         this.buildPanel();
@@ -799,6 +842,7 @@ export class UIScene extends Phaser.Scene {
         this.refreshMusicControls();
         this.modalDim.setVisible(true);
         this.modal.setVisible(true);
+        this._settingsOpen = true;
         // Ряды рендерит listCam ПОВЕРХ всего, что рисует главная камера, —
         // иначе они пробивают затемнение модалки (в портрете модалка над списком)
         this.listContent.setVisible(false);
@@ -809,8 +853,12 @@ export class UIScene extends Phaser.Scene {
     closeModal() {
         this.modalDim.setVisible(false);
         this.modal.setVisible(false);
-        this.listContent.setVisible(true);
-        this.registry.set('blockLocked', false);
+        this._settingsOpen = false;
+        // Офлайн-модалка может быть открыта поверх — её закрытие снимает блокировку
+        if (!this._offlineOpen) {
+            this.listContent.setVisible(true);
+            this.registry.set('blockLocked', false);
+        }
     }
 
     tryPrestige() {
@@ -843,6 +891,7 @@ export class UIScene extends Phaser.Scene {
         this.closeModal();
         this.game.events.emit('tier-changed');
         this.refreshUi();
+        this.maybeRebuildTutorial();
     }
 
     // ---------- Модалка офлайн-дохода ----------
@@ -875,11 +924,12 @@ export class UIScene extends Phaser.Scene {
             `шахтёры добыли ${fmt(info.reward)} ${tier.name.toLowerCase()}`,
             '',
             `фоновая добыча: ${Math.round(getOfflineRate() * 100)}% · ${fmt(getOrePerSecond())} руды/сек`,
-            `лимит склада: ${OFFLINE_CAP_HOURS[Math.min(getUpgradeLevel('warehouse'), 3)]} ч · учтено ${fmtDuration(info.counted)}`
+            `лимит склада: ${OFFLINE_CAP_HOURS[Math.min(getUpgradeLevel('warehouse'), OFFLINE_CAP_HOURS.length - 1)]} ч · учтено ${fmtDuration(info.counted)}`
         ].join('\n');
         this.offlineBody.setText(text);
         this.offlineDim.setVisible(true);
         this.offlineModal.setVisible(true);
+        this._offlineOpen = true;
         // Ряды рендерит listCam поверх главной камеры — прячем под затемнение
         this.listContent.setVisible(false);
         this.registry.set('blockLocked', true);
@@ -889,8 +939,12 @@ export class UIScene extends Phaser.Scene {
     hideOfflineModal() {
         this.offlineDim.setVisible(false);
         this.offlineModal.setVisible(false);
-        this.listContent.setVisible(true);
-        this.registry.set('blockLocked', false);
+        this._offlineOpen = false;
+        // Настройки могут быть открыты — их закрытие снимает блокировку
+        if (!this._settingsOpen) {
+            this.listContent.setVisible(true);
+            this.registry.set('blockLocked', false);
+        }
     }
 
     // ---------- Обновление UI (дифф-опрос каждый кадр) ----------
@@ -1198,6 +1252,14 @@ export class UIScene extends Phaser.Scene {
         [this.tutDim, this.tutRing, this.tutArrow, this.tutBubble, this.tutText, this.tutFinal, this.tutBtn, this.tutBtnLbl]
             .forEach((o) => o.destroy());
         this.tutDim = null;
+    }
+
+    // «Полный сброс» возвращает tutorialDone=false, но учебные объекты строятся
+    // единожды в create() — пересобираем в текущей сессии, иначе обучение
+    // появилось бы только после перезагрузки страницы (CONTEXT: «Полный сброс
+    // показывает обучение заново»). Идемпотентно по tutDim.
+    maybeRebuildTutorial() {
+        if (!gameState.tutorialDone && !this.tutDim) this.buildTutorial();
     }
 
     update() {

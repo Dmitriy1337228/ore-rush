@@ -20,7 +20,7 @@ function check(name, cond, detail = '') {
 
     // Свежий забег: кирка 5 (клик = 6), остальное 0 — математика детерминированная
     const save = JSON.stringify({ version: 2, ore: 0, tier: 0, stars: 0, clicks: 0, lifetimeMined: 0, tierEarned: [0, 0, 0, 0, 0], levels: { pickaxe: 5 } });
-    await page.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'minecraft-clicker-save': save });
+    await page.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'ore-rush-save': save });
     await page.goto('http://localhost:5174', { waitUntil: 'load' });
     await page.waitForTimeout(3000);
 

@@ -13,6 +13,14 @@ const SFX = [...new Set(
 (async () => {
     const server = await ensureDevServer();
     process.on('exit', () => releaseDevServer(server));
+    // Счётчик FAIL — раньше скрипт завершался безусловно с кодом 0, регрессия не роняла прогон
+    let failed = 0;
+    const origLog = console.log;
+    console.log = (...args) => {
+        const s = args.map(String).join(' ');
+        if (s.includes('FAIL')) failed++;
+        origLog(...args);
+    };
     const b = await chromium.launch();
     const page = await b.newPage({ viewport: { width: 1280, height: 720 } });
     const errors = [];
@@ -145,6 +153,6 @@ const SFX = [...new Set(
     console.log('8. page errors:', errors.length === 0 ? 'OK (0)' : `FAIL (${errors.join('; ')})`);
 
     await b.close();
-    console.log('done');
-    process.exit(0);
+    console.log(`done, failures: ${failed}`);
+    process.exit(failed > 0 ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
