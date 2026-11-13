@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+﻿import Phaser from 'phaser';
 import {
     gameState, TIERS, UPGRADES, getUpgradeDef, getUpgradeLevel, getUpgradeCost,
     isMaxed, isUpgradeAvailable, canBuy, buyUpgrade, buyBulk, getAffordableBulk, getBulkCost,
@@ -9,6 +9,7 @@ import {
     canPrestige, getStarsGain, doPrestige, PRESTIGE_REQUIREMENT, getPrestigeMult, DIAMOND_INDEX,
     resetGame, saveGame, fmt, fmtDuration
 } from '../state.js';
+import { computeLayout } from '../layout.js';
 import { playSfx } from '../sfx.js';
 
 const FONT = '"Monocraft", "Inter", "Consolas", monospace';
@@ -78,6 +79,8 @@ function makeLabel(scene, x, y, text, size, color, style = {}) {
 // Панель 364x582 (image): face source x73..964, y208..1058 -> drawn x 926..1241, y 232..674
 // Заголовок на планке (143..200), вкладки и строка тира в одной ширине со списком
 // (934..1230), вертикаль: вкладки 192..224 -> тир 237..261 -> список 270..662.
+// Значения — ландшафтные из computeLayout(); applyLayout перезаписывает объект
+// при смене ориентации (ряды строятся шириной с вьюпорт — она одинакова в обеих сетках).
 const VIEWPORT = { x: 934, y: 270, w: 296, h: 392 };
 const ROW_H = 96;
 const ROW_GAP = 6;
@@ -90,12 +93,8 @@ const BUY_AMOUNTS = [1, 10, 100, 'max'];
 
 // Отступы ряда (карточка 296x96: face source x44..817, y16..202 -> drawn x16..290, y7..89)
 const ROW = {
-    slotSize: 68,       // (устарело: слот встроен в текстуру карточки)
-    iconX: 42,          // центр встроенной ниши карточки (source x50..186 -> drawn 17.7..65.9)
-    iconY: 50,          // (source y44..181 -> drawn 19.4..79.7)
-    textX: 100,         // колонка текста
+    iconY: 50,          // центр встроенной ниши карточки по Y (source y44..181 -> drawn 19.4..79.7)
     descSize: 11,       // 11px: вместимость ~12+ символов на строку при вариативности метрик шрифта
-    nameMaxW: 182,      // имя: вся ширина до правого поля (282) — «ур.» переехало в нижнюю полосу
     btnW: 84,
     btnH: 40,
     // Вертикальный стек ряда (y от верха карточки, зазоры заданы явно):
@@ -119,13 +118,19 @@ export class UIScene extends Phaser.Scene {
 
     create() {
         if (import.meta.env.DEV) window.__fmt = fmt; // хук для автопроверок
+        this.L = computeLayout(this.scale.gameSize.width, this.scale.gameSize.height);
         this.buildHud();
         this.buildPanel();
         this.buildUnlockButton();
         this.buildModal();
         this.buildOfflineModal();
         this.setupListCamera();
+        this.setupListDrag();
         this.buildTutorial();
+        this.applyLayout();
+
+        // Смена ориентации/размера окна (main.js) — переставляем весь UI
+        this.game.events.on('layout-changed', () => this.applyLayout());
 
         this.input.on('wheel', (pointer, over, dx, dy) => {
             if (pointer.x >= VIEWPORT.x - 10 && pointer.x <= VIEWPORT.x + VIEWPORT.w + 10
@@ -135,18 +140,8 @@ export class UIScene extends Phaser.Scene {
             }
         });
 
-        // Драг по списку
-        this.viewportBg.setInteractive();
-        this.viewportBg.on('pointermove', (pointer) => {
-            if (!pointer.isDown || !this.dragStartY) return;
-            this.scrollPos = Phaser.Math.Clamp(this.dragStartScroll - (pointer.y - this.dragStartY), 0, this.maxScroll);
-            this.updateScroll();
-        });
-        this.viewportBg.on('pointerdown', (pointer) => {
-            this.dragStartY = pointer.y;
-            this.dragStartScroll = this.scrollPos;
-        });
-        this.input.on('pointerup', () => { this.dragStartY = null; });
+        // Драг списка — setupListDrag (scene-level, работает по всей площади вьюпорта,
+        // включая карточки: покупка на кнопках висит на pointerup с гасителем драга)
 
         this.game.events.on('ui-refresh', () => this.refreshUi());
 
@@ -171,7 +166,8 @@ export class UIScene extends Phaser.Scene {
         // Врезка source 41..171 (темная зона) -> при масштабе 112/225=0.4978 рисуется
         // в y 30..95 (центр 62.5). Пары текстов выровнены по нижней кромке (origin 0,1):
         // так совпадают базовые линии шрифтов разных размеров.
-        addImg(this, 16, 10, 'hud_bar_background', 1250, 112, 10);
+        // Позиции — ландшафтные; applyLayout переставляет под ориентацию.
+        this.hudBar = addImg(this, 16, 10, 'hud_bar_background', 1250, 112, 10);
 
         this.oreIcon = this.add.image(78, 62, TIERS[gameState.tier].iconKey).setDepth(11);
         this.placeIcon(this.oreIcon, TIERS[gameState.tier].iconKey, 78, 62, 48);
@@ -201,8 +197,8 @@ export class UIScene extends Phaser.Scene {
         // Hit-area в координатах кадра текстуры (origin 0.5 + setDisplaySize:
         // локальные координаты ввода — кадр 260x133, не отображаемый размер)
         this.settingsBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 260, 133), Phaser.Geom.Rectangle.Contains);
-        this.add.image(btnX + 34, 62, 'gear_icon').setScale(0.22).setDepth(12);
-        makeLabel(this, btnX + 98, 62, 'Настройки', 16, '#ffffff').setOrigin(0.5).setDepth(12);
+        this.settingsGear = this.add.image(btnX + 34, 62, 'gear_icon').setScale(0.22).setDepth(12);
+        this.settingsLbl = makeLabel(this, btnX + 98, 62, 'Настройки', 16, '#ffffff').setOrigin(0.5).setDepth(12);
         this.settingsBtn.on('pointerdown', () => this.openModal());
         this.settingsBtn.on('pointerover', () => this.settingsBtn.setAlpha(0.9));
         this.settingsBtn.on('pointerout', () => this.settingsBtn.setAlpha(1));
@@ -216,9 +212,9 @@ export class UIScene extends Phaser.Scene {
         const pw = 364;
         const ph = 582;
 
-        addImg(this, px, py, 'upgrades_panel_wood', pw, ph, 10);
+        this.panelImg = addImg(this, px, py, 'upgrades_panel_wood', pw, ph, 10);
         // Планка с заклёпками (143..200): заголовок по её центру
-        makeLabel(this, px + pw / 2, 171, 'Улучшения', 24, '#ffe9b0').setOrigin(0.5).setDepth(11);
+        this.panelTitle = makeLabel(this, px + pw / 2, 171, 'Улучшения', 24, '#ffe9b0').setOrigin(0.5).setDepth(11);
 
         // Вкладки: одна ширина со списком (934..1230), две по 145 + зазор 6
         this.tabBtns = TABS.map((tab, i) => this.buildTabButton(VIEWPORT.x + i * 151, 192, tab));
@@ -226,7 +222,9 @@ export class UIScene extends Phaser.Scene {
         // Строка тира + переключатель мультипокупки (в границах списка)
         this.tierLabel = makeLabel(this, VIEWPORT.x + 2, 249, '', 13, '#c8b78e');
         this.tierLabel.setOrigin(0, 0.5).setDepth(11);
-        this.buildAmountButton(VIEWPORT.x + VIEWPORT.w - 38, 249);
+        const amount = this.buildAmountButton(VIEWPORT.x + VIEWPORT.w - 38, 249);
+        this.amountC = amount.c;
+        this.amountBg = amount.bg;
 
         // Фон вьюпорта (для драга). Клиппинг списка — через отдельную камеру с viewport
         // (GeometryMask в Phaser 4 работает только в Canvas; в WebGL игнорируется).
@@ -239,6 +237,7 @@ export class UIScene extends Phaser.Scene {
         // Ряды всех улучшений строятся один раз; видимость и позиции
         // пересчитываются каждый кадр в refreshUi (фильтр вкладки + «доступные + 1»)
         this.rows = UPGRADES.map((def) => this.buildRow(def));
+        this._rowsBuiltW = VIEWPORT.w;
     }
 
     buildTabButton(x, y, tab) {
@@ -267,6 +266,153 @@ export class UIScene extends Phaser.Scene {
             this.amountLbl.setText(this.buyAmount === 'max' ? 'МАКС' : 'x' + this.buyAmount);
             this.refreshUi();
         });
+        return { c, bg };
+    }
+
+    // ---------- Адаптивная раскладка (см. src/layout.js) ----------
+
+    applyLayout() {
+        const L = computeLayout(this.scale.gameSize.width, this.scale.gameSize.height);
+        this.L = L;
+        Object.assign(VIEWPORT, L.viewport);
+        const tierIcon = TIERS[gameState.tier].iconKey;
+
+        // HUD: бар на всю ширину сетки (в ландшафте — прежние 1250px по центру)
+        const h = L.hud;
+        this.hudBar.setPosition(h.barX + h.barW / 2, h.barY + h.barH / 2);
+        this.hudBar.setDisplaySize(h.barW, h.barH);
+        this.placeIcon(this.oreIcon, tierIcon, h.iconX, h.centerY, 48);
+        this.coalText.setPosition(h.counterX, h.counterY);
+        this.oreName.setPosition(h.counterX, h.counterY);
+        // Доход (строка 1) и клик/крит (строка 2) — в ландшафте в одну строку
+        this.placeIcon(this.gpsIcon, tierIcon, h.gpsIconX, h.gpsIconY, 26);
+        this.gpsText.setPosition(h.gpsTextX, h.gpsTextY);
+        this.gpsText.setFontSize(h.gpsSize);
+        this.statsLine.setPosition(h.statsXBase, h.statsY);
+        this.statsLine.setVisible(h.statsVisible);
+        this.statsLine.setFontSize(h.statsSize);
+        const btnX = h.btnX;
+        this.settingsBtn.setPosition(btnX + h.btnW / 2, h.centerY);
+        this.settingsGear.setPosition(btnX + h.gearDx, h.centerY);
+        this.settingsLbl.setPosition(btnX + h.labelDx, h.centerY);
+
+        // Панель улучшений + шапка (вкладки/тир/мультипокупка)
+        const p = L.panel;
+        this.panelImg.setPosition(p.px + p.pw / 2, p.py + p.ph / 2);
+        this.panelImg.setDisplaySize(p.pw, p.ph);
+        this.panelTitle.setPosition(p.px + p.pw / 2, p.py + p.titleDy);
+        this.panelTitle.setFontSize(p.titleSize);
+        // В портрете звёзды живут на планке заголовка панели (HUD плотный);
+        // в ландшафте — в HUD перед кнопкой «Настройки»
+        if (L.portrait) this.starsText.setPosition(p.px + p.pw - 24, p.py + p.titleDy);
+        else this.starsText.setPosition(h.starsRight, h.starsY);
+        // Вкладки: в ландшафте две по 145 (одна ширина со списком); в портрете
+        // растягиваются на весь вьюпорт, иначе сбиваются влево у широкого листа
+        const tabGap = 8;
+        const tabW = L.portrait ? Math.floor((L.viewport.w - tabGap) / 2) : 145;
+        const tabCY = p.py + p.tabsCY;
+        this.tabBtns.forEach((t, i) => {
+            t.c.setPosition(L.viewport.x + tabW / 2 + i * (tabW + tabGap), tabCY);
+            t.bg.setDisplaySize(tabW, p.tabH);
+            t.lbl.setFontSize(p.tabLabelSize);
+            // Хит-зона должна следовать за визуальным размером вкладки
+            t.c.setInteractive(new Phaser.Geom.Rectangle(-tabW / 2, -p.tabH / 2, tabW, p.tabH), Phaser.Geom.Rectangle.Contains);
+        });
+        this.tierLabel.setPosition(L.viewport.x + 2, p.py + p.tierCY);
+        this.tierLabel.setFontSize(p.tierLabelSize);
+        this.amountC.setPosition(L.viewport.x + L.viewport.w - p.amountPadRight - p.amountW / 2, p.py + p.tierCY);
+        this.amountBg.setDisplaySize(p.amountW, p.amountH);
+        this.amountLbl.setFontSize(p.amountSize);
+        this.amountC.setInteractive(new Phaser.Geom.Rectangle(-p.amountW / 2, -p.amountH / 2, p.amountW, p.amountH), Phaser.Geom.Rectangle.Contains);
+        this.viewportBg.setPosition(L.viewport.x + L.viewport.w / 2, L.viewport.y + L.viewport.h / 2);
+        this.viewportBg.setSize(L.viewport.w, L.viewport.h);
+
+        // Список: камера клиппинга следует за вьюпортом; смена ширины — пересборка рядов
+        if (this.listCam) this.listCam.setViewport(L.viewport.x, L.viewport.y, L.viewport.w, L.viewport.h);
+        if (this.rows && this.rows.length && this._rowsBuiltW !== VIEWPORT.w) {
+            this.rebuildRows();
+        }
+        this._rowsBuiltW = VIEWPORT.w;
+
+        // Кнопка спуска + подсказка
+        const u = L.unlock;
+        this.unlockBtn.setPosition(u.cx - u.w / 2, u.y);
+        this.unlockText.setPosition(u.cx, u.y + u.h / 2);
+        this.unlockText.setFontSize(u.textSize);
+        this.hint.setPosition(u.cx, u.hintY);
+        this.hint.setFontSize(u.hintSize);
+
+        // Модалки: затемнение на всю сетку, панель по центру; текст в портрете
+        // крупнее (FIT-даунскейл ~0.52 на телефонах съедает кегль)
+        this.modalDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
+        this.offlineDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
+        this.modal.setPosition(L.modal.cx, L.modal.cy);
+        this.offlineModal.setPosition(L.modal.cx, L.modal.cy);
+        if (this.modalStats) {
+            if (L.portrait) {
+                this.modalStats.setFontSize(17).setY(-196);
+                this.prestigeInfo.setFontSize(15);
+                this.soundText.setFontSize(16);
+                this.musicText.setFontSize(16);
+                this.volLabel.setFontSize(15);
+                this.volPct.setFontSize(15);
+            } else {
+                this.modalStats.setFontSize(15).setY(-186);
+                this.prestigeInfo.setFontSize(14);
+                this.soundText.setFontSize(15);
+                this.musicText.setFontSize(15);
+                this.volLabel.setFontSize(14);
+                this.volPct.setFontSize(14);
+            }
+        }
+
+        if (this.tutDim) {
+            this.tutDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
+            this.layoutTutorial();
+        }
+        if (this.tutorialStep === 3 && this.tutFinal) this.showTutorialFinal();
+    }
+
+    // Драг списка пальцем по всей площади вьюпорта (мобилки: wheel недоступен,
+    // стрелки не нужны). Покупка ряда висит на pointerup и гасится флагом
+    // _listDragging — жест, начатый на кнопке, скроллит, а не покупает.
+    setupListDrag() {
+        const inViewport = (p) =>
+            p.x >= VIEWPORT.x - 6 && p.x <= VIEWPORT.x + VIEWPORT.w + 6 &&
+            p.y >= VIEWPORT.y - 6 && p.y <= VIEWPORT.y + VIEWPORT.h + 6;
+        this.input.on('pointerdown', (p) => {
+            if (this.registry.get('blockLocked') || !inViewport(p)) return;
+            this._dragId = p.id;
+            this._dragStartY = p.y;
+            this._dragStartScroll = this.scrollPos;
+            this._listDragging = false;
+        });
+        this.input.on('pointermove', (p) => {
+            if (p.id !== this._dragId || !p.isDown) return;
+            const delta = this._dragStartY - p.y;
+            if (!this._listDragging && Math.abs(delta) > 6) this._listDragging = true;
+            if (this._listDragging) {
+                this.scrollPos = Phaser.Math.Clamp(this._dragStartScroll + delta, 0, this.maxScroll);
+                this.updateScroll();
+            }
+        });
+        const endDrag = (p) => {
+            if (p && p.id !== this._dragId) return;
+            this._dragId = null;
+            // флаг сбрасываем в следующем кадре: pointerup на кнопке срабатывает
+            // раньше scene pointerup — покупка после лёгкого сдвига (<6px) валидна
+            this.time.delayedCall(0, () => { this._listDragging = false; });
+        };
+        this.input.on('pointerup', endDrag);
+        this.input.on('pointerupoutside', endDrag);
+    }
+
+    // Ряды строятся шириной с вьюпорт; при смене ориентации (296 <-> ~596) — пересборка
+    rebuildRows() {
+        for (const row of this.rows) row.rc.destroy();
+        this.rows = UPGRADES.map((def) => this.buildRow(def));
+        this._rowsBuiltW = VIEWPORT.w;
+        this.refreshUi();
     }
 
     switchTab(tab) {
@@ -358,16 +504,44 @@ export class UIScene extends Phaser.Scene {
         icon.setPosition(cx, cy);
     }
 
+    // Геометрия ряда по ориентации: в портрете карточки шире (624) — кегли и
+    // кнопка крупнее (FIT-даунскейл ~0.52 на телефонах), ряд выше под 2 строки.
+    // Ландшафтные значения = исторические константы ROW (296x96) 1:1.
+    rowGeom() {
+        if (this.L.portrait) {
+            return {
+                h: 108, iconCY: 56, iconSize: 48,
+                nameY: 10, nameSizes: [18, 17, 16, 15, 14, 13],
+                descY: 34, descSize: 14,
+                priceY: 88, priceSize: 15, priceIconSize: 18, levelSize: 14, rightInset: 20,
+                btnY: 28, btnW: 104, btnH: 44, btnSize: 15, lockSize: 13
+            };
+        }
+        return {
+            h: ROW_H, iconCY: ROW.iconY, iconSize: 40,
+            nameY: ROW.nameY, nameSizes: [15, 14, 13, 12, 11, 10],
+            descY: ROW.descY, descSize: ROW.descSize,
+            priceY: ROW.priceY, priceSize: 13, priceIconSize: 16, levelSize: 12, rightInset: 12,
+            btnY: ROW.btnY, btnW: ROW.btnW, btnH: ROW.btnH, btnSize: 14, lockSize: 11
+        };
+    }
+
     buildRow(def) {
+        const g = this.rowGeom();
         const w = VIEWPORT.w;
-        const h = ROW_H;
-        const textX = ROW.textX;
-        // Карточка 296x96 (image): face drawn x16..290, y7..89.
-        // Кнопка 84x40 у правого края; цена — под уровнем;
-        // описание ограничено зоной кнопки и не пересекает её.
-        const btnW = ROW.btnW;
-        const btnH = ROW.btnH;
-        const btnX = w - 12 - btnW;
+        const h = g.h;
+        // Внутренние x-позиции масштабируются от ширины карточки (портрет — широкие
+        // ряды): ниша иконки и текст привязаны к пропорциям текстуры (source 835x218,
+        // ниша x36..193 центр 118, y44..181). Ландшафт (296) даёт ровно прежние
+        // iconX=42 / textX=100 / nameMaxW=182.
+        const f = w / 835;
+        const iconCX = Math.round(118 * f);
+        const textX = Math.round(186 * f) + 34;
+        const nameMaxW = w - textX - 14;
+        // Кнопка у правого края; описание ограничено зоной кнопки и не пересекает её.
+        const btnW = g.btnW;
+        const btnH = g.btnH;
+        const btnX = w - g.rightInset - btnW;
         const descWrap = btnX - textX - 4;
 
         // Контейнер ряда: позиция по Y пересчитывается в refreshUi (фильтр вкладки
@@ -379,45 +553,47 @@ export class UIScene extends Phaser.Scene {
         // Слот уже ВСТРОЕН в текстуру карточки (тёмная ниша слева) — отдельная рамка
         // не нужна: раньше она дублировала нишу и давала «сдвиг»/двойную рамку слева.
         const iconKey = def.id === 'pickaxe' ? 'pickaxe_wooden' : (def.icon || 'gear_icon');
-        const iconCX = ROW.iconX;
-        const iconCY = ROW.iconY;
+        const iconCY = g.iconCY;
         const icon = this.add.image(0, 0, iconKey).setDepth(13);
-        this.placeIcon(icon, iconKey, iconCX, iconCY);
+        this.placeIcon(icon, iconKey, iconCX, iconCY, g.iconSize);
         const iconScale = this.iconMetrics(iconKey).scale;
 
-        const nameText = makeLabel(this, textX, ROW.nameY, def.name, 15, '#ffffff');
+        const nameText = makeLabel(this, textX, g.nameY, def.name, g.nameSizes[0], '#ffffff');
         nameText.setOrigin(0, 0);
         // Длинные имена («Квантовая лаборатория», «Гравитационный резак») ужимаются
         // кеглем под всю ширину карточки — раньше они наезжали на «ур. N» и край.
-        for (const size of [15, 14, 13, 12, 11, 10]) {
+        for (const size of g.nameSizes) {
             nameText.setFontSize(size);
-            if (nameText.width <= ROW.nameMaxW) break;
+            if (nameText.width <= nameMaxW) break;
         }
-        const descText = makeLabel(this, textX, ROW.descY, def.effect, ROW.descSize, '#cfcfcf', { wordWrap: { width: descWrap } });
+        const descText = makeLabel(this, textX, g.descY, def.effect, g.descSize, '#cfcfcf', { wordWrap: { width: descWrap } });
         descText.setOrigin(0, 0);
         const priceIcon = this.add.image(0, 0, 'coal_nugget');
-        this.placeIcon(priceIcon, 'coal_nugget', textX + 6, ROW.priceY, 16);
+        this.placeIcon(priceIcon, 'coal_nugget', textX + 6, g.priceY, g.priceIconSize);
         const priceCX = textX + 6;
-        const priceCY = ROW.priceY;
-        const priceText = makeLabel(this, textX + 16, ROW.priceY, '', 13, '#ffd75e');
+        const priceCY = g.priceY;
+        const priceText = makeLabel(this, textX + 16, g.priceY, '', g.priceSize, '#ffd75e');
         priceText.setOrigin(0, 0.5);
         // «ур. N» — нижняя правая полоса ряда (под кнопкой): название занимает всю ширину
-        const levelText = makeLabel(this, w - 12, ROW.priceY, 'ур. 0', 12, '#e8e8e8');
+        const levelText = makeLabel(this, w - g.rightInset, g.priceY, 'ур. 0', g.levelSize, '#e8e8e8');
         levelText.setOrigin(1, 0.5);
 
-        const btn = this.add.image(btnX + btnW / 2, ROW.btnY + btnH / 2, 'buy_button_normal').setDisplaySize(btnW, btnH).setDepth(11);
+        const btn = this.add.image(btnX + btnW / 2, g.btnY + btnH / 2, 'buy_button_normal').setDisplaySize(btnW, btnH).setDepth(11);
         btn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
-        const btnText = makeLabel(this, btnX + btnW / 2, ROW.btnY + btnH / 2, 'Купить', 14, '#ffffff');
+        const btnText = makeLabel(this, btnX + btnW / 2, g.btnY + btnH / 2, 'Купить', g.btnSize, '#ffffff');
         btnText.setOrigin(0.5);
 
-        const lockText = makeLabel(this, textX, ROW.priceY, '', 11, '#e09090');
+        const lockText = makeLabel(this, textX, g.priceY, '', g.lockSize, '#e09090');
         lockText.setOrigin(0, 0.5);
 
         rc.add([card, icon, nameText, descText, priceIcon, priceText, levelText, btn, btnText, lockText]);
 
-        const row = { def, rc, icon, iconScale, iconCX, iconCY, nameText, descText, priceText, priceIcon, priceCX, priceCY, levelText, btn, btnText, lockText };
+        const row = { def, rc, icon, iconScale, iconCX, iconCY, nameText, descText, priceText, priceIcon, priceCX, priceCY, levelText, btn, btnText, lockText, nameMaxW };
 
-        btn.on('pointerdown', () => {
+        // Покупка на pointerup (а не pointerdown): драг списка, начатый на кнопке,
+        // не должен покупать; тап = down+up на кнопке.
+        btn.on('pointerup', () => {
+            if (this._listDragging) return;
             if (buyBulk(def.id, this.buyAmount)) {
                 playSfx(this, 'purchase');
                 this.tweens.add({ targets: icon, scale: { from: iconScale, to: iconScale * 1.25 }, duration: 90, yoyo: true });
@@ -472,7 +648,8 @@ export class UIScene extends Phaser.Scene {
             const next = getNextTier();
             unlockTier();
             playSfx(this, 'tier');
-            const float = this.spawnFloat(400, 560, `Уровень шахты: ${next.name}!`, 28, next.floatColor);
+            const u = this.L.unlock;
+            const float = this.spawnFloat(u.cx, u.y - 44, `Уровень шахты: ${next.name}!`, 28, next.floatColor);
             float.setOrigin(0.5).setDepth(30);
             this.tweens.add({ targets: float, y: float.y - 60, alpha: 0, duration: 1400, ease: 'Cubic.easeOut', onComplete: () => float.destroy() });
             saveGame();
@@ -536,13 +713,13 @@ export class UIScene extends Phaser.Scene {
         });
 
         // Громкость музыки: слайдер (musicVolume 0..1, применяется на каждый сдвиг)
-        const volLabel = makeLabel(this, -150, 14, 'Громкость:', 14, '#c8c8c8').setOrigin(0.5);
+        this.volLabel = makeLabel(this, -150, 14, 'Громкость:', 14, '#c8c8c8').setOrigin(0.5);
         this.volG = this.add.graphics(); // трек -60..120 (180), заливка и ручка перерисовываются
         this.volPct = makeLabel(this, 170, 14, '50%', 14, '#e8e8e8').setOrigin(0.5);
         const volZone = this.add.zone(-66, -8, 192, 44).setOrigin(0, 0).setInteractive();
         const seekVolume = (gameX) => {
-            // Контейнер модалки фиксирован в (640,360): левый край трека на экране 640-60 = 580
-            gameState.musicVolume = Phaser.Math.Clamp((gameX - 580) / 180, 0, 1);
+            // Контейнер модалки ставит applyLayout: левый край трека = modal.x - 60
+            gameState.musicVolume = Phaser.Math.Clamp((gameX - (this.modal.x - 60)) / 180, 0, 1);
             this.refreshMusicControls();
             this.game.events.emit('music-changed');
         };
@@ -580,7 +757,7 @@ export class UIScene extends Phaser.Scene {
         this.resetText = makeLabel(this, 0, 216, 'Сбросить весь прогресс', 15, '#ffffff').setOrigin(0.5);
         this.resetBtn.on('pointerdown', () => this.tryReset());
 
-        this.modal.add([panel, title, closeBtn, this.modalStats, this.soundBtn, this.soundText, this.musicBtn, this.musicText, volLabel, this.volG, this.volPct, volZone, presTitle, this.prestigeInfo, this.prestigeBtn, this.prestigeText, this.resetBtn, this.resetText]);
+        this.modal.add([panel, title, closeBtn, this.modalStats, this.soundBtn, this.soundText, this.musicBtn, this.musicText, this.volLabel, this.volG, this.volPct, volZone, presTitle, this.prestigeInfo, this.prestigeBtn, this.prestigeText, this.resetBtn, this.resetText]);
         this.prestigeArmed = false;
         this.resetArmed = false;
     }
@@ -622,6 +799,9 @@ export class UIScene extends Phaser.Scene {
         this.refreshMusicControls();
         this.modalDim.setVisible(true);
         this.modal.setVisible(true);
+        // Ряды рендерит listCam ПОВЕРХ всего, что рисует главная камера, —
+        // иначе они пробивают затемнение модалки (в портрете модалка над списком)
+        this.listContent.setVisible(false);
         this.registry.set('blockLocked', true);
         this.refreshUi();
     }
@@ -629,6 +809,7 @@ export class UIScene extends Phaser.Scene {
     closeModal() {
         this.modalDim.setVisible(false);
         this.modal.setVisible(false);
+        this.listContent.setVisible(true);
         this.registry.set('blockLocked', false);
     }
 
@@ -646,9 +827,9 @@ export class UIScene extends Phaser.Scene {
         saveGame();
         this.closeModal();
         this.game.events.emit('tier-changed');
-        const float = this.spawnFloat(640, 300, `+${gain} ★ Множитель: x${getPrestigeMult().toFixed(1)}`, 26, '#ffd75e');
+        const float = this.spawnFloat(this.L.modal.cx, this.L.modal.cy - 60, `+${gain} ★ Множитель: x${getPrestigeMult().toFixed(1)}`, 26, '#ffd75e');
         float.setOrigin(0.5).setDepth(45);
-        this.tweens.add({ targets: float, y: 240, alpha: 0, duration: 1600, onComplete: () => float.destroy() });
+        this.tweens.add({ targets: float, y: float.y - 60, alpha: 0, duration: 1600, onComplete: () => float.destroy() });
     }
 
     tryReset() {
@@ -699,6 +880,8 @@ export class UIScene extends Phaser.Scene {
         this.offlineBody.setText(text);
         this.offlineDim.setVisible(true);
         this.offlineModal.setVisible(true);
+        // Ряды рендерит listCam поверх главной камеры — прячем под затемнение
+        this.listContent.setVisible(false);
         this.registry.set('blockLocked', true);
         this.registry.set('offlineInfo', null);
     }
@@ -706,6 +889,7 @@ export class UIScene extends Phaser.Scene {
     hideOfflineModal() {
         this.offlineDim.setVisible(false);
         this.offlineModal.setVisible(false);
+        this.listContent.setVisible(true);
         this.registry.set('blockLocked', false);
     }
 
@@ -713,18 +897,25 @@ export class UIScene extends Phaser.Scene {
 
     refreshUi() {
         const tier = TIERS[gameState.tier];
+        const h = this.L.hud;
 
         this.coalText.setText(fmt(gameState.ore));
-        if (this.oreIcon.texture.key !== tier.iconKey) this.placeIcon(this.oreIcon, tier.iconKey, 78, 62, 48);
+        if (this.oreIcon.texture.key !== tier.iconKey) this.placeIcon(this.oreIcon, tier.iconKey, h.iconX, h.centerY, 48);
         this.oreName.setText(tier.name.toLowerCase());
-        this.oreName.x = 112 + this.coalText.width + 10;
-        if (this.gpsIcon.texture.key !== tier.iconKey) this.placeIcon(this.gpsIcon, tier.iconKey, 420, 62, 26);
-        // Ставка = фактическая фоновая добыча: пассив с множителем заряженной мутации (registry.passiveMult)
-        this.gpsText.setText(`+${fmt(getOrePerSecond() * (this.registry.get('passiveMult') || 1))} руды/сек`);
+        this.oreName.x = h.counterX + this.coalText.width + 10;
+        // GPS-иконка следует за именем руды (в портрете HUD плотнее — минимум из L)
+        const gx = Math.max(h.gpsIconX, this.oreName.x + this.oreName.width + 14);
+        if (this.gpsIcon.texture.key !== tier.iconKey) this.placeIcon(this.gpsIcon, tier.iconKey, gx, h.centerY, 26);
+        else this.gpsIcon.x = gx;
+        // Ставка = фактическая фоновая добыча: пассив с множителем заряженной мутации (registry.passiveMult).
+        const rate = fmt(getOrePerSecond() * (this.registry.get('passiveMult') || 1));
+        this.gpsText.setText(`+${rate} руды/сек`);
+        this.gpsText.x = gx + 20;
         // «клик» = фактическая добыча обычного клика: базовый урон + синергия
         // (% от пассива) — совпадает с всплывающими цифрами без крита/жилы.
         this.statsLine.setText(`клик: ${fmt(getClickDamage() + getSynergyGain())} · крит: ${Math.round(getCritChance() * 100)}%`);
-        this.statsLine.x = 450 + this.gpsText.width + 26;
+        // Ландшафт: в одну строку за ставкой; портрет: второй строкой под ставкой
+        this.statsLine.x = this.L.portrait ? this.gpsText.x : this.gpsText.x + this.gpsText.width + 26;
         this.starsText.setText(gameState.stars > 0 ? `★ ${gameState.stars} (x${getPrestigeMult().toFixed(1)})` : '');
         // x звёзд фиксирован (правый край перед кнопкой «Настройки»), не двигается от статов
         this.tierLabel.setText(`уровень шахты: ${gameState.tier + 1} — ${tier.name}`);
@@ -778,6 +969,7 @@ export class UIScene extends Phaser.Scene {
         }
 
         // Ряды: фильтр по вкладке + «доступные + 1 следующее», перепозиционирование
+        const rowH = this.rowGeom().h;
         let y = 0;
         for (const row of this.rows) {
             const def = row.def;
@@ -785,7 +977,7 @@ export class UIScene extends Phaser.Scene {
             row.rc.setVisible(show);
             if (!show) continue;
             row.rc.setY(y);
-            y += ROW_H + ROW_GAP;
+            y += rowH + ROW_GAP;
 
             const level = getUpgradeLevel(def.id);
             const maxed = isMaxed(def.id);
@@ -798,7 +990,7 @@ export class UIScene extends Phaser.Scene {
             if (def.id === 'pickaxe') {
                 const icons = ['pickaxe_wooden', 'pickaxe_stone', 'pickaxe_iron', 'pickaxe_diamond'];
                 const key = icons[Math.min(Math.floor(level / 3), icons.length - 1)];
-                this.placeIcon(row.icon, key, row.iconCX, row.iconCY);
+                this.placeIcon(row.icon, key, row.iconCX, row.iconCY, this.rowGeom().iconSize);
             }
 
             if (!available) {
@@ -826,7 +1018,7 @@ export class UIScene extends Phaser.Scene {
                 row.btn.setTexture(afford ? 'buy_button_normal' : 'buy_button_disabled_gray');
                 row.btnText.setText('Купить').setColor(afford ? '#ffffff' : '#b0b0b0');
                 row.lockText.setText('');
-                this.placeIcon(row.priceIcon, tier.iconKey, row.priceCX, row.priceCY, 16);
+                this.placeIcon(row.priceIcon, tier.iconKey, row.priceCX, row.priceCY, this.rowGeom().priceIconSize);
                 row.priceIcon.setVisible(true);
                 row.priceText.setVisible(true);
                 const priceStr = r.n > 0
@@ -842,7 +1034,7 @@ export class UIScene extends Phaser.Scene {
                 row.btn.setTexture(afford ? 'buy_button_normal' : 'buy_button_disabled_gray');
                 row.btnText.setText('Купить').setColor(afford ? '#ffffff' : '#b0b0b0');
                 row.lockText.setText('');
-                this.placeIcon(row.priceIcon, tier.iconKey, row.priceCX, row.priceCY, 16);
+                this.placeIcon(row.priceIcon, tier.iconKey, row.priceCX, row.priceCY, this.rowGeom().priceIconSize);
                 row.priceIcon.setVisible(true);
                 row.priceText.setVisible(true);
                 const priceStr = b.n < amount ? `${fmt(b.total)} x${b.n}` : fmt(b.total);
@@ -885,14 +1077,16 @@ export class UIScene extends Phaser.Scene {
         this.tutClickStart = gameState.clicks;
         this.tutShownAt = 0;
         this.tutTabClicked = -1;
-        this.tutDim = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.45).setDepth(55);
-        this.tutRing = this.add.graphics().setDepth(56);
-        this.tutArrow = this.add.graphics().setDepth(56);
-        this.tutBubble = this.add.rectangle(0, 0, 1, 1, 0x1c1620, 0.92).setDepth(56).setStrokeStyle(2, 0xffd75e, 1);
-        this.tutText = makeLabel(this, 0, 0, '', 15, '#ffe9b0', { align: 'center' }).setOrigin(0.5).setDepth(56);
-        this.tutFinal = makeLabel(this, 0, 0, 'Приятной игры!', 26, '#ffe9b0').setOrigin(0.5).setDepth(56).setVisible(false);
-        this.tutBtn = this.add.image(640, 400, 'buy_button_normal').setDisplaySize(200, 56).setDepth(56).setVisible(false);
-        this.tutBtnLbl = makeLabel(this, 640, 400, 'Играть', 18, '#ffffff').setOrigin(0.5).setDepth(56).setVisible(false);
+        // Учебные слои (38/39) — НАД игровым UI, но ПОД модалками (40/41/50/51):
+        // иначе обучение перекрывало настройки/офлайн-окно у нового игрока
+        this.tutDim = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.45).setDepth(38);
+        this.tutRing = this.add.graphics().setDepth(39);
+        this.tutArrow = this.add.graphics().setDepth(39);
+        this.tutBubble = this.add.rectangle(0, 0, 1, 1, 0x1c1620, 0.92).setDepth(39).setStrokeStyle(2, 0xffd75e, 1);
+        this.tutText = makeLabel(this, 0, 0, '', 15, '#ffe9b0', { align: 'center' }).setOrigin(0.5).setDepth(39);
+        this.tutFinal = makeLabel(this, 0, 0, 'Приятной игры!', 26, '#ffe9b0').setOrigin(0.5).setDepth(39).setVisible(false);
+        this.tutBtn = this.add.image(640, 400, 'buy_button_normal').setDisplaySize(200, 56).setDepth(39).setVisible(false);
+        this.tutBtnLbl = makeLabel(this, 640, 400, 'Играть', 18, '#ffffff').setOrigin(0.5).setDepth(39).setVisible(false);
         this.tutBtn.setInteractive({ useHandCursor: true });
         this.tutBtn.on('pointerdown', () => this.finishTutorial());
         // клики по вкладкам: учебный шаг ждёт клик по нужной вкладке
@@ -908,39 +1102,64 @@ export class UIScene extends Phaser.Scene {
     layoutTutorial() {
         this.tutRing.clear();
         this.tutArrow.clear();
+        // Позиции — от ЖИВЫХ объектов (блок GameScene, вкладки): раскладка может
+        // меняться (портрет/ландшафт), захардкоженные прямоугольники здесь недопустимы.
+        const gs = this.scene.get('GameScene');
+        const L = this.L;
+        const ring = (x, y, w, h) => {
+            this.tutRing.fillStyle(0xffd75e, 0.12);
+            this.tutRing.fillRect(x, y, w, h);
+            this.tutRing.lineStyle(3, 0xffd75e, 1);
+            this.tutRing.strokeRect(x, y, w, h);
+        };
         if (this.tutorialStep === 0) {
             // блок: подсветка + стрелка сверху + подпись
-            this.tutRing.fillStyle(0xffd75e, 0.12);
-            this.tutRing.fillRect(240, 240, 320, 320);
-            this.tutRing.lineStyle(3, 0xffd75e, 1);
-            this.tutRing.strokeRect(240, 240, 320, 320);
-            this.tutBubble.setPosition(400, 120).setSize(440, 52);
-            this.tutText.setText('Кликай по кубику — добывай руду!');
-            this.tutText.setPosition(400, 120);
-            this.tutArrow.fillStyle(0xffd75e, 1);
-            this.tutArrow.fillTriangle(386, 165, 414, 165, 400, 205);
-        } else if (this.tutorialStep === 1) {
-            // вкладка «Оборудование»
-            this.tutRing.fillStyle(0xffd75e, 0.12);
-            this.tutRing.fillRect(928, 186, 157, 44);
-            this.tutRing.lineStyle(3, 0xffd75e, 1);
-            this.tutRing.strokeRect(928, 186, 157, 44);
-            this.tutBubble.setPosition(700, 200).setSize(380, 66);
-            this.tutText.setText('Покупай оборудование здесь —\nоно усиливает каждый клик');
-            this.tutText.setPosition(700, 200);
-            this.tutArrow.fillStyle(0xffd75e, 1);
-            this.tutArrow.fillTriangle(895, 186, 895, 214, 925, 200);
-        } else if (this.tutorialStep === 2) {
-            // вкладка «Усиления»
-            this.tutRing.fillStyle(0xffd75e, 0.12);
-            this.tutRing.fillRect(1079, 186, 157, 44);
-            this.tutRing.lineStyle(3, 0xffd75e, 1);
-            this.tutRing.strokeRect(1079, 186, 157, 44);
-            this.tutBubble.setPosition(1000, 130).setSize(360, 46);
-            this.tutText.setText('А здесь — усиления: криты и жилы');
-            this.tutText.setPosition(1000, 130);
-            this.tutArrow.fillStyle(0xffd75e, 1);
-            this.tutArrow.fillTriangle(1157, 156, 1185, 156, 1171, 186);
+            const bx = gs.blockX, by = gs.blockY;
+            ring(bx - 160, by - 160, 320, 320);
+            if (L.portrait) {
+                // Портрет: блок выше — пузырь в зазор между HUD (низ 122) и блоком (верх by-141),
+                // иначе текст ложится на строку gps/звёзд
+                this.tutBubble.setPosition(bx, by - 185).setSize(440, 52);
+                this.tutText.setText('Кликай по кубику — добывай руду!');
+                this.tutText.setPosition(bx, by - 185);
+                this.tutArrow.fillStyle(0xffd75e, 1);
+                this.tutArrow.fillTriangle(bx - 14, by - 156, bx + 14, by - 156, bx, by - 146);
+            } else {
+                this.tutBubble.setPosition(bx, by - 280).setSize(440, 52);
+                this.tutText.setText('Кликай по кубику — добывай руду!');
+                this.tutText.setPosition(bx, by - 280);
+                this.tutArrow.fillStyle(0xffd75e, 1);
+                this.tutArrow.fillTriangle(bx - 14, by - 235, bx + 14, by - 235, bx, by - 195);
+            }
+        } else if (this.tutorialStep === 1 || this.tutorialStep === 2) {
+            // вкладки: кольцо по живой позиции/размеру контейнера вкладки
+            const t = this.tabBtns[this.tutorialStep - 1];
+            const cx = t.c.x, cy = t.c.y;
+            const tw = t.bg.displayWidth, th = t.bg.displayHeight;
+            ring(cx - tw / 2 - 5, cy - th / 2 - 6, tw + 10, th + 12);
+            if (L.tutorial.tabBubble === 'left') {
+                // Ландшафт: подпись слева от вкладки, стрелка вправо
+                if (this.tutorialStep === 1) {
+                    this.tutBubble.setPosition(cx - 306, cy - 8).setSize(380, 66);
+                    this.tutText.setText('Покупай оборудование здесь —\nоно усиливает каждый клик');
+                    this.tutText.setPosition(cx - 306, cy - 8);
+                    this.tutArrow.fillTriangle(cx - 111, cy - 22, cx - 111, cy + 6, cx - 81, cy - 8);
+                } else {
+                    this.tutBubble.setPosition(cx - 157, cy - 78).setSize(360, 46);
+                    this.tutText.setText('А здесь — усиления: криты и жилы');
+                    this.tutText.setPosition(cx - 157, cy - 78);
+                    this.tutArrow.fillTriangle(cx, cy - 52, cx + 28, cy - 52, cx + 14, cy - 22);
+                }
+            } else {
+                // Портрет: подпись под вкладкой (над списком), стрелка вверх
+                const txt = this.tutorialStep === 1
+                    ? 'Покупай оборудование здесь —\nоно усиливает каждый клик'
+                    : 'А здесь — усиления: криты и жилы';
+                this.tutBubble.setPosition(cx, cy + 110).setSize(380, this.tutorialStep === 1 ? 66 : 46);
+                this.tutText.setText(txt);
+                this.tutText.setPosition(cx, cy + 110);
+                this.tutArrow.fillTriangle(cx - 14, cy + 52, cx + 14, cy + 52, cx, cy + 26);
+            }
         }
     }
 
@@ -966,8 +1185,8 @@ export class UIScene extends Phaser.Scene {
         this.tutArrow.clear().setVisible(false);
         this.tutBubble.setVisible(false);
         this.tutText.setVisible(false);
-        this.tutFinal.setPosition(640, 320).setVisible(true);
-        this.tutBtn.setPosition(640, 400).setVisible(true);
+        this.tutFinal.setPosition(this.L.modal.cx, this.L.tutorial.finalY).setVisible(true);
+        this.tutBtn.setPosition(this.L.modal.cx, this.L.tutorial.btnY).setVisible(true);
         this.tutBtnLbl.setVisible(true);
     }
 

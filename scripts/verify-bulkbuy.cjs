@@ -1,4 +1,4 @@
-// Проверка мультипокупки v2: x1/x10/x100 — СТРОГИЕ пакеты (либо весь пакет, либо
+﻿// Проверка мультипокупки v2: x1/x10/x100 — СТРОГИЕ пакеты (либо весь пакет, либо
 // ничего; ужимается только лимитом уровней улучшения), МАКС — максимум доступного.
 // Проверяется и чистая экономика state.js, и UI (цикл кнопки, текстуры, цены, клики).
 const { chromium } = require('playwright');
@@ -121,7 +121,7 @@ function check(name, cond, detail = '') {
     });
     const clickRowBuy = () => page.evaluate(() => {
         const sc = window.__GAME.scene.getScene('UIScene');
-        sc.rows.find(r => r.def.id === 'pickaxe').btn.emit('pointerdown');
+        sc.rows.find(r => r.def.id === 'pickaxe').btn.emit('pointerup');
     });
 
     let u = await ui();
