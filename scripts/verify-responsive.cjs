@@ -33,7 +33,7 @@ function check(name, cond, detail = '') {
         const page = await ctx.newPage();
         page.on('pageerror', (e) => errors.push(String(e)));
         page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-        await page.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'minecraft-clicker-save': freshSave });
+        await page.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'ore-rush-save': freshSave });
         await page.goto('http://localhost:5174', { waitUntil: 'load' });
         await page.waitForTimeout(3000);
         return { ctx, page };

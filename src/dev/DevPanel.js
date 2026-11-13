@@ -5,8 +5,10 @@
 // сборщиком вместе с этим чанком. Код панели не попадает к игрокам.
 
 import {
-    gameState, UPGRADES, TIERS, getUpgradeDef, addOre, saveGame, computeOfflineReward, resetGame, forceNextTier, MUTATIONS
+    gameState, UPGRADES, TIERS, getUpgradeDef, addOre, saveGame, computeOfflineReward, resetGame,
+    forceNextTier, MUTATIONS, LAST_EXIT_KEY, LEGACY_LAST_EXIT_KEY
 } from '../state.js';
+import { MOCK_STATS_KEY } from '../sdk-stub.js';
 
 let panel = null;
 let statePre = null;
@@ -74,7 +76,7 @@ function forceTier() {
     after(true);
 }
 
-// Мутации блока: навесить любую мутацию вручную (30с, сброс при разрушении блока)
+// Мутации блока: навесить любую мутацию вручную (10с, переживает разрушение блока)
 function applyMutation(typeId) {
     const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
     if (!gs) {
@@ -127,8 +129,9 @@ function fullReset() {
     const ui = game && game.scene.getScene('UIScene');
     resetGame();
     try {
-        localStorage.removeItem('minecraft-clicker-lastExit');
-        localStorage.removeItem('mockStats');
+        localStorage.removeItem(LAST_EXIT_KEY);
+        localStorage.removeItem(LEGACY_LAST_EXIT_KEY); // фолбэк старого имени игры — тоже чистим
+        localStorage.removeItem(MOCK_STATS_KEY);
     } catch (e) { /* приватный режим — сейв уже сброшен */ }
     if (ui) {
         ui.hideOfflineModal();
@@ -142,6 +145,7 @@ function fullReset() {
         gs.blockStage = 0;
     }
     game.events.emit('tier-changed');
+    if (ui) ui.maybeRebuildTutorial(); // обучение показывается заново в текущей сессии
     log('полный сброс: игра как при первом запуске');
     after();
 }

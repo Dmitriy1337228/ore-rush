@@ -24,6 +24,13 @@ const browser = await chromium.launch();
 
 // Аудит вёрстки: обходим объекты сцен через window.__GAME, берём world bounds и ищем
 // пересечения текст/кнопка и вылезания содержимого ряда за карточку. 0 нарушений = ок.
+// СЛЕПЫЕ ЗОНЫ аудита (сознательные упрощения — помнить при добавлении визуала):
+// - Rectangle/Graphics/ParticleEmitter исключены целиком: трек слайдера громкости,
+//   учебные кольцо/стрелка/пузырь, затемнения не проверяются на пересечения;
+// - getBounds() не учитывает setCrop — иконка проверяется по полному кадру;
+// - глифы текста приближены (бокс минус 3px);
+// - врезки 9-slice не видны: текст на декоративной фаске внутри bbox проходит;
+// - depth/z-order не проверяются (слои модалок поверх — только визуальной съёмкой).
 async function auditLayout(page) {
     return page.evaluate(() => {
         const game = window.__GAME;
@@ -125,21 +132,24 @@ async function auditLayout(page) {
         return { violations };
     });
 }
-const consoleErrors = {};
+// Ошибки страниц: одна копилка на ВСЕ сценарии (раньше _list сбрасывался в
+// newPage и финальный отчёт видел только последний сценарий — гейт «console
+// errors 0» был фиктивен для 9/10 прогонов).
+const consoleErrors = [];
+const scenarioFailures = [];
 
 async function shoot(page, name) {
     await page.screenshot({ path: path.join(OUT, `${name}.png`) });
     console.log(`shot: ${name}`);
 }
 
-async function newPage({ viewport = { width: 1280, height: 720 }, seed = null } = {}) {
+async function newPage({ viewport = { width: 1280, height: 720 }, seed = null, name = '' } = {}) {
     const ctx = await browser.newContext({ viewport });
     const page = await ctx.newPage();
-    const key = ctx.browser() ? page.url() : 'x';
-    consoleErrors[page.url?.() || 'page'] = [];
-    page.on('pageerror', (e) => consoleErrors._list?.push(String(e)) || (consoleErrors._list ||= []).push(String(e)));
-    page.on('console', (m) => { if (m.type() === 'error') (consoleErrors._list ||= []).push(m.text()); });
-    consoleErrors._list = [];
+    const bucket = { name: name || `page_${consoleErrors.length + 1}`, errors: [] };
+    consoleErrors.push(bucket);
+    page.on('pageerror', (e) => bucket.errors.push(`pageerror: ${e}`));
+    page.on('console', (m) => { if (m.type() === 'error') bucket.errors.push(`console: ${m.text()}`); });
     if (seed) {
         await page.addInitScript((s) => {
             for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
@@ -150,9 +160,21 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null } 
     return { ctx, page };
 }
 
+// state-модуль в браузере: URL резолвим из resource-entries — dev-сервер отдаёт
+// изменённые модули как '/src/state.js?t=...' (прямой import создал бы второй
+// экземпляр с дефолтным состоянием).
+async function withState(page, fnBody) {
+    return page.evaluate(async (body) => {
+        const res = performance.getEntriesByType('resource').map((r) => r.name).find((u) => u.includes('/src/state.js'));
+        const m = await import(res);
+        // eslint-disable-next-line no-new-func
+        return (new Function('m', `return (${body})(m);`))(m);
+    }, fnBody);
+}
+
 // 1. Чистый старт + аудит вёрстки
 {
-    const { ctx, page } = await newPage();
+    const { ctx, page } = await newPage({ name: '01_fresh' });
     const audit = await auditLayout(page);
     fs.writeFileSync(path.join(OUT, 'layout_audit.txt'), audit.violations.join('\n') || 'layout audit: 0 violations');
     console.log('layout violations:', audit.violations.length);
@@ -164,16 +186,23 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null } 
         await page.waitForTimeout(110);
     }
     await shoot(page, '02_clicks');
-    // 3. Покупки: кирка x3 (ряд 0: кнопка в центре x1184, y280)
-    for (let i = 0; i < 3; i++) { await page.mouse.click(1184, 280); await page.waitForTimeout(140); }
+    // 3. Покупки: выдаём руду через state-модуль (на чистом старте её меньше цены
+    // кирки — покупка не случилась бы и с верными координатами), затем «Купить»
+    // первого ряда: центр кнопки = listCam(934,270) + btn(242,48) = (1176, 318)
+    const lvlBefore = await withState(page, 'm => { m.addOre(100000); return m.gameState.levels.pickaxe; }');
+    for (let i = 0; i < 3; i++) { await page.mouse.click(1176, 318); await page.waitForTimeout(140); }
     await page.waitForTimeout(300);
+    const lvlAfter = await withState(page, 'm => m.gameState.levels.pickaxe');
+    if (lvlAfter !== lvlBefore + 3) {
+        scenarioFailures.push(`03_buys: уровень кирки ${lvlBefore} -> ${lvlAfter}, ожидалось +3 (клик/покупка не работают)`);
+    }
     await shoot(page, '03_buys');
     await ctx.close();
 }
 
 // 4. Скролл списка (сохранение с 12+ улучшениями)
 {
-    const { ctx, page } = await newPage({ seed: { 'minecraft-clicker-save': SAVE_SEED } });
+    const { ctx, page } = await newPage({ seed: { 'ore-rush-save': SAVE_SEED }, name: '04_list' });
     await shoot(page, '04_list_top');
     const auditSeeded = await auditLayout(page);
     fs.writeFileSync(path.join(OUT, 'layout_audit_seeded.txt'), auditSeeded.violations.join('\n') || 'layout audit (seeded, stars=12): 0 violations');
@@ -204,10 +233,11 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null } 
     const exit = Date.now() - 2 * 3600 * 1000;
     const { ctx, page } = await newPage({
         seed: {
-            'minecraft-clicker-save': SAVE_SEED,
-            'minecraft-clicker-lastExit': String(exit),
+            'ore-rush-save': SAVE_SEED,
+            'ore-rush-lastExit': String(exit),
             mockStats: JSON.stringify({ lastExit: exit })
-        }
+        },
+        name: '06_offline'
     });
     await shoot(page, '07_offline_modal');
     const auditOff = await auditLayout(page);
@@ -225,14 +255,14 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null } 
 {
     const rich = JSON.parse(SAVE_SEED);
     rich.ore = 26000; // >= 25000, спуск к золоту готов
-    const { ctx, page } = await newPage({ seed: { 'minecraft-clicker-save': JSON.stringify(rich) } });
+    const { ctx, page } = await newPage({ seed: { 'ore-rush-save': JSON.stringify(rich) }, name: '07_unlock' });
     await shoot(page, '08_unlock_ready');
     await ctx.close();
 }
 
 // 8. Меньший viewport (масштаб FIT)
 {
-    const { ctx, page } = await newPage({ viewport: { width: 900, height: 506 } });
+    const { ctx, page } = await newPage({ viewport: { width: 900, height: 506 }, name: '08_viewport900' });
     await shoot(page, '09_viewport_900');
     await ctx.close();
 }
@@ -247,7 +277,7 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null } 
         levels: { pickaxe: 20, sledge: 5, hydraulic: 5, plasma: 2, miner: 30, robotarm: 2, drill: 20, excavator: 15, factory: 10, quarry: 8, megafactory: 5, tech: 2, dynamite: 10, lucky: 8, resonance: 5, lantern: 2, warehouse: 1 }
     };
     function TIERS_SEED_EARNED() { return Array.from({ length: 12 }, (_, i) => (i <= 6 ? 1e5 : 0)); }
-    const { ctx, page } = await newPage({ seed: { 'minecraft-clicker-save': JSON.stringify(deep) } });
+    const { ctx, page } = await newPage({ seed: { 'ore-rush-save': JSON.stringify(deep) }, name: '09_deep' });
     await page.mouse.move(1082, 430);
     await page.mouse.wheel(0, 2200); // scrollY ~1100: «Орбитальная» и «Квантовая» целиком в окне 262..664
     await page.waitForTimeout(400);
@@ -261,7 +291,7 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null } 
 
 // 10. Портрет (мобилка 390x844 -> сетка 720x1280): аудит + модалка
 {
-    const { ctx, page } = await newPage({ viewport: { width: 390, height: 844 } });
+    const { ctx, page } = await newPage({ viewport: { width: 390, height: 844 }, name: '10_portrait' });
     const auditP = await auditLayout(page);
     fs.writeFileSync(path.join(OUT, 'layout_audit_portrait.txt'), auditP.violations.join('\n') || 'layout audit (portrait 390x844): 0 violations');
     console.log('portrait violations:', auditP.violations.length);
@@ -277,6 +307,15 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null } 
     await ctx.close();
 }
 
-fs.writeFileSync(path.join(OUT, 'console_errors.txt'), (consoleErrors._list || []).join('\n') || 'no console errors');
-console.log('console errors:', (consoleErrors._list || []).length);
+// Финал: ошибки ВСЕХ сценариев + провалы сценарных ассертов (03_buys и т.п.)
+const allErrors = consoleErrors.flatMap((b) => b.errors.map((e) => `[${b.name}] ${e}`));
+const allFailures = allErrors.concat(scenarioFailures);
+fs.writeFileSync(path.join(OUT, 'console_errors.txt'), allFailures.join('\n') || 'no console errors');
+console.log('console errors:', allErrors.length);
+allErrors.forEach((e) => console.log('  ' + e));
+if (scenarioFailures.length) {
+    console.log('scenario failures:', scenarioFailures.length);
+    scenarioFailures.forEach((f) => console.log('  FAIL ' + f));
+    process.exitCode = 1;
+}
 await browser.close();

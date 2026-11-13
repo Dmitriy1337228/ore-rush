@@ -4,6 +4,7 @@ import {
     saveGame, loadGame, saveLastExit, readLastExit, computeOfflineReward, fmt,
     MUTATIONS, MUTATION_DURATION_MS, MUTATION_CHECK_MS, MUTATION_CHANCE, getMutationBreakBonus
 } from '../state.js';
+import { YandexSDKStub } from '../sdk-stub.js';
 import { computeLayout } from '../layout.js';
 import { playSfx } from '../sfx.js';
 
@@ -80,7 +81,21 @@ export class GameScene extends Phaser.Scene {
 
         this.scene.launch('UIScene');
         this.startBgm();
+        this.setGameplay(true);
         this.refreshTick();
+    }
+
+    // GameplayAPI Яндекса (стаб — no-op): start — игрок активен, stop — свёрнута.
+    setGameplay(active) {
+        const p = YandexSDKStub.player;
+        if (!p || !p.gameplayStart) return;
+        if (active && !this._gameplayActive) {
+            this._gameplayActive = true;
+            p.gameplayStart();
+        } else if (!active && this._gameplayActive) {
+            this._gameplayActive = false;
+            p.gameplayStop();
+        }
     }
 
     // ---------- Мир ----------
@@ -245,8 +260,20 @@ export class GameScene extends Phaser.Scene {
         this.blockStage = 0;
         this.hitProgress = 0;
         this.blockBusy = false;
+        if (this.streakTimer) {
+            // хвост заживления от старого блока не должен дёргать текстуру нового
+            this.streakTimer.remove();
+            this.streakTimer = null;
+        }
 
-        if (this.block) this.block.destroy();
+        if (this.block) {
+            // Phaser НЕ снимает твины при destroy цели: зомби-shrink дожил бы до
+            // delayedCall из onComplete и отработал на новом блоке (двойное дыхание,
+            // ложный схлоп-поп) — твины снимаем руками
+            this.tweens.killTweensOf(this.block);
+            this.block.destroy();
+        }
+        this.blockGen = (this.blockGen || 0) + 1; // поколение блока — для отмены отложенных цепочек
         this.block = this.add.image(this.blockX, this.blockY, blockStageKey(gameState.tier, 1)).setScale(this.blockScale);
         this.block.setInteractive({ useHandCursor: true });
         this.startBreathingTween();
@@ -267,9 +294,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     wireEvents() {
-        // Смена тира (от UIScene после покупки уровня шахты или престижа).
-        // Мутация не сбрасывается — живёт свои 10с; tint на новом блоке переустановит update().
-        this.game.events.on('tier-changed', () => {
+        // Ссылки сохраняются — shutdown обязан снять их с game.events (иначе
+        // рестарт сцены навесит дубликаты и замкнёт уничтоженные объекты)
+        this._onTierChanged = () => {
             // Кроссфейд стартует первым — до пересборки блока/эмиттеров,
             // чтобы смена фона не ждала тяжёлый кадр
             this.swapBg();
@@ -278,19 +305,23 @@ export class GameScene extends Phaser.Scene {
             this.refreshTick();
             // «Полный сброс» DevPanel тоже приходит сюда — синхронизируем mute BGM
             this.syncBgm();
-        });
+        };
+        this.game.events.on('tier-changed', this._onTierChanged);
 
-        this.game.events.on('offline-applied', (info) => {
+        this._onOfflineApplied = (info) => {
             const float = makeLabel(this, this.blockX, this.blockY - 140, `Шахтёры добыли: +${fmt(info.reward)}`, 26, '#ffe9b0');
             float.setOrigin(0.5).setDepth(20);
             this.tweens.add({ targets: float, y: float.y - 50, alpha: 0, duration: 1100, onComplete: () => float.destroy() });
-        });
+        };
+        this.game.events.on('offline-applied', this._onOfflineApplied);
 
         // Тумблер «Музыка: вкл/выкл» и слайдер громкости (UIScene) — mute и volume BGM
-        this.game.events.on('music-changed', () => this.syncBgm());
+        this._onMusicChanged = () => this.syncBgm();
+        this.game.events.on('music-changed', this._onMusicChanged);
 
         // Смена ориентации/размера окна (main.js) — перечитываем раскладку
-        this.game.events.on('layout-changed', () => this.applyLayout());
+        this._onLayoutChanged = () => this.applyLayout();
+        this.game.events.on('layout-changed', this._onLayoutChanged);
     }
 
     // ---------- Фоновая музыка ----------
@@ -358,6 +389,10 @@ export class GameScene extends Phaser.Scene {
                 const aps = getAutoClicksPerSecond();
                 if (aps <= 0) return;
                 this.autoBudget += aps * 0.2;
+                // Кап бюджета: под модалкой (blockLocked) клики не списываются —
+                // без капа копился бы залп на всё время простоя (фризы и волна
+                // частиц после закрытия); короткая анимация разрушения это не ломает
+                if (this.autoBudget > 20) this.autoBudget = 20;
                 let guard = 0;
                 while (this.autoBudget >= 1 && guard < 100) {
                     if (this.blockBusy || this.registry.get('blockLocked')) break;
@@ -378,21 +413,31 @@ export class GameScene extends Phaser.Scene {
         // Офлайн: время выхода фиксируем при сворачивании/закрытии (один вызов setStats за событие)
         this.onVisibility = () => {
             if (document.visibilityState === 'hidden') {
+                this.setGameplay(false);
                 saveGame();
                 saveLastExit();
             } else {
-                // Возврат во вкладку: если отсутствовали дольше 5 минут — начисляем офлайн
-                saveLastExit(); // перезаписываем старое время выхода актуальным
+                // Возврат во вкладку: если отсутствовали дольше 5 минут — начисляем офлайн.
+                // СНАЧАЛА читаем время выхода, записанное при hidden: перезапись «сейчас»
+                // до чтения затирает период отсутствия и делает начисление невозможным
+                // (мобильный вебвью Яндекса сворачивается без перезагрузки страницы).
                 readLastExit().then((lastExit) => {
-                    if (!lastExit) return;
+                    if (!lastExit) {
+                        saveLastExit(); // первый отсчёт
+                        return;
+                    }
                     const info = computeOfflineReward(lastExit);
                     if (info) {
                         addOre(info.reward);
                         this.registry.set('offlineInfo', info);
                         saveLastExit(); // начинаем новый отсчёт
                         this.game.events.emit('offline-applied', info);
+                    } else {
+                        // меньше порога / нет пассива — перезапускаем отсчёт
+                        saveLastExit();
                     }
                 });
+                this.setGameplay(true);
             }
         };
         document.addEventListener('visibilitychange', this.onVisibility);
@@ -407,6 +452,10 @@ export class GameScene extends Phaser.Scene {
             saveGame();
             document.removeEventListener('visibilitychange', this.onVisibility);
             window.removeEventListener('beforeunload', this.onBeforeUnload);
+            this.game.events.off('tier-changed', this._onTierChanged);
+            this.game.events.off('offline-applied', this._onOfflineApplied);
+            this.game.events.off('music-changed', this._onMusicChanged);
+            this.game.events.off('layout-changed', this._onLayoutChanged);
         });
     }
 
@@ -562,7 +611,11 @@ export class GameScene extends Phaser.Scene {
             duration: 130,
             ease: 'Quad.easeIn',
             onComplete: () => {
+                const gen = this.blockGen; // поколение блока на момент разрушения
                 this.time.delayedCall(120, () => {
+                    // блок пересоздан (смена тира / полный сброс) — зомби-цепочка отменена:
+                    // buildBlock уже снял blockBusy и собрал новый блок с дыханием
+                    if (gen !== this.blockGen) return;
                     this.block.setTexture(blockStageKey(gameState.tier, 1));
                     this.block.setScale(this.blockScale * 0.6);
                     this.tweens.add({

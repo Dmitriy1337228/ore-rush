@@ -1,11 +1,17 @@
 ﻿// Игровое состояние, экономика тиров, улучшения, престиж, офлайн-доход, сохранение.
-// Сохранение: localStorage (minecraft-clicker-save), время выхода — через YandexSDKStub
-// (player.setStats/getStats, localStorage-mock) + дублирующий ключ minecraft-clicker-lastExit.
+// Сохранение — через YandexSDKStub.player.setData/getData (физически localStorage
+// 'ore-rush-save', миграция со старого ключа — в стабе), время выхода — через
+// YandexSDKStub (player.setStats/getStats, localStorage-mock) + ключ 'ore-rush-lastExit'.
 
-import { YandexSDKStub } from './sdk-stub.js';
+import { YandexSDKStub, SAVE_STORAGE_KEY } from './sdk-stub.js';
 
-export const SAVE_KEY = 'minecraft-clicker-save';
-export const LAST_EXIT_KEY = 'minecraft-clicker-lastExit';
+// Ключ сейва теперь принадлежит стабу (основной слот — player.setData/getData);
+// SAVE_KEY оставлен как алиас для тестов/DevPanel, чтобы не менять контракт.
+export const SAVE_KEY = SAVE_STORAGE_KEY;
+export const LAST_EXIT_KEY = 'ore-rush-lastExit';
+// Фолбэк старого имени игры (переименование 2026-11-13): офлайн-время игроков
+// с прошлым ключом не должно пропасть
+export const LEGACY_LAST_EXIT_KEY = 'minecraft-clicker-lastExit';
 export const SAVE_VERSION = 4;
 
 // ---------- Тиры руды ----------
@@ -30,10 +36,9 @@ export const TIERS = [
     { key: 'diamond',  name: 'Алмаз',     gen: 'алмаза',     adj: 'алмазным',      iconKey: 'diamond_nugget',  blockPrefix: 'diamond',    floatColor: '#7ee7ff'  }
 ];
 
-// Цены улучшений ×2.5 за тир (TIER_COST_MULT), доход ×3 (TIER_INCOME_MULT):
-// спуск даёт прыжок добычи x3, а прокачка на глубине становится ОТНОСИТЕЛЬНО
-// дешевле (x1.2 за тир) — покупки остаются выгодными на всей лестнице,
-// симуляция (scripts/../balance) даёт рост длительности тира x1.4-1.9.
+// Цены улучшений ×3 за тир (TIER_COST_MULT), доход ×3 (TIER_INCOME_MULT):
+// окупаемость улучшений инвариантна тиру — покупки одинаково выгодны на всей
+// лестнице; темп прогрессии задаёт рост требований спуска (UNLOCK_SECONDS_GROWTH).
 export const TIER_STEP = {
     // cost = income (3.0): окупаемость улучшений инвариантна тиру. Раньше цены
     // росли медленнее дохода (2.5 vs 3) — на глубине всё становилось на 17x/тир
@@ -53,7 +58,7 @@ export const TIER_INCOME_MULT = (tier) => Math.pow(TIER_STEP.income, tier);
 // «отбрасывает» накопления. «Переход неизбежен» возникает сам: каталог тира
 // ограничен гейтами tier (см. UPGRADES), внутри-тировой разгон ограничен
 // десятками раз, после выкупа доступного спуск наступает за минуты.
-// Заморозки/догона нет; углубление тиров — ростом N (x1.7 за тир).
+// Заморозки/догона нет; углубление тиров — ростом N (UNLOCK_SECONDS_GROWTH 2.95 за тир).
 export const UNLOCK_BASE_SECONDS = 180;    // спуск из тира 0 стоит 180 сек дохода
 export const UNLOCK_SECONDS_GROWTH = 2.95; // требования растут за каждый тир
 export const UNLOCK_FLOOR = 2500;          // минимум (старт с нулевым доходом)
@@ -70,6 +75,15 @@ export function getSynergyGain() {
 
 // Матожидание одного клика (крит/жила/синергия — ожидания, без рандома):
 // E-множитель крита = 1 + p*(m-1), жилы так же; синергия добавляется всегда.
+// ВНИМАНИЕ: синергия СОЗНАТЕЛЬНО считается без множителей крита/жилы — оценка
+// расходится с реальным роллом rollClickGain (там крит/жила множат весь гейн):
+// на синергия-билдах реальный доход клика выше оценки до x critF*veinF (~x83 на
+// максимальных вкладках). Это часть откалиброванного пейса: якорь цены спуска
+// (getEarningRate) занижен, спуск наступает быстрее расчётного N(tier). «Честная»
+// формула ((D+S)*critF*veinF, проверено Монте-Карло ratio 0.998) поднимает якорь
+// глубоких тиров до x25 и растягивает забег с 3.7ч до 60ч+ (balance-sim) — менять
+// только вместе с ребалансом UNLOCK_SECONDS_GROWTH и решением игрока
+// (REVIEW_2026-11-13.md, находка [11], отложено).
 export function getExpectedClickGain() {
     const critMult = 5 + 0.5 * getUpgradeLevel('focuslens');
     const veinMult = 10 + 1 * getUpgradeLevel('magnet');
@@ -167,8 +181,8 @@ export const UPGRADES = [
     { id: 'dynamite',  name: 'Динамит',            icon: 'dynamite_bundle',  tab: 'enhance',   baseCost: 100,     growth: 2.2,  maxLevel: 23,   effect: '+3% крит x5 (до 74%)' },
     { id: 'lucky',     name: 'Золотая жила',       icon: 'icon_vein',        tab: 'enhance',   baseCost: 1500,    growth: 3,    maxLevel: 25,   effect: '+2% шанс x10 (до 50%)' },
     { id: 'resonance', name: 'Синергия',           icon: 'hand_cursor',      tab: 'enhance',   baseCost: 2500,    growth: 2,    maxLevel: 25,   effect: 'клик +1% от пассива' },
-    { id: 'focuslens', name: 'Фокус-линза',        icon: 'icon_focuslens',   tab: 'enhance',   baseCost: 50000,   growth: 4,    maxLevel: 10,   tier: 3, requires: { id: 'dynamite', level: 8 }, effect: '+0.5 к силе крита' },
-    { id: 'magnet',    name: 'Рудный магнит',      icon: 'icon_magnet',      tab: 'enhance',   baseCost: 150000,  growth: 4,    maxLevel: 10,   tier: 4, requires: { id: 'lucky', level: 8 }, effect: '+1 к множителю жилы' },
+    { id: 'focuslens', name: 'Фокус-линза',        icon: 'icon_focuslens',   tab: 'enhance',   baseCost: 50000,   growth: 4,    maxLevel: 10,   tier: 3, requires: { id: 'dynamite', level: 15 }, effect: '+0.5 к силе крита' },
+    { id: 'magnet',    name: 'Рудный магнит',      icon: 'icon_magnet',      tab: 'enhance',   baseCost: 150000,  growth: 4,    maxLevel: 5,    tier: 4, requires: { id: 'lucky', level: 15 }, effect: '+1 к множителю жилы' },
     { id: 'lantern',   name: 'Фонарь',             icon: 'icon_lantern',     tab: 'enhance',   baseCost: 300,     growth: 2.5,  maxLevel: 10,   effect: '+8% фонового дохода' },
     { id: 'warehouse', name: 'Склад',              icon: 'icon_warehouse',   tab: 'enhance',   baseCost: 1000,    growth: 10,   maxLevel: 3,    effect: 'запас: до 24 ч' }
 ];
@@ -342,7 +356,9 @@ export function getAffordableBulk(id, want) {
     let n = 0, total = 0;
     while (n < cap) {
         const cost = Math.ceil(def.baseCost * Math.pow(def.growth, start + n) * tier);
-        if (budget < cost) break;
+        // Infinity-бюджет (битый сейв, ore: 1e999 -> Infinity) или Infinity-цена
+        // (переполнение pow) ломают сравнения и вешают цикл навсегда — выходим
+        if (!isFinite(budget) || !isFinite(cost) || budget < cost) break;
         budget -= cost;
         total += cost;
         n++;
@@ -537,11 +553,27 @@ export function saveLastExit(nowMs = Date.now()) {
 }
 
 export async function readLastExit() {
-    const stats = await YandexSDKStub.player.getStats(['lastExit']);
-    if (typeof stats.lastExit === 'number' && stats.lastExit > 0) return stats.lastExit;
+    // try вокруг getStats обязателен: на этапе 2 реальный SDK отклоняет промис
+    // при сетевой ошибке / неавторизованном игроке — без отката к фолбэку
+    // обрывался бы loadSaveThenStart (чёрный экран) или терялось начисление
+    try {
+        const stats = await YandexSDKStub.player.getStats(['lastExit']);
+        if (typeof stats?.lastExit === 'number' && stats.lastExit > 0) return stats.lastExit;
+    } catch (err) { /* идём к фолбэку */ }
     try {
         const raw = localStorage.getItem(LAST_EXIT_KEY);
-        if (raw) return Number(raw);
+        if (raw) {
+            const n = Number(raw);
+            // как в getStats-пути: мусор/отрицательное не превращается в кап-начисление
+            if (Number.isFinite(n) && n > 0) return n;
+        }
+    } catch (err) { /* ignore */ }
+    try {
+        const legacy = localStorage.getItem(LEGACY_LAST_EXIT_KEY);
+        if (legacy) {
+            const n = Number(legacy);
+            if (Number.isFinite(n) && n > 0) return n;
+        }
     } catch (err) { /* ignore */ }
     return null;
 }
@@ -549,11 +581,10 @@ export async function readLastExit() {
 // ---------- Сохранение / загрузка ----------
 
 export function saveGame() {
-    try {
-        localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
-    } catch (err) {
-        console.warn('localStorage save failed:', err);
-    }
+    // Основной слот сейва — через стаб: на этапе 2 заменяется содержимое
+    // sdk-stub.js (player.setData реального SDK), игровой код не меняется.
+    // Стаб пишет синхронно в localStorage под прежним ключом/форматом.
+    YandexSDKStub.player.setData(JSON.stringify(gameState));
 }
 
 export function applySave(data) {
@@ -574,6 +605,11 @@ export function applySave(data) {
             dynamite: Math.max(0, Number(data.levels && data.levels.dynamite) || 0),
             miner: Math.max(0, Number(data.levels && data.levels.miner) || 0)
         };
+        // верхний кламп до капов — как в основной ветке applySave
+        for (const def of UPGRADES) {
+            if (def.maxLevel === null) continue;
+            gameState.levels[def.id] = Math.min(gameState.levels[def.id], def.maxLevel);
+        }
         gameState.version = SAVE_VERSION;
         gameState.tutorialDone = true; // старые игроки — обучение не показываем
         gameState.soundOn = true;
@@ -607,7 +643,10 @@ export function applySave(data) {
 
     if (data.version !== SAVE_VERSION) return;
 
-    gameState.ore = Number(data.ore) || 0;
+    const o = Number(data.ore);
+    // Infinity (битый сейв «ore: 1e999») / NaN / отрицательное → 0: иначе МАКС-покупка
+    // вечным циклом вешает вкладку (getAffordableBulk против Infinity не завершается)
+    gameState.ore = Number.isFinite(o) && o > 0 ? o : 0;
     gameState.tier = Math.min(Math.max(0, Number(data.tier) || 0), TIERS.length - 1);
     gameState.stars = Math.max(0, Number(data.stars) || 0);
     gameState.clicks = Math.max(0, Number(data.clicks) || 0);
@@ -623,22 +662,19 @@ export function applySave(data) {
     gameState.levels = { ...init.levels };
     if (data.levels && typeof data.levels === 'object') {
         for (const def of UPGRADES) {
-            gameState.levels[def.id] = Math.max(0, Number(data.levels[def.id]) || 0);
+            const n = Math.max(0, Number(data.levels[def.id]) || 0);
+            // верхний кламп до капа: сейв с levels.pickaxe=99999 иначе проходит как есть
+            gameState.levels[def.id] = def.maxLevel === null ? n : Math.min(n, def.maxLevel);
         }
     }
     gameState.version = SAVE_VERSION;
 }
 
 export async function loadGame() {
-    let raw = null;
-    try {
-        raw = localStorage.getItem(SAVE_KEY);
-    } catch (err) {
-        console.warn('localStorage load failed:', err);
-    }
-    if (raw) {
+    const data = await YandexSDKStub.player.getData();
+    if (data) {
         try {
-            applySave(JSON.parse(raw));
+            applySave(data);
         } catch (err) {
             console.warn('Повреждённое сохранение, старт с нуля:', err);
         }

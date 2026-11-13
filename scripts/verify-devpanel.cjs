@@ -2,9 +2,18 @@
 // Dev-сервер поднимается сам и гасится после проверки (чужой не трогается).
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог скриншотов (правило проекта: OUT_DIR, не мусор в корне)
 (async () => {
     const server = await ensureDevServer();
     process.on('exit', () => releaseDevServer(server));
+    // Счётчик FAIL — раньше скрипт завершался всегда с кодом 0, регрессия не роняла прогон
+    let failed = 0;
+    const origLog = console.log;
+    console.log = (...args) => {
+        const s = args.map(String).join(' ');
+        if (s.includes('FAIL')) failed++;
+        origLog(...args);
+    };
     const b = await chromium.launch();
     const page = await b.newPage({ viewport: { width: 1280, height: 720 } });
     const errors = [];
@@ -44,14 +53,14 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     await page.waitForTimeout(400);
     const tierText = await page.evaluate(() => window.__GAME.scene.getScene('UIScene').tierLabel.text);
     console.log('5. force tier:', tierText.includes('2') ? `OK (${tierText})` : `FAIL (${tierText})`);
-    await page.screenshot({ path: 'shots_devpanel/01_tier2_maxed.png' });
+    await page.screenshot({ path: `${OUT_DIR}/01_tier2_maxed.png` });
 
     // 6. Офлайн 4ч: та же логика, что и реальный возврат во вкладку
     await page.click('#dev-admin-panel button:has-text("Офлайн 4ч")');
     await page.waitForTimeout(500);
     const modalShown = await page.evaluate(() => window.__GAME.scene.getScene('UIScene').offlineModal.visible);
     console.log('6. offline sim modal:', modalShown ? 'OK' : 'FAIL');
-    await page.screenshot({ path: 'shots_devpanel/02_offline_sim.png' });
+    await page.screenshot({ path: `${OUT_DIR}/02_offline_sim.png` });
     await page.click('canvas', { position: { x: 640, y: 456 } }); // Забрать
     await page.waitForTimeout(300);
     const modalClosed = await page.evaluate(() => !window.__GAME.scene.getScene('UIScene').offlineModal.visible);
@@ -88,8 +97,11 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     await page.click('#dev-click-zone');
     await page.waitForTimeout(200);
     console.log('10. click zone opens:', (await panelVisible()) ? 'OK' : 'FAIL');
-    await page.screenshot({ path: 'shots_devpanel/03_panel_state.png' });
+    await page.screenshot({ path: `${OUT_DIR}/03_panel_state.png` });
 
+    if (errors.length) failed++;
     console.log('page errors:', errors.length ? errors.join(' | ') : '0');
+    console.log(`done, failures: ${failed}`);
     await b.close();
+    process.exit(failed > 0 ? 1 : 0);
 })().catch(e => { console.error(e.message); process.exit(1); });

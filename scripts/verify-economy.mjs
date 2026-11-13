@@ -17,7 +17,7 @@ const {
     DIAMOND_INDEX, PRESTIGE_REQUIREMENT, SAVE_VERSION,
     createInitialState, gameState, applySave,
     getUpgradeCost, getUpgradeDef, getUpgradeLevel, isUpgradeAvailable, canBuy, buyUpgrade, isMaxed,
-    getEarningRate, fmt
+    getEarningRate, getOfflineRate, getOfflineCapSeconds, computeOfflineReward, readLastExit, fmt
 } = state;
 
 // --- 1. Лестница тиров ---
@@ -165,6 +165,58 @@ check('цена при нулевом доходе = UNLOCK_FLOOR', computeNextU
     applySave({ version: 3, ore: 777, tier: 5, stars: 0, tierEarned: TIERS.map(() => 0), levels: { miner: 3 } });
     check('миграция v3: сейв принят', gameState.version === 4 && gameState.ore === 777 && gameState.tier === 5 && gameState.levels.miner === 3);
     check('миграция v3: якорь пустой (ленивая фиксация)', gameState.tierAnchorRate === 0);
+}
+
+// --- 6b. Миграция v1 -> v4 (тест потерялся при переписывании под v3) и валидация сейва ---
+{
+    const v1 = { version: 1, coal: 500, clicks: 3, totalMined: 700, levels: { pickaxe: 2, dynamite: 1, miner: 4 } };
+    applySave(JSON.parse(JSON.stringify(v1)));
+    check('миграция v1: уголь -> руда тира 0', gameState.ore === 500 && gameState.tier === 0);
+    check('миграция v1: статы перенесены', gameState.clicks === 3 && gameState.lifetimeMined === 700 && gameState.tierEarned[0] === 700);
+    check('миграция v1: легаси-уровни перенесены', gameState.levels.pickaxe === 2 && gameState.levels.dynamite === 1 && gameState.levels.miner === 4);
+    check('миграция v1: старым игрокам обучение не показывается', gameState.tutorialDone === true);
+    check('миграция v1: версия = SAVE_VERSION', gameState.version === SAVE_VERSION);
+
+    // Валидация: битый/подделанный сейв не пролезает в состояние
+    applySave({ version: 4, ore: Infinity, tier: 0, tierEarned: TIERS.map(() => 0), levels: { pickaxe: 99999, miner: 123456 } });
+    check('валидация: Infinity-руда -> 0 (иначе МАКС-покупка вешает вкладку)', gameState.ore === 0);
+    check('валидация: уровни клампятся до капа', gameState.levels.pickaxe === 30 && gameState.levels.miner === 123456);
+    applySave({ version: 4, ore: -5, tier: 0, tierEarned: TIERS.map(() => 0), levels: {} });
+    check('валидация: отрицательная руда -> 0', gameState.ore === 0);
+    applySave({ version: 4, ore: 7, tier: 99, tierEarned: TIERS.map(() => 0), levels: {} });
+    check('валидация: тир клампится последним', gameState.tier === 11 && gameState.ore === 7);
+}
+
+// --- 6c. Офлайн-расчёт (ставка/капы/фонарь/склад — тест потерялся при переписывании) ---
+{
+    // gps = 100 (шахтёр 100, тир 0, без звёзд), фонарь 0, склад 0
+    applySave({ version: 4, ore: 0, tier: 0, stars: 0, tierEarned: TIERS.map(() => 0), levels: { miner: 100 } });
+    check('офлайн: ставка 20% без фонаря', Math.abs(getOfflineRate() - 0.2) < 1e-9);
+    check('офлайн: кап склада 0 ур. = 4ч', getOfflineCapSeconds() === 4 * 3600);
+    const now = Date.now();
+    const r = computeOfflineReward(now - 2 * 3600 * 1000, now);
+    check('офлайн: 2ч без фонаря = 20% x gps x 7200', r && r.counted === 7200 && r.reward === 7200 * 100 * 0.2, JSON.stringify(r));
+    gameState.levels.lantern = 5;
+    check('офлайн: фонарь 5 = 60%', Math.abs(getOfflineRate() - 0.6) < 1e-9);
+    gameState.levels.lantern = 10;
+    check('офлайн: фонарь 10 = 100%', getOfflineRate() === 1);
+    const r10 = computeOfflineReward(now - 2 * 3600 * 1000, now);
+    check('офлайн: 2ч при 100% = gps x 7200', r10 && r10.reward === 7200 * 100, `reward=${r10 && r10.reward}`);
+    gameState.levels.lantern = 0;
+    gameState.levels.warehouse = 2;
+    check('офлайн: кап склада 2 ур. = 12ч', getOfflineCapSeconds() === 12 * 3600);
+    const r20h = computeOfflineReward(now - 20 * 3600 * 1000, now);
+    check('офлайн: 20ч ужимаются до капа 12ч', r20h && r20h.counted === 12 * 3600 && r20h.reward === 12 * 3600 * 100 * 0.2);
+    gameState.levels.warehouse = 3;
+    check('офлайн: кап склада 3 ур. = 24ч', getOfflineCapSeconds() === 24 * 3600);
+    gameState.levels.warehouse = 0;
+    check('офлайн: меньше 5 минут -> null', computeOfflineReward(now - 4 * 60 * 1000, now) === null);
+    gameState.levels.miner = 0;
+    check('офлайн: пассив 0 -> null', computeOfflineReward(now - 2 * 3600 * 1000, now) === null);
+    gameState.levels.miner = 100;
+    // readLastExit в node: localStorage нет — getStats-путь и фолбэк оба тихо пустые,
+    // реальный SDK (этап 2) может отклонить промис — обязателен откат к фолбэку, не throw
+    check('офлайн: readLastExit без хранилищ -> null, не throw', (await readLastExit()) === null);
 }
 
 // --- 7. Престиж-масштаб ---
