@@ -23,6 +23,18 @@ function check(name, cond, detail = '') {
     await page.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'ore-rush-save': save });
     await page.goto('http://localhost:5174', { waitUntil: 'load' });
     await page.waitForTimeout(3000);
+    // Свежий сейв выдаёт дневную награду — модалка с затемнением блокирует
+    // canvas-клики по блоку; закрываем И гасим баф x2 (математика кликов теста
+    // рассчитана на чистое состояние без дневных бафов)
+    await page.evaluate(async () => {
+        window.__GAME.scene.getScene('UIScene').hideDailyModal();
+        const u = performance.getEntriesByType('resource').map((r) => r.name).find((n) => /\/src\/state\.js/.test(n));
+        const m = await import(u);
+        m.gameState.dailyBuffUntil = 0;
+        m.gameState.dailyCritUntil = 0;
+        m.gameState.dailyVeinUntil = 0;
+    });
+    await page.waitForTimeout(300);
 
     const gsState = () => page.evaluate(() => {
         const gs = window.__GAME.scene.getScene('GameScene');

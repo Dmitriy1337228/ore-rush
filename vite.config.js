@@ -14,6 +14,9 @@ function copyGameAssets() {
                 recursive: true,
                 filter: (src) => !src.endsWith(path.join('assets', 'fonts'))
             });
+            // GitHub Pages: без .nojekyll Jekyll обрабатывает деплой и может
+            // отбросить файлы/замедлить выдачу; статическому сайту он не нужен
+            fs.writeFileSync(path.join(import.meta.dirname, 'dist', '.nojekyll'), '');
         }
     };
 }

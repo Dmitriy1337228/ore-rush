@@ -27,6 +27,10 @@ const SFX = [...new Set(
     page.on('pageerror', (e) => errors.push(String(e)));
     await page.goto('http://localhost:5174', { waitUntil: 'load' });
     await page.waitForTimeout(3000);
+    // Свежий сейв выдаёт дневную награду — модалка с затемнением блокирует
+    // canvas-клики (настройки/покупки); закрываем, награда уже применена
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
+    await page.waitForTimeout(300);
 
     // 1. Все ключи из assets/audio в audio-кэше
     const missing = await page.evaluate((keys) => keys.filter((k) => !window.__GAME.scene.getScene('GameScene').cache.audio.exists(k)), SFX);

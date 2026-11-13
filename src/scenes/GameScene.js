@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import {
     gameState, TIERS, rollClickGain, addOre, getOrePerSecond, getAutoClicksPerSecond,
     saveGame, loadGame, saveLastExit, readLastExit, computeOfflineReward, fmt,
-    MUTATIONS, MUTATION_DURATION_MS, MUTATION_CHECK_MS, MUTATION_CHANCE, getMutationBreakBonus
+    MUTATIONS, MUTATION_DURATION_MS, MUTATION_CHECK_MS, MUTATION_CHANCE, getMutationBreakBonus,
+    canClaimDaily, claimDailyReward
 } from '../state.js';
 import { YandexSDKStub } from '../sdk-stub.js';
 import { computeLayout } from '../layout.js';
@@ -83,6 +84,18 @@ export class GameScene extends Phaser.Scene {
         this.startBgm();
         this.setGameplay(true);
         this.refreshTick();
+        this.claimDaily();
+    }
+
+    // Ежедневная награда при первом заходе за день: выдаётся сразу (state.js),
+    // UIScene показывает модалку (registry 'dailyInfo' при загрузке или событие
+    // 'daily-claimed' из DevPanel — оба пути в одну очередь).
+    claimDaily() {
+        if (!canClaimDaily()) return;
+        const info = claimDailyReward();
+        if (!info) return;
+        this.registry.set('dailyInfo', info);
+        this.game.events.emit('daily-claimed', info);
     }
 
     // GameplayAPI Яндекса (стаб — no-op): start — игрок активен, stop — свёрнута.

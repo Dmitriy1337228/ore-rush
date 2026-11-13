@@ -220,6 +220,12 @@ export function createInitialState() {
         soundOn: true, // тумблер звука в настройках (эффекты)
         musicOn: true, // тумблер фоновой музыки
         musicVolume: 0.5, // громкость фоновой музыки 0..1
+        dailyStreak: 0,    // серия дней с наградой (пропуск дня — сброс)
+        lastDailyDay: 0,   // номер последнего дня с полученной наградой (Date.now()/DAY_MS)
+        dailyBuffUntil: 0, // дневной баф множителя добычи (wall-clock ms)
+        dailyBuffMult: 1,
+        dailyCritUntil: 0, // баф «Критический импульс»
+        dailyVeinUntil: 0, // баф «Золотая жила»
         levels
     };
 }
@@ -405,7 +411,9 @@ export function getOrePerSecond() {
         + getUpgradeLevel('dyson') * 1e10;
     let mult = Math.pow(1.25, getUpgradeLevel('tech'));
     mult *= Math.pow(1.3, getUpgradeLevel('aicore'));
-    return flat * mult * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult();
+    // дневной баф («Ускорение»/«Мощный буст») применяется к фактической добыче;
+    // в якорь цены спуска (getExpectedClickGain) он сознательно не входит
+    return flat * mult * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult() * getDailyMult();
 }
 
 // Робо-рука: +0.5 авто-кликов в секунду за уровень.
@@ -415,7 +423,10 @@ export function getAutoClicksPerSecond() {
 }
 
 export function getCritChance() {
-    return Math.min(0.05 + 0.03 * getUpgradeLevel('dynamite'), 0.74);
+    const base = Math.min(0.05 + 0.03 * getUpgradeLevel('dynamite'), 0.74);
+    // «Критический импульс» (дневная награда): потолок 95% — всегда остаётся шанс промаха по шансу
+    if (Date.now() < gameState.dailyCritUntil) return Math.min(base + DAILY_CRIT_BONUS, 0.95);
+    return base;
 }
 
 export function getLuckyChance() {
@@ -451,13 +462,161 @@ export function getMutationBreakBonus(mutationId) {
     return mut && mut.breakBonusMult ? getClickDamage() * mut.breakBonusMult : 0;
 }
 
+// ---------- Ежедневные награды (Этап 6, расширенный) ----------
+// Модалка при первом заходе за день; награды = 7-дневный цикл, день серии
+// выбирает награду. Пропуск дня (lastDailyDay < вчера) обнуляет серию.
+// Бафы — таймеры WALL-CLOCK (ms): переживают перезагрузку страницы, истекают сами.
+// Якорь цены спуска (getExpectedClickGain) считается БЕЗ дневного бафа — баф
+// временный и не должен сдвигать лестницу цен.
+export const DAY_MS = 86400e3;
+export const DAILY_CRIT_BONUS = 0.25;   // «Критический импульс»: +25% к шансу крита
+export const DAILY_INSTANT_SECONDS = 300; // «Накопитель»: 5 минут полного дохода сразу
+export const DAILY_REWARDS = [
+    { id: 'boost2',  name: 'Ускорение',           kind: 'mult', mult: 2,  durMs: 10 * 60e3, icon: 'pickaxe_iron',    desc: 'x2 к скорости добычи\nна 10 минут' },
+    { id: 'stash',   name: 'Накопитель',          kind: 'instant', icon: 'gold_nugget',            desc: 'мгновенно 5 минут\nполного дохода' },
+    { id: 'crit',    name: 'Критический импульс', kind: 'crit', icon: 'dynamite_bundle',          desc: `+${Math.round(DAILY_CRIT_BONUS * 100)}% к шансу крита\nна 5 минут` },
+    { id: 'upgrade', name: 'Бесплатное улучшение', kind: 'upgrade', icon: 'icon_hammer',           desc: '+1 уровень лучшему\nдоступному улучшению' },
+    { id: 'boost3',  name: 'Мощное ускорение',    kind: 'mult', mult: 3,  durMs: 10 * 60e3, icon: 'pickaxe_diamond', desc: 'x3 к скорости добычи\nна 10 минут' },
+    { id: 'boost10', name: 'Мощный буст',         kind: 'mult', mult: 10, durMs: 2 * 60e3,  icon: 'icon_dyson',      desc: 'x10 к скорости добычи\nна 2 минуты' },
+    { id: 'vein',    name: 'Золотая жила',        kind: 'vein', durMs: 2 * 60e3,  icon: 'icon_vein',       desc: 'каждый удар — жила\nна 2 минуты' }
+];
+
+export function getDailyDay() {
+    return Math.floor(Date.now() / DAY_MS);
+}
+
+// Активный дневной множитель добычи (1 = бафа нет)
+export function getDailyMult() {
+    return Date.now() < gameState.dailyBuffUntil ? gameState.dailyBuffMult : 1;
+}
+
+// Бафы «Критический импульс» / «Золотая жила»
+export function isDailyCritActive() {
+    return Date.now() < gameState.dailyCritUntil;
+}
+
+export function isDailyVeinActive() {
+    return Date.now() < gameState.dailyVeinUntil;
+}
+
+export function canClaimDaily() {
+    return getDailyDay() > gameState.lastDailyDay;
+}
+
+// Прирост дохода/сек от +1 уровня улучшения id — матрица выбора «бесплатного
+// улучшения» и общий инструмент баланса (свернута с balance-sim.mjs: та же математика).
+export function upgradeIncomeDelta(id) {
+    const dmg = getClickDamage();
+    const syn = getSynergyGain();
+    const cps = getAutoClicksPerSecond() + 3; // MANUAL_CPS_ASSUME
+    const critMult = 5 + 0.5 * getUpgradeLevel('focuslens');
+    const veinMult = 10 + 1 * getUpgradeLevel('magnet');
+    const critF = 1 + getCritChance() * (critMult - 1);
+    const veinF = 1 + getLuckyChance() * (veinMult - 1);
+    const clickChain = () => Math.pow(1.5, getUpgradeLevel('sledge'))
+        * Math.pow(1.6, getUpgradeLevel('hydraulic'))
+        * Math.pow(1.7, getUpgradeLevel('plasma'))
+        * Math.pow(1.8, getUpgradeLevel('disintegrator'))
+        * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult();
+    const passiveMults = () => Math.pow(1.25, getUpgradeLevel('tech'))
+        * Math.pow(1.3, getUpgradeLevel('aicore'))
+        * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult();
+    switch (id) {
+        case 'pickaxe':   return clickChain() * critF * veinF * cps;
+        case 'sledge':    return dmg * 0.5 * critF * veinF * cps;
+        case 'hydraulic': return dmg * 0.6 * critF * veinF * cps;
+        case 'plasma':    return dmg * 0.7 * critF * veinF * cps;
+        case 'disintegrator': return dmg * 0.8 * critF * veinF * cps;
+        case 'miner':     return 1 * passiveMults();
+        case 'drill':     return 10 * passiveMults();
+        case 'excavator': return 100 * passiveMults();
+        case 'factory':   return 1000 * passiveMults();
+        case 'quarry':    return 1e4 * passiveMults();
+        case 'megafactory': return 1e5 * passiveMults();
+        case 'orbital':   return 1e6 * passiveMults();
+        case 'quantumlab': return 1e7 * passiveMults();
+        case 'wormhole':  return 1e8 * passiveMults();
+        case 'singularity': return 1e9 * passiveMults();
+        case 'dyson':     return 1e10 * passiveMults();
+        case 'tech':      return getOrePerSecond() * 0.25;
+        case 'aicore':    return getOrePerSecond() * 0.3;
+        case 'dynamite':  { const c = Math.min(0.05 + 0.03 * (getUpgradeLevel('dynamite') + 1), 0.74) - getCritChance(); return (dmg + syn) * c * (critMult - 1) * veinF * cps; }
+        case 'lucky':     { const v = Math.min(0.02 * (getUpgradeLevel('lucky') + 1), 0.5) - getLuckyChance(); return (dmg + syn) * v * (veinMult - 1) * critF * cps; }
+        case 'resonance': return getOrePerSecond() * 0.01 * critF * veinF * cps;
+        case 'focuslens': return (dmg + syn) * getCritChance() * 0.25 * veinF * cps;
+        case 'magnet':    return (dmg + syn) * getLuckyChance() * critF * cps;
+        case 'lantern':
+        case 'warehouse': return 0;
+    }
+    return 0;
+}
+
+// Лучшее доступное улучшение для «Бесплатного улучшения»: максимум прироста
+// дохода на единицу цены среди доступных (гейты/цепочки/капы соблюдены) —
+// полезно на любом тире по построению.
+export function pickFreeUpgrade() {
+    let best = null, bestRoi = 0;
+    for (const def of UPGRADES) {
+        if (isMaxed(def.id) || !isUpgradeAvailable(def.id)) continue;
+        const d = upgradeIncomeDelta(def.id);
+        if (d <= 0) continue;
+        const roi = d / getUpgradeCost(def.id);
+        if (roi > bestRoi) { bestRoi = roi; best = def; }
+    }
+    return best;
+}
+
+function applyDailyReward(reward) {
+    switch (reward.kind) {
+        case 'mult':
+            gameState.dailyBuffMult = reward.mult;
+            gameState.dailyBuffUntil = Date.now() + reward.durMs;
+            return null;
+        case 'instant': {
+            // несколько минут ПОЛНОГО дохода (пассив + клики/авто) — по построению
+            // масштабируется с прогрессом и не раздаёт слишком много
+            const amount = DAILY_INSTANT_SECONDS * getEarningRate();
+            addOre(amount);
+            return amount;
+        }
+        case 'crit':
+            gameState.dailyCritUntil = Date.now() + 5 * 60e3;
+            return null;
+        case 'vein':
+            gameState.dailyVeinUntil = Date.now() + reward.durMs;
+            return null;
+        case 'upgrade': {
+            const def = pickFreeUpgrade();
+            if (!def) return null;
+            gameState.levels[def.id] = getUpgradeLevel(def.id) + 1;
+            return { id: def.id, name: def.name };
+        }
+    }
+    return null;
+}
+
+// Выдача награды дня: серия растёт только за подряд идущие дни, пропуск — сброс.
+// Возвращает {reward, streak, extra} или null (уже получено сегодня).
+export function claimDailyReward() {
+    if (!canClaimDaily()) return null;
+    const today = getDailyDay();
+    const gap = today - gameState.lastDailyDay;
+    gameState.dailyStreak = (gameState.lastDailyDay > 0 && gap === 1) ? gameState.dailyStreak + 1 : 1;
+    gameState.lastDailyDay = today;
+    const reward = DAILY_REWARDS[(gameState.dailyStreak - 1) % DAILY_REWARDS.length];
+    const extra = applyDailyReward(reward);
+    saveGame();
+    return { reward, streak: gameState.dailyStreak, extra };
+}
+
 // Один клик: базовый урон + крит x5(+линза) + золотая жила x10(+магнит) + синергия (% от пассива).
 // mutationId — активная мутация блока: замороженная форсирует крит, радужная множит весь доход.
+// Дневные бафы: «Золотая жила» форсирует жилу, множитель бафа применяется к итогу.
 export function rollClickGain(mutationId) {
     let gain = getClickDamage() + getSynergyGain();
     const mut = mutationId ? MUTATIONS[mutationId] : null;
     const crit = (mut && mut.forceCrit) || Math.random() < getCritChance();
-    const lucky = Math.random() < getLuckyChance();
+    const lucky = isDailyVeinActive() || Math.random() < getLuckyChance();
     // Фокус-линза: +0.5 к силе крита за уровень (x5 -> x5.5...)
     const critMult = 5 + 0.5 * getUpgradeLevel('focuslens');
     // Рудный магнит: +1 к множителю жилы за уровень (x10 -> x11...)
@@ -465,6 +624,7 @@ export function rollClickGain(mutationId) {
     if (crit) gain *= critMult;
     if (lucky) gain *= veinMult;
     if (mut && mut.clickGainMult) gain *= mut.clickGainMult;
+    gain *= getDailyMult();
     return { gain, crit, lucky };
 }
 
@@ -659,6 +819,16 @@ export function applySave(data) {
     gameState.musicOn = data.musicOn !== false; // отсутствие флага = музыка включена
     const mv = Number(data.musicVolume); // 0 должен сохраняться как 0 — не через ||
     gameState.musicVolume = Number.isFinite(mv) ? Math.min(1, Math.max(0, mv)) : 0.5;
+    // Ежедневные награды: отсутствие полей в старых сейвах = чистая серия
+    gameState.dailyStreak = Math.max(0, Math.floor(Number(data.dailyStreak) || 0));
+    const ldd = Number(data.lastDailyDay);
+    gameState.lastDailyDay = Number.isFinite(ldd) && ldd > 0 ? Math.floor(ldd) : 0;
+    const dbu = Number(data.dailyBuffUntil), dbm = Number(data.dailyBuffMult);
+    gameState.dailyBuffUntil = Number.isFinite(dbu) && dbu > Date.now() ? dbu : 0; // истёкший баф не resurrect
+    gameState.dailyBuffMult = Number.isFinite(dbm) && dbm >= 1 ? Math.min(dbm, 1e6) : 1;
+    const dcu = Number(data.dailyCritUntil), dvt = Number(data.dailyVeinUntil);
+    gameState.dailyCritUntil = Number.isFinite(dcu) && dcu > Date.now() ? dcu : 0;
+    gameState.dailyVeinUntil = Number.isFinite(dvt) && dvt > Date.now() ? dvt : 0;
     gameState.levels = { ...init.levels };
     if (data.levels && typeof data.levels === 'object') {
         for (const def of UPGRADES) {
