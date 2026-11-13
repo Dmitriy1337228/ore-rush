@@ -400,6 +400,7 @@ export class UIScene extends Phaser.Scene {
         });
         this.tierLabel.setPosition(L.viewport.x + 2, p.py + p.tierCY);
         this.tierLabel.setFontSize(p.tierLabelSize);
+        this._tierText = null; // кегль ужинается в refreshUi под новую ширину
         this.amountC.setPosition(L.viewport.x + L.viewport.w - p.amountPadRight - p.amountW / 2, p.py + p.tierCY);
         this.amountBg.setDisplaySize(p.amountW, p.amountH);
         this.amountLbl.setFontSize(p.amountSize);
@@ -1118,7 +1119,23 @@ export class UIScene extends Phaser.Scene {
         this.updateBuffLine();
         this.starsText.setText(gameState.stars > 0 ? `★ ${gameState.stars} (x${getPrestigeMult().toFixed(1)})` : '');
         // x звёзд фиксирован (правый край перед кнопкой «Настройки»), не двигается от статов
-        this.tierLabel.setText(`уровень шахты: ${gameState.tier + 1} — ${tier.name}`);
+        // Имя руды бывает длинным («Серебро», «Уранит») — ужинаем кегль строки
+        // тира, чтобы текст не заходил под кнопку мультипокупки (скриншот игрока).
+        // Пересчёт только при смене текста (строка меняется раз в спуск).
+        const tierText = `уровень шахты: ${gameState.tier + 1} — ${tier.name}`;
+        if (this._tierText !== tierText) {
+            this._tierText = tierText;
+            this.tierLabel.setText(tierText);
+            const p = this.L.panel;
+            const btnLeft = this.L.viewport.x + this.L.viewport.w - p.amountPadRight - p.amountW;
+            const maxW = btnLeft - this.tierLabel.x - 10;
+            let size = p.tierLabelSize;
+            this.tierLabel.setFontSize(size);
+            while (size > 10 && this.tierLabel.width > maxW) {
+                size -= 1;
+                this.tierLabel.setFontSize(size);
+            }
+        }
 
         // Кнопка спуска
         const next = getNextTier();

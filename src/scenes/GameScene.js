@@ -403,8 +403,8 @@ export class GameScene extends Phaser.Scene {
 
         // Робо-рука: бюджетный аккумулятор авто-кликов (0.5 клика/сек за уровень).
         // Копим доли кликов каждые 200мс — целые исполняем; устойчиво к смене уровня.
-        // Во время анимации разрушения/блокировки клики не списываются — бюджет
-        // сохраняется и исполняется после (иначе редкие удары терялись).
+        // Во время анимации разрушения клики не списываются — бюджет сохраняется
+        // и исполняется после (иначе редкие удары терялись); модалки её не стопорят.
         this.autoBudget = 0;
         this.autoTimer = this.time.addEvent({
             delay: 200,
@@ -413,13 +413,14 @@ export class GameScene extends Phaser.Scene {
                 const aps = getAutoClicksPerSecond();
                 if (aps <= 0) return;
                 this.autoBudget += aps * 0.2;
-                // Кап бюджета: под модалкой (blockLocked) клики не списываются —
-                // без капа копился бы залп на всё время простоя (фризы и волна
-                // частиц после закрытия); короткая анимация разрушения это не ломает
+                // Кап бюджета: во время анимации разрушения (blockBusy) клики не
+                // списываются — без капа копился бы залп на всё время простоя.
+                // Модалки (blockLocked) робо-руку не останавливают — она работает
+                // под ними, как и пассивный доход.
                 if (this.autoBudget > 20) this.autoBudget = 20;
                 let guard = 0;
                 while (this.autoBudget >= 1 && guard < 100) {
-                    if (this.blockBusy || this.registry.get('blockLocked')) break;
+                    if (this.blockBusy) break;
                     this.autoBudget -= 1;
                     guard++;
                     this.autoMine();
@@ -493,7 +494,11 @@ export class GameScene extends Phaser.Scene {
     // isAuto: без тряски камеры и без инкремента счётчика ручных кликов.
     performMine(px, py, isAuto) {
         if (this.blockBusy) return;
-        if (this.registry.get('blockLocked')) return; // открыта модалка в UIScene
+        // Модалка блокирует только РУЧНОЙ клик (robо-рука — машинный доход, как
+        // пассив: продолжает работать под модалкой). Ручной клик до блока и так
+        // не доходит (интерактивный dim модалки перехватывает ввод) — guard
+        // оставлен как страховка.
+        if (!isAuto && this.registry.get('blockLocked')) return;
 
         const mut = this.mutation ? MUTATIONS[this.mutation.id] : null;
         // ключ мутации = this.mutation.id (сеется из ключа MUTATIONS в startMutation)

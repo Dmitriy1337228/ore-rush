@@ -289,6 +289,17 @@ async function withState(page, fnBody) {
     fs.writeFileSync(path.join(OUT, 'layout_audit_deep.txt'), auditDeep.violations.join('\n') || 'layout audit (deep rows, tier 6): 0 violations');
     console.log('deep violations:', auditDeep.violations.length);
     auditDeep.violations.forEach((v) => console.log('  ' + v));
+    // Строка тира с длинным названием руды («Аметист») не должна заходить под
+    // кнопку мультипокупки (наезд пойман скриншотом игрока — общий аудит слеп
+    // к длинным названиям, они видны только на глубоких тирах)
+    const tier = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        const btnLeft = ui.amountC.x - ui.amountBg.displayWidth / 2;
+        return { text: ui.tierLabel.text, right: ui.tierLabel.x + ui.tierLabel.width, btnLeft };
+    });
+    if (tier.right > tier.btnLeft) {
+        scenarioFailures.push(`09_deep: строка тира "${tier.text}" заходит под кнопку мультипокупки (right ${Math.round(tier.right)} > btnLeft ${Math.round(tier.btnLeft)})`);
+    }
     await shoot(page, '10_deep_rows');
     await ctx.close();
 }
