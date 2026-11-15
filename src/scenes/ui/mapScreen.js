@@ -4,7 +4,7 @@ import {
 } from '../../state.js';
 import { addImgC, makeLabel, fitFontSize, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
 import { MAP_NODE_H, MAP_HEAD, MAP_TAIL, MAP_R_TIER, MAP_R_BOSS } from '../../ui/listGeometry.js';
-import { TEXT, DEPTH, TEX, HIT, REG } from '../../ui/theme.js';
+import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE } from '../../ui/theme.js';
 
 export const mapScreenMethods = {
     buildMapScreen() {
@@ -24,7 +24,7 @@ export const mapScreenMethods = {
         // крестиком; узлы рисует mapCam ПОВЕРХ (камеры рендерятся после main)
         this.mapBoard = addImgC(this, 0, 0, 'map_board', 680, 464);
         this.mapBoard.setAlpha(0.9);
-        this.mapTitle = makeLabel(this, 0, -246, 'Карта шахты', 30, TEXT.cream).setOrigin(0.5);
+        this.mapTitle = makeLabel(this, 0, -246, 'Карта шахты', FONT_SIZE.display, TEXT.cream).setOrigin(0.5);
         this.mapClose = addImgC(this, 320, -238, TEX.closeButton, 44, 44);
         setHitRect(this.mapClose, ...HIT.closeSquare);
         this.mapClose.on('pointerdown', () => this.closeMap());
@@ -104,8 +104,8 @@ export const mapScreenMethods = {
         const icon = this.add.image(0, r, TIERS[t].iconKey);
         this.placeIcon(icon, TIERS[t].iconKey, 0, r, Math.round(30 * Math.min(s, 1.6)));
         const nameY = r * 2 + Math.round(8 * s);
-const name = makeLabel(this, 0, nameY, `${t + 1}. ${TIERS[t].name}`, 13, TEXT.white).setOrigin(0.5, 0);
-fitFontSize(name, 13 * s, (this._mapView ? this._mapView.w : 680) - 24, 10);
+const name = makeLabel(this, 0, nameY, `${t + 1}. ${TIERS[t].name}`, FONT_SIZE.captionLg, TEXT.white).setOrigin(0.5, 0);
+fitFontSize(name, FONT_SIZE.captionLg * s, (this._mapView ? this._mapView.w : 680) - 24, 10);
 // Портрет: обводка — серое по камню на телефоне читалось плохо (ревью)
 if (this.L.portrait) name.setStroke('#14161a', 4);
         root.add([ring, ringLine, icon, name]);
@@ -124,10 +124,10 @@ if (this.L.portrait) name.setStroke('#14161a', 4);
         this.placeIcon(icon, boss.icon, 0, r, Math.round(40 * Math.min(s, 1.6)));
         const nameY = r * 2 + Math.round(7 * s);
         const maxW = (this._mapView ? this._mapView.w : 680) - 24;
-const name = makeLabel(this, 0, nameY, boss.name, 14, TEXT.white).setOrigin(0.5, 0);
-fitFontSize(name, 14 * s, maxW, 10);
-const status = makeLabel(this, 0, nameY + Math.round(18 * s), '', 12, TEXT.dim).setOrigin(0.5, 0);
-fitFontSize(status, 12 * s, maxW, 10);
+const name = makeLabel(this, 0, nameY, boss.name, FONT_SIZE.label, TEXT.white).setOrigin(0.5, 0);
+fitFontSize(name, FONT_SIZE.label * s, maxW, 10);
+const status = makeLabel(this, 0, nameY + Math.round(18 * s), '', FONT_SIZE.caption, TEXT.dim).setOrigin(0.5, 0);
+fitFontSize(status, FONT_SIZE.caption * s, maxW, 10);
 if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a', 4); }
         root.add([ring, ringLine, icon, name, status]);
         this.mapContent.add(root);
@@ -346,7 +346,7 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
             ? node.root.y - Math.round(20 * k)
             : -this._mapHalfH + 118;
         const plate = this.add.rectangle(this._nodeCX || 340, cy, 10, Math.round(34 * k), 0x1c1620, 0.85).setStrokeStyle(1, 0x555860, 1);
-        const banner = makeLabel(this, this._nodeCX || 340, cy, `Уровень ${tierIndex + 1}: ${TIERS[tierIndex].name}!`, Math.round(22 * k), TEXT.cream, { align: 'center' }).setOrigin(0.5);
+        const banner = makeLabel(this, this._nodeCX || 340, cy, `Уровень ${tierIndex + 1}: ${TIERS[tierIndex].name}!`, Math.round(FONT_SIZE.cardTitle * k), TEXT.cream, { align: 'center' }).setOrigin(0.5);
         plate.setSize(banner.width + 36, Math.round(34 * k));
         plate.setAlpha(0);
         banner.setAlpha(0);
@@ -426,7 +426,7 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
         this.mapRoot.setPosition(L.modal.cx, mcy);
         this.mapPanel.setDisplaySize(mpw, mph);
         this.mapTitle.setPosition(0, -mph / 2 + 64);
-        this.mapTitle.setFontSize(L.portrait ? 26 : 30);
+        this.mapTitle.setFontSize(L.portrait ? FONT_SIZE.title : FONT_SIZE.display);
             this.mapClose.setPosition(mpw / 2 - 48, -mph / 2 + 72);
             this.mapClose.setDisplaySize(L.portrait ? 64 : 44, L.portrait ? 64 : 44);
         const mvx = L.modal.cx - mpw / 2 + 40;

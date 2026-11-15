@@ -16,8 +16,8 @@ export const panelMethods = {
 
         this.panelImg = addImg(this, px, py, 'upgrades_panel_wood', pw, ph, 10);
         // Планка с заклёпками (143..200): заголовок по её центру
-        // (стартовый кегль 24 — дубль landscape p.titleSize; перезаписывается раскладкой)
-        this.panelTitle = makeLabel(this, px + pw / 2, 171, 'Улучшения', 24, TEXT.cream).setOrigin(0.5).setDepth(DEPTH.ui);
+        // (стартовый кегль — дубль landscape p.titleSize; перезаписывается раскладкой)
+        this.panelTitle = makeLabel(this, px + pw / 2, 171, 'Улучшения', FONT_SIZE.section, TEXT.cream).setOrigin(0.5).setDepth(DEPTH.ui);
 
         // Вкладки: одна ширина со списком (934..1230), две по 145 + зазор 6
         this.tabBtns = TABS.map((tab, i) => this.buildTabButton(VIEWPORT.x + i * 151, 192, tab));

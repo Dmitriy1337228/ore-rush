@@ -5,7 +5,7 @@ import {
 import { playSfx } from '../../sfx.js';
 import { makeLabel } from '../../ui/uiKit.js';
 import { floatText } from './effects.js';
-import { TEXT, REG } from '../../ui/theme.js';
+import { TEXT, REG, FONT_SIZE } from '../../ui/theme.js';
 import { blockStageKey, GAME_DEPTH } from './constants.js';
 
 export const mutationMethods = {
@@ -32,8 +32,8 @@ export const mutationMethods = {
 
         // Подпись + таймер над блоком (парят)
         this.mutationUi = this.add.container(this.blockX, this.blockY - 200).setDepth(GAME_DEPTH.floatBurst);
-        this.mutationName = makeLabel(this, 0, 0, def.name, 22, TEXT.white).setOrigin(0.5);
-        this.mutationTime = makeLabel(this, 0, 28, `${Math.ceil(duration / 1000)}с`, 16, TEXT.cream).setOrigin(0.5);
+        this.mutationName = makeLabel(this, 0, 0, def.name, FONT_SIZE.cardTitle, TEXT.white).setOrigin(0.5);
+        this.mutationTime = makeLabel(this, 0, 28, `${Math.ceil(duration / 1000)}с`, FONT_SIZE.stat, TEXT.cream).setOrigin(0.5);
         this.mutationUi.add([this.mutationName, this.mutationTime]);
         this.tweens.add({
             targets: this.mutationUi,

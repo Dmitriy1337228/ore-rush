@@ -3,7 +3,7 @@ import {
     gameState, fmt, BOSSES, COMPONENTS, ARTIFACTS, ITEMS, CRAFT_RECIPES, useItem, canCraft, startCraft, canClaimCraft, claimCraft, getItemPrice, buyItem
 } from '../../state.js';
 import { FONT, addImg, addImgC, makeLabel, fitFontSize, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
-import { TEXT, DEPTH, TEX, HIT, REG } from '../../ui/theme.js';
+import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
 
 export const craftScreenMethods = {
@@ -18,7 +18,7 @@ export const craftScreenMethods = {
 
         this.craftRoot = addModalContainer(this).setDepth(DEPTH.screen).setVisible(false);
         this.craftPanel = addImgC(this, 0, 0, TEX.modalPanel, 560, 600);
-        this.craftTitle = makeLabel(this, 0, -232, 'Мастерская', 30, TEXT.cream).setOrigin(0.5);
+        this.craftTitle = makeLabel(this, 0, -232, 'Мастерская', FONT_SIZE.display, TEXT.cream).setOrigin(0.5);
         this.craftClose = addImgC(this, 220, -228, TEX.closeButton, 44, 44);
         setHitRect(this.craftClose, ...HIT.closeSquare);
         this.craftClose.on('pointerdown', () => this.closeCraft());
@@ -68,7 +68,7 @@ export const craftScreenMethods = {
         this.craftCompRow = [];
         const slotW = Math.round(64 * k);
         const iconSize = Math.round(22 * k);
-        const fSize = Math.max(11, Math.round(13 * Math.min(s, 1.35)));
+        const fSize = Math.max(11, Math.round(FONT_SIZE.captionLg * Math.min(s, 1.35)));
         const compRowStartX = -(COMPONENTS.length * slotW) / 2;
         COMPONENTS.forEach((def, i) => {
             const sx = compRowStartX + i * slotW;
@@ -84,7 +84,7 @@ export const craftScreenMethods = {
         const hintText = this.L.portrait
             ? 'компоненты падают с боссов:\nКарта → «Сразиться!»'
             : 'компоненты падают с боссов: Карта → «Сразиться!»';
-        const hintSize = this.L.portrait ? 24 : Math.max(10, Math.round(12 * Math.min(s, 1.35)));
+        const hintSize = this.L.portrait ? FONT_SIZE.section : Math.max(10, Math.round(FONT_SIZE.caption * Math.min(s, 1.35)));
         const hint = makeLabel(this, 0, Math.round(26 * k), hintText, hintSize, '#d0d0d0', { align: 'center' }).setOrigin(0.5);
         this.craftHeader.add(hint);
     },
@@ -111,8 +111,8 @@ export const craftScreenMethods = {
         const buyCY = Math.round(rowH * 0.26);
         const actCY = Math.round(rowH * 0.72);
         const textMaxW = btnCX - btnW / 2 - 8 - textX;
-        const nameSize = Math.max(9, Math.round(14 * s));
-        const subSize = Math.max(9, Math.round(12 * s));
+        const nameSize = Math.max(9, Math.round(FONT_SIZE.label * s));
+        const subSize = Math.max(9, Math.round(FONT_SIZE.caption * s));
         const cellW = Math.floor((w - 10) / 2);
 
         this.craftContent.removeAll(true);
@@ -122,7 +122,7 @@ export const craftScreenMethods = {
         let y = Math.round(8 * s);
 
         const header = (title) => {
-            const t = makeLabel(this, 2, y, title, Math.max(11, Math.round(16 * s)), TEXT.cream).setOrigin(0, 0);
+            const t = makeLabel(this, 2, y, title, Math.max(11, Math.round(FONT_SIZE.stat * s)), TEXT.cream).setOrigin(0, 0);
             this.craftContent.add(t);
         };
 
@@ -141,7 +141,7 @@ export const craftScreenMethods = {
             const btn = this.add.image(btnCX, actCY, TEX.button).setDisplaySize(btnW, btnH);
             setHitRect(btn, ...HIT.button);
             const btnText = makeLabel(this, btnCX, actCY, 'Активировать', subSize, TEXT.white).setOrigin(0.5);
-            fitFontSize(btnText, subSize, btnW - 12, 8);
+            fitFontSize(btnText, subSize, btnW - SPACE.md, 8);
             const buyBtn = this.add.image(btnCX, buyCY, TEX.button).setDisplaySize(btnW, btnH);
             setHitRect(buyBtn, ...HIT.button);
             const buyBtnText = makeLabel(this, btnCX, buyCY, '', subSize, TEXT.white).setOrigin(0.5);
@@ -162,13 +162,13 @@ export const craftScreenMethods = {
                 }
                 this.refreshUi();
             });
-            this.craftItemRows[def.id] = { def, rc, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText, _key: null, _hintKey: null, _err: null, _errUntil: 0, _hintSize: subSize, _hintMaxW: textMaxW, _buySize: subSize, _buyMaxW: btnW - 12 };
+            this.craftItemRows[def.id] = { def, rc, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText, _key: null, _hintKey: null, _err: null, _errUntil: 0, _hintSize: subSize, _hintMaxW: textMaxW, _buySize: subSize, _buyMaxW: btnW - SPACE.md };
             y += step;
         }
 
         y += Math.round(14 * s);
         header('Рецепты');
-        const warn = makeLabel(this, w - 2, y + 3, 'крафт нельзя отменить', Math.max(9, Math.round(11 * s)), TEXT.bad).setOrigin(1, 0);
+        const warn = makeLabel(this, w - 2, y + 3, 'крафт нельзя отменить', Math.max(9, Math.round(FONT_SIZE.captionSm * s)), TEXT.bad).setOrigin(1, 0);
         this.craftContent.add(warn);
         y += Math.round(36 * s);
         for (const recipe of CRAFT_RECIPES) {
@@ -180,16 +180,16 @@ export const craftScreenMethods = {
             const resultDef = recipe.result.kind === 'item'
                 ? ITEMS.find((i) => i.id === recipe.result.id)
                 : ARTIFACTS.find((a) => a.id === recipe.result.id);
-            const name = makeLabel(this, textX, Math.round(10 * s), resultDef.name, Math.max(9, Math.round(13 * s)), TEXT.white).setOrigin(0, 0);
-            fitFontSize(name, Math.round(13 * s), textMaxW, 9);
+            const name = makeLabel(this, textX, Math.round(10 * s), resultDef.name, Math.max(9, Math.round(FONT_SIZE.captionLg * s)), TEXT.white).setOrigin(0, 0);
+            fitFontSize(name, Math.round(FONT_SIZE.captionLg * s), textMaxW, 9);
             const costY = Math.round(54 * s);
             const desc = makeLabel(this, textX, Math.round(32 * s), `Получишь: ${resultDef.desc}`, subSize, TEXT.good).setOrigin(0, 0);
             fitFontSize(desc, subSize, textMaxW, 9);
-            const needLbl = makeLabel(this, textX, costY, 'Нужно:', Math.max(9, Math.round(11 * s)), TEXT.soft).setOrigin(0, 0.5);
+            const needLbl = makeLabel(this, textX, costY, 'Нужно:', Math.max(9, Math.round(FONT_SIZE.captionSm * s)), TEXT.soft).setOrigin(0, 0.5);
             const costPairs = [];
             const pairNodes = [];
             const pairIcon = Math.round(16 * Math.min(s, 1.5));
-            const pairFont = Math.max(9, Math.round(12 * s));
+            const pairFont = Math.max(9, Math.round(FONT_SIZE.caption * s));
             let cx = textX + needLbl.width + Math.round(12 * s);
             for (const compId of Object.keys(recipe.cost)) {
                 const compDef = COMPONENTS.find((c) => c.id === compId);
@@ -201,7 +201,7 @@ export const craftScreenMethods = {
                 cx += Math.round(20 * s) + cText.width + Math.round(12 * s);
             }
             const footMaxW = btnCX - btnW / 2 - 8 - textX;
-            const footSize = Math.max(9, Math.round(11 * s));
+            const footSize = Math.max(9, Math.round(FONT_SIZE.captionSm * s));
             const srcTxt = recipe.result.kind === 'artifact'
                 ? 'крафт'
                 : `дроп: ${[...new Set(Object.keys(recipe.cost).map((compId) => (BOSSES.find((b) => b.drops[compId]) || {}).name).filter(Boolean))].join(', ')}`;
@@ -212,7 +212,7 @@ export const craftScreenMethods = {
             setHitRect(btn, ...HIT.button);
             const label = recipe.craftMs === 0 ? 'Создать' : `Крафт ${Math.round(recipe.craftMs / 60000)} мин`;
             const btnText = makeLabel(this, btnCX, btnCY, label, subSize, TEXT.white).setOrigin(0.5);
-            fitFontSize(btnText, subSize, btnW - 12, 8);
+            fitFontSize(btnText, subSize, btnW - SPACE.md, 8);
             rc.add([card, icon, name, desc, needLbl, status, src, btn, btnText]);
             // Пары стоимости ПОСЛЕ карточки: раньше они добавлялись до неё и
             // перекрывались карточкой целиком («Нужно:» с пустотой — скриншот
@@ -235,7 +235,7 @@ export const craftScreenMethods = {
                 }
                 this.refreshUi();
             });
-            this.craftRecipeRows[recipe.id] = { recipe, rc, icon, name, desc, needLbl, costPairs, status, src, btn, btnText, label, resultDef, _key: null, _footTxt: null, _btnSize: subSize, _btnMaxW: btnW - 12, _footSize: footSize, _footMaxW: footMaxW };
+            this.craftRecipeRows[recipe.id] = { recipe, rc, icon, name, desc, needLbl, costPairs, status, src, btn, btnText, label, resultDef, _key: null, _footTxt: null, _btnSize: subSize, _btnMaxW: btnW - SPACE.md, _footSize: footSize, _footMaxW: footMaxW };
             y += step;
         }
 
@@ -254,9 +254,9 @@ export const craftScreenMethods = {
             const icon = this.add.image(0, 0, def.id);
             this.placeIcon(icon, def.id, iconX, Math.round(rowH / 2), iconSize);
             const nameX = iconX + Math.round(iconSize / 2) + 12;
-            const name = makeLabel(this, nameX, Math.round(8 * s), def.name, Math.max(9, Math.round(12 * s)), TEXT.gold).setOrigin(0, 0);
-            fitFontSize(name, Math.round(12 * s), cellW - nameX - 8, 9);
-            const line = makeLabel(this, nameX, Math.round(30 * s), '', Math.max(9, Math.round(12 * s)), TEXT.good, { wordWrap: { width: cellW - nameX - 14 } }).setOrigin(0, 0);
+            const name = makeLabel(this, nameX, Math.round(8 * s), def.name, Math.max(9, Math.round(FONT_SIZE.caption * s)), TEXT.gold).setOrigin(0, 0);
+            fitFontSize(name, Math.round(FONT_SIZE.caption * s), cellW - nameX - 8, 9);
+            const line = makeLabel(this, nameX, Math.round(30 * s), '', Math.max(9, Math.round(FONT_SIZE.caption * s)), TEXT.good, { wordWrap: { width: cellW - nameX - 14 } }).setOrigin(0, 0);
             rc.add([card, icon, name, line]);
             this.craftContent.add(rc);
             setHitRect(card, ...HIT.rowCard);
@@ -292,7 +292,7 @@ export const craftScreenMethods = {
         if (this._craftLHCache[size]) return this._craftLHCache[size];
         if (!this._craftMeasureText) {
             this._craftMeasureText = this.add.text(0, -2000, 'Ag', {
-                fontFamily: FONT, fontSize: '22px', color: TEXT.white, resolution: 2
+                fontFamily: FONT, fontSize: `${FONT_SIZE.cardTitle}px`, color: TEXT.white, resolution: 2
             }).setVisible(false);
         }
         this._craftMeasureText.setFontSize(size);
@@ -304,7 +304,7 @@ export const craftScreenMethods = {
     // Text.height может отставать (текст отрисован fallback-шрифтом/до смены wrap),
     // а число строк всегда берётся из getWrappedText по актуальному wrap-стилю.
     craftTextH(t) {
-        const px = parseInt(t.style.fontSize, 10) || 12;
+        const px = parseInt(t.style.fontSize, 10) || FONT_SIZE.caption;
         const lh = this.craftMeasureLH(px);
         const lines = t.text ? Math.max(1, t.getWrappedText(t.text).length) : 1;
         const byLines = lines * lh + (lines - 1) * (t.lineSpacing || 0);
@@ -340,14 +340,14 @@ export const craftScreenMethods = {
     // Ряд предмета (портрет): зона A — текст (name+sub) слева и столбик кнопок
     // справа, зона B — подсказка на всю ширину. Высоты — по ФАКТУ (craftTextH).
     layoutCraftItemRow(row) {
-        const padT = 12, padB = 12, g = 8, bandG = 8;
+        const padT = SPACE.md, padB = SPACE.md, g = SPACE.sm, bandG = SPACE.sm;
         const TH = (t) => this.craftTextH(t);
         let y = padT;
         const nameH = TH(row.name);
         row.name.y = y;
         row.sub.y = y + nameH + g;
         const textA = nameH + g + TH(row.sub);
-        const bandA = Math.max(textA, 2 * row.btnH + 8);
+        const bandA = Math.max(textA, 2 * row.btnH + SPACE.sm);
         row.buyBtn.y = y + row.btnH / 2;
         row.buyBtnText.y = row.buyBtn.y;
         row.btn.y = y + bandA - row.btnH / 2;
@@ -367,7 +367,7 @@ export const craftScreenMethods = {
     // строка «Нужно:» с парами, фут со статусом/источником (взаимно исключены).
     // Все высоты — по факту (craftTextH), блоки укладываются строго друг под другом.
     layoutCraftRecipeRow(row) {
-        const padT = 12, padB = 12, g = 8;
+        const padT = SPACE.md, padB = SPACE.md, g = SPACE.sm;
         const TH = (t) => this.craftTextH(t);
         let y = padT;
         // Шапка: кнопка справа, имя (без переноса) по центру высоты шапки
@@ -384,11 +384,11 @@ export const craftScreenMethods = {
         const needH = Math.max(28, row.pairIcon + 6, TH(row.needLbl));
         const needCY = Math.round(y + needH / 2);
         row.needLbl.y = needCY;
-        let cx = row.textX + row.needLbl.width + 12;
+        let cx = row.textX + row.needLbl.width + SPACE.md;
         for (const pair of row.costPairs) {
             pair.icon.setPosition(cx + row.pairIcon / 2, needCY);
             pair.text.setPosition(cx + row.pairIcon + 6, needCY);
-            cx += row.pairIcon + 6 + pair.text.width + 16;
+            cx += row.pairIcon + 6 + pair.text.width + SPACE.lg;
         }
         y += needH + g;
         // Фут: статус ИЛИ источник (взаимно исключены), grow-only слот
@@ -405,7 +405,7 @@ export const craftScreenMethods = {
 
     // Артефактная ячейка (портрет): одна колонка, grow-only слот под строку line
     layoutCraftArtCell(cell) {
-        const padT = 12, padB = 12, g = 8;
+        const padT = SPACE.md, padB = SPACE.md, g = SPACE.sm;
         let y = padT;
         cell.name.y = y;
         y += this.craftTextH(cell.name) + g;
@@ -435,8 +435,8 @@ export const craftScreenMethods = {
         const btnCX = w - 12 - btnW / 2;
         const textMaxW = btnCX - btnW / 2 - 8 - textX;
         const W2 = w - 14 - textX;
-        const nameSize = Math.max(9, Math.round(14 * s));
-        const subSize = Math.max(9, Math.round(12 * s));
+        const nameSize = Math.max(9, Math.round(FONT_SIZE.label * s));
+        const subSize = Math.max(9, Math.round(FONT_SIZE.caption * s));
         const wrap = (width) => ({ wordWrap: { width, useAdvancedWrap: true } });
 
         this.craftContent.removeAll(true);
@@ -449,8 +449,8 @@ export const craftScreenMethods = {
         const addFlow = (node, h, gap, relayout, row) => flow.push({ node, h, gap, y: 0, relayout, row });
         const addHeader = (title, warnText) => {
             const c = this.add.container(0, 0);
-            c.add(makeLabel(this, 2, 0, title, Math.max(11, Math.round(16 * s)), TEXT.cream).setOrigin(0, 0));
-            if (warnText) c.add(makeLabel(this, w - 2, 3, warnText, Math.max(9, Math.round(11 * s)), TEXT.bad).setOrigin(1, 0));
+            c.add(makeLabel(this, 2, 0, title, Math.max(11, Math.round(FONT_SIZE.stat * s)), TEXT.cream).setOrigin(0, 0));
+            if (warnText) c.add(makeLabel(this, w - 2, 3, warnText, Math.max(9, Math.round(FONT_SIZE.captionSm * s)), TEXT.bad).setOrigin(1, 0));
             this.craftContent.add(c);
             addFlow(c, Math.round(36 * s), 0, null);
         };
@@ -469,7 +469,7 @@ export const craftScreenMethods = {
             const btn = this.add.image(btnCX, 0, TEX.button).setDisplaySize(btnW, btnH);
             setHitRect(btn, ...HIT.button);
             const btnText = makeLabel(this, btnCX, 0, 'Активировать', subSize, TEXT.white, { align: 'center' }).setOrigin(0.5);
-            fitFontSize(btnText, subSize, btnW - 12, 16);
+            fitFontSize(btnText, subSize, btnW - SPACE.md, 16);
             const buyBtn = this.add.image(btnCX, 0, TEX.button).setDisplaySize(btnW, btnH);
             setHitRect(buyBtn, ...HIT.button);
             const buyBtnText = makeLabel(this, btnCX, 0, '', subSize, TEXT.white, { align: 'center' }).setOrigin(0.5);
@@ -490,7 +490,7 @@ export const craftScreenMethods = {
                 }
                 this.refreshUi();
             });
-            const row = { def, rc, card, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText, textX, btnW, btnH, iconCX, iconSize, w, _key: null, _hintKey: null, _err: null, _errUntil: 0, _buySize: subSize, _buyMaxW: btnW - 12, hintSlot: this.craftMeasureLH(subSize), _nameTarget: nameSize, _nameMaxW: textMaxW, _dirty: false };
+            const row = { def, rc, card, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText, textX, btnW, btnH, iconCX, iconSize, w, _key: null, _hintKey: null, _err: null, _errUntil: 0, _buySize: subSize, _buyMaxW: btnW - SPACE.md, hintSlot: this.craftMeasureLH(subSize), _nameTarget: nameSize, _nameMaxW: textMaxW, _dirty: false };
             row.relayout = () => this.layoutCraftItemRow(row);
             this.craftItemRows[def.id] = row;
             addFlow(rc, 0, gapRow, row.relayout, row);
@@ -529,7 +529,7 @@ export const craftScreenMethods = {
             setHitRect(btn, ...HIT.button);
             const label = recipe.craftMs === 0 ? 'Создать' : `Крафт ${Math.round(recipe.craftMs / 60000)} мин`;
             const btnText = makeLabel(this, btnCX, 0, label, subSize, TEXT.white, { align: 'center' }).setOrigin(0.5);
-            fitFontSize(btnText, subSize, btnW - 12, 16);
+            fitFontSize(btnText, subSize, btnW - SPACE.md, 16);
             rc.add([card, icon, name, desc, needLbl, status, src, btn, btnText]);
             for (const n of pairNodes) rc.add(n);
             this.craftContent.add(rc);
@@ -549,7 +549,7 @@ export const craftScreenMethods = {
                 }
                 this.refreshUi();
             });
-            const row = { recipe, resultDef, rc, card, icon, name, desc, needLbl, costPairs, status, src, btn, btnText, label, pairIcon, textX, btnW, btnH, iconCX, iconSize, w, _key: null, _footTxt: null, _btnSize: subSize, _btnMaxW: btnW - 12, footSlot: this.craftMeasureLH(subSize), _nameTarget: nameSize, _nameMaxW: textMaxW, _dirty: false };
+            const row = { recipe, resultDef, rc, card, icon, name, desc, needLbl, costPairs, status, src, btn, btnText, label, pairIcon, textX, btnW, btnH, iconCX, iconSize, w, _key: null, _footTxt: null, _btnSize: subSize, _btnMaxW: btnW - SPACE.md, footSlot: this.craftMeasureLH(subSize), _nameTarget: nameSize, _nameMaxW: textMaxW, _dirty: false };
             row.relayout = () => this.layoutCraftRecipeRow(row);
             this.craftRecipeRows[recipe.id] = row;
             addFlow(rc, 0, gapRow, row.relayout, row);
@@ -876,7 +876,7 @@ export const craftScreenMethods = {
             // Портрет: шапка разрежена по вертикали — на высокой панели титул,
             // прижатый к рамке (68), выглядел «улетевшим вверх» (ревью игрока)
             this.craftTitle.setPosition(0, -cph / 2 + 96);
-            this.craftTitle.setFontSize(26);
+            this.craftTitle.setFontSize(FONT_SIZE.title);
             this.craftClose.setPosition(cpw / 2 - 48, -cph / 2 + 72);
             this.craftClose.setDisplaySize(64, 64);
             if (this.craftHeader && this._headerS !== s) {
@@ -886,7 +886,7 @@ export const craftScreenMethods = {
             if (this.craftHeader) this.craftHeader.setPosition(0, -cph / 2 + 152);
         } else {
             this.craftTitle.setPosition(0, -cph / 2 + 68);
-            this.craftTitle.setFontSize(30);
+            this.craftTitle.setFontSize(FONT_SIZE.display);
             this.craftClose.setPosition(cpw / 2 - 60, -cph / 2 + 72);
             this.craftClose.setDisplaySize(44, 44);
             if (this.craftHeader && this._headerS !== s) {
