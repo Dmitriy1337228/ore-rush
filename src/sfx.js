@@ -5,9 +5,12 @@
 import { gameState } from './state.js';
 
 const MIN_INTERVAL_MS = 70;
+const DEFAULT_VOLUME = 0.8;
+const PITCH_MIN = 0.94;    // разброс тона: rate x [0.94 .. 1.06)
+const PITCH_SPREAD = 0.12;
 const lastPlayed = new Map();
 
-export function playSfx(scene, base, variants = 2, rate = 1, volume = 0.8) {
+export function playSfx(scene, base, variants = 2, rate = 1, volume = DEFAULT_VOLUME) {
     if (!gameState.soundOn) return;
     if (!scene.cache?.audio?.exists(`${base}_1`)) return;
     const now = performance.now();
@@ -15,5 +18,5 @@ export function playSfx(scene, base, variants = 2, rate = 1, volume = 0.8) {
     if (now - prev < MIN_INTERVAL_MS) return;
     lastPlayed.set(base, now);
     const key = `${base}_${Math.floor(Math.random() * variants) + 1}`;
-    scene.sound.play(key, { rate: rate * (0.94 + Math.random() * 0.12), volume });
+    scene.sound.play(key, { rate: rate * (PITCH_MIN + Math.random() * PITCH_SPREAD), volume });
 }
