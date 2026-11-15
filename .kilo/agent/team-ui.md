@@ -1,7 +1,7 @@
 ---
-description: Визуальный UI/UX-критик: анализ скриншотов и разметки, поиск багов вёрстки и рекомендации по редизайну (по умолчанию Claude Haiku 5.5, для глубокого редизайна — override тимлида на Claude Sonnet 5.5).
+description: Визуальный UI/UX-критик: анализ скриншотов и разметки, поиск багов вёрстки и рекомендации по редизайну (Claude Sonnet 5.5).
 mode: subagent
-model: openrouter/anthropic/claude-haiku-5.5
+model: openrouter/anthropic/claude-sonnet-5.5
 steps: 15
 color: "#7E57C2"
 permission:
