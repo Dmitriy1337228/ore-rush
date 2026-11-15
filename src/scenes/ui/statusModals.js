@@ -4,6 +4,7 @@ import {
 import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
 import { createPanel } from '../../ui/panel.js';
+import { stackDown } from '../../ui/stack.js';
 import { TEXT, DEPTH, TEX, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 
 const OK_BUTTON = { w: 190, h: 46 };
@@ -183,28 +184,64 @@ export const statusModalsMethods = {
         } else {
             this.bossRewardSpeed.setVisible(false);
         }
-        let y = -64;
+        // Список награды — вертикальный стек (stackDown): ячейка строки
+        // компонента = иконка 30, зазор SPACE.md (шаг 42 — как прежде); блок
+        // артефакта = ячейка иконки 42, зазор после последнего компонента 26
+        // (эквивалент прежнего курсора «центр-на-центр 42+8»: центр имени на
+        // 50 ниже центра последней строки). Внутри блока имя на 12 выше центра
+        // иконки, описание на 22 ниже центра имени — как и было.
+        const COMP_CELL = 30;
+        const ART_CELL = 42;
+        const ART_GAP = 26; // низ ячейки последнего компонента -> верх иконки артефакта
+        const rows = [];
+        const objs = [];
+        let artifactAlone = false;
         for (const compId of Object.keys(reward.comps || {})) {
             const def = COMPONENTS.find((c) => c.id === compId);
             if (!def) continue;
             const icon = this.add.image(0, 0, def.icon);
-            this.placeIcon(icon, def.icon, -120, y, 30);
-            const label = makeLabel(this, -94, y, `${def.name} ×${reward.comps[compId]}`, FONT_SIZE.body, TEXT.pale).setOrigin(0, 0.5);
-            this.bossRewardComps.add([icon, label]);
-            y += 42;
+            this.placeIcon(icon, def.icon, -120, 0, COMP_CELL); // позицию ставит place()
+            const label = makeLabel(this, -94, 0, `${def.name} ×${reward.comps[compId]}`, FONT_SIZE.body, TEXT.pale).setOrigin(0, 0.5);
+            objs.push(icon, label);
+            rows.push({
+                h: COMP_CELL,
+                gapAfter: SPACE.md,
+                place: (top) => {
+                    icon.setPosition(-120, top + COMP_CELL / 2);
+                    label.setPosition(-94, top + COMP_CELL / 2);
+                }
+            });
         }
         if (reward.artifactId) {
             const def = ARTIFACTS.find((a) => a.id === reward.artifactId);
             if (def) {
-                y += SPACE.sm; // зазор перед блоком артефакта
                 // У артефактов нет поля icon (ТЗ: ключ текстуры = id)
                 const icon = this.add.image(0, 0, def.id);
-                this.placeIcon(icon, def.id, -120, y + 12, 42);
-                const name = makeLabel(this, -92, y, def.name, FONT_SIZE.stat, TEXT.gold).setOrigin(0, 0.5);
-                const desc = makeLabel(this, -92, y + 22, def.desc, FONT_SIZE.caption, TEXT.good).setOrigin(0, 0.5);
-                this.bossRewardComps.add([icon, name, desc]);
+                this.placeIcon(icon, def.id, -120, 0, ART_CELL); // позицию ставит place()
+                const name = makeLabel(this, -92, 0, def.name, FONT_SIZE.stat, TEXT.gold).setOrigin(0, 0.5);
+                const desc = makeLabel(this, -92, 0, def.desc, FONT_SIZE.caption, TEXT.good).setOrigin(0, 0.5);
+                objs.push(icon, name, desc);
+                if (rows.length) {
+                    rows[rows.length - 1].gapAfter = ART_GAP;
+                } else {
+                    artifactAlone = true; // награда без компонентов (verify-craft)
+                }
+                rows.push({
+                    h: ART_CELL,
+                    place: (top) => {
+                        icon.setPosition(-120, top + ART_CELL / 2);
+                        name.setPosition(-92, top + ART_CELL / 2 - 12);
+                        desc.setPosition(-92, top + ART_CELL / 2 + 10);
+                    }
+                });
             }
         }
+        if (rows.length) {
+            // Артефакт без компонентов: прежний курсор не проходил цикл — блок
+            // стоит на месте первой строки (центр имени -56, иконка -44)
+            stackDown(rows, { top: artifactAlone ? -65 : -64 - COMP_CELL / 2 });
+        }
+        this.bossRewardComps.add(objs);
         this.bossRewardDim.setVisible(true);
         this.bossRewardModal.setVisible(true);
     },
