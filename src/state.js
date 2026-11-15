@@ -175,7 +175,7 @@ export const UPGRADES = [
     { id: 'singularity', name: 'Гравитационный резак', icon: 'icon_singularity', tab: 'equipment', baseCost: 6e10, growth: 2.2, maxLevel: null, tier: 9, requires: { id: 'wormhole', level: 5 }, effect: '+1B руды/сек' },
     { id: 'dyson',     name: 'Сфера Дайсона',      icon: 'icon_dyson',       tab: 'equipment', baseCost: 6e11,    growth: 2.3,  maxLevel: null, tier: 10, requires: { id: 'singularity', level: 5 }, effect: '+10B руды/сек' },
     { id: 'tech',      name: 'Техника',            icon: 'gear_icon',        tab: 'equipment', baseCost: 8000,    growth: 5,    maxLevel: null, effect: 'пассив x1.25' },
-    { id: 'aicore',    name: 'ИИ-ядро',            icon: 'icon_aicore',      tab: 'equipment', baseCost: 5e5,     growth: 7,    maxLevel: null, tier: 5, requires: { id: 'tech', level: 5 }, effect: 'пас��ив x1.3' },
+    { id: 'aicore',    name: 'ИИ-ядро',            icon: 'icon_aicore',      tab: 'equipment', baseCost: 5e5,     growth: 7,    maxLevel: null, tier: 5, requires: { id: 'tech', level: 5 }, effect: 'пассив x1.3' },
     // «Каска» — НЕ доход, а живучесть: +2000 HP в босс-бое за уровень (x3^тир).
     // Гейт боссов: без каски босс вырубает шахтёра за ~25 с — копи руду и
     // прокачивай защиту, чтобы дожить до победы.

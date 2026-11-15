@@ -205,6 +205,7 @@ export class UIScene extends Phaser.Scene {
         this._headerS = 1;
         this._pendingDaily = null; // награда ждёт, пока не закроются другие модалки
         this._tutorialPending = false; // обучение ждёт закрытия окна дневной награды
+        this._tutSuppressed = false; // учебные слои погашены модалкой/боем (updateBlockLock)
     }
 
     create() {
@@ -535,8 +536,10 @@ export class UIScene extends Phaser.Scene {
             row.stock.setFontSize(Math.round(13 * ts));
             row.desc.setPosition(textX, ry + Math.round(42 * ts));
             row.desc.setFontSize(Math.round(12 * ts));
-            row.desc.wordWrap = { width: Math.max(80, textRight - textX) };
-            row.desc.updateText();
+            // setStyle, а не присваивание .wordWrap: это не API Phaser — перенос
+            // оставался на зашитых 200px из конструктора и в портрете вторая
+            // строка описания уезжала под кнопки (скриншот боя, мобилка)
+            row.desc.setStyle({ wordWrap: { width: Math.max(80, textRight - textX) } });
             // Кнопки в нижнем ряду карточки: две по половине ширины с зазором 12
             const btnW = Math.round((w - 28 - 12) / 2);
             const btnH = Math.round(30 * ts);
@@ -564,10 +567,15 @@ export class UIScene extends Phaser.Scene {
             const key = `${stock}|${price}|${canBuy ? 'n' : 'g'}`;
             if (!force && row._key === key) continue;
             row._key = key;
-            row.stock.setText(`в запасе: ${stock}`);
+            // Короткий бейдж «x N» (как в слотах боя): длинное «в запасе: N» при
+            // широком имени печаталось прямо ПОВЕРХ него глифами (скриншот боя)
+            row.stock.setText(`x ${stock}`);
             row.buyBtn.setTexture(canBuy ? 'buy_button_normal' : 'buy_button_disabled_gray');
             row.buyLbl.setText(`Купить · ${fmt(price)}`);
             row.useBtn.setTexture(stock > 0 ? 'buy_button_normal' : 'buy_button_disabled_gray');
+            // Имя ужинается до зазора перед бейджем запаса — гарантия от наезда
+            const ts = this.L && this.L.portrait ? (this._adaptiveScale || 1) : 1;
+            fitFontSize(row.name, Math.round(15 * ts), Math.max(48, row.stock.x - row.stock.width - 12 - row.name.x));
         }
     }
 
@@ -615,8 +623,10 @@ export class UIScene extends Phaser.Scene {
         this.gpsText.setFontSize(h.gpsSize);
         this.statsLine.setPosition(h.statsXBase, h.statsY);
         // Портрет: статы второй строкой ПОД ставкой — в одну строку HUD
-        // переполнен (счётчик + ставка + статы + Настройки) и «кликалось как попало»
-        this.statsLine.y = L.portrait ? h.statsY + 24 : h.statsY;
+        // переполнен (счётчик + ставка + статы + Настройки) и «кликалось как попало».
+        // Якорь barY+82: низ текста внутри тёмной врезки бара (30..95) — при
+        // statsY+24 (=110) глифы ложились на нижнюю фаску и читались срезанными
+        this.statsLine.y = L.portrait ? h.barY + 82 : h.statsY;
         this.statsLine.setVisible(h.statsVisible);
         if (L.portrait) {
             // Кегли HUD с клампами под доступную ширину бара (поток
@@ -689,10 +699,10 @@ export class UIScene extends Phaser.Scene {
         // В портрете звёзды живут на планке заголовка панели (HUD плотный);
         // в ландшафте — в HUD перед кнопкой «Настройки»
         if (L.portrait) this.starsText.setPosition(p.px + p.pw - 24, p.py + p.titleDy);
-        // Ландшафт: звёзды ПОД HUD-баром справа (строка бафов слева) — в баре
-        // при длинных статах «клик: 2712 · крит: 31%» они наезжали на текст
-        // (скриншот сценария 19); правый край барa — якорь origin (1,0.5)
-        else this.starsText.setPosition(h.barX + h.barW - 10, h.barY + h.barH + 10);
+        // Ландшафт: звёзды ПОД HUD-баром, строкой бафов, СЛЕВА от панели —
+        // прежний якорь «правый край бара» (x≈1256) ложился на верхнюю фаску
+        // деревянной панели (900..1264, верх 124): звёзды резались о заклёпки
+        else this.starsText.setPosition(p.px - 12, h.barY + h.barH + 10);
         // Вкладки: в ландшафте две по 145 (одна ширина со списком); в портрете
         // растягиваются на весь вьюпорт, иначе сбиваются влево у широкого листа
         const tabGap = 8;
@@ -836,7 +846,10 @@ export class UIScene extends Phaser.Scene {
         if (this.craftHeader) this.craftHeader.setPosition(0, -cph / 2 + 108);
         const cvx = L.modal.cx - cpw / 2 + 40;
         const cvw = cpw - 80;
-        const headerExtra = Math.max(0, Math.round(22 * Math.min(s, 1.6)) - 22) >> 1;
+        // Зазор под подсказку шапки («компоненты падают с боссов…»): подсказка
+        // опускается на 26*k ниже заголовка, и при s>1 «Активируемые» печатались
+        // поверх неё (скриншот портрета). Вьюпорт контента стартует ниже подсказки
+        const headerExtra = Math.max(0, Math.round(26 * Math.min(s, 1.6)) + Math.ceil(Math.max(10, Math.round(12 * Math.min(s, 1.35))) / 2) - 10);
         const cvy = ccy - cph / 2 + 128 + headerExtra;
         const cvh = cph - 188 - headerExtra;
         this.craftCam.setViewport(cvx, cvy, cvw, cvh);
@@ -868,6 +881,7 @@ export class UIScene extends Phaser.Scene {
 
         if (this.tutDim) {
             this.tutDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
+            if (this.tutCam) this.tutCam.setViewport(0, 0, L.W, L.H);
             this.layoutTutorial();
         }
         if (this.tutorialStep === 3 && this.tutFinal) this.showTutorialFinal();
@@ -1056,11 +1070,15 @@ export class UIScene extends Phaser.Scene {
         const f = w / 835;
         const iconCX = Math.round(118 * f);
         const textX = Math.round(186 * f) + 34;
-        const nameMaxW = w - textX - 14;
         // Кнопка у правого края; описание ограничено зоной кнопки и не пересекает её.
         const btnW = g.btnW;
         const btnH = g.btnH;
         const btnX = w - g.rightInset - btnW;
+        // В портрете имя до 27px: его низ (~42) ниже верха кнопки (btnY 28), и
+        // длинное имя («Квантовая лаборатория») печаталось поверх кнопки
+        // (скриншот тира 6). Ограничение — левая кромка кнопки. В ландшафте
+        // имя выше кнопки (низ ~26 < 28) — ширина не связана с ней.
+        const nameMaxW = this.L.portrait ? btnX - textX - 8 : w - textX - 14;
         const descWrap = btnX - textX - 4;
 
         // Контейнер ряда: позиция по Y пересчитывается в refreshUi (фильтр вкладки
@@ -1153,6 +1171,7 @@ export class UIScene extends Phaser.Scene {
         if (this.listCam) float.cameraFilter |= this.listCam.id;
         if (this.mapCam) float.cameraFilter |= this.mapCam.id;
         if (this.craftCam) float.cameraFilter |= this.craftCam.id;
+        if (this.tutCam) float.cameraFilter |= this.tutCam.id;
         return float;
     }
 
@@ -1185,7 +1204,7 @@ export class UIScene extends Phaser.Scene {
 
         this.hint = makeLabel(this, 400, 676, '', 14, '#c8c8c8', { align: 'center' });
         this.hint.setOrigin(0.5, 0.5);
-        this.tweens.add({ targets: this.hint, alpha: { from: 1, to: 0.35 }, duration: 900, yoyo: true, repeat: -1 });
+        this.tweens.add({ targets: this.hint, alpha: { from: 1, to: 0.6 }, duration: 900, yoyo: true, repeat: -1 });
     }
 
     // ---------- Модалка: настройки + престиж ----------
@@ -1779,9 +1798,12 @@ export class UIScene extends Phaser.Scene {
                 if (node._state === key) continue;
                 node._state = key;
                 changed = true;
-                this._drawMapRing(node, key === 'passed' ? 0x6a6a6a : key === 'future' ? 0x3a3d40 : 0xffd75e);
-                node.icon.setTint(key === 'passed' ? 0x909090 : key === 'future' ? 0x505050 : 0xffffff);
-                node.name.setColor(key === 'passed' ? '#9a9a9a' : key === 'future' ? '#6a6a6a' : '#ffffff');
+                // future-узлы читаемее прежнего: tint 0x505050 / кольцо 0x3a3d40
+                // на сером камне доски были почти невидимы — низ карты выглядел
+                // пустой (скриншот портрета); иерархия «тусклее current» сохранена
+                this._drawMapRing(node, key === 'passed' ? 0x6a6a6a : key === 'future' ? 0x565a60 : 0xffd75e);
+                node.icon.setTint(key === 'passed' ? 0x909090 : key === 'future' ? 0x787878 : 0xffffff);
+                node.name.setColor(key === 'passed' ? '#9a9a9a' : key === 'future' ? '#9a9a9a' : '#ffffff');
                 if (key === 'current' && !node.pulse) {
                     node.pulse = this.tweens.add({ targets: node.root, alpha: { from: 1, to: 0.55 }, duration: 500, yoyo: true, repeat: -1 });
                 } else if (key !== 'current' && node.pulse) {
@@ -1809,8 +1831,8 @@ export class UIScene extends Phaser.Scene {
                 }
                 const ringColor = key.startsWith('defeated') ? 0x7ee787 : key.startsWith('available') ? 0xffd75e : 0x6a6a6a;
                 this._drawMapRing(node, ringColor);
-                node.icon.setTint(key.startsWith('locked') ? 0x505050 : 0xffffff);
-                node.name.setColor(key.startsWith('locked') ? '#6a6a6a' : '#ffffff');
+                node.icon.setTint(key.startsWith('locked') ? 0x787878 : 0xffffff);
+                node.name.setColor(key.startsWith('locked') ? '#9a9a9a' : '#ffffff');
                 if (key.startsWith('available') && !node.pulse) {
                     node.pulse = this.tweens.add({ targets: node.status, alpha: { from: 1, to: 0.45 }, duration: 450, yoyo: true, repeat: -1 });
                     node.ringPulse = this.tweens.add({ targets: node.ringLine, alpha: { from: 1, to: 0.45 }, duration: 450, yoyo: true, repeat: -1 });
@@ -1858,8 +1880,8 @@ export class UIScene extends Phaser.Scene {
             const a = this.mapNodes[k];
             const b = this.mapNodes[k + 1];
             const passed = curIdx >= k + 1;
-            const color = passed ? 0xc9a55a : 0x8a7a55;
-            const alpha = passed ? 0.9 : 0.35;
+            const color = passed ? 0xc9a55a : 0x9a8a60;
+            const alpha = passed ? 0.9 : 0.5;
             const lbl = a.kind === 'tier' ? a.name : a.status;
             const from = a.root.y + lbl.y + lbl.height + Math.round(4 * s);
             const to = b.root.y - Math.round(9 * s);
@@ -1885,7 +1907,10 @@ export class UIScene extends Phaser.Scene {
     }
 
     _mapScrollTarget(idx) {
-        return Phaser.Math.Clamp(this._mapNodeY(idx) - this._mapView.h / 2, 0, this._mapMaxScroll);
+        // -10*s: центрирование кружка current-тира ставило подпись предыдущего
+        // узла в 4px от верхней кромки вьюпорта — впритык, выглядит срезанной
+        // (скриншот карты). Камера чуть выше центра даёт подписи воздух
+        return Phaser.Math.Clamp(this._mapNodeY(idx) - this._mapView.h / 2 - Math.round(10 * (this._adaptiveScale || 1)), 0, this._mapMaxScroll);
     }
 
     _placeMapMiner(idx) {
@@ -1944,16 +1969,32 @@ export class UIScene extends Phaser.Scene {
 
     _arriveFx(tierIndex) {
         this.mapCam.flash(250, 255, 255, 255);
-        const banner = makeLabel(this, 0, -this._mapHalfH + 118, `Уровень ${tierIndex + 1}: ${TIERS[tierIndex].name}!`, 22, '#ffe9b0', { align: 'center' }).setOrigin(0.5);
+        // Баннер в КОНТЕНТЕ карты, в зазоре «подпись предыдущего узла — кружок
+        // текущего»: экранноприбитый баннер печатался поверх подписи верхнего
+        // узла (жёлтое на жёлтом, скриншот карты). Плашка делает его читаемым
+        // над тропой; зазор гарантирован шагом узлов (132) — баннер не наезжает
+        const idx = this._findNodeIndex(tierIndex);
+        const node = this.mapNodes && this.mapNodes[idx];
+        const k = Math.min(this._adaptiveScale || 1, 1.6);
+        const cy = node
+            ? node.root.y - Math.round(20 * k)
+            : -this._mapHalfH + 118;
+        const plate = this.add.rectangle(this._nodeCX || 340, cy, 10, Math.round(34 * k), 0x1c1620, 0.85).setStrokeStyle(1, 0x555860, 1);
+        const banner = makeLabel(this, this._nodeCX || 340, cy, `Уровень ${tierIndex + 1}: ${TIERS[tierIndex].name}!`, Math.round(22 * k), '#ffe9b0', { align: 'center' }).setOrigin(0.5);
+        plate.setSize(banner.width + 36, Math.round(34 * k));
+        plate.setAlpha(0);
         banner.setAlpha(0);
-        this.mapRoot.add(banner);
+        this.mapContent.add([plate, banner]);
         this.tweens.add({
-            targets: banner,
+            targets: [plate, banner],
             alpha: { from: 0, to: 1 },
             duration: 250,
             yoyo: true,
             hold: 1100,
-            onComplete: () => banner.destroy()
+            onComplete: () => {
+                plate.destroy();
+                banner.destroy();
+            }
         });
     }
 
@@ -2077,7 +2118,7 @@ export class UIScene extends Phaser.Scene {
         });
         // UX: подсказка, откуда берутся компоненты — «список штуков» сам по себе
         // ничего не объяснял (вопрос игрока)
-        const hint = makeLabel(this, 0, Math.round(26 * k), 'компоненты падают с боссов: Карта → «Сразиться!»', Math.max(10, Math.round(12 * Math.min(s, 1.35))), '#9a9a9a').setOrigin(0.5);
+        const hint = makeLabel(this, 0, Math.round(26 * k), 'компоненты падают с боссов: Карта → «Сразиться!»', Math.max(10, Math.round(12 * Math.min(s, 1.35))), '#b0b0b0').setOrigin(0.5);
         this.craftHeader.add(hint);
     }
 
@@ -2317,15 +2358,15 @@ export class UIScene extends Phaser.Scene {
             let hintColor = '#ffd75e';
             if (errActive) {
                 hintTxt = row._err;
-                hintColor = '#e09090';
+                hintColor = '#ff9d9d';
             } else if (active) {
                 hintTxt = `в запасе: ${stock} · ${eff.bossMult ? `бомба ${this._mmss(buffLeft)}` : eff.veinForce ? `жила ${this._mmss(buffLeft)}` : `x${slotMult} ${this._mmss(buffLeft)}`}`;
             } else if (stock <= 0) {
                 hintTxt = 'нет предмета';
-                hintColor = '#e09090';
+                hintColor = '#ff9d9d';
             } else if (def.bossUse) {
                 hintTxt = `в запасе: ${stock} · только в бою`;
-                hintColor = '#e09090';
+                hintColor = '#ff9d9d';
             }
             const hintKey = `${hintTxt}|${hintColor}`;
             if (hintKey !== row._hintKey) {
@@ -2490,6 +2531,28 @@ export class UIScene extends Phaser.Scene {
             this.registry.set('blockLocked', locked);
         }
         const bossNow = !!this.registry.get('bossActive');
+        // Учебные слои гасятся под любой модалкой и боем: бабл «Кликай по
+        // кубику…» торчал из-за модалки настроек с обрезанным текстом
+        // (скриншот). Восстановление — по сохранённой видимости каждого слоя
+        // (шаг 3 легитимно прячет кольцо/бабл — флаги это учитывают)
+        if (this.tutDim) {
+            const suppress = locked || bossNow;
+            if (suppress !== this._tutSuppressed) {
+                this._tutSuppressed = suppress;
+                const layers = [this.tutDim, this.tutRing, this.tutArrow, this.tutBubble, this.tutText, this.tutFinal, this.tutBtn, this.tutBtnLbl];
+                if (suppress) {
+                    for (const o of layers) {
+                        o._tutVis = o.visible;
+                        o.setVisible(false);
+                    }
+                } else if (this.tutorialStep === 3) {
+                    this.showTutorialFinal();
+                } else {
+                    for (const o of layers) o.setVisible(o._tutVis !== false);
+                    this.layoutTutorial();
+                }
+            }
+        }
         // В бою панель показывает «Снаряжение» вместо списка улучшений
         this.listContent.setVisible(!locked && !bossNow);
         if (this.gearContent) {
@@ -2801,6 +2864,13 @@ export class UIScene extends Phaser.Scene {
         this.listCam.ignore(tutLayers);
         if (this.mapCam) this.mapCam.ignore(tutLayers);
         if (this.craftCam) this.craftCam.ignore(tutLayers);
+        // Своя камера учебных слоёв ПОВЕРХ listCam: listCam рендерит карточки
+        // ПОСЛЕ main-камеры, и любой учебный объект в зоне вьюпорта списка
+        // прячется ЗА ними (бабл шага «Покупай оборудование» исчезал в списке).
+        // tutCam создаётся последней и рендерит ТОЛЬКО слои урока
+        this.tutCam = this.cameras.add(0, 0, this.L.W, this.L.H, false, 'tutCam');
+        this.tutCam.ignore(this.children.list.filter((o) => !tutLayers.includes(o)));
+        this.cameras.main.ignore(tutLayers);
         this.tutPulse = this.tweens.add({ targets: this.tutRing, alpha: { from: 1, to: 0.4 }, duration: 700, yoyo: true, repeat: -1 });
         this.tutBob = this.tweens.add({ targets: this.tutArrow, y: { from: 0, to: 10 }, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         this.layoutTutorial();
@@ -2813,6 +2883,11 @@ export class UIScene extends Phaser.Scene {
         // меняться (портрет/ландшафт), захардкоженные прямоугольники здесь недопустимы.
         const gs = this.scene.get('GameScene');
         const L = this.L;
+        const s = this._adaptiveScale || 1;
+        // Кегль бабла масштабируется с портретной сеткой: фикс 15px на телефоне
+        // даёт ~8px на экране (FIT ~0.54) — подпись нечитаема (скриншот).
+        // База 17 (не 15): бабл должен читаться КРУПНЕЕ описаний карточек
+        const tutText = (txt) => this.tutText.setText(txt).setFontSize(Math.round(17 * Math.min(s, 1.5)));
         const ring = (x, y, w, h) => {
             this.tutRing.fillStyle(0xffd75e, 0.12);
             this.tutRing.fillRect(x, y, w, h);
@@ -2825,15 +2900,18 @@ export class UIScene extends Phaser.Scene {
             ring(bx - 160, by - 160, 320, 320);
             if (L.portrait) {
                 // Портрет: блок выше — пузырь в зазор между HUD (низ 122) и блоком (верх by-141),
-                // иначе текст ложится на строку gps/звёзд
-                this.tutBubble.setPosition(bx, by - 185).setSize(440, 52);
-                this.tutText.setText('Кликай по кубику — добывай руду!');
+                // иначе текст ложится на строку gps/звёзд. Размер — от текста:
+                // фикс 440x52 при кегле 17*1.5=26 резал бы строку
+                tutText('Кликай по кубику — добывай руду!');
+                const bw0 = Math.min(this.tutText.width + 32, L.W - 20);
+                fitFontSize(this.tutText, Math.round(17 * Math.min(s, 1.5)), bw0 - 28, 11);
+                this.tutBubble.setPosition(bx, by - 185).setSize(bw0, this.tutText.height + 16);
                 this.tutText.setPosition(bx, by - 185);
                 this.tutArrow.fillStyle(0xffd75e, 1);
                 this.tutArrow.fillTriangle(bx - 14, by - 156, bx + 14, by - 156, bx, by - 146);
             } else {
-                this.tutBubble.setPosition(bx, by - 280).setSize(440, 52);
-                this.tutText.setText('Кликай по кубику — добывай руду!');
+                tutText('Кликай по кубику — добывай руду!');
+                this.tutBubble.setPosition(bx, by - 280).setSize(this.tutText.width + 32, this.tutText.height + 16);
                 this.tutText.setPosition(bx, by - 280);
                 this.tutArrow.fillStyle(0xffd75e, 1);
                 this.tutArrow.fillTriangle(bx - 14, by - 235, bx + 14, by - 235, bx, by - 195);
@@ -2848,24 +2926,34 @@ export class UIScene extends Phaser.Scene {
                 // Ландшафт: подпись слева от вкладки, стрелка вправо
                 if (this.tutorialStep === 1) {
                     this.tutBubble.setPosition(cx - 306, cy - 8).setSize(380, 66);
-                    this.tutText.setText('Покупай оборудование здесь —\nоно усиливает каждый клик');
+                    tutText('Покупай оборудование здесь —\nоно усиливает каждый клик');
                     this.tutText.setPosition(cx - 306, cy - 8);
                     this.tutArrow.fillTriangle(cx - 111, cy - 22, cx - 111, cy + 6, cx - 81, cy - 8);
                 } else {
                     this.tutBubble.setPosition(cx - 157, cy - 78).setSize(360, 46);
-                    this.tutText.setText('А здесь — усиления: криты и жилы');
+                    tutText('А здесь — усиления: криты и жилы');
                     this.tutText.setPosition(cx - 157, cy - 78);
                     this.tutArrow.fillTriangle(cx, cy - 52, cx + 28, cy - 52, cx + 14, cy - 22);
                 }
             } else {
-                // Портрет: подпись под вкладкой (над списком), стрелка вверх
+                // Портрет: бабл ПОД вкладками (частично накрывает строку тира и
+                // верх первой карточки — tutCam рендерит его ПОВЕРХ списка:
+                // штатный модальный хинт на время шага), стрелка вниз от вкладки.
+                // Кегль и размер — от масштаба: фикс 15px на телефоне давал
+                // ~8px на экране (FIT ~0.54), подпись была нечитаема
                 const txt = this.tutorialStep === 1
-                    ? 'Покупай оборудование здесь —\nоно усиливает каждый клик'
-                    : 'А здесь — усиления: криты и жилы';
-                this.tutBubble.setPosition(cx, cy + 110).setSize(380, this.tutorialStep === 1 ? 66 : 46);
-                this.tutText.setText(txt);
-                this.tutText.setPosition(cx, cy + 110);
-                this.tutArrow.fillTriangle(cx - 14, cy + 52, cx + 14, cy + 52, cx, cy + 26);
+                    ? 'Покупай оборудование\nздесь — оно усиливает\nкаждый клик'
+                    : 'А здесь — усиления:\nкриты и жилы';
+                tutText(txt);
+                const bw = Math.min(this.tutText.width + 32, 2 * (cx - 5), 2 * (L.W - 5 - cx));
+                // Текст ужинается под бабл: без этого длинная строка вылезала
+                // за бабл и резалась краем экрана (зонд туториала)
+                fitFontSize(this.tutText, Math.round(15 * Math.min(s, 1.5)), bw - 28, 11);
+                const bh = this.tutText.height + 18;
+                this.tutBubble.setPosition(cx, cy + 124).setSize(bw, bh);
+                this.tutText.setPosition(cx, cy + 124);
+                this.tutArrow.fillStyle(0xffd75e, 1);
+                this.tutArrow.fillTriangle(cx - 10, cy + 26, cx + 10, cy + 26, cx, cy + 44);
             }
         }
     }
@@ -2888,6 +2976,9 @@ export class UIScene extends Phaser.Scene {
 
     showTutorialFinal() {
         this.tutorialStep = 3;
+        // Под модалкой/боем слои погашены (updateBlockLock): показ финала здесь
+        // вылез бы призраком поверх затемнения — отложено до снятия гашения
+        if (this._tutSuppressed) return;
         this.tutRing.clear().setVisible(false);
         this.tutArrow.clear().setVisible(false);
         this.tutBubble.setVisible(false);
@@ -2908,6 +2999,10 @@ export class UIScene extends Phaser.Scene {
         [this.tutDim, this.tutRing, this.tutArrow, this.tutBubble, this.tutText, this.tutFinal, this.tutBtn, this.tutBtnLbl]
             .forEach((o) => o.destroy());
         this.tutDim = null;
+        if (this.tutCam) {
+            this.cameras.remove(this.tutCam);
+            this.tutCam = null;
+        }
     }
 
     // «Полный сброс» возвращает tutorialDone=false, но учебные объекты строятся

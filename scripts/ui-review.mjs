@@ -235,6 +235,8 @@ async function withState(page, fnBody) {
 // 4. Скролл списка (сохранение с 12+ улучшениями)
 {
     const { ctx, page } = await newPage({ seed: { 'ore-rush-save': SAVE_SEED }, name: '04_list' });
+    // daily-модалка перекрывала список/настройки: кадры 04-06 снимали её вместо сценария
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     await shoot(page, '04_list_top');
     const auditSeeded = await auditLayout(page);
     fs.writeFileSync(path.join(OUT, 'layout_audit_seeded.txt'), auditSeeded.violations.join('\n') || 'layout audit (seeded, stars=12): 0 violations');
@@ -288,6 +290,7 @@ async function withState(page, fnBody) {
     const rich = JSON.parse(SAVE_SEED);
     rich.ore = 26000; // >= 25000, спуск к золоту готов
     const { ctx, page } = await newPage({ seed: { 'ore-rush-save': JSON.stringify(rich) }, name: '07_unlock' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     await shoot(page, '08_unlock_ready');
     await ctx.close();
 }
@@ -295,6 +298,7 @@ async function withState(page, fnBody) {
 // 8. Меньший viewport (масштаб FIT)
 {
     const { ctx, page } = await newPage({ viewport: { width: 900, height: 506 }, name: '08_viewport900' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     await shoot(page, '09_viewport_900');
     await ctx.close();
 }
@@ -310,6 +314,7 @@ async function withState(page, fnBody) {
     };
     function TIERS_SEED_EARNED() { return Array.from({ length: 12 }, (_, i) => (i <= 6 ? 1e5 : 0)); }
     const { ctx, page } = await newPage({ seed: { 'ore-rush-save': JSON.stringify(deep) }, name: '09_deep' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     await page.mouse.move(1082, 430);
     await page.mouse.wheel(0, 2200); // scrollY ~1100: «Орбитальная» и «Квантовая» целиком в окне 262..664
     await page.waitForTimeout(400);
@@ -358,6 +363,7 @@ async function withState(page, fnBody) {
 // 10. Портрет (мобилка 390x844 -> сетка 720x1280): аудит + модалка
 {
     const { ctx, page } = await newPage({ viewport: { width: 390, height: 844 }, name: '10_portrait' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     const auditP = await auditLayout(page);
     fs.writeFileSync(path.join(OUT, 'layout_audit_portrait.txt'), auditP.violations.join('\n') || 'layout audit (portrait 390x844): 0 violations');
     console.log('portrait violations:', auditP.violations.length);
@@ -399,13 +405,13 @@ async function withState(page, fnBody) {
     if (m.nodes !== 18 || m.tiers !== 12 || m.bosses !== 6) {
         scenarioFailures.push(`17_map_open: узлов ${m.nodes} (тиры ${m.tiers}, боссы ${m.bosses}), ожидалось 18/12/6`);
     }
-    // Баннер уровня: fx прибытия рисует его в mapRoot (так же делает спуск)
-    const banner = await page.evaluate(() => {
-        const ui = window.__GAME.scene.getScene('UIScene');
-        ui._arriveFx(0);
-        return ui.mapRoot.list.some((o) => o.type === 'Text' && /^Уровень 1: /.test(o.text));
-    });
-    if (!banner) scenarioFailures.push('17_map_open: баннер «Уровень 1: …» не найден в mapRoot');
+        // Баннер уровня: fx прибытия рисует его в mapContent (камера карты)
+        const banner = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            ui._arriveFx(0);
+            return ui.mapContent.list.some((o) => o.type === 'Text' && /^Уровень 1: /.test(o.text));
+        });
+        if (!banner) scenarioFailures.push('17_map_open: баннер «Уровень 1: …» не найден в mapContent');
     const auditMap = (await auditLayout(page)).violations;
     const newMap = newOverlayViolations(auditMap, base17);
     fs.writeFileSync(path.join(OUT, 'layout_audit_map_open.txt'), newMap.join('\n') || 'layout audit (map open): 0 новых нарушений');

@@ -699,7 +699,7 @@ export class GameScene extends Phaser.Scene {
     // Лимита времени и ретрита нет — бой до победы ИЛИ до вырубания шахтёра:
     // босс бьёт каждые BOSS_ATTACK_PERIOD_MS (замах BOSS_ATTACK_WINDUP_MS —
     // телеграф), смерть = принудительный откат в шахту без награды, босс
-    // с��расывается. Готовность к бою: каска (HP) и снаряжение (убить быстрее).
+    // сбрасывается. Готовность к бою: каска (HP) и снаряжение (убить быстрее).
     // HP босса/шахтёра и время персистятся в сейве (bossFight): F5 продолжает бой.
     startBossFight(bossId, restore = null) {
         if (this.boss || this.registry.get('blockLocked')) return;
@@ -948,7 +948,7 @@ export class GameScene extends Phaser.Scene {
                 slot.btn.setDisplaySize(100, 44).setTexture(gameState.ore >= price ? 'buy_button_normal' : 'buy_button_disabled_gray').setAlpha(1);
                 slot.icon.setVisible(false);
                 slot.cnt.setVisible(false);
-                slot.buyLbl.setVisible(true).setText(`купить ${fmt(price)}`);
+                slot.buyLbl.setVisible(true).setText(`Купить ${fmt(price)}`);
                 let size = 11;
                 slot.buyLbl.setFontSize(size);
                 while (size > 8 && slot.buyLbl.width > 88) {
