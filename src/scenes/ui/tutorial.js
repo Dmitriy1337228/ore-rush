@@ -2,7 +2,11 @@ import {
     gameState, saveGame
 } from '../../state.js';
 import { makeLabel, fitFontSize, addScreenDim, DIM_ALPHA } from '../../ui/uiKit.js';
-import { TEXT, DEPTH, TEX } from '../../ui/theme.js';
+import { TEXT, DEPTH, TEX, FONT_SIZE, SPACE } from '../../ui/theme.js';
+
+// Кнопка «Играть» в финале обучения: крупнее обычных кнопок (17); токен шкалы
+// введётся, когда 18 появится ещё где-то (миграция panel.js, кнопка спуска)
+const PLAY_BTN_SIZE = 18;
 
 export const tutorialMethods = {
     buildTutorial() {
@@ -18,10 +22,10 @@ export const tutorialMethods = {
         this.tutRing = this.add.graphics().setDepth(DEPTH.tutorial);
         this.tutArrow = this.add.graphics().setDepth(DEPTH.tutorial);
         this.tutBubble = this.add.rectangle(0, 0, 1, 1, 0x1c1620, 0.92).setDepth(DEPTH.tutorial).setStrokeStyle(2, 0xffd75e, 1);
-        this.tutText = makeLabel(this, 0, 0, '', 15, TEXT.cream, { align: 'center' }).setOrigin(0.5).setDepth(DEPTH.tutorial);
-        this.tutFinal = makeLabel(this, 0, 0, 'Приятной игры!', 26, TEXT.cream).setOrigin(0.5).setDepth(DEPTH.tutorial).setVisible(false);
+        this.tutText = makeLabel(this, 0, 0, '', FONT_SIZE.body, TEXT.cream, { align: 'center' }).setOrigin(0.5).setDepth(DEPTH.tutorial);
+        this.tutFinal = makeLabel(this, 0, 0, 'Приятной игры!', FONT_SIZE.title, TEXT.cream).setOrigin(0.5).setDepth(DEPTH.tutorial).setVisible(false);
         this.tutBtn = this.add.image(640, 400, TEX.button).setDisplaySize(200, 56).setDepth(DEPTH.tutorial).setVisible(false);
-        this.tutBtnLbl = makeLabel(this, 640, 400, 'Играть', 18, TEXT.white).setOrigin(0.5).setDepth(DEPTH.tutorial).setVisible(false);
+        this.tutBtnLbl = makeLabel(this, 640, 400, 'Играть', PLAY_BTN_SIZE, TEXT.white).setOrigin(0.5).setDepth(DEPTH.tutorial).setVisible(false);
         this.tutBtn.setInteractive({ useHandCursor: true });
         this.tutBtn.on('pointerdown', () => this.finishTutorial());
         // клики по вкладкам: учебный шаг ждёт клик по нужной вкладке
@@ -56,7 +60,7 @@ export const tutorialMethods = {
         // Кегль бабла масштабируется с портретной сеткой: фикс 15px на телефоне
         // даёт ~8px на экране (FIT ~0.54) — подпись нечитаема (скриншот).
         // База 17 (не 15): бабл должен читаться КРУПНЕЕ описаний карточек
-        const tutText = (txt) => this.tutText.setText(txt).setFontSize(Math.round(17 * Math.min(s, 1.5)));
+        const tutText = (txt) => this.tutText.setText(txt).setFontSize(Math.round(FONT_SIZE.button * Math.min(s, 1.5)));
         const ring = (x, y, w, h) => {
             this.tutRing.fillStyle(0xffd75e, 0.12);
             this.tutRing.fillRect(x, y, w, h);
@@ -72,17 +76,18 @@ export const tutorialMethods = {
                 // (верх by-141); на низкой сетке (H=1280, планшет) зазор мал —
                 // клампим низ пузыря ниже кромки бара. Размер — от текста
                 tutText('Кликай по кубику — добывай руду!');
-                const bw0 = Math.min(this.tutText.width + 32, L.W - 20);
-                fitFontSize(this.tutText, Math.round(17 * Math.min(s, 1.5)), bw0 - 28, 11);
-                const bh0 = this.tutText.height + 16;
-                const by0 = Math.max(by - 185, L.hud.barY + L.hud.barH + 8 + Math.round(bh0 / 2));
+                // Бабл: поля вокруг текста SPACE.lg с каждой стороны
+                const bw0 = Math.min(this.tutText.width + SPACE.lg * 2, L.W - 20);
+                fitFontSize(this.tutText, Math.round(FONT_SIZE.button * Math.min(s, 1.5)), bw0 - 28, 11);
+                const bh0 = this.tutText.height + SPACE.lg;
+                const by0 = Math.max(by - 185, L.hud.barY + L.hud.barH + SPACE.sm + Math.round(bh0 / 2));
                 this.tutBubble.setPosition(bx, by0).setSize(bw0, bh0);
                 this.tutText.setPosition(bx, by0);
                 this.tutArrow.fillStyle(0xffd75e, 1);
                 this.tutArrow.fillTriangle(bx - 14, by - 156, bx + 14, by - 156, bx, by - 146);
             } else {
                 tutText('Кликай по кубику — добывай руду!');
-                this.tutBubble.setPosition(bx, by - 280).setSize(this.tutText.width + 32, this.tutText.height + 16);
+                this.tutBubble.setPosition(bx, by - 280).setSize(this.tutText.width + SPACE.lg * 2, this.tutText.height + SPACE.lg);
                 this.tutText.setPosition(bx, by - 280);
                 this.tutArrow.fillStyle(0xffd75e, 1);
                 this.tutArrow.fillTriangle(bx - 14, by - 235, bx + 14, by - 235, bx, by - 195);
@@ -116,10 +121,10 @@ export const tutorialMethods = {
                     ? 'Покупай оборудование\nздесь — оно усиливает\nкаждый клик'
                     : 'А здесь — усиления:\nкриты и жилы';
                 tutText(txt);
-                const bw = Math.min(this.tutText.width + 32, 2 * (cx - 5), 2 * (L.W - 5 - cx));
+                const bw = Math.min(this.tutText.width + SPACE.lg * 2, 2 * (cx - 5), 2 * (L.W - 5 - cx));
                 // Текст ужинается под бабл: без этого длинная строка вылезала
                 // за бабл и резалась краем экрана (зонд туториала)
-                fitFontSize(this.tutText, Math.round(15 * Math.min(s, 1.5)), bw - 28, 11);
+                fitFontSize(this.tutText, Math.round(FONT_SIZE.body * Math.min(s, 1.5)), bw - 28, 11);
                 const bh = this.tutText.height + 18;
                 this.tutBubble.setPosition(cx, cy + 124).setSize(bw, bh);
                 this.tutText.setPosition(cx, cy + 124);

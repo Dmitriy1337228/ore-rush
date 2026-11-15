@@ -3,7 +3,7 @@ import {
     gameState, TIERS, getClickDamage, getOrePerSecond, getSynergyGain, getCritChance, getPrestigeMult, fmt
 } from '../../state.js';
 import { addImg, makeLabel, fitFontSize, setHitRect } from '../../ui/uiKit.js';
-import { TEXT, DEPTH, TEX, HIT, REG } from '../../ui/theme.js';
+import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { measureIcon } from '../../ui/iconMetrics.js';
 
 export const hudMethods = {
@@ -17,31 +17,31 @@ export const hudMethods = {
 
         this.oreIcon = this.add.image(78, 62, TIERS[gameState.tier].iconKey).setDepth(DEPTH.ui);
         this.placeIcon(this.oreIcon, TIERS[gameState.tier].iconKey, 78, 62, 48);
-        this.coalText = makeLabel(this, 112, 76, '0', 30, TEXT.white);
+        this.coalText = makeLabel(this, 112, 76, '0', FONT_SIZE.display, TEXT.white);
         this.coalText.setOrigin(0, 1).setDepth(DEPTH.ui);
-        this.oreName = makeLabel(this, 0, 76, TIERS[gameState.tier].name, 13, TEXT.soft);
+        this.oreName = makeLabel(this, 0, 76, TIERS[gameState.tier].name, FONT_SIZE.captionLg, TEXT.soft);
         this.oreName.setOrigin(0, 1).setDepth(DEPTH.ui); // x обновляется от ширины счётчика
 
         this.gpsIcon = this.add.image(420, 62, TIERS[gameState.tier].iconKey).setDepth(DEPTH.ui);
         this.placeIcon(this.gpsIcon, TIERS[gameState.tier].iconKey, 420, 62, 26);
-        this.gpsText = makeLabel(this, 450, 74, '', 20, TEXT.income);
+        this.gpsText = makeLabel(this, 450, 74, '', FONT_SIZE.accent, TEXT.income);
         this.gpsText.setOrigin(0, 1).setDepth(DEPTH.ui);
-        this.statsLine = makeLabel(this, 0, 74, '', 14, TEXT.soft);
+        this.statsLine = makeLabel(this, 0, 74, '', FONT_SIZE.label, TEXT.soft);
         this.statsLine.setOrigin(0, 1).setDepth(DEPTH.ui); // x обновляется от ширины gps
         // Кеш портретной сетки HUD: ключ пересчёта ставки/статов и поправки базовых линий
         this._hudKey = null;
         this._hudStatsKey = null;
-        this._hudStatsSize = 16;
+        this._hudStatsSize = FONT_SIZE.stat;
         // Звёзды престижа: фиксированная зона ПЕРЕД кнопкой «Настройки» (правый край,
         // origin 1,0.5 — растут влево, не наезжают на кнопку). Зазор до кнопки 12px.
-        this.starsText = makeLabel(this, 1050, 62, '', 16, TEXT.gold);
+        this.starsText = makeLabel(this, 1050, 62, '', FONT_SIZE.stat, TEXT.gold);
         this.starsText.setOrigin(1, 0.5).setDepth(DEPTH.ui);
 
         // Кнопка «Настройки»: изображение 160x48, центр по врезке (62), внутри
         // горизонтальной врезки бара (source face 47..1844 -> drawn 47..1234)
         const btnW = 160;
         const btnH = 48;
-        const btnX = 1234 - 8 - btnW;
+        const btnX = 1234 - SPACE.sm - btnW;
         const btnY = 62 - btnH / 2;
         this.settingsBtn = addImg(this, btnX, btnY, TEX.buttonDisabled, btnW, btnH, 11);
         // Hit-area в координатах кадра текстуры (origin 0.5 + setDisplaySize:
@@ -51,7 +51,7 @@ export const hudMethods = {
         // нормируется setDisplaySize (текстуры разного разрешения), подпись —
         // с левым якорем: раньше она упиралась в шестерёнку вплотную (скрин игрока)
         this.settingsGear = this.add.image(btnX + 29, 62, 'gear_icon').setDisplaySize(26, 26).setDepth(DEPTH.uiAbove);
-        this.settingsLbl = makeLabel(this, btnX + 52, 62, 'Настройки', 16, TEXT.white).setOrigin(0, 0.5).setDepth(DEPTH.uiAbove);
+        this.settingsLbl = makeLabel(this, btnX + 52, 62, 'Настройки', FONT_SIZE.stat, TEXT.white).setOrigin(0, 0.5).setDepth(DEPTH.uiAbove);
         this.settingsBtn.on('pointerdown', () => {
             this.openModal();
         });
@@ -61,21 +61,21 @@ export const hudMethods = {
         // Кнопки «Карта» и «Крафт» слева от «Настройки» (позиции из L.hud в applyLayout)
         this.mapBtn = addImg(this, 830, 38, TEX.button, 110, 48, 11);
         setHitRect(this.mapBtn, ...HIT.button);
-        this.mapLbl = makeLabel(this, 885, 62, 'Карта', 14, TEXT.white).setOrigin(0.5).setDepth(DEPTH.uiAbove);
+        this.mapLbl = makeLabel(this, 885, 62, 'Карта', FONT_SIZE.label, TEXT.white).setOrigin(0.5).setDepth(DEPTH.uiAbove);
         this.mapBtn.on('pointerdown', () => this.openMap());
         this.mapBtn.on('pointerover', () => this.mapBtn.setAlpha(0.9));
         this.mapBtn.on('pointerout', () => this.mapBtn.setAlpha(1));
 
         this.craftBtn = addImg(this, 952, 38, TEX.button, 110, 48, 11);
         setHitRect(this.craftBtn, ...HIT.button);
-        this.craftLbl = makeLabel(this, 1007, 62, 'Крафт', 14, TEXT.white).setOrigin(0.5).setDepth(DEPTH.uiAbove);
+        this.craftLbl = makeLabel(this, 1007, 62, 'Крафт', FONT_SIZE.label, TEXT.white).setOrigin(0.5).setDepth(DEPTH.uiAbove);
         this.craftBtn.on('pointerdown', () => this.openCraft());
         this.craftBtn.on('pointerover', () => this.craftBtn.setAlpha(0.9));
         this.craftBtn.on('pointerout', () => this.craftBtn.setAlpha(1));
 
         // Активные дневные бафы с обратным отсчётом (под HUD-баром): «x2 9:59 · жила 1:59».
         // Пустая строка, когда бафов нет; setText только при смене строки.
-        this.buffLine = makeLabel(this, 16, 128, '', 13, TEXT.gold);
+        this.buffLine = makeLabel(this, 16, 128, '', FONT_SIZE.captionLg, TEXT.gold);
         this.buffLine.setOrigin(0, 0).setDepth(DEPTH.ui);
         this._buffLineText = '';
     },
@@ -130,8 +130,8 @@ export const hudMethods = {
         this.placeIcon(this.oreIcon, tierIcon, h.iconX, h.centerY, 48);
         if (L.portrait) {
             // Кегли портрета не ужимаются ниже читаемых (min: счётчик 30, имя 14, статы 16)
-            const coalSize = Phaser.Math.Clamp(Math.round(30 * s), 30, 36);
-            const nameSize = Phaser.Math.Clamp(Math.round(14 * s), 14, 16);
+            const coalSize = Phaser.Math.Clamp(Math.round(FONT_SIZE.display * s), 30, 36);
+            const nameSize = Phaser.Math.Clamp(Math.round(FONT_SIZE.label * s), 14, 16);
             const gpsSize = h.gpsSize;
             // Поправка базовой линии: origin(0,1) выравнивает низ БОКСА, а у крупного
             // кегля глубже спуск -> мелкие тексты строки 1 поднимаем на ~0.2*разницу кеглей
@@ -145,11 +145,11 @@ export const hudMethods = {
             this.gpsText.setOrigin(1, 1).setPosition(h.counterX, h.row1Y - fix(gpsSize));
             this.placeIcon(this.gpsIcon, tierIcon, h.counterX, h.row1Y - fix(gpsSize) - Math.round(gpsSize * 0.6), h.gpsIconSize);
             // Статы: строка 2, общий левый край со счётчиком
-            this._hudStatsSize = Phaser.Math.Clamp(Math.round(14 * s), 16, 18);
+            this._hudStatsSize = Phaser.Math.Clamp(Math.round(FONT_SIZE.label * s), 16, 18);
             this.statsLine.setFontSize(this._hudStatsSize);
             this.statsLine.setOrigin(0, 1).setPosition(h.statsXBase, h.row2Y);
-            this.starsText.setFontSize(Phaser.Math.Clamp(Math.round(16 * s), 16, 22));
-            this.buffLine.setFontSize(Phaser.Math.Clamp(Math.round(13 * s), 13, 20));
+            this.starsText.setFontSize(Phaser.Math.Clamp(Math.round(FONT_SIZE.stat * s), 16, 22));
+            this.buffLine.setFontSize(Phaser.Math.Clamp(Math.round(FONT_SIZE.captionLg * s), 13, 20));
         } else {
             this.coalText.setPosition(h.counterX, h.counterY);
             this.oreName.setPosition(h.counterX, h.counterY);
@@ -158,15 +158,15 @@ export const hudMethods = {
             this.gpsText.setOrigin(0, 1).setPosition(h.gpsTextX, h.gpsTextY);
             this.gpsText.setFontSize(h.gpsSize);
             this.statsLine.setOrigin(0, 1).setPosition(h.statsXBase, h.statsY);
-            this.coalText.setFontSize(30);
-            this.oreName.setFontSize(13);
+            this.coalText.setFontSize(FONT_SIZE.display);
+            this.oreName.setFontSize(FONT_SIZE.captionLg);
             this.statsLine.setFontSize(h.statsSize);
             // Кегль сброшен — кеш ужина статов обязан инвалидироваться, иначе
             // после applyLayout (босс-бой) refreshUi пропускает ужин и длинные
             // статы наезжают на «Карта» (поймано аудитом сценария 19)
             this._statsFitKey = null;
-            this.starsText.setFontSize(16);
-            this.buffLine.setFontSize(13);
+            this.starsText.setFontSize(FONT_SIZE.stat);
+            this.buffLine.setFontSize(FONT_SIZE.captionLg);
         }
         this.statsLine.setVisible(h.statsVisible);
         // Кегль/позиции сброшены — кеши ужина обязаны инвалидироваться
@@ -187,14 +187,14 @@ export const hudMethods = {
             this.settingsGear.setPosition(right - bw + Math.round(h.gearDx * sBtn), h.centerY);
             this.settingsGear.setDisplaySize(Math.round(26 * sBtn), Math.round(26 * sBtn));
             this.settingsLbl.setPosition(right - bw + Math.round(h.labelDx * sBtn), h.centerY);
-            fitFontSize(this.settingsLbl, 16 * sBtn, bw - Math.round(h.labelDx * sBtn) - 8, 14);
+            fitFontSize(this.settingsLbl, FONT_SIZE.stat * sBtn, bw - Math.round(h.labelDx * sBtn) - SPACE.sm, 14);
         } else {
             this.settingsBtn.setPosition(btnX + h.btnW / 2, h.centerY);
             this.settingsBtn.setDisplaySize(h.btnW, h.btnH);
             this.settingsGear.setPosition(btnX + h.gearDx, h.centerY);
             this.settingsGear.setDisplaySize(26, 26);
             this.settingsLbl.setPosition(btnX + h.labelDx, h.centerY);
-            this.settingsLbl.setFontSize(16);
+            this.settingsLbl.setFontSize(FONT_SIZE.stat);
         }
         this.mapBtn.setPosition(h.mapBtn.x + h.mapBtn.w / 2, h.mapBtn.y + h.mapBtn.h / 2);
         this.mapBtn.setDisplaySize(h.mapBtn.w, h.mapBtn.h);
@@ -204,11 +204,11 @@ export const hudMethods = {
         this.craftLbl.setPosition(h.craftBtn.x + h.craftBtn.w / 2, h.craftBtn.y + h.craftBtn.h / 2);
         if (L.portrait) {
             // Док: крупные кнопки (150/306 x 92), кегль от масштаба с читаемым минимумом
-            this.mapLbl.setFontSize(Phaser.Math.Clamp(Math.round(14 * s), 16, 26));
-            this.craftLbl.setFontSize(Phaser.Math.Clamp(Math.round(14 * s), 16, 26));
+            this.mapLbl.setFontSize(Phaser.Math.Clamp(Math.round(FONT_SIZE.label * s), 16, 26));
+            this.craftLbl.setFontSize(Phaser.Math.Clamp(Math.round(FONT_SIZE.label * s), 16, 26));
         } else {
-            this.mapLbl.setFontSize(14);
-            this.craftLbl.setFontSize(14);
+            this.mapLbl.setFontSize(FONT_SIZE.label);
+            this.craftLbl.setFontSize(FONT_SIZE.label);
         }
     },
 
@@ -272,7 +272,7 @@ export const hudMethods = {
             if (statsKey !== this._statsFitKey) {
                 this._statsFitKey = statsKey;
                 this.statsLine.setText(statsTxt);
-                fitFontSize(this.statsLine, this.L.hud.statsSize, this.L.hud.mapBtn.x - 8 - this.statsLine.x, 10);
+                fitFontSize(this.statsLine, this.L.hud.statsSize, this.L.hud.mapBtn.x - SPACE.sm - this.statsLine.x, 10);
             }
         }
         this.updateBuffLine();

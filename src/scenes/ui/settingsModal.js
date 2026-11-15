@@ -18,7 +18,7 @@ export const settingsModalMethods = {
 
         const panel = addImgC(this, 0, 0, TEX.modalPanel, pw, ph);
         // Врезка панели (image): content y -261..249, x -216..216 (контейнерные координаты)
-        const title = makeLabel(this, 0, -232, 'Настройки', FONT_SIZE.screenTitle, TEXT.cream).setOrigin(0.5);
+        const title = makeLabel(this, 0, -232, 'Настройки', FONT_SIZE.display, TEXT.cream).setOrigin(0.5);
 
         const cbW = 44;
         // Крестик в правом верхнем углу: заходит за врезку в зону рамки, не задевая заклёпку
@@ -83,7 +83,7 @@ export const settingsModalMethods = {
         });
 
         // Престиж
-        const presTitle = makeLabel(this, 0, 48, 'Сброс шахты (Rebirth)', FONT_SIZE.subtitle, TEXT.cream).setOrigin(0.5, 0);
+        const presTitle = makeLabel(this, 0, 48, 'Сброс шахты (Rebirth)', FONT_SIZE.accent, TEXT.cream).setOrigin(0.5, 0);
         this.prestigeInfo = makeLabel(this, 0, 82, '', FONT_SIZE.label, TEXT.pale, { align: 'center', wordWrap: { width: pw - 120 }, lineSpacing: 6 });
         this.prestigeInfo.setOrigin(0.5, 0);
 
