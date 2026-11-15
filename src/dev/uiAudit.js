@@ -26,13 +26,14 @@
 // частью bbox.
 
 import { gameState } from '../state.js';
+import { MIN } from '../ui/theme.js';
 
 export const UI_RULES = {
     overlapTolerance: 1,            // px игровой сетки
-    minPadding: { button: 4, panel: 6 }, // отступ текста от края своего фона (px игровой сетки)
+    minPadding: MIN.padding,        // отступ текста от края своего фона (px игровой сетки)
     hostMinShare: 0.6,              // доля элемента внутри фона, чтобы считать фон «его»
-    minFontCss: { error: 8, warn: 10 },  // кегль на экране, CSS px
-    minTouchCss: { mobile: 40, desktop: 24 },
+    minFontCss: MIN.fontCss,        // кегль на экране, CSS px
+    minTouchCss: MIN.touchCss,      // зона нажатия, CSS px (мобильный/десктоп)
     mobileMaxWidthCss: 820,
     minButtonGap: 4,                // px игровой сетки
     minButtonSize: 24,              // меньше — не считаем кнопкой для GAP/ALIGN (иконки-индикаторы)

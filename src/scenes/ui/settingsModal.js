@@ -3,7 +3,7 @@ import {
     gameState, TIERS, getOfflineRate, getOfflineCapSeconds, canPrestige, getStarsGain, doPrestige, PRESTIGE_REQUIREMENT, getPrestigeMult, DIAMOND_INDEX, resetGame, saveGame, fmt
 } from '../../state.js';
 import { addNineC, addImgC, makeLabel, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
-import { TEXT, DEPTH, TEX, HIT, EVENTS, REG } from '../../ui/theme.js';
+import { TEXT, DEPTH, TEX, HIT, EVENTS, REG, FONT_SIZE } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
 
 export const settingsModalMethods = {
@@ -18,7 +18,7 @@ export const settingsModalMethods = {
 
         const panel = addImgC(this, 0, 0, TEX.modalPanel, pw, ph);
         // Врезка панели (image): content y -261..249, x -216..216 (контейнерные координаты)
-        const title = makeLabel(this, 0, -232, 'Настройки', 30, TEXT.cream).setOrigin(0.5);
+        const title = makeLabel(this, 0, -232, 'Настройки', FONT_SIZE.screenTitle, TEXT.cream).setOrigin(0.5);
 
         const cbW = 44;
         // Крестик в правом верхнем углу: заходит за врезку в зону рамки, не задевая заклёпку
@@ -27,7 +27,7 @@ export const settingsModalMethods = {
         setHitRect(closeBtn, ...HIT.closeSquare);
         closeBtn.on('pointerdown', () => this.closeModal());
 
-        this.modalStats = makeLabel(this, -pw / 2 + 56, -186, '', 15, TEXT.pale, { lineSpacing: 5 });
+        this.modalStats = makeLabel(this, -pw / 2 + 56, -186, '', FONT_SIZE.body, TEXT.pale, { lineSpacing: 5 });
         this.modalStats.setOrigin(0, 0);
 
         // Звук (эффекты) и Музыка (фон): два тумблера в ряд
@@ -35,7 +35,7 @@ export const settingsModalMethods = {
         const tbH = 44;
         this.soundBtn = addNineC(this, -105, -34, TEX.button, tbW, tbH);
         setHitRect(this.soundBtn, tbW, tbH);
-        this.soundText = makeLabel(this, -105, -34, 'Звук: вкл', 15, TEXT.white).setOrigin(0.5);
+        this.soundText = makeLabel(this, -105, -34, 'Звук: вкл', FONT_SIZE.body, TEXT.white).setOrigin(0.5);
         this.soundBtn.on('pointerdown', () => {
             gameState.soundOn = !gameState.soundOn;
             this.refreshSoundToggle();
@@ -46,7 +46,7 @@ export const settingsModalMethods = {
 
         this.musicBtn = addNineC(this, 105, -34, TEX.button, tbW, tbH);
         setHitRect(this.musicBtn, tbW, tbH);
-        this.musicText = makeLabel(this, 105, -34, 'Музыка: вкл', 15, TEXT.white).setOrigin(0.5);
+        this.musicText = makeLabel(this, 105, -34, 'Музыка: вкл', FONT_SIZE.body, TEXT.white).setOrigin(0.5);
         this.musicBtn.on('pointerdown', () => {
             gameState.musicOn = !gameState.musicOn;
             this.refreshMusicControls();
@@ -56,9 +56,9 @@ export const settingsModalMethods = {
         });
 
         // Громкость музыки: слайдер (musicVolume 0..1, применяется на каждый сдвиг)
-        this.volLabel = makeLabel(this, -150, 14, 'Громкость:', 14, TEXT.soft).setOrigin(0.5);
+        this.volLabel = makeLabel(this, -150, 14, 'Громкость:', FONT_SIZE.label, TEXT.soft).setOrigin(0.5);
         this.volG = this.add.graphics(); // трек -60..120 (180), заливка и ручка перерисовываются
-        this.volPct = makeLabel(this, 170, 14, '50%', 14, TEXT.bright).setOrigin(0.5);
+        this.volPct = makeLabel(this, 170, 14, '50%', FONT_SIZE.label, TEXT.bright).setOrigin(0.5);
         const volZone = this.add.zone(-66, -8, 192, 44).setOrigin(0, 0).setInteractive();
         const seekVolume = (gameX) => {
             // Контейнер модалки ставит applyLayout (в портрете со масштабом k):
@@ -83,8 +83,8 @@ export const settingsModalMethods = {
         });
 
         // Престиж
-        const presTitle = makeLabel(this, 0, 48, 'Сброс шахты (Rebirth)', 20, TEXT.cream).setOrigin(0.5, 0);
-        this.prestigeInfo = makeLabel(this, 0, 82, '', 14, TEXT.pale, { align: 'center', wordWrap: { width: pw - 120 }, lineSpacing: 6 });
+        const presTitle = makeLabel(this, 0, 48, 'Сброс шахты (Rebirth)', FONT_SIZE.subtitle, TEXT.cream).setOrigin(0.5, 0);
+        this.prestigeInfo = makeLabel(this, 0, 82, '', FONT_SIZE.label, TEXT.pale, { align: 'center', wordWrap: { width: pw - 120 }, lineSpacing: 6 });
         this.prestigeInfo.setOrigin(0.5, 0);
 
         const pbW = 300;
@@ -92,14 +92,14 @@ export const settingsModalMethods = {
         this.prestigeBtn = addNineC(this, 0, 158, TEX.buttonDisabled, pbW, pbH);
         setHitRect(this.prestigeBtn, pbW, pbH);
         // addNineC ставит origin (0.5): координата кнопки = её центр, подпись — в тот же центр
-        this.prestigeText = makeLabel(this, 0, 158, 'Сбросить шахту', 17, TEXT.white).setOrigin(0.5);
+        this.prestigeText = makeLabel(this, 0, 158, 'Сбросить шахту', FONT_SIZE.button, TEXT.white).setOrigin(0.5);
         this.prestigeBtn.on('pointerdown', () => this.tryPrestige());
 
         const rbW = 300;
         const rbH = 46;
         this.resetBtn = addNineC(this, 0, 216, TEX.buttonDisabled, rbW, rbH);
         setHitRect(this.resetBtn, rbW, rbH);
-        this.resetText = makeLabel(this, 0, 216, 'Сбросить весь прогресс', 15, TEXT.white).setOrigin(0.5);
+        this.resetText = makeLabel(this, 0, 216, 'Сбросить весь прогресс', FONT_SIZE.body, TEXT.white).setOrigin(0.5);
         this.resetBtn.on('pointerdown', () => this.tryReset());
 
         this.modal.add([panel, title, closeBtn, this.modalStats, this.soundBtn, this.soundText, this.musicBtn, this.musicText, this.volLabel, this.volG, this.volPct, volZone, presTitle, this.prestigeInfo, this.prestigeBtn, this.prestigeText, this.resetBtn, this.resetText]);
@@ -230,23 +230,25 @@ export const settingsModalMethods = {
         }
     },
 
-    // Кегли текста окна настроек по ориентации
+    // Кегли текста окна настроек по ориентации: в портрете поднимаем на ступень
+    // шкалы FONT_SIZE (FIT-даунскейл ~0.52 на телефонах съедает кегль). Статам в
+    // портрете достаётся кнопочный кегль, тумблерам — статовый.
     applySettingsTextLayout(L) {
         if (this.modalStats) {
             if (L.portrait) {
-                this.modalStats.setFontSize(17).setY(-196);
-                this.prestigeInfo.setFontSize(15);
-                this.soundText.setFontSize(16);
-                this.musicText.setFontSize(16);
-                this.volLabel.setFontSize(15);
-                this.volPct.setFontSize(15);
+                this.modalStats.setFontSize(FONT_SIZE.button).setY(-196);
+                this.prestigeInfo.setFontSize(FONT_SIZE.body);
+                this.soundText.setFontSize(FONT_SIZE.stat);
+                this.musicText.setFontSize(FONT_SIZE.stat);
+                this.volLabel.setFontSize(FONT_SIZE.body);
+                this.volPct.setFontSize(FONT_SIZE.body);
             } else {
-                this.modalStats.setFontSize(15).setY(-186);
-                this.prestigeInfo.setFontSize(14);
-                this.soundText.setFontSize(15);
-                this.musicText.setFontSize(15);
-                this.volLabel.setFontSize(14);
-                this.volPct.setFontSize(14);
+                this.modalStats.setFontSize(FONT_SIZE.body).setY(-186);
+                this.prestigeInfo.setFontSize(FONT_SIZE.label);
+                this.soundText.setFontSize(FONT_SIZE.body);
+                this.musicText.setFontSize(FONT_SIZE.body);
+                this.volLabel.setFontSize(FONT_SIZE.label);
+                this.volPct.setFontSize(FONT_SIZE.label);
             }
         }
     },

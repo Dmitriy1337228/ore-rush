@@ -2,11 +2,9 @@ import {
     gameState, TIERS, getUpgradeLevel, getOrePerSecond, getOfflineRate, OFFLINE_CAP_HOURS, fmt, fmtDuration, DAILY_REWARDS, COMPONENTS, ARTIFACTS
 } from '../../state.js';
 import { addNineC, addImgC, makeLabel, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
-import { TEXT, DEPTH, TEX, REG } from '../../ui/theme.js';
+import { TEXT, DEPTH, TEX, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 
 const OK_BUTTON = { w: 190, h: 46 };
-const ALERT_TITLE_SIZE = 26;
-const ALERT_OK_SIZE = 17;
 
 // Каркас модального уведомления: затемнение (глотает клики), контейнер с панелью,
 // заголовок и кнопка подтверждения. Содержимое окна докладывает вызывающий через
@@ -17,7 +15,7 @@ function createAlertShell(scene, { w, h, title, titleY, titleColor = TEXT.cream,
     dim.on('pointerdown', (pointer, lx, ly, event) => event.stopPropagation());
     const modal = addModalContainer(scene).setDepth(DEPTH.alert).setVisible(false);
     const panel = addImgC(scene, 0, 0, TEX.modalPanel, w, h);
-    const titleLabel = makeLabel(scene, 0, titleY, title, ALERT_TITLE_SIZE, titleColor).setOrigin(0.5);
+    const titleLabel = makeLabel(scene, 0, titleY, title, FONT_SIZE.title, titleColor).setOrigin(0.5);
     return {
         dim,
         modal,
@@ -25,7 +23,7 @@ function createAlertShell(scene, { w, h, title, titleY, titleColor = TEXT.cream,
         assemble(extras, after = []) {
             const okBtn = addNineC(scene, 0, okY, TEX.button, OK_BUTTON.w, OK_BUTTON.h);
             setHitRect(okBtn, OK_BUTTON.w, OK_BUTTON.h);
-            const okText = makeLabel(scene, 0, okY, okLabel, ALERT_OK_SIZE, TEXT.white).setOrigin(0.5);
+            const okText = makeLabel(scene, 0, okY, okLabel, FONT_SIZE.button, TEXT.white).setOrigin(0.5);
             okBtn.on('pointerdown', onOk);
             modal.add([panel, titleLabel, ...extras, okBtn, okText, ...after]);
         }
@@ -42,7 +40,7 @@ export const statusModalsMethods = {
         });
         this.offlineDim = shell.dim;
         this.offlineModal = shell.modal;
-        this.offlineBody = makeLabel(this, 0, -15, '', 16, TEXT.pale, { align: 'center', lineSpacing: 10, wordWrap: { width: pw - 110 } });
+        this.offlineBody = makeLabel(this, 0, -15, '', FONT_SIZE.stat, TEXT.pale, { align: 'center', lineSpacing: 10, wordWrap: { width: pw - 110 } });
         this.offlineBody.setOrigin(0.5);
         shell.assemble([this.offlineBody]);
     },
@@ -78,19 +76,21 @@ export const statusModalsMethods = {
         });
         this.dailyDim = shell.dim;
         this.dailyModal = shell.modal;
-        this.dailyStreakText = makeLabel(this, 0, -132, '', 15, TEXT.soft).setOrigin(0.5);
+        this.dailyStreakText = makeLabel(this, 0, -132, '', FONT_SIZE.body, TEXT.soft).setOrigin(0.5);
         this.dailyIcon = this.add.image(0, -78, 'pickaxe_iron');
-        this.dailyName = makeLabel(this, 0, -18, '', 21, TEXT.gold).setOrigin(0.5);
+        this.dailyName = makeLabel(this, 0, -18, '', FONT_SIZE.itemName, TEXT.gold).setOrigin(0.5);
         // Верхний якорь (0.5, 0): конкретика дня добавляет 3-ю строку — текст
         // растёт ВНИЗ и не наезжает на название (перекрытие «Накопителя» поймано
         // скриншотом игрока)
-        this.dailyDesc = makeLabel(this, 0, 12, '', 15, TEXT.pale, { align: 'center', lineSpacing: 8 }).setOrigin(0.5, 0);
+        this.dailyDesc = makeLabel(this, 0, 12, '', FONT_SIZE.body, TEXT.pale, { align: 'center', lineSpacing: 8 }).setOrigin(0.5, 0);
         // Серия: 7 слотов цикла, текущий день подсвечен. Иконки нормируем
-        // placeIcon'ом — текстуры ассетов разного разрешения (30..256px)
+        // placeIcon'ом — текстуры ассетов разного разрешения (30..256px).
+        // Шаг центров = слот 34 + зазор SPACE.xs.
         this.dailySlots = [];
+        const SLOT = 34;
         for (let i = 0; i < 7; i++) {
-            const x = -114 + i * 38;
-            const slot = this.add.image(x, 82, 'icon_slot_frame').setDisplaySize(34, 34);
+            const x = -114 + i * (SLOT + SPACE.xs);
+            const slot = this.add.image(x, 82, 'icon_slot_frame').setDisplaySize(SLOT, SLOT);
             const ic = this.add.image(x, 82, DAILY_REWARDS[i].icon);
             this.placeIcon(ic, DAILY_REWARDS[i].icon, x, 82, 22);
             this.dailySlots.push({ slot, ic });
@@ -151,8 +151,8 @@ export const statusModalsMethods = {
         });
         this.bossRewardDim = shell.dim;
         this.bossRewardModal = shell.modal;
-        this.bossRewardBounty = makeLabel(this, 0, -112, '', 17, TEXT.income).setOrigin(0.5);
-        this.bossRewardSpeed = makeLabel(this, 0, -86, '', 14, TEXT.cream).setOrigin(0.5);
+        this.bossRewardBounty = makeLabel(this, 0, -112, '', FONT_SIZE.button, TEXT.income).setOrigin(0.5);
+        this.bossRewardSpeed = makeLabel(this, 0, -86, '', FONT_SIZE.label, TEXT.cream).setOrigin(0.5);
         this.bossRewardComps = this.add.container(0, 0);
         shell.assemble([this.bossRewardBounty, this.bossRewardSpeed, this.bossRewardComps]);
 
@@ -186,19 +186,19 @@ export const statusModalsMethods = {
             if (!def) continue;
             const icon = this.add.image(0, 0, def.icon);
             this.placeIcon(icon, def.icon, -120, y, 30);
-            const label = makeLabel(this, -94, y, `${def.name} ×${reward.comps[compId]}`, 15, TEXT.pale).setOrigin(0, 0.5);
+            const label = makeLabel(this, -94, y, `${def.name} ×${reward.comps[compId]}`, FONT_SIZE.body, TEXT.pale).setOrigin(0, 0.5);
             this.bossRewardComps.add([icon, label]);
             y += 42;
         }
         if (reward.artifactId) {
             const def = ARTIFACTS.find((a) => a.id === reward.artifactId);
             if (def) {
-                y += 8;
+                y += SPACE.sm; // зазор перед блоком артефакта
                 // У артефактов нет поля icon (ТЗ: ключ текстуры = id)
                 const icon = this.add.image(0, 0, def.id);
                 this.placeIcon(icon, def.id, -120, y + 12, 42);
-                const name = makeLabel(this, -92, y, def.name, 16, TEXT.gold).setOrigin(0, 0.5);
-                const desc = makeLabel(this, -92, y + 22, def.desc, 12, TEXT.good).setOrigin(0, 0.5);
+                const name = makeLabel(this, -92, y, def.name, FONT_SIZE.stat, TEXT.gold).setOrigin(0, 0.5);
+                const desc = makeLabel(this, -92, y + 22, def.desc, FONT_SIZE.caption, TEXT.good).setOrigin(0, 0.5);
                 this.bossRewardComps.add([icon, name, desc]);
             }
         }
@@ -221,7 +221,7 @@ export const statusModalsMethods = {
         });
         this.playerDownDim = shell.dim;
         this.playerDownModal = shell.modal;
-        this.playerDownBody = makeLabel(this, 0, -20, '', 15, TEXT.pale, { align: 'center', lineSpacing: 9, wordWrap: { width: pw - 110 } }).setOrigin(0.5);
+        this.playerDownBody = makeLabel(this, 0, -20, '', FONT_SIZE.body, TEXT.pale, { align: 'center', lineSpacing: 9, wordWrap: { width: pw - 110 } }).setOrigin(0.5);
         shell.assemble([this.playerDownBody]);
 
         const layers = [this.playerDownDim, this.playerDownModal];
