@@ -46,6 +46,8 @@ const boot = () => {
     // false, ветка мертва и выпиливается сборщиком вместе с чанком панели.
     if (import.meta.env.DEV) {
         import('./dev/DevPanel.js').then(m => m.initDevPanel(game));
+        // Аудит вёрстки: window.__uiAudit(), F8 — наложение нарушений, F9 — репорт (PNG+JSON)
+        import('./dev/uiAudit.js').then(m => m.installUiAuditTools(game));
     }
 };
 

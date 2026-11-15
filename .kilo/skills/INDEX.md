@@ -45,6 +45,7 @@
 | .kilo/skills/spritecook-use-presets/SKILL.md | пресеты SpriteCook: поиск, применение, сохранение | тимлид |
 | .kilo/skills/spritecook-workflow-essentials/SKILL.md | базовые правила SpriteCook: кредиты, манифест, дефолты | тимлид |
 | .kilo/skills/refactoring-surgeon/SKILL.md | рефакторинг: code smell, техдолг, legacy, cleanup, extract method/class, DRY/SOLID (источник: NeverSight/learn-skills.dev; references/ и scripts/ из зеркала не поставляются) | dev, архитектор |
+| .kilo/skills/ui-layout-check/SKILL.md | ЛЮБАЯ правка/ревью вёрстки UI: HUD, панели, ряды, модалки, карта, мастерская, кнопки, кегли, адаптив/портрет; наезды текста, отступы, `npm run ui:check` | dev, тестировщик, тимлид, ui |
 
 Примечания:
 - SpriteCook-скиллы назначаются только тимлиду: MCP-сервер spritecook подключён к основной сессии, у сабагентов этих инструментов нет.
