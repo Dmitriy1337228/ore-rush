@@ -7,71 +7,35 @@
 // Запуск: node scripts/balance-sim.mjs [cps] [maxHours]
 import {
     gameState, UPGRADES, TIERS, addOre, resetGame,
-    getUpgradeLevel, getUpgradeCost,
+    getUpgradeCost,
     canBuy, buyUpgrade,
     getClickDamage, getExpectedClickGain, getOrePerSecond, getAutoClicksPerSecond, getEarningRate,
-    getCritChance, getLuckyChance,
-    unlockTier, TIER_INCOME_MULT, getPrestigeMult, getNextUnlockPrice,
-    ARTIFACTS, UNLOCK_BASE_SECONDS, UNLOCK_FLOOR, unlockSecondsFor
+    getSynergyGain, getCritFactor, getVeinFactor, upgradeIncomeDelta, getCritMult,
+    unlockTier, getNextUnlockPrice,
+    ARTIFACTS, UNLOCK_BASE_SECONDS, UNLOCK_FLOOR, unlockSecondsFor,
+    CRIT_BASE_CHANCE, CRIT_CHANCE_CAP, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 } from '../src/state.js';
 
 const ARGS = process.argv.slice(2);
-const CPS_MANUAL = Number(ARGS[0] || 3.5);
-const MAX_H = Number(ARGS[1] || 60);
+const DEFAULT_CPS_MANUAL = 3.5;
+const DEFAULT_MAX_HOURS = 60;
+const CPS_MANUAL = Number(ARGS[0] || DEFAULT_CPS_MANUAL);
+const MAX_H = Number(ARGS[1] || DEFAULT_MAX_HOURS);
 const DT = 1;
-const PATIENCE = 150;
+const PATIENCE = 150;      // лимит закупок на тир (ко-петля «кирка ↔ множители»)
+const BUY_GUARD = 60;      // максимум покупок за один шаг сима
+const MIN_RATE = 1e-9;     // защита от деления на ноль
+const ARTIFACT_EPS = 1e-9; // допуск сравнения множителей артефактов
+const PAYBACK_CORRIDOR = 0.1; // коридор окупаемости: N сек якоря x(1 ± 0.1)
 
-function techMult() { return Math.pow(1.25, getUpgradeLevel('tech')) * Math.pow(1.3, getUpgradeLevel('aicore')); }
-function critMult() { return 5 + 0.5 * getUpgradeLevel('focuslens'); }
-function veinMult() { return 10 + 1 * getUpgradeLevel('magnet'); }
-function critF() { return 1 + getCritChance() * (critMult() - 1); }
-function veinF() { return 1 + getLuckyChance() * (veinMult() - 1); }
-function synergy() { return getOrePerSecond() * 0.01 * getUpgradeLevel('resonance'); }
+// Общая ставка кликов сима: ручные (аргумент CLI) + авто-клики робо-руки
 function cpsTotal() { return CPS_MANUAL + getAutoClicksPerSecond(); }
-function clickIncome() { return (getClickDamage() + synergy()) * critF() * veinF() * cpsTotal(); }
-// множители пассива: техника+ИИ + тир + престиж
-function passiveMult() { return techMult() * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult(); }
-// множители клика: кувалда-цепочка * тир * престиж
-function clickChain() {
-    return Math.pow(1.5, getUpgradeLevel('sledge'))
-        * Math.pow(1.6, getUpgradeLevel('hydraulic'))
-        * Math.pow(1.7, getUpgradeLevel('plasma'))
-        * Math.pow(1.8, getUpgradeLevel('disintegrator'))
-        * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult();
-}
+function clickIncome() { return (getClickDamage() + getSynergyGain()) * getCritFactor() * getVeinFactor() * cpsTotal(); }
 
-// прирост дохода/сек от +1 уровня улучшения id (приближение для жадной закупки)
+// прирост дохода/сек от +1 уровня улучшения id (приближение для жадной закупки);
+// формула — единая с игрой (state/upgradeRoi.js), отличается только темпом ручных кликов
 function deltaIncome(id) {
-    const dmg = getClickDamage();
-    const syn = synergy();
-    switch (id) {
-        case 'pickaxe':   return clickChain() * critF() * veinF() * cpsTotal();
-        case 'sledge':    return dmg * 0.5 * critF() * veinF() * cpsTotal();
-        case 'hydraulic': return dmg * 0.6 * critF() * veinF() * cpsTotal();
-        case 'plasma':    return dmg * 0.7 * critF() * veinF() * cpsTotal();
-        case 'disintegrator': return dmg * 0.8 * critF() * veinF() * cpsTotal();
-        case 'miner':     return 1 * passiveMult();
-        case 'drill':     return 10 * passiveMult();
-        case 'excavator': return 100 * passiveMult();
-        case 'factory':   return 1000 * passiveMult();
-        case 'quarry':    return 1e4 * passiveMult();
-        case 'megafactory': return 1e5 * passiveMult();
-        case 'orbital':   return 1e6 * passiveMult();
-        case 'quantumlab': return 1e7 * passiveMult();
-        case 'wormhole':  return 1e8 * passiveMult();
-        case 'singularity': return 1e9 * passiveMult();
-        case 'dyson':     return 1e10 * passiveMult();
-        case 'tech':      return getOrePerSecond() * 0.25;
-        case 'aicore':    return getOrePerSecond() * 0.3;
-        case 'dynamite':  { const c = Math.min(0.05 + 0.03 * (getUpgradeLevel('dynamite') + 1), 0.74) - getCritChance(); return (dmg + syn) * c * (critMult() - 1) * veinF() * cpsTotal(); }
-        case 'lucky':     { const v = Math.min(0.02 * (getUpgradeLevel('lucky') + 1), 0.5) - getLuckyChance(); return (dmg + syn) * v * (veinMult() - 1) * critF() * cpsTotal(); }
-        case 'resonance': return getOrePerSecond() * 0.01 * critF() * veinF() * cpsTotal();
-        case 'focuslens': return (dmg + syn) * getCritChance() * 0.25 * veinF() * cpsTotal();
-        case 'magnet':    return (dmg + syn) * getLuckyChance() * critF() * cpsTotal();
-        case 'lantern':   return 0;
-        case 'warehouse': return 0;
-    }
-    return 0;
+    return upgradeIncomeDelta(id, CPS_MANUAL);
 }
 
 function runSimulation(mode) {
@@ -85,7 +49,7 @@ function runSimulation(mode) {
     const buys = {};
     const tierStats = [];
 
-    while (gameState.tier < TIERS.length - 1 && time < MAX_H * 3600) {
+    while (gameState.tier < TIERS.length - 1 && time < MAX_H * SECONDS_PER_HOUR) {
         // доход за шаг: пассив + ожидание кликов + авто-клики
         addOre(getOrePerSecond() * DT);
         addOre(clickIncome() * DT);
@@ -104,10 +68,10 @@ function runSimulation(mode) {
 
         // жадная закупка: лучший ROI из доступных. Спуск: нечего купить с
         // окупаемостью быстрее времени до спуска, или лимит терпения исчерпан.
-        for (let guard = 0; guard < 60; guard++) {
+        for (let guard = 0; guard < BUY_GUARD; guard++) {
             // фактическое время до спуска: дефицит / ставка
             const uc = getNextUnlockPrice();
-            const rate = Math.max(getEarningRate(), 1e-9);
+            const rate = Math.max(getEarningRate(), MIN_RATE);
             const eta = Math.max(0, (uc - gameState.ore) / rate);
             let best = null, bestRoi = 0;
             for (const def of UPGRADES) {
@@ -163,18 +127,18 @@ function printResult(label, r) {
     for (const d of r.durations) {
         const s = stat(d.tier);
         if (!s) {
-            console.log(`${String(d.tier).padStart(2)} ${NAMES[d.tier].padEnd(8)} ${((d.dur / 60).toFixed(1)).padStart(9)} мин`);
+            console.log(`${String(d.tier).padStart(2)} ${NAMES[d.tier].padEnd(8)} ${((d.dur / SECONDS_PER_MINUTE).toFixed(1)).padStart(9)} мин`);
             continue;
         }
-        const growth = 'x' + (s.rateOut / Math.max(s.anchor, 1e-9)).toFixed(1);
-        const ratio = (s.earnedIn / Math.max(s.price, 1e-9)).toFixed(2);
-        console.log(`${String(d.tier).padStart(2)} ${NAMES[d.tier].padEnd(8)} ${((d.dur / 60).toFixed(1)).padStart(9)} мин ${fmtLike(s.price).padStart(12)} ${fmtLike(s.anchor).padStart(12)} ${fmtLike(s.rateOut).padStart(12)} ${growth.padStart(7)}  ${ratio}`);
+        const growth = 'x' + (s.rateOut / Math.max(s.anchor, MIN_RATE)).toFixed(1);
+        const ratio = (s.earnedIn / Math.max(s.price, MIN_RATE)).toFixed(2);
+        console.log(`${String(d.tier).padStart(2)} ${NAMES[d.tier].padEnd(8)} ${((d.dur / SECONDS_PER_MINUTE).toFixed(1)).padStart(9)} мин ${fmtLike(s.price).padStart(12)} ${fmtLike(s.anchor).padStart(12)} ${fmtLike(s.rateOut).padStart(12)} ${growth.padStart(7)}  ${ratio}`);
     }
     if (!r.finished) console.log(`!! оборвалась на ${MAX_H}ч, тир ${gameState.tier} (${NAMES[gameState.tier]})`);
     const totalBuys = Object.values(r.buys).reduce((a, b) => a + b, 0);
     const top = Object.entries(r.buys).sort((a, b) => b[1] - a[1]).slice(0, 8)
         .map(([id, n]) => `${id}:${n}`).join(' ');
-    console.log(`Итого до алмазов: ${(r.time / 3600).toFixed(1)} ч активной игры, покупок: ${totalBuys}`);
+    console.log(`Итого до алмазов: ${(r.time / SECONDS_PER_HOUR).toFixed(1)} ч активной игры, покупок: ${totalBuys}`);
     console.log(`Топ закупок: ${top}`);
 }
 
@@ -196,7 +160,7 @@ function artCheck(name, cond, detail = '') {
 const grantAllArtifacts = () => {
     gameState.artifacts = ARTIFACTS.map((a) => a.id);
 };
-const critFactor = (cc) => 1 + cc * (5 + 0.5 * getUpgradeLevel('focuslens') - 1); // critMult без focuslens = 5
+const critFactor = (cc) => 1 + cc * (getCritMult() - 1); // critMult без focuslens = базовый
 
 console.log('\n=== ВСЕ АРТЕФАКТЫ СТАРТА (гейт П6) ===');
 {
@@ -214,10 +178,10 @@ console.log('\n=== ВСЕ АРТЕФАКТЫ СТАРТА (гейт П6) ===');
     const expClick = ARTIFACTS.reduce((acc, a) => (a.bonuses.clickMult ? acc * a.bonuses.clickMult : acc), 1);
     const expPassive = ARTIFACTS.reduce((acc, a) => (a.bonuses.passiveMult ? acc * a.bonuses.passiveMult : acc), 1);
     const critAdd = ARTIFACTS.reduce((acc, a) => acc + (a.bonuses.critAdd || 0), 0);
-    const expClickGain = expClick * critFactor(Math.min(0.05 + critAdd, 0.74)) / critFactor(0.05);
-    artCheck(`клик: getClickDamage x${expClick.toFixed(4)}`, Math.abs(artDmg / baseDmg - expClick) < 1e-9, `${fmtLike(baseDmg)} -> ${fmtLike(artDmg)}`);
-    artCheck(`клик: getExpectedClickGain x${expClickGain.toFixed(4)} (множители + крит от critAdd)`, Math.abs(artClick / baseClick - expClickGain) < 1e-9, `${baseClick.toFixed(4)} -> ${artClick.toFixed(4)}`);
-    artCheck(`пассив: getOrePerSecond x${expPassive.toFixed(4)}`, Math.abs(artOps / baseOps - expPassive) < 1e-9, `${fmtLike(baseOps)} -> ${fmtLike(artOps)}`);
+    const expClickGain = expClick * critFactor(Math.min(CRIT_BASE_CHANCE + critAdd, CRIT_CHANCE_CAP)) / critFactor(CRIT_BASE_CHANCE);
+    artCheck(`клик: getClickDamage x${expClick.toFixed(4)}`, Math.abs(artDmg / baseDmg - expClick) < ARTIFACT_EPS, `${fmtLike(baseDmg)} -> ${fmtLike(artDmg)}`);
+    artCheck(`клик: getExpectedClickGain x${expClickGain.toFixed(4)} (множители + крит от critAdd)`, Math.abs(artClick / baseClick - expClickGain) < ARTIFACT_EPS, `${baseClick.toFixed(4)} -> ${artClick.toFixed(4)}`);
+    artCheck(`пассив: getOrePerSecond x${expPassive.toFixed(4)}`, Math.abs(artOps / baseOps - expPassive) < ARTIFACT_EPS, `${fmtLike(baseOps)} -> ${fmtLike(artOps)}`);
     console.log(`множители при 9/9 артефактах: клик x${(artDmg / baseDmg).toFixed(4)}, E-клик x${(artClick / baseClick).toFixed(4)}, пассив x${(artOps / baseOps).toFixed(4)}`);
 
     // (в) якорь-снапшот: владение артефактами БЕЗ прокачки цену спуска не меняет
@@ -256,7 +220,7 @@ console.log('\n=== ВСЕ АРТЕФАКТЫ СТАРТА (гейт П6) ===');
     const price = getNextUnlockPrice(); // якорь фиксируется от буста кирки
     const anchor = gameState.tierAnchorRate;
     const sec = price / anchor;
-    const lo = UNLOCK_BASE_SECONDS * 0.9, hi = UNLOCK_BASE_SECONDS * 1.1;
+    const lo = UNLOCK_BASE_SECONDS * (1 - PAYBACK_CORRIDOR), hi = UNLOCK_BASE_SECONDS * (1 + PAYBACK_CORRIDOR);
     artCheck(`окупаемость: цена спуска = ${sec.toFixed(1)}с якоря, коридор ${UNLOCK_BASE_SECONDS}с x0.9..1.1`, sec >= lo && sec <= hi, `границы ${lo}..${hi}`);
     artCheck('окупаемость: цена = ceil(N(0) x якорь)', price === Math.ceil(unlockSecondsFor(0) * anchor), `цена ${price}, якорь ${anchor.toFixed(3)}`);
     console.log(`величины буста: кирка ур.10, якорь ${fmtLike(anchor)}/с, цена ${fmtLike(price)}, окупаемость ${sec.toFixed(1)}с`);
