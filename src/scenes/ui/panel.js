@@ -4,7 +4,7 @@ import {
 } from '../../state.js';
 import { addNine, addImg, addImgC, makeLabel, fitFontSize, fitOneLine, setHitRect } from '../../ui/uiKit.js';
 import { VIEWPORT, ROW_H, ROW_GAP, TABS, BUY_AMOUNTS, ROW } from '../../ui/listGeometry.js';
-import { TEXT, DEPTH, TEX, HIT, EVENTS, REG } from '../../ui/theme.js';
+import { TEXT, DEPTH, TEX, HIT, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
 
 export const panelMethods = {
@@ -16,13 +16,14 @@ export const panelMethods = {
 
         this.panelImg = addImg(this, px, py, 'upgrades_panel_wood', pw, ph, 10);
         // Планка с заклёпками (143..200): заголовок по её центру
+        // (стартовый кегль 24 — дубль landscape p.titleSize; перезаписывается раскладкой)
         this.panelTitle = makeLabel(this, px + pw / 2, 171, 'Улучшения', 24, TEXT.cream).setOrigin(0.5).setDepth(DEPTH.ui);
 
         // Вкладки: одна ширина со списком (934..1230), две по 145 + зазор 6
         this.tabBtns = TABS.map((tab, i) => this.buildTabButton(VIEWPORT.x + i * 151, 192, tab));
 
         // Строка тира + переключатель мультипокупки (в границах списка)
-        this.tierLabel = makeLabel(this, VIEWPORT.x + 2, 249, '', 13, '#c8b78e');
+        this.tierLabel = makeLabel(this, VIEWPORT.x + 2, 249, '', FONT_SIZE.captionLg, '#c8b78e');
         this.tierLabel.setOrigin(0, 0.5).setDepth(DEPTH.ui);
         const amount = this.buildAmountButton(VIEWPORT.x + VIEWPORT.w - 38, 249);
         this.amountC = amount.c;
@@ -48,7 +49,7 @@ export const panelMethods = {
         const h = 32;
         const c = this.add.container(x + w / 2, y + h / 2).setDepth(DEPTH.ui);
         const bg = addImgC(this, 0, 0, TEX.buttonDisabled, w, h);
-        const lbl = makeLabel(this, 0, 0, tab.label, 14, TEXT.muted).setOrigin(0.5);
+        const lbl = makeLabel(this, 0, 0, tab.label, FONT_SIZE.label, TEXT.muted).setOrigin(0.5);
         c.add([bg, lbl]);
         setHitRect(c, w, h, true);
         c.on('pointerdown', () => this.switchTab(tab.id));
@@ -60,7 +61,7 @@ export const panelMethods = {
         const h = 24;
         const c = this.add.container(cx, cy).setDepth(DEPTH.ui);
         const bg = addImgC(this, 0, 0, TEX.button, w, h);
-        this.amountLbl = makeLabel(this, 0, 0, 'x1', 14, TEXT.white).setOrigin(0.5);
+        this.amountLbl = makeLabel(this, 0, 0, 'x1', FONT_SIZE.label, TEXT.white).setOrigin(0.5);
         c.add([bg, this.amountLbl]);
         setHitRect(c, w, h, true);
         c.on('pointerdown', () => {
@@ -290,7 +291,7 @@ export const panelMethods = {
         const y = 604;
         this.unlockBtn = addNine(this, x, y, TEX.button, w, h, 15);
         setHitRect(this.unlockBtn, w, h);
-        this.unlockText = makeLabel(this, 400, y + h / 2, '', 18, TEXT.white, { align: 'center' });
+        this.unlockText = makeLabel(this, 400, y + h / 2, '', FONT_SIZE.buttonLg, TEXT.white, { align: 'center' });
         this.unlockText.setOrigin(0.5).setDepth(DEPTH.unlockText);
         this.unlockBtn.on('pointerdown', () => {
             if (!canUnlockTier()) return;
@@ -308,7 +309,7 @@ export const panelMethods = {
             this.openMap({ animate: true });
         });
 
-        this.hint = makeLabel(this, 400, 676, '', 14, TEXT.soft, { align: 'center' });
+        this.hint = makeLabel(this, 400, 676, '', FONT_SIZE.label, TEXT.soft, { align: 'center' });
         this.hint.setOrigin(0.5, 0.5);
         this.tweens.add({ targets: this.hint, alpha: { from: 1, to: 0.6 }, duration: 900, yoyo: true, repeat: -1 });
     },
@@ -328,10 +329,10 @@ export const panelMethods = {
         // Ландшафт: звёзды ПОД HUD-баром, строкой бафов, СЛЕВА от панели —
         // прежний якорь «правый край бара» (x≈1256) ложился на верхнюю фаску
         // деревянной панели (900..1264, верх 124): звёзды резались о заклёпки
-        else this.starsText.setPosition(p.px - 12, h.barY + h.barH + 10);
+        else this.starsText.setPosition(p.px - SPACE.md, h.barY + h.barH + 10);
         // Вкладки: в ландшафте две по 145 (одна ширина со списком); в портрете
         // растягиваются на весь вьюпорт, иначе сбиваются влево у широкого листа
-        const tabGap = 8;
+        const tabGap = SPACE.sm;
         const tabW = L.portrait ? Math.floor((L.viewport.w - tabGap) / 2) : 145;
         const tabCY = p.py + p.tabsCY;
         this.tabBtns.forEach((t, i) => {
@@ -391,7 +392,7 @@ export const panelMethods = {
             // Две строки («Спуск: Медь» / «2500 угля»): однострочный текст
             // занимал всю ширину кнопки с зазором 2-3px (ревью); отступ
             // внутри кнопки — по 24 с краёв
-            const ut = Phaser.Math.Clamp(Math.round(22 * Math.min(s, 1.25)), 20, 28);
+            const ut = Phaser.Math.Clamp(Math.round(FONT_SIZE.cardTitle * Math.min(s, 1.25)), 20, 28);
             fitFontSize(this.unlockText, ut, u.w - 48, 16);
         } else {
             this.unlockText.setFontSize(u.textSize);

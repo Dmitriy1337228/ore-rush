@@ -4,10 +4,6 @@ import {
 import { makeLabel, fitFontSize, addScreenDim, DIM_ALPHA } from '../../ui/uiKit.js';
 import { TEXT, DEPTH, TEX, FONT_SIZE, SPACE } from '../../ui/theme.js';
 
-// Кнопка «Играть» в финале обучения: крупнее обычных кнопок (17); токен шкалы
-// введётся, когда 18 появится ещё где-то (миграция panel.js, кнопка спуска)
-const PLAY_BTN_SIZE = 18;
-
 export const tutorialMethods = {
     buildTutorial() {
         if (gameState.tutorialDone) return;
@@ -25,7 +21,7 @@ export const tutorialMethods = {
         this.tutText = makeLabel(this, 0, 0, '', FONT_SIZE.body, TEXT.cream, { align: 'center' }).setOrigin(0.5).setDepth(DEPTH.tutorial);
         this.tutFinal = makeLabel(this, 0, 0, 'Приятной игры!', FONT_SIZE.title, TEXT.cream).setOrigin(0.5).setDepth(DEPTH.tutorial).setVisible(false);
         this.tutBtn = this.add.image(640, 400, TEX.button).setDisplaySize(200, 56).setDepth(DEPTH.tutorial).setVisible(false);
-        this.tutBtnLbl = makeLabel(this, 640, 400, 'Играть', PLAY_BTN_SIZE, TEXT.white).setOrigin(0.5).setDepth(DEPTH.tutorial).setVisible(false);
+        this.tutBtnLbl = makeLabel(this, 640, 400, 'Играть', FONT_SIZE.buttonLg, TEXT.white).setOrigin(0.5).setDepth(DEPTH.tutorial).setVisible(false);
         this.tutBtn.setInteractive({ useHandCursor: true });
         this.tutBtn.on('pointerdown', () => this.finishTutorial());
         // клики по вкладкам: учебный шаг ждёт клик по нужной вкладке
