@@ -1,0 +1,32 @@
+layout violations: 0
+shot: 01_fresh
+shot: 02_clicks
+shot: 03_buys
+shot: 04_list_top
+seeded violations: 0
+shot: 05_list_scrolled
+shot: 05b_list_middle
+shot: 06_settings_modal
+modal violations: 0
+shot: 07_offline_modal
+offline violations: 0
+shot: 07_offline_claimed
+shot: 08_unlock_ready
+shot: 09_viewport_900
+deep violations: 0
+shot: 10_deep_rows
+settings/daily: gap 15px, stat lines 5, hud buff "x2 9:57"
+shot: 12_settings_daily
+portrait violations: 0
+shot: 11_portrait
+shot: 12_portrait_modal
+portrait modal violations: 0
+map open new violations: 0
+shot: 17_map_open
+shot: 18_map_anim_skip
+shot: 18b_map_closed_instant
+shot: 19_boss_fight
+shot: 20_boss_reward
+craft open new violations: 0
+shot: 21_craft_open
+console errors: 0

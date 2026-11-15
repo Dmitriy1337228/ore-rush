@@ -1,0 +1,1151 @@
+{
+  "tiers": [
+    {
+      "key": "coal",
+      "name": "Уголь",
+      "gen": "угля",
+      "adj": "угольным",
+      "iconKey": "coal_nugget",
+      "blockPrefix": "block",
+      "floatColor": "#ffffff"
+    },
+    {
+      "key": "copper",
+      "name": "Медь",
+      "gen": "меди",
+      "adj": "медным",
+      "iconKey": "copper_nugget",
+      "blockPrefix": "copper",
+      "floatColor": "#f0985e"
+    },
+    {
+      "key": "iron",
+      "name": "Железо",
+      "gen": "железа",
+      "adj": "железным",
+      "iconKey": "iron_nugget",
+      "blockPrefix": "iron",
+      "floatColor": "#cfd8e3"
+    },
+    {
+      "key": "silver",
+      "name": "Серебро",
+      "gen": "серебра",
+      "adj": "серебряным",
+      "iconKey": "silver_nugget",
+      "blockPrefix": "silver",
+      "floatColor": "#eeeded"
+    },
+    {
+      "key": "gold",
+      "name": "Золото",
+      "gen": "золота",
+      "adj": "золотым",
+      "iconKey": "gold_nugget",
+      "blockPrefix": "gold",
+      "floatColor": "#ffd75e"
+    },
+    {
+      "key": "amethyst",
+      "name": "Аметист",
+      "gen": "аметиста",
+      "adj": "аметистовым",
+      "iconKey": "amethyst_nugget",
+      "blockPrefix": "amethyst",
+      "floatColor": "#d9a2ff"
+    },
+    {
+      "key": "emerald",
+      "name": "Изумруд",
+      "gen": "изумруда",
+      "adj": "изумрудным",
+      "iconKey": "emerald_nugget",
+      "blockPrefix": "emerald",
+      "floatColor": "#7ee787"
+    },
+    {
+      "key": "ruby",
+      "name": "Рубин",
+      "gen": "рубина",
+      "adj": "рубиновым",
+      "iconKey": "ruby_nugget",
+      "blockPrefix": "ruby",
+      "floatColor": "#f0638c"
+    },
+    {
+      "key": "sapphire",
+      "name": "Сапфир",
+      "gen": "сапфира",
+      "adj": "сапфировым",
+      "iconKey": "sapphire_nugget",
+      "blockPrefix": "sapphire",
+      "floatColor": "#63b4ff"
+    },
+    {
+      "key": "platinum",
+      "name": "Платина",
+      "gen": "платины",
+      "adj": "платиновым",
+      "iconKey": "platinum_nugget",
+      "blockPrefix": "platinum",
+      "floatColor": "#eae6d9"
+    },
+    {
+      "key": "uranium",
+      "name": "Уранит",
+      "gen": "уранита",
+      "adj": "урановым",
+      "iconKey": "uranium_nugget",
+      "blockPrefix": "uranium",
+      "floatColor": "#b7ff47"
+    },
+    {
+      "key": "diamond",
+      "name": "Алмаз",
+      "gen": "алмаза",
+      "adj": "алмазным",
+      "iconKey": "diamond_nugget",
+      "blockPrefix": "diamond",
+      "floatColor": "#7ee7ff"
+    }
+  ],
+  "upgrades": [
+    {
+      "id": "pickaxe",
+      "name": "Кирка",
+      "icon": null,
+      "tab": "equipment",
+      "baseCost": 15,
+      "growth": 2,
+      "maxLevel": 30,
+      "effect": "+1 руда за клик"
+    },
+    {
+      "id": "sledge",
+      "name": "Кувалда",
+      "icon": "icon_hammer",
+      "tab": "equipment",
+      "baseCost": 500,
+      "growth": 2.5,
+      "maxLevel": 10,
+      "effect": "урон клика x1.5"
+    },
+    {
+      "id": "hydraulic",
+      "name": "Гидропресс",
+      "icon": "icon_hydraulic",
+      "tab": "equipment",
+      "baseCost": 8000,
+      "growth": 3.5,
+      "maxLevel": 8,
+      "tier": 2,
+      "requires": {
+        "id": "sledge",
+        "level": 5
+      },
+      "effect": "урон клика x1.6"
+    },
+    {
+      "id": "plasma",
+      "name": "Плазменный резак",
+      "icon": "icon_plasma",
+      "tab": "equipment",
+      "baseCost": 120000,
+      "growth": 4.5,
+      "maxLevel": 6,
+      "tier": 6,
+      "requires": {
+        "id": "hydraulic",
+        "level": 5
+      },
+      "effect": "урон клика x1.7"
+    },
+    {
+      "id": "disintegrator",
+      "name": "Расщепитель",
+      "icon": "icon_disintegrator",
+      "tab": "equipment",
+      "baseCost": 1500000,
+      "growth": 5.5,
+      "maxLevel": 5,
+      "tier": 8,
+      "requires": {
+        "id": "plasma",
+        "level": 5
+      },
+      "effect": "урон клика x1.8"
+    },
+    {
+      "id": "miner",
+      "name": "Шахтёр",
+      "icon": "miner_portrait",
+      "tab": "equipment",
+      "baseCost": 60,
+      "growth": 2,
+      "maxLevel": null,
+      "effect": "+1 руда/сек"
+    },
+    {
+      "id": "robotarm",
+      "name": "Робо-рука",
+      "icon": "icon_robot_arm",
+      "tab": "equipment",
+      "baseCost": 5000,
+      "growth": 1.8,
+      "maxLevel": null,
+      "effect": "Авто-клик: 0.5/сек"
+    },
+    {
+      "id": "drill",
+      "name": "Бур",
+      "icon": "icon_drill",
+      "tab": "equipment",
+      "baseCost": 600,
+      "growth": 1.6,
+      "maxLevel": null,
+      "tier": 1,
+      "requires": {
+        "id": "miner",
+        "level": 5
+      },
+      "effect": "+10 руды/сек"
+    },
+    {
+      "id": "excavator",
+      "name": "Экскаватор",
+      "icon": "icon_excavator",
+      "tab": "equipment",
+      "baseCost": 6000,
+      "growth": 1.7,
+      "maxLevel": null,
+      "tier": 2,
+      "requires": {
+        "id": "drill",
+        "level": 5
+      },
+      "effect": "+100 руды/сек"
+    },
+    {
+      "id": "factory",
+      "name": "Фабрика",
+      "icon": "icon_factory",
+      "tab": "equipment",
+      "baseCost": 60000,
+      "growth": 1.8,
+      "maxLevel": null,
+      "tier": 3,
+      "requires": {
+        "id": "excavator",
+        "level": 5
+      },
+      "effect": "+1000 руды/сек"
+    },
+    {
+      "id": "quarry",
+      "name": "Карьер",
+      "icon": "icon_quarry",
+      "tab": "equipment",
+      "baseCost": 600000,
+      "growth": 1.85,
+      "maxLevel": null,
+      "tier": 4,
+      "requires": {
+        "id": "factory",
+        "level": 5
+      },
+      "effect": "+10K руды/сек"
+    },
+    {
+      "id": "megafactory",
+      "name": "Мега-фабрика",
+      "icon": "icon_megafactory",
+      "tab": "equipment",
+      "baseCost": 6000000,
+      "growth": 1.9,
+      "maxLevel": null,
+      "tier": 5,
+      "requires": {
+        "id": "quarry",
+        "level": 5
+      },
+      "effect": "+100K руды/сек"
+    },
+    {
+      "id": "orbital",
+      "name": "Орбитальная станция",
+      "icon": "icon_orbital",
+      "tab": "equipment",
+      "baseCost": 60000000,
+      "growth": 1.95,
+      "maxLevel": null,
+      "tier": 6,
+      "requires": {
+        "id": "megafactory",
+        "level": 5
+      },
+      "effect": "+1M руды/сек"
+    },
+    {
+      "id": "quantumlab",
+      "name": "Квантовая лаборатория",
+      "icon": "icon_quantumlab",
+      "tab": "equipment",
+      "baseCost": 600000000,
+      "growth": 2,
+      "maxLevel": null,
+      "tier": 7,
+      "requires": {
+        "id": "orbital",
+        "level": 5
+      },
+      "effect": "+10M руды/сек"
+    },
+    {
+      "id": "wormhole",
+      "name": "Червоточина",
+      "icon": "icon_wormhole",
+      "tab": "equipment",
+      "baseCost": 6000000000,
+      "growth": 2.1,
+      "maxLevel": null,
+      "tier": 8,
+      "requires": {
+        "id": "quantumlab",
+        "level": 5
+      },
+      "effect": "+100M руды/сек"
+    },
+    {
+      "id": "singularity",
+      "name": "Гравитационный резак",
+      "icon": "icon_singularity",
+      "tab": "equipment",
+      "baseCost": 60000000000,
+      "growth": 2.2,
+      "maxLevel": null,
+      "tier": 9,
+      "requires": {
+        "id": "wormhole",
+        "level": 5
+      },
+      "effect": "+1B руды/сек"
+    },
+    {
+      "id": "dyson",
+      "name": "Сфера Дайсона",
+      "icon": "icon_dyson",
+      "tab": "equipment",
+      "baseCost": 600000000000,
+      "growth": 2.3,
+      "maxLevel": null,
+      "tier": 10,
+      "requires": {
+        "id": "singularity",
+        "level": 5
+      },
+      "effect": "+10B руды/сек"
+    },
+    {
+      "id": "tech",
+      "name": "Техника",
+      "icon": "gear_icon",
+      "tab": "equipment",
+      "baseCost": 8000,
+      "growth": 5,
+      "maxLevel": null,
+      "effect": "пассив x1.25"
+    },
+    {
+      "id": "aicore",
+      "name": "ИИ-ядро",
+      "icon": "icon_aicore",
+      "tab": "equipment",
+      "baseCost": 500000,
+      "growth": 7,
+      "maxLevel": null,
+      "tier": 5,
+      "requires": {
+        "id": "tech",
+        "level": 5
+      },
+      "effect": "пассив x1.3"
+    },
+    {
+      "id": "helmet",
+      "name": "Каска",
+      "icon": "icon_helmet",
+      "tab": "equipment",
+      "baseCost": 800,
+      "growth": 2.2,
+      "maxLevel": 25,
+      "effect": "+2000 HP в бою"
+    },
+    {
+      "id": "dynamite",
+      "name": "Динамит",
+      "icon": "dynamite_bundle",
+      "tab": "enhance",
+      "baseCost": 100,
+      "growth": 2.2,
+      "maxLevel": 23,
+      "effect": "+3% крит x5 (до 74%)"
+    },
+    {
+      "id": "lucky",
+      "name": "Золотая жила",
+      "icon": "icon_vein",
+      "tab": "enhance",
+      "baseCost": 1500,
+      "growth": 3,
+      "maxLevel": 25,
+      "effect": "+2% шанс x10 (до 50%)"
+    },
+    {
+      "id": "resonance",
+      "name": "Синергия",
+      "icon": "hand_cursor",
+      "tab": "enhance",
+      "baseCost": 2500,
+      "growth": 2,
+      "maxLevel": 25,
+      "effect": "клик +1% от пассива"
+    },
+    {
+      "id": "focuslens",
+      "name": "Фокус-линза",
+      "icon": "icon_focuslens",
+      "tab": "enhance",
+      "baseCost": 50000,
+      "growth": 4,
+      "maxLevel": 10,
+      "tier": 3,
+      "requires": {
+        "id": "dynamite",
+        "level": 15
+      },
+      "effect": "+0.5 к силе крита"
+    },
+    {
+      "id": "magnet",
+      "name": "Рудный магнит",
+      "icon": "icon_magnet",
+      "tab": "enhance",
+      "baseCost": 150000,
+      "growth": 4,
+      "maxLevel": 5,
+      "tier": 4,
+      "requires": {
+        "id": "lucky",
+        "level": 15
+      },
+      "effect": "+1 к множителю жилы"
+    },
+    {
+      "id": "lantern",
+      "name": "Фонарь",
+      "icon": "icon_lantern",
+      "tab": "enhance",
+      "baseCost": 300,
+      "growth": 2.5,
+      "maxLevel": 10,
+      "effect": "+8% фонового дохода"
+    },
+    {
+      "id": "warehouse",
+      "name": "Склад",
+      "icon": "icon_warehouse",
+      "tab": "enhance",
+      "baseCost": 1000,
+      "growth": 10,
+      "maxLevel": 3,
+      "effect": "запас: до 24 ч"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "art_miner_totem",
+      "name": "Тотем шахтёра",
+      "desc": "пассивная добыча x1.1",
+      "source": "boss_copper",
+      "bonuses": {
+        "passiveMult": 1.1
+      }
+    },
+    {
+      "id": "art_lantern_old",
+      "name": "Старый фонарь",
+      "desc": "+5% к офлайн-доходу",
+      "source": "boss_silver",
+      "bonuses": {
+        "offlineAdd": 0.05
+      }
+    },
+    {
+      "id": "art_magnet_ring",
+      "name": "Кольцо магнита",
+      "desc": "робо-рука +0.5 авто-клика/с",
+      "source": "boss_amethyst",
+      "bonuses": {
+        "autoCpsAdd": 0.5
+      }
+    },
+    {
+      "id": "art_lucky_charm",
+      "name": "Талисман удачи",
+      "desc": "+3% к шансу крита",
+      "source": "boss_ruby",
+      "bonuses": {
+        "critAdd": 0.03
+      }
+    },
+    {
+      "id": "art_glove",
+      "name": "Рукавица глубин",
+      "desc": "урон клика x1.1",
+      "source": "boss_platinum",
+      "bonuses": {
+        "clickMult": 1.1
+      }
+    },
+    {
+      "id": "art_deep_compass",
+      "name": "Компас глубин",
+      "desc": "+15% к дропу компонентов",
+      "source": "boss_diamond",
+      "bonuses": {
+        "dropBonus": 0.15
+      }
+    },
+    {
+      "id": "art_hardpick",
+      "name": "Закалённый бур",
+      "desc": "урон боссам x1.25",
+      "source": "r_hardpick",
+      "bonuses": {
+        "bossDamageMult": 1.25
+      }
+    },
+    {
+      "id": "art_core_battery",
+      "name": "Ядро-аккумулятор",
+      "desc": "пассивная добыча x1.15",
+      "source": "r_battery",
+      "bonuses": {
+        "passiveMult": 1.15
+      }
+    },
+    {
+      "id": "art_ancient_pick",
+      "name": "Древняя кирка",
+      "desc": "урон клика x1.15, урон боссам x1.1",
+      "source": "r_ancient",
+      "bonuses": {
+        "clickMult": 1.15,
+        "bossDamageMult": 1.1
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "item_bomb",
+      "name": "Шахтёрская бомба",
+      "desc": "урон боссу x2 на 30 сек",
+      "cost": {
+        "scrap": 4
+      },
+      "effect": {
+        "bossMult": 2,
+        "durMs": 30000
+      },
+      "stackMax": 5,
+      "bossUse": true,
+      "priceSeconds": 60
+    },
+    {
+      "id": "item_belt",
+      "name": "Динамитный пояс",
+      "desc": "добыча x3 на 3 минуты",
+      "cost": {
+        "scrap": 6,
+        "crystal": 1
+      },
+      "effect": {
+        "miningMult": 3,
+        "durMs": 180000
+      },
+      "stackMax": 5,
+      "priceSeconds": 90
+    },
+    {
+      "id": "item_coffee",
+      "name": "Кофе шахтёра",
+      "desc": "добыча x2 на 5 минут",
+      "cost": {
+        "crystal": 2
+      },
+      "effect": {
+        "miningMult": 2,
+        "durMs": 300000
+      },
+      "stackMax": 8,
+      "priceSeconds": 45
+    },
+    {
+      "id": "item_ration",
+      "name": "Сухпаёк",
+      "desc": "мгновенно 60 сек дохода",
+      "cost": {
+        "scrap": 3
+      },
+      "effect": {
+        "instantSec": 60
+      },
+      "stackMax": 10,
+      "priceSeconds": 30
+    },
+    {
+      "id": "item_stim",
+      "name": "Стимулятор жилы",
+      "desc": "каждый удар — жила на 2 мин",
+      "cost": {
+        "core": 1,
+        "crystal": 2
+      },
+      "effect": {
+        "veinForce": true,
+        "durMs": 120000
+      },
+      "stackMax": 3,
+      "priceSeconds": 120
+    },
+    {
+      "id": "item_rig",
+      "name": "Робо-рама",
+      "desc": "урон робо-руки x3 на 30 сек",
+      "cost": {
+        "scrap": 4,
+        "crystal": 2
+      },
+      "effect": {
+        "autoMult": 3,
+        "durMs": 30000
+      },
+      "stackMax": 5,
+      "bossUse": true,
+      "priceSeconds": 75
+    },
+    {
+      "id": "item_oil",
+      "name": "Точильный камень",
+      "desc": "крит-шанс +25% на 60 сек",
+      "cost": {
+        "essence": 2,
+        "scrap": 2
+      },
+      "effect": {
+        "critAdd": 0.25,
+        "durMs": 60000
+      },
+      "stackMax": 5,
+      "bossUse": true,
+      "priceSeconds": 50
+    }
+  ],
+  "craftRecipes": [
+    {
+      "id": "r_bomb",
+      "result": {
+        "kind": "item",
+        "id": "item_bomb",
+        "n": 2
+      },
+      "cost": {
+        "scrap": 4
+      },
+      "craftMs": 0
+    },
+    {
+      "id": "r_belt",
+      "result": {
+        "kind": "item",
+        "id": "item_belt",
+        "n": 1
+      },
+      "cost": {
+        "scrap": 6,
+        "crystal": 1
+      },
+      "craftMs": 0
+    },
+    {
+      "id": "r_coffee",
+      "result": {
+        "kind": "item",
+        "id": "item_coffee",
+        "n": 1
+      },
+      "cost": {
+        "crystal": 2
+      },
+      "craftMs": 0
+    },
+    {
+      "id": "r_ration",
+      "result": {
+        "kind": "item",
+        "id": "item_ration",
+        "n": 2
+      },
+      "cost": {
+        "scrap": 3
+      },
+      "craftMs": 0
+    },
+    {
+      "id": "r_stim",
+      "result": {
+        "kind": "item",
+        "id": "item_stim",
+        "n": 1
+      },
+      "cost": {
+        "core": 1,
+        "crystal": 2
+      },
+      "craftMs": 0
+    },
+    {
+      "id": "r_rig",
+      "result": {
+        "kind": "item",
+        "id": "item_rig",
+        "n": 1
+      },
+      "cost": {
+        "scrap": 4,
+        "crystal": 2
+      },
+      "craftMs": 0
+    },
+    {
+      "id": "r_oil",
+      "result": {
+        "kind": "item",
+        "id": "item_oil",
+        "n": 1
+      },
+      "cost": {
+        "essence": 2,
+        "scrap": 2
+      },
+      "craftMs": 0
+    },
+    {
+      "id": "r_hardpick",
+      "result": {
+        "kind": "artifact",
+        "id": "art_hardpick",
+        "n": 1
+      },
+      "cost": {
+        "crystal": 3,
+        "core": 1
+      },
+      "craftMs": 600000
+    },
+    {
+      "id": "r_battery",
+      "result": {
+        "kind": "artifact",
+        "id": "art_core_battery",
+        "n": 1
+      },
+      "cost": {
+        "core": 2,
+        "essence": 1
+      },
+      "craftMs": 1200000
+    },
+    {
+      "id": "r_ancient",
+      "result": {
+        "kind": "artifact",
+        "id": "art_ancient_pick",
+        "n": 1
+      },
+      "cost": {
+        "relic": 2,
+        "essence": 2
+      },
+      "craftMs": 1800000
+    }
+  ],
+  "dailyRewards": [
+    {
+      "id": "boost2",
+      "name": "Ускорение",
+      "kind": "mult",
+      "mult": 2,
+      "durMs": 600000,
+      "icon": "pickaxe_iron",
+      "desc": "x2 к скорости добычи\nна 10 минут"
+    },
+    {
+      "id": "stash",
+      "name": "Накопитель",
+      "kind": "instant",
+      "icon": "gold_nugget",
+      "desc": "мгновенно 5 минут\nполного дохода"
+    },
+    {
+      "id": "crit",
+      "name": "Критический импульс",
+      "kind": "crit",
+      "icon": "dynamite_bundle",
+      "desc": "+25% к шансу крита\nна 5 минут"
+    },
+    {
+      "id": "upgrade",
+      "name": "Бесплатное улучшение",
+      "kind": "upgrade",
+      "icon": "icon_hammer",
+      "desc": "+1 уровень лучшему\nдоступному улучшению"
+    },
+    {
+      "id": "boost3",
+      "name": "Мощное ускорение",
+      "kind": "mult",
+      "mult": 3,
+      "durMs": 600000,
+      "icon": "pickaxe_diamond",
+      "desc": "x3 к скорости добычи\nна 10 минут"
+    },
+    {
+      "id": "boost10",
+      "name": "Мощный буст",
+      "kind": "mult",
+      "mult": 10,
+      "durMs": 120000,
+      "icon": "icon_dyson",
+      "desc": "x10 к скорости добычи\nна 2 минуты"
+    },
+    {
+      "id": "vein",
+      "name": "Золотая жила",
+      "kind": "vein",
+      "durMs": 120000,
+      "icon": "icon_vein",
+      "desc": "каждый удар — жила\nна 2 минуты"
+    }
+  ],
+  "bosses": [
+    {
+      "id": "boss_copper",
+      "name": "Медный страж",
+      "tier": 1,
+      "hpMult": 1,
+      "icon": "boss_copper",
+      "drops": {
+        "scrap": [
+          2,
+          4
+        ]
+      },
+      "artifact": "art_miner_totem"
+    },
+    {
+      "id": "boss_silver",
+      "name": "Серебряный голем",
+      "tier": 3,
+      "hpMult": 1.3,
+      "icon": "boss_silver",
+      "drops": {
+        "scrap": [
+          1,
+          3
+        ],
+        "crystal": [
+          1,
+          2
+        ]
+      },
+      "artifact": "art_lantern_old"
+    },
+    {
+      "id": "boss_amethyst",
+      "name": "Аметистовый жнец",
+      "tier": 5,
+      "hpMult": 1.7,
+      "icon": "boss_amethyst",
+      "drops": {
+        "crystal": [
+          2,
+          3
+        ],
+        "core": [
+          1,
+          1
+        ]
+      },
+      "artifact": "art_magnet_ring"
+    },
+    {
+      "id": "boss_ruby",
+      "name": "Рубиновый басилиск",
+      "tier": 7,
+      "hpMult": 2.2,
+      "icon": "boss_ruby",
+      "drops": {
+        "core": [
+          1,
+          2
+        ],
+        "relic": [
+          1,
+          1
+        ]
+      },
+      "artifact": "art_lucky_charm"
+    },
+    {
+      "id": "boss_platinum",
+      "name": "Платиновый титан",
+      "tier": 9,
+      "hpMult": 2.8,
+      "icon": "boss_platinum",
+      "drops": {
+        "relic": [
+          1,
+          2
+        ],
+        "essence": [
+          1,
+          1
+        ]
+      },
+      "artifact": "art_glove"
+    },
+    {
+      "id": "boss_diamond",
+      "name": "Алмазный владыка",
+      "tier": 11,
+      "hpMult": 3.5,
+      "icon": "boss_diamond",
+      "drops": {
+        "essence": [
+          1,
+          2
+        ],
+        "relic": [
+          0,
+          1
+        ],
+        "core": [
+          1,
+          1
+        ]
+      },
+      "artifact": "art_deep_compass"
+    }
+  ],
+  "components": [
+    {
+      "id": "scrap",
+      "name": "Ржавый лом",
+      "icon": "comp_scrap"
+    },
+    {
+      "id": "crystal",
+      "name": "Кристальный осколок",
+      "icon": "comp_crystal"
+    },
+    {
+      "id": "core",
+      "name": "Энергоядро",
+      "icon": "comp_core"
+    },
+    {
+      "id": "relic",
+      "name": "Древняя реликвия",
+      "icon": "comp_relic"
+    },
+    {
+      "id": "essence",
+      "name": "Эссенция глубин",
+      "icon": "comp_essence"
+    }
+  ],
+  "mutations": {
+    "rainbow": {
+      "name": "Радужный блок",
+      "desc": "доход за клик x10",
+      "clickGainMult": 10,
+      "tints": [
+        16732240,
+        16752688,
+        16771136,
+        5300304,
+        4235519,
+        11555071
+      ]
+    },
+    "frozen": {
+      "name": "Замороженный блок",
+      "desc": "x3 кликов, каждый удар — крит",
+      "hitsPerStage": 3,
+      "forceCrit": true,
+      "tints": [
+        12577023,
+        8373503
+      ]
+    },
+    "explosive": {
+      "name": "Взрывной блок",
+      "desc": "x2 кликов, взрыв при разрушении",
+      "hitsPerStage": 2,
+      "breakBonusMult": 25,
+      "tints": [
+        16756832,
+        16732208
+      ]
+    },
+    "charged": {
+      "name": "Заряженный блок",
+      "desc": "фоновая добыча x3",
+      "passiveMult": 3,
+      "tints": [
+        14199039,
+        10113279
+      ]
+    }
+  },
+  "constants": {
+    "SAVE_VERSION": 5,
+    "TIER_STEP": {
+      "cost": 3,
+      "income": 3
+    },
+    "UNLOCK_BASE_SECONDS": 180,
+    "UNLOCK_SECONDS_GROWTH": 2.95,
+    "UNLOCK_FLOOR": 2500,
+    "MANUAL_CPS_ASSUME": 3,
+    "OFFLINE_CAP_HOURS": [
+      4,
+      8,
+      12,
+      24
+    ],
+    "OFFLINE_BASE_RATE": 0.2,
+    "OFFLINE_RATE_PER_LANTERN": 0.08,
+    "OFFLINE_MIN_SECONDS": 300,
+    "PRESTIGE_REQUIREMENT": 1000000000000,
+    "STAR_BONUS": 0.1,
+    "DIAMOND_INDEX": 11,
+    "MUTATION_DURATION_MS": 10000,
+    "MUTATION_CHECK_MS": 300000,
+    "MUTATION_CHANCE": 0.5,
+    "BOSS_HP_BASE": 25000,
+    "BOSS_FIGHT_SECONDS": 60,
+    "BOSS_BOUNTY_SECONDS": 90,
+    "BOSS_ATTACK_PERIOD_MS": 2500,
+    "BOSS_ATTACK_WINDUP_MS": 600,
+    "PLAYER_BASE_HP": 3000,
+    "PLAYER_HP_PER_HELMET": 2000,
+    "BOSS_SPEED_TIERS": [
+      [
+        45,
+        1.5
+      ],
+      [
+        90,
+        1.25
+      ],
+      [
+        180,
+        1
+      ]
+    ],
+    "BOSS_SPEED_SLOW": 0.75,
+    "DAY_MS": 86400000,
+    "DAILY_CRIT_BONUS": 0.25,
+    "DAILY_INSTANT_SECONDS": 300
+  },
+  "initialState": {
+    "version": 5,
+    "ore": 0,
+    "tier": 0,
+    "stars": 0,
+    "clicks": 0,
+    "lifetimeMined": 0,
+    "tierEarned": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "tierAnchorRate": 0,
+    "tutorialDone": false,
+    "soundOn": true,
+    "musicOn": true,
+    "musicVolume": 0.5,
+    "dailyStreak": 0,
+    "lastDailyDay": 0,
+    "dailyBuffUntil": 0,
+    "dailyBuffMult": 1,
+    "dailyCritUntil": 0,
+    "dailyVeinUntil": 0,
+    "components": {},
+    "artifacts": [],
+    "items": {},
+    "crafting": null,
+    "bossesDefeated": {},
+    "bossFight": null,
+    "bestBossTimes": {},
+    "miningBuffUntil": 0,
+    "miningBuffMult": 1,
+    "bossBuffUntil": 0,
+    "bossBuffMult": 1,
+    "itemVeinUntil": 0,
+    "rigBuffUntil": 0,
+    "rigBuffMult": 1,
+    "oilBuffUntil": 0,
+    "oilBuffAdd": 0,
+    "levels": {
+      "pickaxe": 0,
+      "sledge": 0,
+      "hydraulic": 0,
+      "plasma": 0,
+      "disintegrator": 0,
+      "miner": 0,
+      "robotarm": 0,
+      "drill": 0,
+      "excavator": 0,
+      "factory": 0,
+      "quarry": 0,
+      "megafactory": 0,
+      "orbital": 0,
+      "quantumlab": 0,
+      "wormhole": 0,
+      "singularity": 0,
+      "dyson": 0,
+      "tech": 0,
+      "aicore": 0,
+      "helmet": 0,
+      "dynamite": 0,
+      "lucky": 0,
+      "resonance": 0,
+      "focuslens": 0,
+      "magnet": 0,
+      "lantern": 0,
+      "warehouse": 0
+    }
+  }
+}
