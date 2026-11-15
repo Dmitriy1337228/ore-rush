@@ -4,6 +4,7 @@ import {
 } from '../../state.js';
 import { FONT, addImg, makeLabel, fitFontSize, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
 import { createPanel } from '../../ui/panel.js';
+import { rowRight } from '../../ui/stack.js';
 import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
 
@@ -193,16 +194,25 @@ export const craftScreenMethods = {
             const pairNodes = [];
             const pairIcon = Math.round(16 * Math.min(s, 1.5));
             const pairFont = Math.max(9, Math.round(FONT_SIZE.caption * s));
-            let cx = textX + needLbl.width + Math.round(12 * s);
+            const pairSlot = Math.round(20 * s);  // слот иконки в паре (центр на +8s)
+            const pairGap = Math.round(12 * s);
+            // Пары «иконка ×N» — горизонтальный поток (rowRight): ширины по факту
+            const flow = [{ w: needLbl.width, place: (left) => { needLbl.x = left; } }];
             for (const compId of Object.keys(recipe.cost)) {
                 const compDef = COMPONENTS.find((c) => c.id === compId);
                 const cIcon = this.add.image(0, 0, compDef.icon);
-                this.placeIcon(cIcon, compDef.icon, cx + Math.round(8 * s), costY, pairIcon);
-                const cText = makeLabel(this, cx + Math.round(20 * s), costY, String(recipe.cost[compId]), pairFont, TEXT.gold).setOrigin(0, 0.5);
+                const cText = makeLabel(this, 0, 0, String(recipe.cost[compId]), pairFont, TEXT.gold).setOrigin(0, 0.5);
                 pairNodes.push(cIcon, cText);
                 costPairs.push({ id: compId, text: cText });
-                cx += Math.round(20 * s) + cText.width + Math.round(12 * s);
+                flow.push({
+                    w: pairSlot + cText.width,
+                    place: (left) => {
+                        this.placeIcon(cIcon, compDef.icon, left + Math.round(8 * s), costY, pairIcon);
+                        cText.setPosition(left + pairSlot, costY);
+                    }
+                });
             }
+            rowRight(flow, { left: textX, gap: pairGap });
             const footMaxW = btnCX - btnW / 2 - 8 - textX;
             const footSize = Math.max(9, Math.round(FONT_SIZE.captionSm * s));
             const srcTxt = recipe.result.kind === 'artifact'
@@ -383,16 +393,25 @@ export const craftScreenMethods = {
         // «Получишь: …» — 1–2 строки по факту
         row.desc.y = y;
         y += TH(row.desc) + g;
-        // «Нужно:» + пары (иконка + число), центр строки needCY
+        // «Нужно:» + пары (иконка + число) — горизонтальный поток (rowRight):
+        // ширины по факту, зазоры SPACE.md (метка -> пара) и SPACE.lg (пара -> пара)
         const needH = Math.max(28, row.pairIcon + 6, TH(row.needLbl));
         const needCY = Math.round(y + needH / 2);
         row.needLbl.y = needCY;
-        let cx = row.textX + row.needLbl.width + SPACE.md;
-        for (const pair of row.costPairs) {
-            pair.icon.setPosition(cx + row.pairIcon / 2, needCY);
-            pair.text.setPosition(cx + row.pairIcon + 6, needCY);
-            cx += row.pairIcon + 6 + pair.text.width + SPACE.lg;
-        }
+        rowRight(
+            [
+                { w: row.needLbl.width, place: (left) => { row.needLbl.x = left; } },
+                ...row.costPairs.map((pair) => ({
+                    w: row.pairIcon + 6 + pair.text.width,
+                    gapAfter: SPACE.lg,
+                    place: (left) => {
+                        pair.icon.setPosition(left + row.pairIcon / 2, needCY);
+                        pair.text.setPosition(left + row.pairIcon + 6, needCY);
+                    }
+                }))
+            ],
+            { left: row.textX, gap: SPACE.md }
+        );
         y += needH + g;
         // Фут: статус ИЛИ источник (взаимно исключены), grow-only слот
         row.status.y = y;
