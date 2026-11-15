@@ -18,6 +18,7 @@ const {
     createInitialState, gameState, applySave, resetGame, doPrestige, DIAMOND_INDEX,
     getArtifactBonus, getItemBuffMult, isItemVeinActive, getBossDamageMult,
     rollClickGain, rollBossHit, grantBossKill, addOre,
+    bossSpeedMult, updateBossRecord, getBossRecord, BOSS_SPEED_TIERS, BOSS_SPEED_SLOW,
     canCraft, startCraft, canClaimCraft, claimCraft, useItem,
     updateBossFight, clearBossFight, saveGame,
     getClickDamage, getOrePerSecond, getExpectedClickGain, getEarningRate,
@@ -40,8 +41,8 @@ check('SAVE_VERSION = 5', SAVE_VERSION === 5, `получено ${SAVE_VERSION}`
 check('BOSSES: 6', BOSSES.length === 6, `получено ${BOSSES.length}`);
 check('COMPONENTS: 5', COMPONENTS.length === 5, `получено ${COMPONENTS.length}`);
 check('ARTIFACTS: 9', ARTIFACTS.length === 9, `получено ${ARTIFACTS.length}`);
-check('ITEMS: 5', ITEMS.length === 5, `получено ${ITEMS.length}`);
-check('CRAFT_RECIPES: 8', CRAFT_RECIPES.length === 8, `получено ${CRAFT_RECIPES.length}`);
+check('ITEMS: 7 (5 шахтных + 2 боевых)', ITEMS.length === 7, `получено ${ITEMS.length}`);
+check('CRAFT_RECIPES: 10', CRAFT_RECIPES.length === 10, `получено ${CRAFT_RECIPES.length}`);
 check('константы боссов', BOSS_HP_BASE === 25000 && BOSS_FIGHT_SECONDS === 60 && BOSS_BOUNTY_SECONDS === 90);
 
 const compIds = COMPONENTS.map((c) => c.id);
@@ -81,12 +82,12 @@ check('артефакты: каждый из 9 получаем (босс или
 check('предметы: имя/desc/effect/stackMax', ITEMS.every((i) =>
     i.name && i.desc && i.effect && Number.isInteger(i.stackMax) && i.stackMax > 0));
 check('предметы: эффекты из известного набора', ITEMS.every((i) =>
-    Object.keys(i.effect).every((f) => ['bossMult', 'miningMult', 'veinForce', 'instantSec', 'durMs'].includes(f))));
-check('предметы: только item_bomb — bossUse', ITEMS.every((i) =>
-    i.bossUse === undefined ? true : i.id === 'item_bomb'));
+    Object.keys(i.effect).every((f) => ['bossMult', 'miningMult', 'veinForce', 'instantSec', 'autoMult', 'critAdd', 'durMs'].includes(f))));
+check('предметы: bossUse — ровно 3 боевых (бомба/рама/точило)', ITEMS.filter((i) => i.bossUse).length === 3
+    && ['item_bomb', 'item_rig', 'item_oil'].every((id) => ITEMS.find((i) => i.id === id).bossUse));
 check('предметы: временные эффекты с durMs, instantSec без durMs', ITEMS.every((i) => {
     const e = i.effect;
-    if (e.durMs !== undefined && e.durMs > 0 && (e.bossMult || e.miningMult || e.veinForce)) return true;
+    if (e.durMs !== undefined && e.durMs > 0 && (e.bossMult || e.miningMult || e.veinForce || e.autoMult || e.critAdd)) return true;
     return e.instantSec !== undefined && e.durMs === undefined;
 }));
 check('предметы: cost ссылаются на компоненты', ITEMS.every((i) =>
@@ -365,6 +366,20 @@ function saveGameToString() {
     check('useItem: третий сухпаёк списывается, бафов не создаёт',
         useItem('item_ration') === true && gameState.items.item_ration === 1 &&
         gameState.miningBuffMult === 2 && gameState.bossBuffMult === 2);
+    // боевые предметы №2-3: свои слоты, только в бою
+    gameState.items.item_rig = 2;
+    gameState.items.item_oil = 2;
+    check('useItem: рама вне боя -> false', !useItem('item_rig') && gameState.items.item_rig === 2);
+    check('useItem: рама в бою -> rigBuffMult 3 / 30 с',
+        useItem('item_rig', true) === true && gameState.rigBuffMult === 3 && gameState.rigBuffUntil === now + 30e3 && gameState.items.item_rig === 1);
+    // Реслот: остаток <=30 c у 30-секундного бафа — перезапуск полной длительности
+    check('useItem: повторная рама в бою — перезапуск (запас кончился)',
+        useItem('item_rig', true) === true && gameState.items.item_rig === 0 && gameState.rigBuffUntil === now + 30e3);
+    now += 35e3; // рама истекла — повторная активация разрешена (запас 0 -> отказ)
+    check('useItem: рама после истечения при пустом стаке -> false',
+        !useItem('item_rig', true) && gameState.rigBuffUntil < now);
+    check('useItem: точило в бою -> oilBuffAdd 0.25 / 60 с',
+        useItem('item_oil', true) === true && gameState.oilBuffAdd === 0.25 && gameState.oilBuffUntil === now + 60e3 && gameState.items.item_oil === 1);
 }
 
 // --- 8. rollBossHit: клик + артефакты/бомба, без мутаций ---
@@ -394,10 +409,13 @@ function saveGameToString() {
     const copper = BOSSES.find((b) => b.id === 'boss_copper');
     const rate = getEarningRate();
     const oreBefore = gameState.ore;
-    const res = grantBossKill('boss_copper');
-    check('grantBossKill: баунти = ceil(90с полного дохода)',
-        res && res.bounty === Math.ceil(BOSS_BOUNTY_SECONDS * rate) &&
+    // 90 c — второй порог: множитель x1.25
+    const res = grantBossKill('boss_copper', 90000);
+    check('grantBossKill: баунти = ceil(90с дохода) при времени 90с (x1.25)',
+        res && res.speedMult === 1.25 && res.elapsedSec === 90 &&
+        res.bounty === Math.ceil(BOSS_BOUNTY_SECONDS * rate * 1.25) &&
         Math.abs(gameState.ore - oreBefore - res.bounty) < 1e-6);
+    check('grantBossKill: рекорд 90с записан', getBossRecord('boss_copper') === 90);
     check('grantBossKill: минимальный дроп по таблице',
         res.comps.scrap === copper.drops.scrap[0] &&
         gameState.components.scrap === copper.drops.scrap[0]);
@@ -405,10 +423,20 @@ function saveGameToString() {
     check('grantBossKill: артефакт выдан первый раз',
         res.artifactId === 'art_miner_totem' && gameState.artifacts.includes('art_miner_totem'));
     const compsAfterFirst = gameState.components.scrap;
-    const res2 = grantBossKill('boss_copper');
+    // 10 c — «быстрая победа» x1.5: рекорд улучшается (90 -> 10)
+    const res2 = grantBossKill('boss_copper', 10000);
     check('grantBossKill: артефакт повторно НЕ выдаётся',
         res2.artifactId === null && gameState.artifacts.filter((a) => a === 'art_miner_totem').length === 1);
     check('grantBossKill: второй дроп копится поверх', gameState.components.scrap === compsAfterFirst + res2.comps.scrap);
+    check('grantBossKill: бонус за скорость x1.5 (<=45с)',
+        res2.speedMult === 1.5 && res2.bounty === Math.ceil(BOSS_BOUNTY_SECONDS * rate * 1.5));
+    check('grantBossKill: рекорд улучшен до 10с', getBossRecord('boss_copper') === 10);
+    // Медленная победа: 200 c — штраф x0.75, рекорд НЕ ухудшается
+    const oreBeforeSlow = gameState.ore;
+    const resSlow = grantBossKill('boss_copper', 200000);
+    check('grantBossKill: медленное убийство — штраф x0.75',
+        resSlow.speedMult === 0.75 && resSlow.bounty === Math.ceil(BOSS_BOUNTY_SECONDS * rate * 0.75));
+    check('grantBossKill: рекорд не ухудшается', getBossRecord('boss_copper') === 10);
 
     // dropBonus артефакта: floor(n x (1+dropBonus))
     gameState.artifacts.push('art_deep_compass'); // dropBonus 0.15
@@ -420,6 +448,37 @@ function saveGameToString() {
     check('grantBossKill: dropBonus применяется к дропу (ролл min)',
         res3.comps.essence === expectedEssence && res3.comps.core === expectedCore &&
         gameState.components.essence === (compBefore.essence || 0) + expectedEssence);
+    restoreClock();
+}
+
+// --- 9b. Скорость/рекорды: пороги, валидация сейва, миграция, престиж ---
+{
+    restoreClock();
+    resetGame();
+    // Пороги по СЕКУНДАМ (ms округляются до секунды: 45001мс = 45с -> x1.5)
+    check('скорость: пороги 45/90/180 и штраф',
+        bossSpeedMult(45000) === BOSS_SPEED_TIERS[0][1] && bossSpeedMult(50000) === BOSS_SPEED_TIERS[1][1] &&
+        bossSpeedMult(90000) === BOSS_SPEED_TIERS[1][1] && bossSpeedMult(100000) === BOSS_SPEED_TIERS[2][1] &&
+        bossSpeedMult(180000) === BOSS_SPEED_TIERS[2][1] && bossSpeedMult(181000) === BOSS_SPEED_SLOW && bossSpeedMult(0) === 1.5);
+    check('скорость: updateBossRecord — чужой босс игнорируется', !updateBossRecord('boss_nope', 10));
+    updateBossRecord('boss_silver', 120);
+    check('скорость: рекорд пишется и читается', getBossRecord('boss_silver') === 120);
+    updateBossRecord('boss_silver', 300);
+    check('скорость: рекорд не ухудшается', getBossRecord('boss_silver') === 120);
+    updateBossRecord('boss_silver', 59);
+    check('скорость: рекорд улучшается', getBossRecord('boss_silver') === 59);
+    // Сейв: валидные рекорды принимаются, мусор отбрасывается, round-trip целостен
+    gameState.bestBossTimes = { boss_copper: 42, boss_nope: 5, boss_amethyst: 0, boss_ruby: -3, boss_platinum: 400000 };
+    const recSave = JSON.parse(JSON.stringify(gameState));
+    applySave(recSave);
+    check('скорость: сейв — только валидные рекорды каталога',
+        gameState.bestBossTimes.boss_copper === 42 && gameState.bestBossTimes.boss_nope === undefined &&
+        gameState.bestBossTimes.boss_amethyst === undefined && gameState.bestBossTimes.boss_ruby === undefined &&
+        gameState.bestBossTimes.boss_platinum === undefined);
+    // Престиж: рекорды — мета, переживают; bossesDefeated сбрасывается
+    gameState.bestBossTimes.boss_copper = 42;
+    doPrestige();
+    check('скорость: рекорды переживают престиж', getBossRecord('boss_copper') === 42);
     restoreClock();
 }
 

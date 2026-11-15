@@ -5,7 +5,7 @@ import {
     MUTATIONS, MUTATION_DURATION_MS, MUTATION_CHECK_MS, MUTATION_CHANCE, getMutationBreakBonus,
     canClaimDaily, claimDailyReward,
     BOSSES, ITEMS, BOSS_FIGHT_SECONDS, bossHpFor, rollBossHit, grantBossKill, useItem,
-    getItemPrice, buyItem, updateBossFight, clearBossFight
+    getItemPrice, buyItem, updateBossFight, clearBossFight, getRigBuffMult
 } from '../state.js';
 import { YandexSDKStub } from '../sdk-stub.js';
 import { computeLayout } from '../layout.js';
@@ -837,9 +837,15 @@ export class GameScene extends Phaser.Scene {
     // зовёт это на каждый удар; таймер бафа тикает из update().
     refreshBossItems() {
         if (!this.bossItems) return;
+        // Своё состояние бафа у каждого предмета: бомба -> bossBuff, рама ->
+        // rigBuff, точило -> oilBuff (общий bossBuffUntil для всех слотов —
+        // прежний баг: слоты рамы/точила показывали чужой таймер)
         for (const slot of this.bossItems) {
             const stock = gameState.items[slot.id] || 0;
-            const buffLeft = Math.max(0, Math.ceil((gameState.bossBuffUntil - Date.now()) / 1000));
+            const buffUntil = slot.id === 'item_bomb' ? gameState.bossBuffUntil
+                : slot.id === 'item_rig' ? gameState.rigBuffUntil
+                : slot.id === 'item_oil' ? gameState.oilBuffUntil : 0;
+            const buffLeft = Math.max(0, Math.ceil((buffUntil - Date.now()) / 1000));
             if (buffLeft > 0) {
                 const key = `a${buffLeft}`;
                 if (slot._key === key) continue;
@@ -880,7 +886,9 @@ export class GameScene extends Phaser.Scene {
     performBossHit(px, py, isAuto) {
         if (!this.boss || this.boss.busy) return;
         const { gain, crit, lucky } = rollBossHit();
-        this.boss.hp -= gain;
+        // «Робо-рама»: множитель только для АВТО-ударов (робо-рука)
+        const total = isAuto ? gain * getRigBuffMult() : gain;
+        this.boss.hp -= total;
         if (!isAuto) {
             // Удар по боссу звучит заметно тише рудных кликов: тяжёлый удар
             // на каждый клик на полной громкости утомлял (замечание игрока)
@@ -890,10 +898,10 @@ export class GameScene extends Phaser.Scene {
         }
         this.oreEmitter.explode(crit || lucky ? 16 : 8, px, py);
         this.debrisEmitter.explode(crit || lucky ? 8 : 4, px, py);
-        let label = `+${fmt(gain)}`;
+        let label = `+${fmt(total)}`;
         let color = TIERS[gameState.tier].floatColor;
-        if (lucky) { label = `ЖИЛА! +${fmt(gain)}`; color = '#ffec8a'; }
-        else if (crit) { label = `КРИТ! +${fmt(gain)}`; color = '#ffd75e'; }
+        if (lucky) { label = `ЖИЛА! +${fmt(total)}`; color = '#ffec8a'; }
+        else if (crit) { label = `КРИТ! +${fmt(total)}`; color = '#ffd75e'; }
         const size = crit || lucky ? 30 : (isAuto ? 16 : 22);
         const float = makeLabel(this, px, py - 30, label, size, color);
         float.setOrigin(0.5).setDepth(28);
@@ -927,7 +935,8 @@ export class GameScene extends Phaser.Scene {
                 // Бой завершён — персист-запись гасится до сейва награды,
                 // иначе перезагрузка в окне анимации возобновила бы мёртвый бой
                 clearBossFight();
-                const reward = grantBossKill(b.def.id);
+                // Время боя определяет бонус за скорость (×0.75..×1.5 к баунти)
+                const reward = grantBossKill(b.def.id, this.time.now - b.startedAt);
                 this.destroyBossOverlay();
                 this.boss = null;
                 this.registry.set('bossActive', false);
@@ -1048,8 +1057,9 @@ export class GameScene extends Phaser.Scene {
                 this._bossSaveAt = this.time.now + 3000;
                 saveGame();
             }
-            // Таймер активной бомбы в слоте тикает и без кликов игрока
-            if (Date.now() < gameState.bossBuffUntil) this.refreshBossItems();
+            // Таймеры боевых слотов тикают и без кликов игрока (любой из трёх бафов)
+            if (Date.now() < gameState.bossBuffUntil || Date.now() < gameState.rigBuffUntil
+                || Date.now() < gameState.oilBuffUntil) this.refreshBossItems();
         }
         if (!this.mutation) return;
         const remaining = this.mutation.endsAt - this.time.now;

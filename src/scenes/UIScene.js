@@ -10,7 +10,7 @@ import {
     resetGame, saveGame, fmt, fmtDuration,
     DAILY_REWARDS, BOSSES, COMPONENTS, ARTIFACTS,
     ITEMS, CRAFT_RECIPES, useItem, canCraft, startCraft, canClaimCraft, claimCraft,
-    getItemPrice, buyItem, canBuyItem
+    getItemPrice, buyItem, canBuyItem, getBossRecord
 } from '../state.js';
 import { computeLayout } from '../layout.js';
 import { playSfx } from '../sfx.js';
@@ -1465,12 +1465,13 @@ export class UIScene extends Phaser.Scene {
         const panel = addImgC(this, 0, 0, 'modal_panel_metal', pw, ph);
         const title = makeLabel(this, 0, -158, 'Босс повержен!', 26, '#ffe9b0').setOrigin(0.5);
         this.bossRewardBounty = makeLabel(this, 0, -112, '', 17, '#8fd18f').setOrigin(0.5);
+        this.bossRewardSpeed = makeLabel(this, 0, -86, '', 14, '#ffe9b0').setOrigin(0.5);
         this.bossRewardComps = this.add.container(0, 0);
         const okBtn = addNineC(this, 0, 150, 'buy_button_normal', 190, 46);
         okBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 190, 46), Phaser.Geom.Rectangle.Contains);
         const okText = makeLabel(this, 0, 150, 'Забрать', 17, '#ffffff').setOrigin(0.5);
         okBtn.on('pointerdown', () => this.hideBossRewardModal());
-        this.bossRewardModal.add([panel, title, this.bossRewardBounty, this.bossRewardComps, okBtn, okText]);
+        this.bossRewardModal.add([panel, title, this.bossRewardBounty, this.bossRewardSpeed, this.bossRewardComps, okBtn, okText]);
 
         // Top-level объекты созданы после buildMapScreen/buildCraftScreen — из
         // скролл-камер исключаем вручную (иначе сдвинутые копии окна во вьюпортах);
@@ -1487,6 +1488,15 @@ export class UIScene extends Phaser.Scene {
         if (this._craftOpen) this.closeCraft();
         this.bossRewardComps.removeAll(true);
         this.bossRewardBounty.setText(`Баунти: +${fmt(reward.bounty)} руды`);
+        // Бонус за скорость: «Время: 0:32 · бонус x1.50» — пусто, если время не передано
+        if (reward.elapsedSec) {
+            const mm = Math.floor(reward.elapsedSec / 60);
+            const ss = String(reward.elapsedSec % 60).padStart(2, '0');
+            const mult = reward.speedMult ? `x${reward.speedMult.toFixed(2).replace(/\.?0+$/, '')}` : 'x1';
+            this.bossRewardSpeed.setText(`Время: ${mm}:${ss} · бонус ${mult}`).setVisible(true);
+        } else {
+            this.bossRewardSpeed.setVisible(false);
+        }
         let y = -64;
         for (const compId of Object.keys(reward.comps || {})) {
             const def = COMPONENTS.find((c) => c.id === compId);
@@ -1649,7 +1659,8 @@ export class UIScene extends Phaser.Scene {
         ring.on('pointerdown', (p) => this.startMapDrag(p));
         ring.on('pointerup', () => {
             if (this._mapDragging) return;
-            if (node._state !== 'available') return;
+            // Ключ состояния включает рекорд («available|45») — сравниваем префикс
+            if (!node._state || !node._state.startsWith('available')) return;
             this._onBossNodeTap(boss.id);
         });
         return node;
@@ -1688,24 +1699,29 @@ export class UIScene extends Phaser.Scene {
             } else {
                 const b = node.boss;
                 const defeated = !!gameState.bossesDefeated[b.id];
-                const key = defeated ? 'defeated' : gameState.tier >= b.tier ? 'available' : 'locked';
+                // Рекорд в ключе диффа: новый рекорд перерисовывает подпись и при
+                // неизменном статусе «побеждён»
+                const rec = getBossRecord(b.id);
+                const recTxt = rec ? ` · ${Math.floor(rec / 60)}:${String(rec % 60).padStart(2, '0')}` : '';
+                const key = `${defeated ? 'defeated' : gameState.tier >= b.tier ? 'available' : 'locked'}|${rec ?? 'x'}`;
                 if (node._state === key) continue;
                 node._state = key;
                 changed = true;
-                if (key === 'defeated') {
-                    node.status.setText('побеждён').setColor('#7ee787');
-                } else if (key === 'available') {
-                    node.status.setText('Сразиться!').setColor('#ffd75e');
+                if (key.startsWith('defeated')) {
+                    node.status.setText(`побеждён${recTxt}`).setColor('#7ee787');
+                } else if (key.startsWith('available')) {
+                    node.status.setText(`Сразиться!${recTxt}`).setColor('#ffd75e');
                 } else {
                     node.status.setText(`нужен: шахта ${b.tier + 1}`).setColor('#9a9a9a');
                 }
-                this._drawMapRing(node, key === 'defeated' ? 0x7ee787 : key === 'available' ? 0xffd75e : 0x6a6a6a);
-                node.icon.setTint(key === 'locked' ? 0x505050 : 0xffffff);
-                node.name.setColor(key === 'locked' ? '#6a6a6a' : '#ffffff');
-                if (key === 'available' && !node.pulse) {
+                const ringColor = key.startsWith('defeated') ? 0x7ee787 : key.startsWith('available') ? 0xffd75e : 0x6a6a6a;
+                this._drawMapRing(node, ringColor);
+                node.icon.setTint(key.startsWith('locked') ? 0x505050 : 0xffffff);
+                node.name.setColor(key.startsWith('locked') ? '#6a6a6a' : '#ffffff');
+                if (key.startsWith('available') && !node.pulse) {
                     node.pulse = this.tweens.add({ targets: node.status, alpha: { from: 1, to: 0.45 }, duration: 450, yoyo: true, repeat: -1 });
                     node.ringPulse = this.tweens.add({ targets: node.ringLine, alpha: { from: 1, to: 0.45 }, duration: 450, yoyo: true, repeat: -1 });
-                } else if (key !== 'available' && node.pulse) {
+                } else if (!key.startsWith('available') && node.pulse) {
                     node.pulse.stop();
                     node.pulse = null;
                     node.status.setAlpha(1);
@@ -2062,6 +2078,7 @@ export class UIScene extends Phaser.Scene {
             fitFontSize(desc, subSize, textMaxW, 9);
             const needLbl = makeLabel(this, textX, Math.round(44 * s), 'Нужно:', Math.max(9, Math.round(11 * s)), '#c8c8c8').setOrigin(0, 0.5);
             const costPairs = [];
+            const pairNodes = [];
             const pairIcon = Math.round(16 * Math.min(s, 1.5));
             const pairFont = Math.max(9, Math.round(12 * s));
             let cx = textX + needLbl.width + Math.round(6 * s);
@@ -2070,7 +2087,7 @@ export class UIScene extends Phaser.Scene {
                 const cIcon = this.add.image(0, 0, compDef.icon);
                 this.placeIcon(cIcon, compDef.icon, cx + Math.round(8 * s), Math.round(44 * s), pairIcon);
                 const cText = makeLabel(this, cx + Math.round(20 * s), Math.round(44 * s), String(recipe.cost[compId]), pairFont, '#ffd75e').setOrigin(0, 0.5);
-                rc.add([cIcon, cText]);
+                pairNodes.push(cIcon, cText);
                 costPairs.push({ id: compId, text: cText });
                 cx += Math.round(20 * s) + cText.width + Math.round(12 * s);
             }
@@ -2088,6 +2105,10 @@ export class UIScene extends Phaser.Scene {
             const btnText = makeLabel(this, btnCX, btnCY, label, subSize, '#ffffff').setOrigin(0.5);
             fitFontSize(btnText, subSize, btnW - 12, 8);
             rc.add([card, icon, name, desc, needLbl, status, src, btn, btnText]);
+            // Пары стоимости ПОСЛЕ карточки: раньше они добавлялись до неё и
+            // перекрывались карточкой целиком («Нужно:» с пустотой — скриншот
+            // игрока); порядок в контейнере = порядок отрисовки
+            for (const n of pairNodes) rc.add(n);
             this.craftContent.add(rc);
             btn.on('pointerdown', (p) => this.startCraftDrag(p));
             btn.on('pointerup', () => {

@@ -139,8 +139,9 @@ const parseElapsed = (t) => {
 
         const hpExpected = await state('m.bossHpFor(m.BOSSES[0])');
         check('A1: bossHpFor(тир 1, hpMult 1.0) = 75000', hpExpected === 75000, String(hpExpected));
-        // Баунти считается grantBossKill ДО выдачи артефакта — фиксируем ожидание заранее
-        const bountyExpected = await state('m.fmt(Math.ceil(90 * m.getEarningRate()))');
+        // Баунти считается grantBossKill ДО выдачи артефакта — фиксируем ожидание заранее.
+        // Клик-килл укладывается в <45 c -> бонус за скорость x1.5
+        const bountyExpected = await state('m.fmt(Math.ceil(90 * m.getEarningRate() * m.bossSpeedMult(30000)))');
 
         await page.mouse.click(400, 400); await page.waitForTimeout(350);
         await page.mouse.click(400, 400); await page.waitForTimeout(350);
@@ -184,7 +185,13 @@ const parseElapsed = (t) => {
         check('C3: HP-текст «75K / 75K»', fight.hpText === '75K / 75K', fight.hpText);
         check('C4: имя босса над баром', fight.nameText === 'Медный страж', fight.nameText);
         check('C5: счётчик прошедшего времени стартует с «0:00»', fight.timeText === '0:00', fight.timeText);
-        check('C6: крестика нет, слот бомбы «x2»', !fight.hasClose && fight.itemBtns.length === 1 && fight.itemBtns[0].id === 'item_bomb' && fight.itemBtns[0].cnt === 'x2', JSON.stringify(fight.itemBtns));
+        // Три боевых слота: бомба с запасом «x2», рама/точило пустые — «купить …»
+        check('C6: крестика нет, 3 слота: бомба «x2», рама/точило — «купить»',
+            !fight.hasClose && fight.itemBtns.length === 3
+            && fight.itemBtns[0].id === 'item_bomb' && fight.itemBtns[0].cnt === 'x2'
+            && fight.itemBtns[1].id === 'item_rig' && !fight.itemBtns[1].cnt
+            && fight.itemBtns[2].id === 'item_oil' && !fight.itemBtns[2].cnt,
+            JSON.stringify(fight));
 
         // R2: настройки/карта/крафт открываются В бою; спуск/престиж/сброс заблокированы
         await state('m.gameState.tierEarned[11] = 1e12');
@@ -293,7 +300,7 @@ const parseElapsed = (t) => {
         check('F5: модалка награды показана', rw.visible && rw.open, JSON.stringify({ visible: rw.visible, open: rw.open }));
         const bountyLine = rw.texts.find((t) => t.startsWith('Баунти: +'));
         const bountyStr = bountyLine ? bountyLine.slice('Баунти: +'.length).replace(/ руды$/, '') : '';
-        check('F6: баунти = 90 сек полного дохода', bountyStr === bountyExpected, `${bountyStr} vs ${bountyExpected}`);
+        check('F6: баунти = 90 сек дохода x бонус за скорость (<45с -> x1.5)', bountyStr === bountyExpected, `${bountyStr} vs ${bountyExpected}`);
         const scrapLine = rw.texts.find((t) => /Ржавый лом ×(\d+)/.test(t));
         const scrapN = scrapLine ? parseInt(scrapLine.match(/×(\d+)/)[1], 10) : 0;
         const scrapState = await state('m.gameState.components.scrap');
@@ -302,6 +309,8 @@ const parseElapsed = (t) => {
             rw.icons.includes('art_miner_totem') && rw.texts.includes('Тотем шахтёра') && rw.texts.includes('пассивная добыча x1.1')
             && (await state('m.gameState.artifacts.includes("art_miner_totem")') === true),
             JSON.stringify({ icons: rw.icons, hasName: rw.texts.includes('Тотем шахтёра') }));
+        const speedLine = rw.texts.find((t) => t.startsWith('Время:'));
+        check('F6b: в награде время боя и бонус за скорость', /^Время: \d+:\d{2} · бонус x1\.5$/.test(speedLine || ''), speedLine);
         const scrap1 = scrapState;
 
         const claimPt = await ptOf('({ x: ui.bossRewardModal.x, y: ui.bossRewardModal.y + 150 })');
@@ -317,7 +326,9 @@ const parseElapsed = (t) => {
             const n = ui.mapNodes.find((x) => x.boss && x.boss.id === 'boss_copper');
             return { state: n._state, status: n.status.text };
         });
-        check('G2: на карте статус «побеждён»', nodeState.state === 'defeated' && nodeState.status === 'побеждён', JSON.stringify(nodeState));
+        // Статус с рекордом скорости: «побеждён · m:ss» (рекорд пишется grantBossKill)
+        check('G2: на карте статус «побеждён» с рекордом времени',
+            nodeState.state.startsWith('defeated') && /^побеждён · \d+:\d{2}$/.test(nodeState.status), JSON.stringify(nodeState));
         await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeMap());
         await page.waitForTimeout(400);
 
@@ -630,6 +641,61 @@ const parseElapsed = (t) => {
         const after = await p2.state('({ bossFight: m.gameState.bossFight, items: m.gameState.items.item_bomb || 0 })');
         check('G9: после победы персист-запись боя очищена', after.bossFight === null, JSON.stringify(after));
         await p2.page.close();
+    }
+
+    // ---------- Страница 5: боевые предметы №2-3 (робо-рама / точильный камень) ----------
+    // Платиновый босс (HP ~1.38 млрд) + НУЛЕВЫЕ апгрейды (урон ~9 x 3^9 ≈ 177K за
+    // авто-удар): статистические замеры 3с его не убивают, ratio читается.
+    // Рама усиливает ТОЛЬКО авто-удары — меряем средний авто-урон за окно.
+    {
+        const { page, state, gsOf } = await newPage(mkSave({ ore: 5e6, tier: 9, tierEarned: [1e5, 5000, 0, 0, 0, 0, 0, 0, 0, 3e5, 0, 0], items: { item_rig: 2, item_oil: 2 }, levels: { robotarm: 50 } }), { width: 1280, height: 720 });
+        await page.evaluate(() => window.__GAME.scene.getScene('GameScene').startBossFight('boss_platinum'));
+        await page.waitForTimeout(500);
+        const slots = await gsOf('({ n: gs.bossItems.length, ids: gs.bossItems.map((s) => s.id) })');
+        check('H1: в бою три боевых слота (бомба/рама/точило)', slots.n === 3 && slots.ids.includes('item_bomb') && slots.ids.includes('item_rig') && slots.ids.includes('item_oil'), JSON.stringify(slots));
+
+        // Средний авто-урон за окно: d(hp) / (rate x время) — крит-шум усредняется
+        const measureAuto = async () => {
+            const alive = await gsOf('({ alive: !!gs.boss, active: gs.registry.get("bossActive"), hp: gs.boss && gs.boss.hp, blocked: gs.registry.get("blockLocked") })');
+            if (!alive.alive) return { dead: alive };
+            const hp0 = alive.hp;
+            const rate = await state('m.getAutoClicksPerSecond()');
+            const t0 = Date.now();
+            await page.waitForTimeout(3000);
+            const hp1 = await gsOf('gs.boss.hp');
+            const dt = (Date.now() - t0) / 1000;
+            return { avg: (hp0 - hp1) / (rate * dt), rate, dt, hp0, hp1 };
+        };
+        const m1 = await measureAuto();
+        await state('m.useItem("item_rig", true)');
+        const rigOn = await state('({ mult: m.getRigBuffMult(), n: m.gameState.items.item_rig })');
+        const m2 = await measureAuto();
+        const ratio = m2.avg / m1.avg;
+        check('H2: робо-рама усиливает авто-удар x3',
+            rigOn.mult === 3 && rigOn.n === 1 && ratio > 2.4 && ratio < 3.6,
+            JSON.stringify({ ratio: Math.round(ratio * 100) / 100, m1: Math.round(m1.avg), m2: Math.round(m2.avg), rigOn }));
+        // Точильный камень: баф-слот и таймер в слоте (обновление из update())
+        await state('m.useItem("item_oil", true)');
+        await page.waitForTimeout(300);
+        const oil = await state('({ add: m.getOilBuffAdd(), n: m.gameState.items.item_oil })');
+        const oilSlot = await gsOf('gs.bossItems.find((s) => s.id === "item_oil").cnt.text');
+        check('H3: точильный камень — +25% крит и таймер в слоте',
+            oil.add === 0.25 && oil.n === 1 && /^\d+:\d{2}$/.test(oilSlot || ''), JSON.stringify({ oil, oilSlot }));
+        // Детерминированный крит: мок между базовым шансом и шансом с бафом
+        const critProbe = await state(`(() => {
+            const base = m.getCritChance();
+            const realRandom = Math.random;
+            Math.random = () => Math.min(0.999, base + 0.1);
+            const noBuff = m.rollClickGain(null).crit;
+            const withBuff = m.rollBossHit().crit;
+            Math.random = realRandom;
+            return { base, noBuff, withBuff };
+        })()`);
+        check('H4: точильный камень даёт крит там, где без него не было',
+            critProbe.noBuff === false && critProbe.withBuff === true, JSON.stringify(critProbe));
+        await page.evaluate(() => window.__GAME.scene.getScene('GameScene').retreatBoss());
+        await page.waitForTimeout(600);
+        await page.close();
     }
 
     console.log(`page errors: ${errors.length ? errors.join(' | ') : '0'}`);

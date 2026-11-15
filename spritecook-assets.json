@@ -1318,6 +1318,20 @@
                        "label":  "map_board",
                        "file":  "assets/ui/map_board.png",
                        "group":  "map"
+                   },
+                   {
+                       "asset_id":  "e1e89164-4196-4658-9a0c-9dbaf5a040e6",
+                       "sha12":  "ca763c1ae87a",
+                       "label":  "item_rig",
+                       "file":  "assets/ui/item_rig.png",
+                       "group":  "items"
+                   },
+                   {
+                       "asset_id":  "de838053-37d0-4e6f-836f-ddda13e90e15",
+                       "sha12":  "ba344c4ffae2",
+                       "label":  "item_oil",
+                       "file":  "assets/ui/item_oil.png",
+                       "group":  "items"
                    }
                ]
 }

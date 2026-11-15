@@ -305,7 +305,9 @@ function buildPanel(game) {
         { id: 'item_belt', label: 'Пояс' },
         { id: 'item_coffee', label: 'Кофе' },
         { id: 'item_ration', label: 'Сухпаёк' },
-        { id: 'item_stim', label: 'Стим' }
+        { id: 'item_stim', label: 'Стим' },
+        { id: 'item_rig', label: 'Рама' },
+        { id: 'item_oil', label: 'Точило' }
     ]) {
         grid.appendChild(makeButton(`${item.label} +5`, () => grantItem(item.id, 5)));
     }

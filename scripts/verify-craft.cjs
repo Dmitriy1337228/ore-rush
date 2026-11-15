@@ -187,8 +187,8 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps === undefined ? 1e-6 : eps);
             && ['comp_scrap', 'comp_crystal', 'comp_core', 'comp_relic', 'comp_essence'].every((k) => s.compIcons.includes(k))
             && s.compCounts.length === 5 && s.compCounts.every((t) => t === '0'), JSON.stringify(s.compCounts));
         check('A3: три секции с заголовками', ['Активируемые', 'Рецепты', 'Артефакты'].every((t) => s.texts.includes(t)), s.texts.slice(0, 6).join(' | '));
-        check('A4: 5 предметов / 8 рецептов / 9 артефактов',
-            s.itemIds.length === 5 && s.recipeIds.length === 8 && s.artIds.length === 9,
+        check('A4: 7 предметов / 10 рецептов / 9 артефактов',
+            s.itemIds.length === 7 && s.recipeIds.length === 10 && s.artIds.length === 9,
             `${s.itemIds.length}/${s.recipeIds.length}/${s.artIds.length}`);
         check('A5: подпись «крафт нельзя отменить» в секции рецептов', s.texts.includes('крафт нельзя отменить'));
         check('A6: шапка компонентов над вьюпортом (зазор >= 4px)',
@@ -314,6 +314,33 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps === undefined ? 1e-6 : eps);
             && (await rowInfo('recipe', 'r_bomb')).src === 'дроп: Медный страж'
             && (await rowInfo('recipe', 'r_hardpick')).src === 'крафт',
             JSON.stringify(await rowInfo('recipe', 'r_bomb')));
+        // Пары стоимости РИСУЮТСЯ: раньше они добавлялись в контейнер до карточки
+        // и перекрывались ею целиком («Нужно:» с пустотой — скриншот игрока).
+        // Чек: иконки пар выше карточки по z-order и левее кнопки крафта.
+        const pairZ = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const row = ui.craftRecipeRows['r_hardpick'];
+            const idx = (o) => row.rc.getIndex(o);
+            const cardObj = row.rc.list.find((o) => o.texture && o.texture.key === 'upgrade_row_card_1');
+            return row.costPairs.map((p, i) => {
+                const iconObj = row.rc.list.filter((o) => o.type === 'Image' && o.texture && o.texture.key.startsWith('comp_'))[i];
+                return { id: p.id, aboveCard: idx(iconObj) > idx(cardObj), x: Math.round(p.text.x + p.text.parentContainer.x), txtRight: Math.round(p.text.x + p.text.parentContainer.x + p.text.width), btnLeft: Math.round(row.btn.x - row.btn.displayWidth / 2 + row.rc.x) };
+            });
+        });
+        check('G1c: пары стоимости выше карточки (z-order) и не под кнопкой',
+            pairZ.length >= 1 && pairZ.every((p) => p.aboveCard && p.txtRight <= p.btnLeft + 1),
+            JSON.stringify(pairZ));
+        // Новые боевые предметы (робо-рама / точильный камень): ряды, цены, рецепты
+        const rigRow = await rowInfo('item', 'item_rig');
+        const oilRow = await rowInfo('item', 'item_oil');
+        check('G1d: ряды «Робо-рама»/«Точильный камень» с эффектами и ценой',
+            rigRow.sub === 'эффект: урон робо-руки x3 на 30 сек' && /^Купить /.test(rigRow.buyText)
+            && oilRow.sub === 'эффект: крит-шанс +25% на 60 сек' && /^Купить /.test(oilRow.buyText),
+            JSON.stringify({ rig: rigRow.sub, oil: oilRow.sub }));
+        check('G1e: рецепты новых предметов в каталоге (мгновенные)',
+            (await rowInfo('recipe', 'r_rig')).desc === 'Получишь: урон робо-руки x3 на 30 сек'
+            && (await rowInfo('recipe', 'r_oil')).desc === 'Получишь: крит-шанс +25% на 60 сек',
+            '');
         const ore0 = await state('m.gameState.ore');
         pt = await buyPt('item_belt');
         await page.mouse.click(pt.x, pt.y);
@@ -411,7 +438,7 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps === undefined ? 1e-6 : eps);
         const s = await uiState();
         check('P1: портрет — экран собран, вьюпорт в границах сетки',
             s.craftOpen && s.view.w > 100 && s.view.h > 100 && s.view.y + s.view.h <= 1558
-            && s.itemIds.length === 5 && s.recipeIds.length === 8, JSON.stringify(s.view));
+            && s.itemIds.length === 7 && s.recipeIds.length === 10, JSON.stringify(s.view));
         check('P2: портрет — ряды пересобраны под широкие карточки', s.view.w > 500, String(s.view.w));
         const pt = await rowPt('recipe', 'r_bomb');
         await page.mouse.click(pt.x, pt.y);

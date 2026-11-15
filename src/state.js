@@ -232,11 +232,16 @@ export function createInitialState() {
         crafting: null,     // верстак (1 слот): {recipeId, endsAt} либо null
         bossesDefeated: {}, // побеждённые боссы: {bossId: true}
         bossFight: null,    // незавершённый босс-бой: {bossId, hp, elapsedMs} — переживает F5
+        bestBossTimes: {},  // рекорды скорости: {bossId: секунды} — мета, переживает престиж (база будущих ачивок)
         miningBuffUntil: 0, // баф добычи от предметов (wall-clock ms, как dailyBuffUntil)
         miningBuffMult: 1,
         bossBuffUntil: 0,   // баф урона боссу от предметов (wall-clock ms)
         bossBuffMult: 1,
         itemVeinUntil: 0,   // «Стимулятор жилы»: форс жилы (wall-clock ms)
+        rigBuffUntil: 0,    // «Робо-рама»: множитель АВТО-урона в бою (wall-clock ms)
+        rigBuffMult: 1,
+        oilBuffUntil: 0,    // «Точильный камень»: плоский +крит-шанс в бою (wall-clock ms)
+        oilBuffAdd: 0,
         levels
     };
 }
@@ -533,7 +538,11 @@ export const ITEMS = [
     { id: 'item_belt',   name: 'Динамитный пояс',   desc: 'добыча x3 на 3 минуты',      cost: { scrap: 6, crystal: 1 },    effect: { miningMult: 3, durMs: 180e3 }, stackMax: 5, priceSeconds: 90 },
     { id: 'item_coffee', name: 'Кофе шахтёра',      desc: 'добыча x2 на 5 минут',       cost: { crystal: 2 },              effect: { miningMult: 2, durMs: 300e3 }, stackMax: 8, priceSeconds: 45 },
     { id: 'item_ration', name: 'Сухпаёк',           desc: 'мгновенно 60 сек дохода',    cost: { scrap: 3 },                effect: { instantSec: 60 },              stackMax: 10, priceSeconds: 30 },
-    { id: 'item_stim',   name: 'Стимулятор жилы',   desc: 'каждый удар — жила на 2 мин',cost: { core: 1, crystal: 2 },     effect: { veinForce: true, durMs: 120e3 }, stackMax: 3, priceSeconds: 120 }
+    { id: 'item_stim',   name: 'Стимулятор жилы',   desc: 'каждый удар — жила на 2 мин',cost: { core: 1, crystal: 2 },     effect: { veinForce: true, durMs: 120e3 }, stackMax: 3, priceSeconds: 120 },
+    // Боевые предметы №2-3: робо-рама усиливает АВТО-бой (робо-рука), точильный
+    // камень — крит-шанс в бою. Эффекты применяются только пока идёт бой.
+    { id: 'item_rig',    name: 'Робо-рама',         desc: 'урон робо-руки x3 на 30 сек',cost: { scrap: 4, crystal: 2 },    effect: { autoMult: 3, durMs: 30e3 },   stackMax: 5,  bossUse: true, priceSeconds: 75 },
+    { id: 'item_oil',    name: 'Точильный камень',  desc: 'крит-шанс +25% на 60 сек',   cost: { essence: 2, scrap: 2 },    effect: { critAdd: 0.25, durMs: 60e3 },  stackMax: 5,  bossUse: true, priceSeconds: 50 }
 ];
 
 // Крафт: result n — сколько единиц за крафт; craftMs=0 — мгновенный (расходник).
@@ -543,6 +552,8 @@ export const CRAFT_RECIPES = [
     { id: 'r_coffee',   result: { kind: 'item',     id: 'item_coffee',      n: 1 }, cost: { crystal: 2 },             craftMs: 0 },
     { id: 'r_ration',   result: { kind: 'item',     id: 'item_ration',      n: 2 }, cost: { scrap: 3 },               craftMs: 0 },
     { id: 'r_stim',     result: { kind: 'item',     id: 'item_stim',        n: 1 }, cost: { core: 1, crystal: 2 },    craftMs: 0 },
+    { id: 'r_rig',      result: { kind: 'item',     id: 'item_rig',         n: 1 }, cost: { scrap: 4, crystal: 2 },   craftMs: 0 },
+    { id: 'r_oil',      result: { kind: 'item',     id: 'item_oil',         n: 1 }, cost: { essence: 2, scrap: 2 },   craftMs: 0 },
     { id: 'r_hardpick', result: { kind: 'artifact', id: 'art_hardpick',     n: 1 }, cost: { crystal: 3, core: 1 },    craftMs: 600e3 },
     { id: 'r_battery',  result: { kind: 'artifact', id: 'art_core_battery', n: 1 }, cost: { core: 2, essence: 1 },    craftMs: 1200e3 },
     { id: 'r_ancient',  result: { kind: 'artifact', id: 'art_ancient_pick', n: 1 }, cost: { relic: 2, essence: 2 },   craftMs: 1800e3 }
@@ -574,10 +585,22 @@ export function getBossDamageMult() {
     return getArtifactBonus('bossDamageMult') * (Date.now() < gameState.bossBuffUntil ? gameState.bossBuffMult : 1);
 }
 
+// Множитель АВТО-урона в бою («Робо-рама»): усиливает только удары робо-руки —
+// ручные клики не трогает, чтобы ручной и авто-бой оставались разными осями.
+export function getRigBuffMult() {
+    return Date.now() < gameState.rigBuffUntil ? gameState.rigBuffMult : 1;
+}
+
+// Плоский +крит-шанс в бою («Точильный камень»).
+export function getOilBuffAdd() {
+    return Date.now() < gameState.oilBuffUntil ? gameState.oilBuffAdd : 0;
+}
+
 // Удар по боссу = ролл клика без мутации блока (мутационные множители НЕ применяются,
 // дневные крит/жила и бафы предметов внутри) x артефактный/предметный урон боссу.
+// Крит-шанс в бою усилен «Точильным камнем» (oilBuffAdd).
 export function rollBossHit() {
-    const r = rollClickGain(null);
+    const r = rollClickGain(null, getOilBuffAdd());
     return { gain: r.gain * getBossDamageMult(), crit: r.crit, lucky: r.lucky };
 }
 
@@ -593,12 +616,50 @@ export function clearBossFight() {
     gameState.bossFight = null;
 }
 
-// Награда за убийство босса: баунти (90 сек полного дохода на момент убийства),
-// дроп компонентов (ролл таблицы x(1+dropBonus) артефакта) и артефакт за первый раз.
-export function grantBossKill(bossId) {
+// Бонус за скорость убийства босса: баунти умножается по порогам времени
+// (быстро = больше). Дроп компонентов и артефакт НЕ масштабируются — только руда.
+export const BOSS_SPEED_TIERS = [
+    [45, 1.5],   // ≤ 45 c — «быстрая победа»
+    [90, 1.25],  // ≤ 90 c
+    [180, 1.0]   // ≤ 180 c
+];
+export const BOSS_SPEED_SLOW = 0.75; // дольше 3 минут
+
+export function bossSpeedMult(elapsedMs) {
+    const sec = Math.max(1, Math.round(elapsedMs / 1000));
+    for (const [limit, mult] of BOSS_SPEED_TIERS) {
+        if (sec <= limit) return mult;
+    }
+    return BOSS_SPEED_SLOW;
+}
+
+// Рекорд скорости: пишется только улучшение (меньше секунды). Возвращает true,
+// если рекорд обновлён. Хранится в мете — база будущих достижений.
+export function updateBossRecord(bossId, elapsedSec) {
+    if (!BOSSES.some((b) => b.id === bossId)) return false;
+    const sec = Math.min(Math.max(1, Math.floor(elapsedSec)), 359999); // кап 99:59
+    const cur = gameState.bestBossTimes[bossId];
+    if (cur === undefined || sec < cur) {
+        gameState.bestBossTimes[bossId] = sec;
+        return true;
+    }
+    return false;
+}
+
+export function getBossRecord(bossId) {
+    const v = gameState.bestBossTimes[bossId];
+    return typeof v === 'number' && v > 0 ? v : null;
+}
+
+// Награда за убийство босса: баунти (90 сек полного дохода на момент убийства
+// x бонус за скорость), дроп компонентов (ролл таблицы x(1+dropBonus) артефакта)
+// и артефакт за первый раз. Рекорд времени пишется всегда.
+export function grantBossKill(bossId, elapsedMs = 0) {
     const def = BOSSES.find((b) => b.id === bossId);
     if (!def) return null;
-    const bounty = Math.ceil(BOSS_BOUNTY_SECONDS * getEarningRate());
+    const elapsedSec = Math.max(1, Math.round(elapsedMs / 1000));
+    const speedMult = bossSpeedMult(elapsedMs);
+    const bounty = Math.ceil(BOSS_BOUNTY_SECONDS * getEarningRate() * speedMult);
     addOre(bounty);
     const comps = {};
     for (const compId of Object.keys(def.drops)) {
@@ -610,13 +671,14 @@ export function grantBossKill(bossId) {
         }
     }
     gameState.bossesDefeated[bossId] = true;
+    updateBossRecord(bossId, elapsedSec);
     let artifactId = null;
     if (def.artifact && !gameState.artifacts.includes(def.artifact)) {
         gameState.artifacts.push(def.artifact);
         artifactId = def.artifact;
     }
     saveGame();
-    return { bounty, comps, artifactId };
+    return { bounty, comps, artifactId, elapsedSec, speedMult };
 }
 
 // Крафт: верстак свободен, стоимость полностью оплачена и под результат item
@@ -675,6 +737,8 @@ export function useItem(id, inBoss = false) {
     if (eff.miningMult && gameState.miningBuffUntil - now > RESLOT_MS) return false;
     if (eff.bossMult && gameState.bossBuffUntil - now > RESLOT_MS) return false;
     if (eff.veinForce && gameState.itemVeinUntil - now > RESLOT_MS) return false;
+    if (eff.autoMult && gameState.rigBuffUntil - now > RESLOT_MS) return false;
+    if (eff.critAdd && gameState.oilBuffUntil - now > RESLOT_MS) return false;
     if (eff.miningMult) {
         gameState.miningBuffMult = eff.miningMult;
         gameState.miningBuffUntil = now + eff.durMs;
@@ -685,6 +749,14 @@ export function useItem(id, inBoss = false) {
     }
     if (eff.veinForce) {
         gameState.itemVeinUntil = now + eff.durMs;
+    }
+    if (eff.autoMult) {
+        gameState.rigBuffMult = eff.autoMult;
+        gameState.rigBuffUntil = now + eff.durMs;
+    }
+    if (eff.critAdd) {
+        gameState.oilBuffAdd = eff.critAdd;
+        gameState.oilBuffUntil = now + eff.durMs;
     }
     if (eff.instantSec) {
         addOre(eff.instantSec * getEarningRate());
@@ -869,10 +941,11 @@ export function claimDailyReward() {
 // mutationId — активная мутация блока: замороженная форсирует крит, радужная множит весь доход.
 // Дневные бафы: «Золотая жила» форсирует жилу, множитель бафа применяется к итогу.
 // Предметные бафы так же: стимулятор форсирует жилу, множитель бафа к итогу (как dailyMult).
-export function rollClickGain(mutationId) {
+export function rollClickGain(mutationId, extraCrit = 0) {
     let gain = getClickDamage() + getSynergyGain();
     const mut = mutationId ? MUTATIONS[mutationId] : null;
-    const crit = (mut && mut.forceCrit) || Math.random() < getCritChance();
+    // extraCrit — плоская прибавка к шансу крита (боевой баф «Точильный камень»)
+    const crit = (mut && mut.forceCrit) || Math.random() < Math.min(1, getCritChance() + extraCrit);
     const lucky = isDailyVeinActive() || isItemVeinActive() || Math.random() < getLuckyChance();
     // Фокус-линза: +0.5 к силе крита за уровень (x5 -> x5.5...)
     const critMult = 5 + 0.5 * getUpgradeLevel('focuslens');
@@ -1132,6 +1205,15 @@ export function applySave(data) {
             gameState.bossFight = { bossId: bfId, hp: bfHp, elapsedMs: bfEl };
         }
     }
+    // Рекорды скорости убийства (мета для будущих достижений): ключи только из
+    // каталога, секунды 1..359999 («99:59»); мусор/чужие ключи отбрасываются.
+    gameState.bestBossTimes = {};
+    if (data.bestBossTimes && typeof data.bestBossTimes === 'object') {
+        for (const def of BOSSES) {
+            const v = Math.floor(Number(data.bestBossTimes[def.id]));
+            if (Number.isFinite(v) && v >= 1 && v <= 359999) gameState.bestBossTimes[def.id] = v;
+        }
+    }
     gameState.crafting = null;
     if (data.crafting && typeof data.crafting === 'object') {
         const endsAt = Number(data.crafting.endsAt);
@@ -1150,6 +1232,15 @@ export function applySave(data) {
         ? Math.min(bbm, 1e6) : 1;
     const ivu = Number(data.itemVeinUntil);
     gameState.itemVeinUntil = Number.isFinite(ivu) && ivu > Date.now() ? ivu : 0;
+    // Боевые бафы предметов №2-3 (робо-рама / точильный камень) — тот же паттерн
+    const rgu = Number(data.rigBuffUntil), rgm = Number(data.rigBuffMult);
+    gameState.rigBuffUntil = Number.isFinite(rgu) && rgu > Date.now() ? rgu : 0;
+    gameState.rigBuffMult = gameState.rigBuffUntil && Number.isFinite(rgm) && rgm >= 1
+        ? Math.min(rgm, 100) : 1;
+    const olu = Number(data.oilBuffUntil), ola = Number(data.oilBuffAdd);
+    gameState.oilBuffUntil = Number.isFinite(olu) && olu > Date.now() ? olu : 0;
+    gameState.oilBuffAdd = gameState.oilBuffUntil && Number.isFinite(ola) && ola > 0
+        ? Math.min(ola, 0.9) : 0;
     gameState.levels = { ...init.levels };
     if (data.levels && typeof data.levels === 'object') {
         for (const def of UPGRADES) {

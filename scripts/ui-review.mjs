@@ -641,7 +641,7 @@ const V5_SEED = JSON.stringify({
     if (!c.open || !c.locked) scenarioFailures.push(`21_craft_open: мастерская не открылась/лок не встал (${JSON.stringify(c)})`);
     if (c.header.join(',') !== '100,100,100,100,100') scenarioFailures.push(`21_craft_open: шапка не показала +100 (${c.header.join(',')})`);
     if (c.sections.length !== 3) scenarioFailures.push(`21_craft_open: секции (${c.sections.join(', ')})`);
-    if (c.items !== 5 || c.recipes !== 8 || c.arts !== 9) scenarioFailures.push(`21_craft_open: ряды ${c.items}/рецепты ${c.recipes}/артефакты ${c.arts}, ожидалось 5/8/9`);
+    if (c.items !== 7 || c.recipes !== 10 || c.arts !== 9) scenarioFailures.push(`21_craft_open: ряды ${c.items}/рецепты ${c.recipes}/артефакты ${c.arts}, ожидалось 7/10/9`);
     if (c.dim !== 9) scenarioFailures.push(`21_craft_open: приглушено ${c.dim} ячеек из 9, ожидалось 9 (артефактов нет)`);
     if (!c.srcs.every((s) => s === 'Крафт' || /^Босс: /.test(s))) scenarioFailures.push(`21_craft_open: подписи источников некорректны (${c.srcs.join('; ')})`);
     const auditCraft = (await auditLayout(page)).violations;
