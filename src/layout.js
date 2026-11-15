@@ -36,8 +36,10 @@ export function computeLayout(W, H) {
                 iconX: 78, counterX: 112, counterY: 76,
                 gpsIconX: 420, gpsIconY: 62, gpsTextX: 450, gpsTextY: 74, gpsSize: 20,
                 statsVisible: true, statsXBase: 450, statsY: 74, statsSize: 14,
-                starsRight: 1050, starsY: 62,
-                btnW: 160, btnH: 48, btnX: 1066, gearDx: 29, labelDx: 52
+                starsRight: 818, starsY: 62,
+                btnW: 160, btnH: 48, btnX: 1066, gearDx: 29, labelDx: 52,
+                mapBtn: { x: 830, y: 38, w: 110, h: 48 },
+                craftBtn: { x: 952, y: 38, w: 110, h: 48 }
             },
             panel: {
                 px: 900, py: 124, pw: 364, ph: 582, titleDy: 47, titleSize: 24,
@@ -78,7 +80,9 @@ export function computeLayout(W, H) {
             gpsIconX: 258, gpsIconY: 50, gpsTextX: 278, gpsTextY: 56, gpsSize: 16,
             statsVisible: true, statsXBase: 278, statsY: 86, statsSize: 14,
             starsRight: (W - 8 - 18 - 160) - 12, starsY: 62,
-            btnW: 160, btnH: 48, btnX: W - 8 - 18 - 160, gearDx: 29, labelDx: 52
+            btnW: 160, btnH: 48, btnX: W - 8 - 18 - 160, gearDx: 29, labelDx: 52,
+            mapBtn: { x: 12, y: py + 24, w: 110, h: 30 },
+            craftBtn: { x: 130, y: py + 24, w: 110, h: 30 }
         },
         panel: {
             px, py, pw, ph, titleDy: 42, titleSize: 22,

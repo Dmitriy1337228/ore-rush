@@ -8,7 +8,8 @@ import {
     canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice,
     canPrestige, getStarsGain, doPrestige, PRESTIGE_REQUIREMENT, getPrestigeMult, DIAMOND_INDEX,
     resetGame, saveGame, fmt, fmtDuration,
-    DAILY_REWARDS
+    DAILY_REWARDS, BOSSES, COMPONENTS, ARTIFACTS,
+    ITEMS, CRAFT_RECIPES, useItem, canCraft, startCraft, canClaimCraft, claimCraft
 } from '../state.js';
 import { computeLayout } from '../layout.js';
 import { playSfx } from '../sfx.js';
@@ -127,6 +128,13 @@ const TABS = [
 ];
 const BUY_AMOUNTS = [1, 10, 100, 'max'];
 
+// Карта шахты: вертикальный столбец узлов (тир + босс после него), прокрутка
+// камерой mapCam по внутренней зоне панели. Контент: отступ сверху 90, узлы
+// шагом 78, запас снизу 60.
+const MAP_NODE_H = 78;
+const MAP_HEAD = 90;
+const MAP_TAIL = 60;
+
 // Отступы ряда (карточка 296x96: face source x44..817, y16..202 -> drawn x16..290, y7..89)
 const ROW = {
     iconY: 50,          // центр встроенной ниши карточки по Y (source y44..181 -> drawn 19.4..79.7)
@@ -150,12 +158,16 @@ export class UIScene extends Phaser.Scene {
         this.maxScroll = 0;
         this.activeTab = 'equipment'; // вкладка панели улучшений
         this.buyAmount = 1;           // мультипокупка: 1 / 10 / 100 / 'max'
-        // Владельцы blockLocked: настройки, офлайн-окно и окно дневной награды
-        // могут быть открыты одновременно — блокировку снимает только закрытие
-        // ПОСЛЕДНЕЙ модалки
+        // Полноэкранные состояния: любой может быть открыт одновременно, блокировка
+        // (registry 'blockLocked') снимается только после закрытия ПОСЛЕДНЕГО.
+        // Единый пересчёт — updateBlockLock() из refreshUi каждый кадр по диффу.
         this._settingsOpen = false;
         this._offlineOpen = false;
         this._dailyOpen = false;
+        this._mapOpen = false;       // экран карты шахты
+        this._craftOpen = false;     // экран мастерской (каркас П5)
+        this._bossRewardOpen = false; // окно награды босса (П4)
+        this._blockLocked = null;    // кеш updateBlockLock: registry 'blockLocked'
         this._pendingDaily = null; // награда ждёт, пока не закроются другие модалки
         this._tutorialPending = false; // обучение ждёт закрытия окна дневной награды
     }
@@ -172,6 +184,9 @@ export class UIScene extends Phaser.Scene {
         this.buildModal();
         this.buildOfflineModal();
         this.buildDailyModal();
+        this.buildMapScreen();
+        this.buildCraftScreen();
+        this.buildBossRewardModal();
         this.setupListCamera();
         this.setupListDrag();
         this.applyLayout();
@@ -198,6 +213,10 @@ export class UIScene extends Phaser.Scene {
             if (this.offlineModal.visible) return;
             this.showOfflineModal(info);
         });
+
+        // Награда за босса: ивент приходит после снятия bossActive (бой держал
+        // блокировку) — поверх других модалок не вылезает
+        this.game.events.on('boss-defeated', (reward) => this.showBossRewardModal(reward));
 
         // Ежедневная награда: и путь загрузки (registry 'dailyInfo'), и DevPanel
         // («след. день» / «сброс серии») идут в одну очередь через 'daily-claimed'
@@ -274,9 +293,27 @@ export class UIScene extends Phaser.Scene {
         // с левым якорем: раньше она упиралась в шестерёнку вплотную (скрин игрока)
         this.settingsGear = this.add.image(btnX + 29, 62, 'gear_icon').setDisplaySize(26, 26).setDepth(12);
         this.settingsLbl = makeLabel(this, btnX + 52, 62, 'Настройки', 16, '#ffffff').setOrigin(0, 0.5).setDepth(12);
-        this.settingsBtn.on('pointerdown', () => this.openModal());
+        this.settingsBtn.on('pointerdown', () => {
+            if (this.registry.get('bossActive')) return;
+            this.openModal();
+        });
         this.settingsBtn.on('pointerover', () => this.settingsBtn.setAlpha(0.9));
         this.settingsBtn.on('pointerout', () => this.settingsBtn.setAlpha(1));
+
+        // Кнопки «Карта» и «Крафт» слева от «Настройки» (позиции из L.hud в applyLayout)
+        this.mapBtn = addImg(this, 830, 38, 'buy_button_normal', 110, 48, 11);
+        this.mapBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
+        this.mapLbl = makeLabel(this, 885, 62, 'Карта', 14, '#ffffff').setOrigin(0.5).setDepth(12);
+        this.mapBtn.on('pointerdown', () => this.openMap());
+        this.mapBtn.on('pointerover', () => this.mapBtn.setAlpha(0.9));
+        this.mapBtn.on('pointerout', () => this.mapBtn.setAlpha(1));
+
+        this.craftBtn = addImg(this, 952, 38, 'buy_button_normal', 110, 48, 11);
+        this.craftBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
+        this.craftLbl = makeLabel(this, 1007, 62, 'Крафт', 14, '#ffffff').setOrigin(0.5).setDepth(12);
+        this.craftBtn.on('pointerdown', () => this.openCraft());
+        this.craftBtn.on('pointerover', () => this.craftBtn.setAlpha(0.9));
+        this.craftBtn.on('pointerout', () => this.craftBtn.setAlpha(1));
 
         // Активные дневные бафы с обратным отсчётом (под HUD-баром): «x2 9:59 · жила 1:59».
         // Пустая строка, когда бафов нет; setText только при смене строки.
@@ -378,6 +415,12 @@ export class UIScene extends Phaser.Scene {
         this.settingsBtn.setPosition(btnX + h.btnW / 2, h.centerY);
         this.settingsGear.setPosition(btnX + h.gearDx, h.centerY);
         this.settingsLbl.setPosition(btnX + h.labelDx, h.centerY);
+        this.mapBtn.setPosition(h.mapBtn.x + h.mapBtn.w / 2, h.mapBtn.y + h.mapBtn.h / 2);
+        this.mapBtn.setDisplaySize(h.mapBtn.w, h.mapBtn.h);
+        this.mapLbl.setPosition(h.mapBtn.x + h.mapBtn.w / 2, h.mapBtn.y + h.mapBtn.h / 2);
+        this.craftBtn.setPosition(h.craftBtn.x + h.craftBtn.w / 2, h.craftBtn.y + h.craftBtn.h / 2);
+        this.craftBtn.setDisplaySize(h.craftBtn.w, h.craftBtn.h);
+        this.craftLbl.setPosition(h.craftBtn.x + h.craftBtn.w / 2, h.craftBtn.y + h.craftBtn.h / 2);
 
         // Панель улучшений + шапка (вкладки/тир/мультипокупка)
         const p = L.panel;
@@ -434,6 +477,71 @@ export class UIScene extends Phaser.Scene {
         this.modal.setPosition(L.modal.cx, L.modal.cy);
         this.offlineModal.setPosition(L.modal.cx, L.modal.cy);
         this.dailyModal.setPosition(L.modal.cx, L.modal.cy);
+        this.mapDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
+        this.craftDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
+        this.bossRewardDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
+        this.bossRewardModal.setPosition(L.modal.cx, L.modal.cy);
+
+        // Экран карты: ландшафт 760x620 в L.modal; портрет — w=W-24, h=min(py-40,640),
+        // центр h/2+16 (панель в свободной зоне над «листом»)
+        let mpw, mph, mcy;
+        if (L.portrait) {
+            mpw = L.W - 24;
+            mph = Math.min(L.panel.py - 40, 640);
+            mcy = Math.round(mph / 2) + 16;
+        } else {
+            mpw = 760;
+            mph = 620;
+            mcy = L.modal.cy;
+        }
+        this.mapRoot.setPosition(L.modal.cx, mcy);
+        this.mapPanel.setDisplaySize(mpw, mph);
+        this.mapTitle.setPosition(0, -mph / 2 + 64);
+        this.mapTitle.setFontSize(L.portrait ? 26 : 30);
+        this.mapClose.setPosition(mpw / 2 - 60, -mph / 2 + 72);
+        const mvx = L.modal.cx - mpw / 2 + 40;
+        const mvw = mpw - 80;
+        const mvy = mcy - mph / 2 + 96;
+        const mvh = mph - 156;
+        this.mapCam.setViewport(mvx, mvy, mvw, mvh);
+        this._mapView = { x: mvx, y: mvy, w: mvw, h: mvh };
+        this._mapHalfH = mph / 2;
+        this._mapMaxScroll = Math.max(0, this._mapContentH - mvh);
+        this.mapCam.scrollY = Phaser.Math.Clamp(this.mapCam.scrollY, 0, this._mapMaxScroll);
+        this._nodeCX = mvw / 2;
+        for (const node of this.mapNodes) node.root.x = this._nodeCX;
+        if (this.mapMiner) this.mapMiner.x = this._nodeCX - 150;
+
+        // Экран мастерской (каркас): ландшафт 560x600 в L.modal; портрет w=W-24,
+        // h=min(py-40,560), cy=h/2+16 — П5 наполнит содержимое
+        let cpw, cph, ccy;
+        if (L.portrait) {
+            cpw = L.W - 24;
+            cph = Math.min(L.panel.py - 40, 560);
+            ccy = Math.round(cph / 2) + 16;
+        } else {
+            cpw = 560;
+            cph = 600;
+            ccy = L.modal.cy;
+        }
+        this.craftRoot.setPosition(L.modal.cx, ccy);
+        this.craftPanel.setDisplaySize(cpw, cph);
+        this.craftTitle.setPosition(0, -cph / 2 + 68);
+        this.craftTitle.setFontSize(L.portrait ? 26 : 30);
+        this.craftClose.setPosition(cpw / 2 - 60, -cph / 2 + 72);
+        if (this.craftHeader) this.craftHeader.setPosition(0, -cph / 2 + 108);
+        const cvx = L.modal.cx - cpw / 2 + 40;
+        const cvw = cpw - 80;
+        const cvy = ccy - cph / 2 + 128;
+        const cvh = cph - 188;
+        this.craftCam.setViewport(cvx, cvy, cvw, cvh);
+        this._craftView = { x: cvx, y: cvy, w: cvw, h: cvh };
+        if (this.craftContent && this._craftRowsW !== cvw) {
+            this._craftRowsW = cvw;
+            this.buildCraftContent();
+        }
+        this._craftMaxScroll = Math.max(0, (this._craftContentH || 0) - cvh);
+        this.craftCam.scrollY = Phaser.Math.Clamp(this.craftCam.scrollY, 0, this._craftMaxScroll);
         if (this.modalStats) {
             if (L.portrait) {
                 this.modalStats.setFontSize(17).setY(-196);
@@ -710,10 +818,13 @@ export class UIScene extends Phaser.Scene {
         this.updateScroll();
     }
 
-    // Всплывающие подписи создаются динамически — исключаем их из камеры списка
+    // Всплывающие подписи создаются динамически — исключаем их из скролл-камер
+    // (иначе списки и карта рисуют сдвинутые копии внутри своих вьюпортов)
     spawnFloat(x, y, text, size, color, extra = {}) {
         const float = makeLabel(this, x, y, text, size, color, extra);
-        float.cameraFilter |= this.listCam.id;
+        if (this.listCam) float.cameraFilter |= this.listCam.id;
+        if (this.mapCam) float.cameraFilter |= this.mapCam.id;
+        if (this.craftCam) float.cameraFilter |= this.craftCam.id;
         return float;
     }
 
@@ -730,6 +841,7 @@ export class UIScene extends Phaser.Scene {
         this.unlockText.setOrigin(0.5).setDepth(16);
         this.unlockBtn.on('pointerdown', () => {
             if (!canUnlockTier()) return;
+            if (this.registry.get('bossActive')) return;
             const next = getNextTier();
             unlockTier();
             playSfx(this, 'tier');
@@ -740,6 +852,7 @@ export class UIScene extends Phaser.Scene {
             saveGame();
             this.game.events.emit('tier-changed');
             this.refreshUi();
+            this.openMap({ animate: true });
         });
 
         this.hint = makeLabel(this, 400, 676, '', 14, '#c8c8c8', { align: 'center' });
@@ -885,10 +998,6 @@ export class UIScene extends Phaser.Scene {
         this.modalDim.setVisible(true);
         this.modal.setVisible(true);
         this._settingsOpen = true;
-        // Ряды рендерит listCam ПОВЕРХ всего, что рисует главная камера, —
-        // иначе они пробивают затемнение модалки (в портрете модалка над списком)
-        this.listContent.setVisible(false);
-        this.registry.set('blockLocked', true);
         this.refreshUi();
     }
 
@@ -896,12 +1005,6 @@ export class UIScene extends Phaser.Scene {
         this.modalDim.setVisible(false);
         this.modal.setVisible(false);
         this._settingsOpen = false;
-        // Офлайн-модалка и окно дневной награды могут быть открыты поверх —
-        // их закрытие снимает блокировку
-        if (!this._offlineOpen && !this._dailyOpen) {
-            this.listContent.setVisible(true);
-            this.registry.set('blockLocked', false);
-        }
         this.tryShowDailyModal(); // награда могла ждать очереди под настройками
     }
 
@@ -974,9 +1077,6 @@ export class UIScene extends Phaser.Scene {
         this.offlineDim.setVisible(true);
         this.offlineModal.setVisible(true);
         this._offlineOpen = true;
-        // Ряды рендерит listCam поверх главной камеры — прячем под затемнение
-        this.listContent.setVisible(false);
-        this.registry.set('blockLocked', true);
         this.registry.set('offlineInfo', null);
     }
 
@@ -984,12 +1084,6 @@ export class UIScene extends Phaser.Scene {
         this.offlineDim.setVisible(false);
         this.offlineModal.setVisible(false);
         this._offlineOpen = false;
-        // Настройки и окно дневной награды могут быть открыты — их закрытие
-        // снимает блокировку
-        if (!this._settingsOpen && !this._dailyOpen) {
-            this.listContent.setVisible(true);
-            this.registry.set('blockLocked', false);
-        }
         this.tryShowDailyModal(); // награда могла ждать очереди под офлайн-окном
     }
 
@@ -1031,10 +1125,12 @@ export class UIScene extends Phaser.Scene {
         this.dailyModal.add([panel, title, this.dailyStreakText, this.dailyIcon, this.dailyName, this.dailyDesc, okBtn, okText, ...this.dailySlots.map((s) => s.slot), ...this.dailySlots.map((s) => s.ic)]);
     }
 
-    // Награда не показывается поверх других модалок — очередь до их закрытия
+    // Награда не показывается поверх других модалок и полноэкранных экранов —
+    // очередь до их закрытия
     tryShowDailyModal() {
         if (!this._pendingDaily) return;
         if (this.offlineModal.visible || this.modal.visible || this.dailyModal.visible) return;
+        if (this.mapRoot.visible || this.craftRoot.visible || this._bossRewardOpen) return;
         const info = this._pendingDaily;
         this._pendingDaily = null;
         const idx = (info.streak - 1) % DAILY_REWARDS.length;
@@ -1057,24 +1153,748 @@ export class UIScene extends Phaser.Scene {
         this.dailyDim.setVisible(true);
         this.dailyModal.setVisible(true);
         this._dailyOpen = true;
-        // Ряды рендерит listCam поверх главной камеры — прячем под затемнение
-        this.listContent.setVisible(false);
-        this.registry.set('blockLocked', true);
     }
 
     hideDailyModal() {
         this.dailyDim.setVisible(false);
         this.dailyModal.setVisible(false);
         this._dailyOpen = false;
-        // Другие модалки могут быть открыты — их закрытие снимает блокировку
-        if (!this._settingsOpen && !this._offlineOpen) {
-            this.listContent.setVisible(true);
-            this.registry.set('blockLocked', false);
-        }
         // Обучение, отложенное ради окна награды, стартует после его закрытия
         if (this._tutorialPending && !gameState.tutorialDone) {
             this._tutorialPending = false;
             this.buildTutorial();
+        }
+    }
+
+    // ---------- Модалка награды за босса ----------
+
+    buildBossRewardModal() {
+        const pw = 480;
+        const ph = 400;
+        this.bossRewardDim = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.65)
+            .setDepth(50).setVisible(false).setInteractive();
+        this.bossRewardDim.on('pointerdown', (pointer, lx, ly, event) => event.stopPropagation());
+
+        this.bossRewardModal = this.add.container(640, 360).setDepth(51).setVisible(false);
+        const panel = addImgC(this, 0, 0, 'modal_panel_metal', pw, ph);
+        const title = makeLabel(this, 0, -158, 'Босс повержен!', 26, '#ffe9b0').setOrigin(0.5);
+        this.bossRewardBounty = makeLabel(this, 0, -112, '', 17, '#8fd18f').setOrigin(0.5);
+        this.bossRewardComps = this.add.container(0, 0);
+        const okBtn = addNineC(this, 0, 150, 'buy_button_normal', 190, 46);
+        okBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 190, 46), Phaser.Geom.Rectangle.Contains);
+        const okText = makeLabel(this, 0, 150, 'Забрать', 17, '#ffffff').setOrigin(0.5);
+        okBtn.on('pointerdown', () => this.hideBossRewardModal());
+        this.bossRewardModal.add([panel, title, this.bossRewardBounty, this.bossRewardComps, okBtn, okText]);
+
+        // Top-level объекты созданы после buildMapScreen/buildCraftScreen — из
+        // скролл-камер исключаем вручную (иначе сдвинутые копии окна во вьюпортах);
+        // listCam накроет снапшотом setupListCamera, идущего после create()
+        const bossLayers = [this.bossRewardDim, this.bossRewardModal];
+        if (this.mapCam) this.mapCam.ignore(bossLayers);
+        if (this.craftCam) this.craftCam.ignore(bossLayers);
+    }
+
+    showBossRewardModal(reward) {
+        if (!reward) return;
+        this.bossRewardComps.removeAll(true);
+        this.bossRewardBounty.setText(`Баунти: +${fmt(reward.bounty)} руды`);
+        let y = -64;
+        for (const compId of Object.keys(reward.comps || {})) {
+            const def = COMPONENTS.find((c) => c.id === compId);
+            if (!def) continue;
+            const icon = this.add.image(0, 0, def.icon);
+            this.placeIcon(icon, def.icon, -120, y, 30);
+            const label = makeLabel(this, -94, y, `${def.name} ×${reward.comps[compId]}`, 15, '#d8d8d8').setOrigin(0, 0.5);
+            this.bossRewardComps.add([icon, label]);
+            y += 42;
+        }
+        if (reward.artifactId) {
+            const def = ARTIFACTS.find((a) => a.id === reward.artifactId);
+            if (def) {
+                y += 8;
+                // У артефактов нет поля icon (ТЗ: ключ текстуры = id)
+                const icon = this.add.image(0, 0, def.id);
+                this.placeIcon(icon, def.id, -120, y + 12, 42);
+                const name = makeLabel(this, -92, y, def.name, 16, '#ffd75e').setOrigin(0, 0.5);
+                const desc = makeLabel(this, -92, y + 22, def.desc, 12, '#9ad29a').setOrigin(0, 0.5);
+                this.bossRewardComps.add([icon, name, desc]);
+            }
+        }
+        this.bossRewardDim.setVisible(true);
+        this.bossRewardModal.setVisible(true);
+        this._bossRewardOpen = true;
+    }
+
+    hideBossRewardModal() {
+        this.bossRewardDim.setVisible(false);
+        this.bossRewardModal.setVisible(false);
+        this._bossRewardOpen = false;
+        this.tryShowDailyModal(); // награда могла ждать очереди под окном босса
+    }
+
+    // ---------- Карта шахты ----------
+
+    buildMapScreen() {
+        this.mapDim = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.6)
+            .setDepth(40).setVisible(false).setInteractive();
+        // Тап по карте приходит ИМЕННО сюда: stopPropagation dim'а гасит и
+        // scene-level pointerdown, поэтому старт драга (и skip анимации) — здесь
+        this.mapDim.on('pointerdown', (pointer, lx, ly, event) => {
+            this.startMapDrag(pointer);
+            event.stopPropagation();
+        });
+
+        this.mapRoot = this.add.container(640, 360).setDepth(41).setVisible(false);
+        this.mapPanel = addImgC(this, 0, 0, 'modal_panel_metal', 760, 620);
+        this.mapTitle = makeLabel(this, 0, -246, 'Карта шахты', 30, '#ffe9b0').setOrigin(0.5);
+        this.mapClose = addImgC(this, 320, -238, 'close_button_square', 44, 44);
+        this.mapClose.setInteractive(new Phaser.Geom.Rectangle(0, 0, 196, 191), Phaser.Geom.Rectangle.Contains);
+        this.mapClose.on('pointerdown', () => this.closeMap());
+        this.mapRoot.add([this.mapPanel, this.mapTitle, this.mapClose]);
+
+        // Контент — top-level контейнер (как listContent): вложенный в mapRoot
+        // ребёнок рендерился бы только через родителя, а mapCam его игнорирует.
+        // Depth 42 — чтобы тапы по слотам боссов приходили раньше dim (depth 40).
+        this.mapContent = this.add.container(0, 0).setDepth(42).setVisible(false);
+        this.cameras.main.ignore(this.mapContent);
+
+        this.mapNodes = [];
+        let idx = 0;
+        for (let t = 0; t < TIERS.length; t++) {
+            this.mapNodes.push(this.buildMapTierNode(t, idx++));
+            const boss = BOSSES.find((b) => b.tier === t);
+            if (boss) this.mapNodes.push(this.buildMapBossNode(boss, idx++));
+        }
+        this._mapContentH = MAP_HEAD + this.mapNodes.length * MAP_NODE_H + MAP_TAIL;
+
+        this.mapMiner = this.add.image(0, 0, 'miner_portrait');
+        this.placeIcon(this.mapMiner, 'miner_portrait', 190, MAP_HEAD, 36);
+        this.mapContent.add(this.mapMiner);
+
+        this.mapCam = this.cameras.add(300, 146, 680, 464, false, 'mapCam');
+        this.mapCam.setRoundPixels(true);
+        const others = this.children.list.filter((o) => o !== this.mapContent);
+        this.mapCam.ignore(others);
+        this.mapCam.setVisible(false);
+        this._mapView = { x: 300, y: 146, w: 680, h: 464 };
+        this._mapHalfH = 310;
+        this._mapMaxScroll = Math.max(0, this._mapContentH - 464);
+        this._nodeCX = 340;
+
+        this.input.on('wheel', (pointer, over, dx, dy) => {
+            if (!this._mapOpen) return;
+            const v = this._mapView;
+            if (pointer.x >= v.x - 10 && pointer.x <= v.x + v.w + 10
+                && pointer.y >= v.y - 10 && pointer.y <= v.y + v.h + 10) {
+                this.mapCam.scrollY = Phaser.Math.Clamp(this.mapCam.scrollY + dy * 0.5, 0, this._mapMaxScroll);
+            }
+        });
+        this.setupMapDrag();
+    }
+
+    buildMapTierNode(t, idx) {
+        const root = this.add.container(340, MAP_HEAD + idx * MAP_NODE_H);
+        const slot = addImgC(this, -60, 0, 'icon_slot_frame', 56, 56);
+        const icon = this.add.image(-60, 0, TIERS[t].iconKey);
+        this.placeIcon(icon, TIERS[t].iconKey, -60, 0, 34);
+        const name = makeLabel(this, -22, 0, `${t + 1}. ${TIERS[t].name}`, 13, '#ffffff').setOrigin(0, 0.5);
+        root.add([slot, icon, name]);
+        this.mapContent.add(root);
+        return { kind: 'tier', tier: t, root, slot, icon, name, pulse: null, _state: null };
+    }
+
+    buildMapBossNode(boss, idx) {
+        const root = this.add.container(340, MAP_HEAD + idx * MAP_NODE_H);
+        const slot = addImgC(this, -60, 0, 'icon_slot_frame', 64, 64);
+        slot.setInteractive(new Phaser.Geom.Rectangle(0, 0, 229, 236), Phaser.Geom.Rectangle.Contains);
+        const icon = this.add.image(-60, 0, boss.icon);
+        this.placeIcon(icon, boss.icon, -60, 0, 42);
+        const name = makeLabel(this, -18, -11, boss.name, 14, '#ffffff').setOrigin(0, 0.5);
+        const status = makeLabel(this, -18, 12, '', 12, '#9a9a9a').setOrigin(0, 0.5);
+        root.add([slot, icon, name, status]);
+        this.mapContent.add(root);
+        const node = { kind: 'boss', boss, root, slot, icon, name, status, pulse: null, _state: null };
+        // Слот перехватывает тап у dim (mapCam выше в hit-test) — драг стартуем
+        // и с него, иначе жест, начатый на слоте, не скроллит
+        slot.on('pointerdown', (p) => this.startMapDrag(p));
+        slot.on('pointerup', () => {
+            if (this._mapDragging) return;
+            if (node._state !== 'available') return;
+            this._onBossNodeTap(boss.id);
+        });
+        return node;
+    }
+
+    _onBossNodeTap(bossId) {
+        this.closeMap();
+        // registry 'blockLocked' обновляется в refreshUi следующего кадра — пересчитываем
+        // сразу, иначе guard startBossFight увидит устаревший lock от открытой карты
+        this.updateBlockLock();
+        const gs = this.scene.get('GameScene');
+        if (gs) gs.startBossFight(bossId);
+    }
+
+    refreshMapNodes() {
+        if (!this.mapNodes) return;
+        for (const node of this.mapNodes) {
+            if (node.kind === 'tier') {
+                const key = gameState.tier > node.tier ? 'passed'
+                    : gameState.tier === node.tier ? 'current' : 'future';
+                if (node._state === key) continue;
+                node._state = key;
+                const tint = key === 'passed' ? 0x909090 : key === 'future' ? 0x505050 : 0xffffff;
+                node.slot.setTint(tint);
+                node.icon.setTint(tint);
+                node.name.setColor(key === 'passed' ? '#9a9a9a' : key === 'future' ? '#6a6a6a' : '#ffffff');
+                if (key === 'current' && !node.pulse) {
+                    node.pulse = this.tweens.add({ targets: node.root, alpha: { from: 1, to: 0.55 }, duration: 500, yoyo: true, repeat: -1 });
+                } else if (key !== 'current' && node.pulse) {
+                    node.pulse.stop();
+                    node.pulse = null;
+                    node.root.setAlpha(1);
+                }
+            } else {
+                const b = node.boss;
+                const defeated = !!gameState.bossesDefeated[b.id];
+                const key = defeated ? 'defeated' : gameState.tier >= b.tier ? 'available' : 'locked';
+                if (node._state === key) continue;
+                node._state = key;
+                if (key === 'defeated') {
+                    node.status.setText('побеждён').setColor('#7ee787');
+                } else if (key === 'available') {
+                    node.status.setText('Сразиться!').setColor('#ffd75e');
+                } else {
+                    node.status.setText(`нужен: шахта ${b.tier + 1}`).setColor('#9a9a9a');
+                }
+                node.slot.setTint(key === 'locked' ? 0x505050 : 0xffffff);
+                node.icon.setTint(key === 'locked' ? 0x505050 : 0xffffff);
+                node.name.setColor(key === 'locked' ? '#6a6a6a' : '#ffffff');
+                if (key === 'available' && !node.pulse) {
+                    node.pulse = this.tweens.add({ targets: node.status, alpha: { from: 1, to: 0.45 }, duration: 450, yoyo: true, repeat: -1 });
+                } else if (key !== 'available' && node.pulse) {
+                    node.pulse.stop();
+                    node.pulse = null;
+                    node.status.setAlpha(1);
+                }
+            }
+        }
+    }
+
+    _findNodeIndex(tier) {
+        return this.mapNodes.findIndex((n) => n.kind === 'tier' && n.tier === tier);
+    }
+
+    _mapNodeY(idx) {
+        return MAP_HEAD + idx * MAP_NODE_H;
+    }
+
+    _mapScrollTarget(idx) {
+        return Phaser.Math.Clamp(this._mapNodeY(idx) - this._mapView.h / 2, 0, this._mapMaxScroll);
+    }
+
+    _placeMapMiner(idx) {
+        this.placeIcon(this.mapMiner, 'miner_portrait', this._nodeCX - 150, this._mapNodeY(idx), 36);
+        this.mapMiner.setVisible(true);
+    }
+
+    openMap({ animate = false } = {}) {
+        if (this._mapOpen) return;
+        if (this.registry.get('bossActive') || this.registry.get('blockLocked')) return;
+        this._mapOpen = true;
+        this.mapDim.setVisible(true);
+        this.mapRoot.setVisible(true);
+        this.mapCam.setVisible(true);
+        this.refreshMapNodes();
+        const curIdx = this._findNodeIndex(gameState.tier);
+        if (animate) {
+            const prevIdx = Math.max(0, this._findNodeIndex(Math.max(0, gameState.tier - 1)));
+            const fromScroll = this._mapScrollTarget(prevIdx);
+            const toScroll = this._mapScrollTarget(curIdx);
+            const fromY = this._mapNodeY(prevIdx);
+            const toY = this._mapNodeY(curIdx);
+            this.mapCam.scrollY = fromScroll;
+            this._placeMapMiner(prevIdx);
+            const proxy = { p: 0 };
+            this._mapAnim = this.tweens.add({
+                targets: proxy,
+                p: 1,
+                duration: 1400,
+                ease: 'Sine.easeInOut',
+                onUpdate: () => {
+                    this.mapCam.scrollY = fromScroll + (toScroll - fromScroll) * proxy.p;
+                    this.mapMiner.y = fromY + (toY - fromY) * proxy.p;
+                },
+                onComplete: () => {
+                    this._mapAnim = null;
+                    this._placeMapMiner(curIdx);
+                    this._arriveFx(gameState.tier);
+                }
+            });
+        } else {
+            this.mapCam.scrollY = this._mapScrollTarget(curIdx);
+            this._placeMapMiner(curIdx);
+        }
+    }
+
+    skipMapAnim() {
+        if (!this._mapAnim) return;
+        this._mapAnim.stop();
+        this._mapAnim = null;
+        const curIdx = this._findNodeIndex(gameState.tier);
+        this.mapCam.scrollY = this._mapScrollTarget(curIdx);
+        this._placeMapMiner(curIdx);
+        this._arriveFx(gameState.tier);
+    }
+
+    _arriveFx(tierIndex) {
+        this.mapCam.flash(250, 255, 255, 255);
+        const banner = makeLabel(this, 0, -this._mapHalfH + 118, `Уровень ${tierIndex + 1}: ${TIERS[tierIndex].name}!`, 22, '#ffe9b0', { align: 'center' }).setOrigin(0.5);
+        banner.setAlpha(0);
+        this.mapRoot.add(banner);
+        this.tweens.add({
+            targets: banner,
+            alpha: { from: 0, to: 1 },
+            duration: 250,
+            yoyo: true,
+            hold: 1100,
+            onComplete: () => banner.destroy()
+        });
+    }
+
+    closeMap() {
+        if (this._mapAnim) {
+            this._mapAnim.stop();
+            this._mapAnim = null;
+        }
+        this.mapDim.setVisible(false);
+        this.mapRoot.setVisible(false);
+        this.mapCam.setVisible(false);
+        this._mapOpen = false;
+        this.tryShowDailyModal(); // награда могла ждать очереди под картой
+    }
+
+    setupMapDrag() {
+        const inMapZone = (p) => {
+            const v = this._mapView;
+            return p.x >= v.x - 6 && p.x <= v.x + v.w + 6
+                && p.y >= v.y - 6 && p.y <= v.y + v.h + 6;
+        };
+        // Вызывается из хендлеров dim и слотов боссов (dim гасит scene-level down).
+        // Тап/драг по слоту во время анимации спуска тоже завершает её (skip)
+        this.startMapDrag = (p) => {
+            if (this._mapAnim) this.skipMapAnim();
+            if (!this._mapOpen || !inMapZone(p)) return;
+            this._mapDragId = p.id;
+            this._mapDragStartY = p.y;
+            this._mapDragStartScroll = this.mapCam.scrollY;
+            this._mapDragging = false;
+        };
+        this.input.on('pointermove', (p) => {
+            if (p.id !== this._mapDragId || !p.isDown) return;
+            const delta = this._mapDragStartY - p.y;
+            if (!this._mapDragging && Math.abs(delta) > 6) this._mapDragging = true;
+            if (this._mapDragging) {
+                this.mapCam.scrollY = Phaser.Math.Clamp(this._mapDragStartScroll + delta, 0, this._mapMaxScroll);
+            }
+        });
+        const endDrag = (p) => {
+            if (p && p.id !== this._mapDragId) return;
+            this._mapDragId = null;
+            this.time.delayedCall(0, () => { this._mapDragging = false; });
+        };
+        this.input.on('pointerup', endDrag);
+        this.input.on('pointerupoutside', endDrag);
+    }
+
+    // ---------- Мастерская (каркас П5) ----------
+
+    buildCraftScreen() {
+        this.craftDim = this.add.rectangle(640, 360, 1280, 720, 0x000000, 0.6)
+            .setDepth(40).setVisible(false).setInteractive();
+        // stopPropagation dim'а гасит scene-level pointerdown — старт драга здесь
+        this.craftDim.on('pointerdown', (pointer, lx, ly, event) => {
+            this.startCraftDrag(pointer);
+            event.stopPropagation();
+        });
+
+        this.craftRoot = this.add.container(640, 360).setDepth(41).setVisible(false);
+        this.craftPanel = addImgC(this, 0, 0, 'modal_panel_metal', 560, 600);
+        this.craftTitle = makeLabel(this, 0, -232, 'Мастерская', 30, '#ffe9b0').setOrigin(0.5);
+        this.craftClose = addImgC(this, 220, -228, 'close_button_square', 44, 44);
+        this.craftClose.setInteractive(new Phaser.Geom.Rectangle(0, 0, 196, 191), Phaser.Geom.Rectangle.Contains);
+        this.craftClose.on('pointerdown', () => this.closeCraft());
+        this.craftRoot.add([this.craftPanel, this.craftTitle, this.craftClose]);
+
+        // Шапка (фиксированная, не скроллится): 5 компонентов — иконка + счётчик.
+        // Дети craftRoot рендерит только main (craftCam/mapCam проигнорировали
+        // корень при создании) — отдельные ignore не нужны.
+        this.craftHeader = this.add.container(0, 0);
+        this.craftRoot.add(this.craftHeader);
+        this.craftCompRow = [];
+        const slotW = 64;
+        const compRowStartX = -(COMPONENTS.length * slotW) / 2;
+        COMPONENTS.forEach((def, i) => {
+            const sx = compRowStartX + i * slotW;
+            const icon = this.add.image(0, 0, def.icon);
+            this.placeIcon(icon, def.icon, sx + 11, 0, 22);
+            const t = makeLabel(this, sx + 26, 0, '0', 13, '#e8e8e8').setOrigin(0, 0.5);
+            this.craftHeader.add([icon, t]);
+            this.craftCompRow.push({ id: def.id, text: t });
+        });
+
+        this.craftContent = this.add.container(0, 0).setDepth(42).setVisible(false);
+        this.cameras.main.ignore(this.craftContent);
+
+        this.craftCam = this.cameras.add(400, 156, 480, 408, false, 'craftCam');
+        this.craftCam.setRoundPixels(true);
+        const others = this.children.list.filter((o) => o !== this.craftContent);
+        this.craftCam.ignore(others);
+        this.craftCam.setVisible(false);
+        this._craftView = { x: 400, y: 156, w: 480, h: 408 };
+        this._craftContentH = 0;
+        this._craftMaxScroll = 0;
+
+        this.input.on('wheel', (pointer, over, dx, dy) => {
+            if (!this._craftOpen) return;
+            const v = this._craftView;
+            if (pointer.x >= v.x - 10 && pointer.x <= v.x + v.w + 10
+                && pointer.y >= v.y - 10 && pointer.y <= v.y + v.h + 10) {
+                this.craftCam.scrollY = Phaser.Math.Clamp(this.craftCam.scrollY + dy * 0.5, 0, this._craftMaxScroll);
+            }
+        });
+        this.setupCraftDrag();
+        this._craftRowsW = this._craftView.w;
+        this.buildCraftContent();
+    }
+
+    // Наполнение мастерской: три секции рядами h84 на upgrade_row_card_1 (шаг 90).
+    // Пересобирается только при смене ширины вьюпорта (портрет/ландшафт);
+    // текущие значения обновляет refreshCraftUi по диффу (паттерн _buffLineText).
+    buildCraftContent() {
+        const w = this._craftView.w;
+        const f = w / 835;
+        const iconCX = Math.round(118 * f);
+        const textX = Math.round(186 * f) + 34;
+        const btnW = 84;
+        const btnH = 40;
+        const btnCX = w - 12 - btnW / 2;
+        const nameMaxW = w - textX - btnW - 24;
+        const cellW = Math.floor((w - 10) / 2);
+
+        this.craftContent.removeAll(true);
+        this.craftItemRows = {};
+        this.craftRecipeRows = {};
+        this.craftArtCells = {};
+        let y = 8;
+
+        const header = (title) => {
+            const t = makeLabel(this, 2, y, title, 16, '#ffe9b0').setOrigin(0, 0);
+            this.craftContent.add(t);
+        };
+
+        header('Активируемые');
+        y += 36;
+        for (const def of ITEMS) {
+            const rc = this.add.container(0, y);
+            const card = addImg(this, 0, 0, 'upgrade_row_card_1', w, 84);
+            const icon = this.add.image(0, 0, def.id);
+            this.placeIcon(icon, def.id, iconCX, 42, 40);
+            const name = makeLabel(this, textX, 10, def.name, 14, '#ffffff').setOrigin(0, 0);
+            for (let s = 14; s >= 9 && name.width > nameMaxW; s--) name.setFontSize(s);
+            const sub = makeLabel(this, textX, 32, '', 12, '#c8c8c8').setOrigin(0, 0);
+            const hint = makeLabel(this, textX, 52, '', 12, '#ffd75e').setOrigin(0, 0);
+            const btn = this.add.image(btnCX, 42, 'buy_button_normal').setDisplaySize(btnW, btnH);
+            btn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
+            const btnText = makeLabel(this, btnCX, 42, 'Активировать', 12, '#ffffff').setOrigin(0.5);
+            for (let s = 12; s >= 8 && btnText.width > btnW - 12; s--) btnText.setFontSize(s);
+            rc.add([card, icon, name, sub, hint, btn, btnText]);
+            this.craftContent.add(rc);
+            btn.on('pointerdown', (p) => this.startCraftDrag(p));
+            btn.on('pointerup', () => {
+                if (this._craftDragging) return;
+                this.activateItemRow(def);
+            });
+            this.craftItemRows[def.id] = { def, rc, icon, name, sub, hint, btn, btnText, _key: null };
+            y += 90;
+        }
+
+        y += 14;
+        header('Рецепты');
+        const warn = makeLabel(this, w - 2, y + 3, 'крафт нельзя отменить', 11, '#e09090').setOrigin(1, 0);
+        this.craftContent.add(warn);
+        y += 36;
+        for (const recipe of CRAFT_RECIPES) {
+            const rc = this.add.container(0, y);
+            const card = addImg(this, 0, 0, 'upgrade_row_card_1', w, 84);
+            const resultKey = recipe.result.id;
+            const icon = this.add.image(0, 0, resultKey);
+            this.placeIcon(icon, resultKey, iconCX, 42, 40);
+            const resultDef = recipe.result.kind === 'item'
+                ? ITEMS.find((i) => i.id === recipe.result.id)
+                : ARTIFACTS.find((a) => a.id === recipe.result.id);
+            const name = makeLabel(this, textX, 10, resultDef.name, 13, '#ffffff').setOrigin(0, 0);
+            for (let s = 13; s >= 9 && name.width > nameMaxW; s--) name.setFontSize(s);
+            const costPairs = [];
+            let cx = textX;
+            for (const compId of Object.keys(recipe.cost)) {
+                const compDef = COMPONENTS.find((c) => c.id === compId);
+                const cIcon = this.add.image(0, 0, compDef.icon);
+                this.placeIcon(cIcon, compDef.icon, cx + 8, 40, 16);
+                const cText = makeLabel(this, cx + 20, 40, String(recipe.cost[compId]), 12, '#ffd75e').setOrigin(0, 0.5);
+                rc.add([cIcon, cText]);
+                costPairs.push({ id: compId, text: cText });
+                cx += 20 + cText.width + 12;
+            }
+            const status = makeLabel(this, textX, 56, '', 11, '#e09090').setOrigin(0, 0);
+            const btn = this.add.image(btnCX, 42, 'buy_button_normal').setDisplaySize(btnW, btnH);
+            btn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
+            const label = recipe.craftMs === 0 ? 'Создать' : `Крафт ${Math.round(recipe.craftMs / 60000)} мин`;
+            const btnText = makeLabel(this, btnCX, 42, label, 12, '#ffffff').setOrigin(0.5);
+            for (let s = 12; s >= 8 && btnText.width > btnW - 12; s--) btnText.setFontSize(s);
+            rc.add([card, icon, name, status, btn, btnText]);
+            this.craftContent.add(rc);
+            btn.on('pointerdown', (p) => this.startCraftDrag(p));
+            btn.on('pointerup', () => {
+                if (this._craftDragging) return;
+                const c = gameState.crafting;
+                if (c && c.recipeId === recipe.id) {
+                    if (canClaimCraft()) {
+                        if (claimCraft()) playSfx(this, 'purchase');
+                    }
+                } else if (!c && !(recipe.result.kind === 'artifact' && gameState.artifacts.includes(recipe.result.id))) {
+                    if (startCraft(recipe.id)) {
+                        playSfx(this, 'purchase');
+                        if (recipe.craftMs === 0) claimCraft();
+                    }
+                }
+                this.refreshUi();
+            });
+            this.craftRecipeRows[recipe.id] = { recipe, rc, icon, name, costPairs, status, btn, btnText, label, resultDef, _key: null };
+            y += 90;
+        }
+
+        y += 14;
+        header('Артефакты');
+        y += 36;
+        ARTIFACTS.forEach((def, i) => {
+            const col = i % 2;
+            const rowIdx = Math.floor(i / 2);
+            const rc = this.add.container(col * (cellW + 10), y + rowIdx * 90);
+            const card = addImg(this, 0, 0, 'upgrade_row_card_1', cellW, 84);
+            const icon = this.add.image(0, 0, def.id);
+            this.placeIcon(icon, def.id, 30, 42, 40);
+            const name = makeLabel(this, 58, 10, def.name, 12, '#ffd75e').setOrigin(0, 0);
+            for (let s = 12; s >= 9 && name.width > cellW - 66; s--) name.setFontSize(s);
+            const line = makeLabel(this, 58, 30, '', 12, '#9ad29a', { wordWrap: { width: cellW - 68 } }).setOrigin(0, 0);
+            rc.add([card, icon, name, line]);
+            this.craftContent.add(rc);
+            this.craftArtCells[def.id] = { def, rc, icon, name, line, _owned: null };
+        });
+        y += Math.ceil(ARTIFACTS.length / 2) * 90;
+
+        this._craftContentH = y + 52;
+        this._craftMaxScroll = Math.max(0, this._craftContentH - this._craftView.h);
+        this.craftCam.scrollY = Phaser.Math.Clamp(this.craftCam.scrollY, 0, this._craftMaxScroll);
+    }
+
+    _mmss(msLeft) {
+        const sec = Math.max(0, Math.ceil(msLeft / 1000));
+        return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+    }
+
+    // Активация предмета из мастерской: useItem(id,false); при отказе — флоат
+    // с причиной (флоат рисует main, spawnFloat сам исключает скролл-камеры).
+    activateItemRow(def) {
+        const row = this.craftItemRows[def.id];
+        const ok = useItem(def.id, false);
+        if (!ok && row) {
+            const stock = (gameState.items[def.id] || 0) <= 0;
+            const msg = stock ? 'нет предмета' : (def.bossUse ? 'только в бою' : 'баф ещё активен');
+            const x = row.btn.x;
+            const y = row.rc.y + row.btn.y - this.craftCam.scrollY + this.craftCam.y;
+            const float = this.spawnFloat(x, y - 34, msg, 13, '#e09090');
+            float.setOrigin(0.5).setDepth(45);
+            this.tweens.add({ targets: float, y: y - 84, alpha: 0, duration: 1200, onComplete: () => float.destroy() });
+        }
+        this.refreshUi();
+    }
+
+    // Дифф-обновление мастерской (каждый кадр при открытом экране): счётчики
+    // шапки, тексты/кнопки/цвета рядов. Перерисовка только при смене состояния.
+    refreshCraftUi() {
+        for (const c of this.craftCompRow) {
+            const s = fmt(gameState.components[c.id] || 0);
+            if (c.text.text !== s) c.text.setText(s);
+        }
+        const bossActive = !!this.registry.get('bossActive');
+        const now = Date.now();
+
+        for (const id of Object.keys(this.craftItemRows)) {
+            const row = this.craftItemRows[id];
+            const def = row.def;
+            const stock = gameState.items[id] || 0;
+            const eff = def.effect;
+            let slotUntil = 0;
+            let slotMult = 1;
+            if (eff.bossMult) { slotUntil = gameState.bossBuffUntil; slotMult = gameState.bossBuffMult; }
+            else if (eff.miningMult) { slotUntil = gameState.miningBuffUntil; slotMult = gameState.miningBuffMult; }
+            else if (eff.veinForce) { slotUntil = gameState.itemVeinUntil; }
+            const buffLeft = slotUntil - now;
+            const active = buffLeft > 0;
+            const blocked = stock <= 0
+                || (def.bossUse && !bossActive)
+                || (active && buffLeft > 30e3);
+            let hintTxt = '';
+            let hintColor = '#ffd75e';
+            if (active) {
+                hintTxt = eff.bossMult ? `бомба ${this._mmss(buffLeft)}`
+                    : eff.veinForce ? `жила ${this._mmss(buffLeft)}`
+                        : `x${slotMult} ${this._mmss(buffLeft)}`;
+            } else if (def.bossUse) {
+                hintTxt = 'только в бою';
+                hintColor = '#e09090';
+            }
+            const key = `${stock}|${blocked}|${hintTxt}`;
+            if (key !== row._key) {
+                row._key = key;
+                row.sub.setText(`в запасе: ${stock}`);
+                row.hint.setText(hintTxt).setColor(hintColor);
+                row.btn.setTexture(blocked ? 'buy_button_disabled_gray' : 'buy_button_normal');
+                row.btnText.setColor(blocked ? '#b0b0b0' : '#ffffff');
+            }
+        }
+
+        for (const id of Object.keys(this.craftRecipeRows)) {
+            const row = this.craftRecipeRows[id];
+            const busy = !!gameState.crafting;
+            const mine = busy && gameState.crafting.recipeId === id;
+            const ready = mine && canClaimCraft();
+            const owned = row.recipe.result.kind === 'artifact' && gameState.artifacts.includes(row.recipe.result.id);
+            let btnText = row.label;
+            let texture = 'buy_button_normal';
+            let color = '#ffffff';
+            let statusTxt = '';
+            if (mine) {
+                if (ready) {
+                    btnText = 'Забрать';
+                } else {
+                    btnText = this._mmss(gameState.crafting.endsAt - now);
+                    texture = 'buy_button_disabled_gray';
+                    color = '#b0b0b0';
+                }
+            } else if (owned || busy || !canCraft(id)) {
+                texture = 'buy_button_disabled_gray';
+                color = '#b0b0b0';
+                if (owned) statusTxt = 'уже в коллекции';
+                else if (busy) statusTxt = 'верстак занят';
+                else if (row.recipe.result.kind === 'item') {
+                    const space = row.resultDef.stackMax - (gameState.items[row.resultDef.id] || 0);
+                    const compsOk = Object.keys(row.recipe.cost).every((c) => (gameState.components[c] || 0) >= row.recipe.cost[c]);
+                    if (space < row.recipe.result.n && compsOk) statusTxt = 'стак полон';
+                }
+            }
+            let costPart = '';
+            for (const pair of row.costPairs) {
+                const enough = (gameState.components[pair.id] || 0) >= row.recipe.cost[pair.id];
+                costPart += `|${enough ? 1 : 0}`;
+            }
+            const key = `${btnText}|${texture}|${statusTxt}${costPart}`;
+            if (key !== row._key) {
+                row._key = key;
+                row.btnText.setText(btnText).setColor(color);
+                row.btn.setTexture(texture);
+                row.status.setText(statusTxt);
+                for (const pair of row.costPairs) {
+                    pair.text.setColor((gameState.components[pair.id] || 0) >= row.recipe.cost[pair.id] ? '#ffd75e' : '#f0638c');
+                }
+            }
+        }
+
+        for (const id of Object.keys(this.craftArtCells)) {
+            const cell = this.craftArtCells[id];
+            const owned = gameState.artifacts.includes(id);
+            if (owned !== cell._owned) {
+                cell._owned = owned;
+                cell.rc.setAlpha(owned ? 1 : 0.25);
+                if (owned) {
+                    cell.line.setText(cell.def.desc);
+                } else {
+                    const boss = BOSSES.find((b) => b.id === cell.def.source);
+                    cell.line.setText(boss ? `Босс: ${boss.name}` : 'Крафт');
+                }
+            }
+        }
+    }
+
+    setupCraftDrag() {
+        const inCraftZone = (p) => {
+            const v = this._craftView;
+            return p.x >= v.x - 6 && p.x <= v.x + v.w + 6
+                && p.y >= v.y - 6 && p.y <= v.y + v.h + 6;
+        };
+        // Вызывается из хендлера dim (dim гасит scene-level down)
+        this.startCraftDrag = (p) => {
+            if (!this._craftOpen || !inCraftZone(p)) return;
+            this._craftDragId = p.id;
+            this._craftDragStartY = p.y;
+            this._craftDragStartScroll = this.craftCam.scrollY;
+            this._craftDragging = false;
+        };
+        this.input.on('pointermove', (p) => {
+            if (p.id !== this._craftDragId || !p.isDown) return;
+            const delta = this._craftDragStartY - p.y;
+            if (!this._craftDragging && Math.abs(delta) > 6) this._craftDragging = true;
+            if (this._craftDragging) {
+                this.craftCam.scrollY = Phaser.Math.Clamp(this._craftDragStartScroll + delta, 0, this._craftMaxScroll);
+            }
+        });
+        const endDrag = (p) => {
+            if (p && p.id !== this._craftDragId) return;
+            this._craftDragId = null;
+            this.time.delayedCall(0, () => { this._craftDragging = false; });
+        };
+        this.input.on('pointerup', endDrag);
+        this.input.on('pointerupoutside', endDrag);
+    }
+
+    openCraft() {
+        if (this._craftOpen) return;
+        if (this.registry.get('bossActive') || this.registry.get('blockLocked')) return;
+        this._craftOpen = true;
+        this.craftDim.setVisible(true);
+        this.craftRoot.setVisible(true);
+        this.craftCam.setVisible(true);
+        this.refreshUi();
+    }
+
+    closeCraft() {
+        this.craftDim.setVisible(false);
+        this.craftRoot.setVisible(false);
+        this.craftCam.setVisible(false);
+        this._craftOpen = false;
+        this.tryShowDailyModal(); // награда могла ждать очереди под мастерской
+    }
+
+    // ---------- Единая блокировка полноэкранных состояний ----------
+
+    // Единственный владелец registry 'blockLocked' и видимости listContent:
+    // пересчёт каждый кадр из refreshUi, действия — только при изменении.
+    updateBlockLock() {
+        const locked = this._settingsOpen || this._offlineOpen || this._dailyOpen
+            || this._mapOpen || this._craftOpen || this._bossRewardOpen
+            || !!this.registry.get('bossActive');
+        if (locked !== this._blockLocked) {
+            this._blockLocked = locked;
+            this.registry.set('blockLocked', locked);
+            this.listContent.setVisible(!locked);
+        }
+        if (this.mapRoot) {
+            this.mapRoot.setVisible(this._mapOpen);
+            this.mapContent.setVisible(this._mapOpen);
+        }
+        if (this.craftRoot) {
+            this.craftRoot.setVisible(this._craftOpen);
+            this.craftContent.setVisible(this._craftOpen);
         }
     }
 
@@ -1089,6 +1909,10 @@ export class UIScene extends Phaser.Scene {
         if (Date.now() < gameState.dailyBuffUntil) parts.push(`x${gameState.dailyBuffMult} ${left(gameState.dailyBuffUntil)}`);
         if (Date.now() < gameState.dailyVeinUntil) parts.push(`жила ${left(gameState.dailyVeinUntil)}`);
         if (Date.now() < gameState.dailyCritUntil) parts.push(`крит ${left(gameState.dailyCritUntil)}`);
+        // Бафы предметов (мастерская): множитель добычи, бомба (бой), стимулятор жилы
+        if (Date.now() < gameState.miningBuffUntil) parts.push(`x${gameState.miningBuffMult} ${left(gameState.miningBuffUntil)}`);
+        if (Date.now() < gameState.bossBuffUntil) parts.push(`бомба ${left(gameState.bossBuffUntil)}`);
+        if (Date.now() < gameState.itemVeinUntil) parts.push(`жила ${left(gameState.itemVeinUntil)}`);
         const text = parts.join(' · ');
         if (text !== this._buffLineText) {
             this._buffLineText = text;
@@ -1099,6 +1923,9 @@ export class UIScene extends Phaser.Scene {
     // ---------- Обновление UI (дифф-опрос каждый кадр) ----------
 
     refreshUi() {
+        this.updateBlockLock();
+        this.refreshMapNodes();
+        if (this._craftOpen) this.refreshCraftUi();
         const tier = TIERS[gameState.tier];
         const h = this.L.hud;
 
@@ -1328,7 +2155,11 @@ export class UIScene extends Phaser.Scene {
         this.tabBtns[0].c.on('pointerdown', () => { this.tutTabClicked = 0; });
         this.tabBtns[1].c.on('pointerdown', () => { this.tutTabClicked = 1; });
         // список рендерит вторая камера — учебные объекты исключаем из неё
-        this.listCam.ignore([this.tutDim, this.tutRing, this.tutArrow, this.tutBubble, this.tutText, this.tutFinal, this.tutBtn, this.tutBtnLbl]);
+        // (и из скролл-камер карты/крафта — они создаются позже ignore-списков)
+        const tutLayers = [this.tutDim, this.tutRing, this.tutArrow, this.tutBubble, this.tutText, this.tutFinal, this.tutBtn, this.tutBtnLbl];
+        this.listCam.ignore(tutLayers);
+        if (this.mapCam) this.mapCam.ignore(tutLayers);
+        if (this.craftCam) this.craftCam.ignore(tutLayers);
         this.tutPulse = this.tweens.add({ targets: this.tutRing, alpha: { from: 1, to: 0.4 }, duration: 700, yoyo: true, repeat: -1 });
         this.tutBob = this.tweens.add({ targets: this.tutArrow, y: { from: 0, to: 10 }, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         this.layoutTutorial();

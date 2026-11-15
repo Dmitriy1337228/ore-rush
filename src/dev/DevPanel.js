@@ -6,7 +6,8 @@
 
 import {
     gameState, UPGRADES, TIERS, getUpgradeDef, addOre, saveGame, computeOfflineReward, resetGame,
-    forceNextTier, MUTATIONS, LAST_EXIT_KEY, LEGACY_LAST_EXIT_KEY, getDailyDay
+    forceNextTier, MUTATIONS, LAST_EXIT_KEY, LEGACY_LAST_EXIT_KEY, getDailyDay,
+    BOSSES, COMPONENTS, ARTIFACTS, ITEMS
 } from '../state.js';
 import { MOCK_STATS_KEY } from '../sdk-stub.js';
 
@@ -127,6 +128,66 @@ function dailyResetStreak() {
     log('daily: серия обнулена — показана награда 1-го дня');
 }
 
+// Бой с боссом по id каталога — тест HP/бомб/наград без спуска. Guard: второй
+// бой при активном не стартует (испытание одно за раз, guard и в startBossFight).
+function startBoss(bossId) {
+    const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
+    if (!gs) {
+        log('GameScene ещё не готов');
+        return;
+    }
+    if (gs.boss) {
+        log('бой уже идёт — завершите его (уход/победа) перед следующим');
+        return;
+    }
+    const def = BOSSES.find((b) => b.id === bossId);
+    if (!def) {
+        log('неизвестный босс: ' + bossId);
+        return;
+    }
+    gs.startBossFight(bossId);
+    log(gs.boss ? `бой: ${def.name} (HP ${gs.boss.maxHp})` : `${def.name}: бой не стартовал — открыт экран/модалка`);
+    after();
+}
+
+// Компоненты крафта: +100 всех видов — тест рецептов без боёв
+function grantComponents() {
+    for (const def of COMPONENTS) {
+        gameState.components[def.id] = (gameState.components[def.id] || 0) + 100;
+    }
+    log('+100 всех компонентов крафта');
+    after();
+}
+
+// Все артефакты сразу: чистая выдача в коллекцию (валидация как в applySave —
+// только id из каталога, без дублей), без баунти/дропов grantBossKill
+function grantAllArtifacts() {
+    const owned = new Set(gameState.artifacts);
+    for (const def of ARTIFACTS) owned.add(def.id);
+    gameState.artifacts = [...owned].filter((id) => ARTIFACTS.some((a) => a.id === id));
+    log(`артефакты: выданы все — ${gameState.artifacts.length}/${ARTIFACTS.length}`);
+    after();
+}
+
+// Верстак: сброс активного крафта (потраченные компоненты не возвращаются)
+function resetCrafting() {
+    gameState.crafting = null;
+    log('верстак сброшен');
+    after();
+}
+
+// Предметы: +5 расходника напрямую (тест бафов/бомб без крафта)
+function grantItem(id, n) {
+    const def = ITEMS.find((i) => i.id === id);
+    if (!def) {
+        log('неизвестный предмет: ' + id);
+        return;
+    }
+    gameState.items[id] = (gameState.items[id] || 0) + n;
+    log(`${def.name}: +${n} (запас ${gameState.items[id]})`);
+    after();
+}
+
 // Симуляция офлайна идёт по ТОМУ ЖЕ коду, что и реальный возврат:
 // computeOfflineReward -> addOre -> registry.offlineInfo -> событие offline-applied
 function simulateOffline(hours) {
@@ -166,11 +227,17 @@ function fullReset() {
         ui.hideDailyModal(); // окно дневной награды тоже закрывается
         ui._pendingDaily = null;
         ui.closeModal();
+        // Карта/мастерская/награда босса закрываются собственными close-методами:
+        // флаги — собственность UIScene, registry 'blockLocked' пересчитывает
+        // updateBlockLock (единственный владелец, внешних писателей больше нет)
+        ui.closeMap();
+        ui.closeCraft();
+        ui.hideBossRewardModal();
     }
     if (gs) {
+        if (gs.boss) gs.retreatBoss(); // активный бой не переживает полный сброс
         if (gs.mutation) gs.clearMutation(false);
         gs.registry.set('offlineInfo', null);
-        gs.registry.set('blockLocked', false);
         gs.blockBusy = false;
         gs.blockStage = 0;
     }
@@ -224,6 +291,24 @@ function buildPanel(game) {
     // Ежедневные награды (Этап 6): приход «завтра» и сброс серии
     grid.appendChild(makeButton('Дейли: след. день', dailyNextDay));
     grid.appendChild(makeButton('Дейли: сброс серии', dailyResetStreak));
+
+    // Боссы и мета (Этап «Карта · Боссы · Артефакты · Крафт»): бой по id,
+    // чистая выдача меты, сброс верстака и предметов — через каталоги state.js
+    for (const def of BOSSES) {
+        grid.appendChild(makeButton(`Босс: ${def.name}`, () => startBoss(def.id)));
+    }
+    grid.appendChild(makeButton('Все компоненты +100', grantComponents));
+    grid.appendChild(makeButton('Артефакты: все', grantAllArtifacts));
+    grid.appendChild(makeButton('Верстак: сброс', resetCrafting));
+    for (const item of [
+        { id: 'item_bomb', label: 'Бомба' },
+        { id: 'item_belt', label: 'Пояс' },
+        { id: 'item_coffee', label: 'Кофе' },
+        { id: 'item_ration', label: 'Сухпаёк' },
+        { id: 'item_stim', label: 'Стим' }
+    ]) {
+        grid.appendChild(makeButton(`${item.label} +5`, () => grantItem(item.id, 5)));
+    }
 
     statusLine = document.createElement('div');
     statusLine.className = 'dev-status';

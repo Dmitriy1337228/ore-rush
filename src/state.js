@@ -12,7 +12,7 @@ export const LAST_EXIT_KEY = 'ore-rush-lastExit';
 // Фолбэк старого имени игры (переименование 2026-11-13): офлайн-время игроков
 // с прошлым ключом не должно пропасть
 export const LEGACY_LAST_EXIT_KEY = 'minecraft-clicker-lastExit';
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 // ---------- Тиры руды ----------
 
@@ -226,6 +226,16 @@ export function createInitialState() {
         dailyBuffMult: 1,
         dailyCritUntil: 0, // баф «Критический импульс»
         dailyVeinUntil: 0, // баф «Золотая жила»
+        components: {},     // компоненты боссов/крафта: {compId: количество}
+        artifacts: [],      // собранные артефакты (id из ARTIFACTS) — активны всегда
+        items: {},          // активируемые предметы: {itemId: количество}
+        crafting: null,     // верстак (1 слот): {recipeId, endsAt} либо null
+        bossesDefeated: {}, // побеждённые боссы: {bossId: true}
+        miningBuffUntil: 0, // баф добычи от предметов (wall-clock ms, как dailyBuffUntil)
+        miningBuffMult: 1,
+        bossBuffUntil: 0,   // баф урона боссу от предметов (wall-clock ms)
+        bossBuffMult: 1,
+        itemVeinUntil: 0,   // «Стимулятор жилы»: форс жилы (wall-clock ms)
         levels
     };
 }
@@ -394,7 +404,8 @@ export function getClickDamage() {
     mult *= Math.pow(1.6, getUpgradeLevel('hydraulic'));
     mult *= Math.pow(1.7, getUpgradeLevel('plasma'));
     mult *= Math.pow(1.8, getUpgradeLevel('disintegrator'));
-    return base * mult * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult();
+    // артефактный множитель клика — как престиж: входит и в якорь (симметрия)
+    return base * mult * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult() * getArtifactBonus('clickMult');
 }
 
 export function getOrePerSecond() {
@@ -411,19 +422,20 @@ export function getOrePerSecond() {
         + getUpgradeLevel('dyson') * 1e10;
     let mult = Math.pow(1.25, getUpgradeLevel('tech'));
     mult *= Math.pow(1.3, getUpgradeLevel('aicore'));
-    // дневной баф («Ускорение»/«Мощный буст») применяется к фактической добыче;
-    // в якорь цены спуска (getExpectedClickGain) он сознательно не входит
-    return flat * mult * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult() * getDailyMult();
+    // дневной и предметный бафы («Ускорение»/пояс/кофе) применяются к фактической
+    // добыче; в якорь цены спуска (getExpectedClickGain) они сознательно не входят
+    return flat * mult * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult() * getDailyMult()
+        * getArtifactBonus('passiveMult') * getItemBuffMult();
 }
 
-// Робо-рука: +0.5 авто-кликов в секунду за уровень.
-// Авто-клик наносит полный урон клика (крит/жила/синергия), но без тряски камеры.
+// Робо-рука: +0.5 авто-кликов в секунду за уровень; артефакт добавляет сверху.
+// Авто-клик наносит полный урон клика (крит/жила), но без тряски камеры.
 export function getAutoClicksPerSecond() {
-    return 0.5 * getUpgradeLevel('robotarm');
+    return 0.5 * getUpgradeLevel('robotarm') + getArtifactBonus('autoCpsAdd');
 }
 
 export function getCritChance() {
-    const base = Math.min(0.05 + 0.03 * getUpgradeLevel('dynamite'), 0.74);
+    const base = Math.min(0.05 + 0.03 * getUpgradeLevel('dynamite') + getArtifactBonus('critAdd'), 0.74);
     // «Критический импульс» (дневная награда): потолок 95% — всегда остаётся шанс промаха по шансу
     if (Date.now() < gameState.dailyCritUntil) return Math.min(base + DAILY_CRIT_BONUS, 0.95);
     return base;
@@ -463,6 +475,210 @@ export const MUTATION_CHANCE = 0.5;
 export function getMutationBreakBonus(mutationId) {
     const mut = mutationId ? MUTATIONS[mutationId] : null;
     return mut && mut.breakBonusMult ? getClickDamage() * mut.breakBonusMult : 0;
+}
+
+// ---------- Карта шахты: боссы, компоненты, артефакты, крафт ----------
+// Боссы — кликер-испытания (HP-объект вместо блока, лимит времени), награда:
+// руда-баунти + компоненты + артефакт за первое убийство. Артефакты — постоянные
+// бонусы без слотов; компоненты -> крафт (расходники мгновенно, артефакты с
+// таймером). Активируемые предметы — временные бафы по прецеденту дневных:
+// В ЯКОРЬ ЦЕНЫ СПУСКА (getExpectedClickGain/getEarningRate-снапшот) НЕ ВХОДЯТ.
+// hpMult — индивидуальная сила босса; HP растёт с тиры как x3^tier (income).
+
+export const BOSS_HP_BASE = 25000;
+export const BOSS_FIGHT_SECONDS = 60;
+export const BOSS_BOUNTY_SECONDS = 90; // баунти = 90 сек полного дохода на момент убийства
+
+export const bossHpFor = (def) => Math.ceil(BOSS_HP_BASE * TIER_INCOME_MULT(def.tier) * def.hpMult);
+
+export const BOSSES = [
+    { id: 'boss_copper',   name: 'Медный страж',       tier: 1,  hpMult: 1.0, icon: 'boss_copper',   drops: { scrap: [2, 4] },                                          artifact: 'art_miner_totem' },
+    { id: 'boss_silver',   name: 'Серебряный голем',   tier: 3,  hpMult: 1.3, icon: 'boss_silver',   drops: { scrap: [1, 3], crystal: [1, 2] },                          artifact: 'art_lantern_old' },
+    { id: 'boss_amethyst', name: 'Аметистовый жнец',   tier: 5,  hpMult: 1.7, icon: 'boss_amethyst', drops: { crystal: [2, 3], core: [1, 1] },                           artifact: 'art_magnet_ring' },
+    { id: 'boss_ruby',     name: 'Рубиновый басилиск', tier: 7,  hpMult: 2.2, icon: 'boss_ruby',     drops: { core: [1, 2], relic: [1, 1] },                             artifact: 'art_lucky_charm' },
+    { id: 'boss_platinum', name: 'Платиновый титан',   tier: 9,  hpMult: 2.8, icon: 'boss_platinum', drops: { relic: [1, 2], essence: [1, 1] },                          artifact: 'art_glove' },
+    { id: 'boss_diamond',  name: 'Алмазный владыка',   tier: 11, hpMult: 3.5, icon: 'boss_diamond',  drops: { essence: [1, 2], relic: [0, 1], core: [1, 1] },            artifact: 'art_deep_compass' }
+];
+
+export const COMPONENTS = [
+    { id: 'scrap',   name: 'Ржавый лом',          icon: 'comp_scrap' },
+    { id: 'crystal', name: 'Кристальный осколок', icon: 'comp_crystal' },
+    { id: 'core',    name: 'Энергоядро',          icon: 'comp_core' },
+    { id: 'relic',   name: 'Древняя реликвия',    icon: 'comp_relic' },
+    { id: 'essence', name: 'Эссенция глубин',     icon: 'comp_essence' }
+];
+
+// Артефакты: мульт-поля (passiveMult/clickMult/bossDamageMult) перемножаются,
+// плоские (critAdd/autoCpsAdd/offlineAdd/dropBonus) суммируются. Артефактные
+// passiveMult/clickMult входят в якорь опосредованно — симметрично престижу
+// (мультипликаторы в getOrePerSecond/getClickDamage), инвариант «цена = N сек
+// якоря» сохраняется; verify-скрипт balance-sim обязан подтвердить пейс.
+export const ARTIFACTS = [
+    { id: 'art_miner_totem', name: 'Тотем шахтёра',    desc: 'пассивная добыча x1.1',       source: 'boss_copper',   bonuses: { passiveMult: 1.1 } },
+    { id: 'art_lantern_old', name: 'Старый фонарь',    desc: '+5% к офлайн-доходу',         source: 'boss_silver',   bonuses: { offlineAdd: 0.05 } },
+    { id: 'art_magnet_ring', name: 'Кольцо магнита',   desc: 'робо-рука +0.5 авто-клика/с', source: 'boss_amethyst', bonuses: { autoCpsAdd: 0.5 } },
+    { id: 'art_lucky_charm', name: 'Талисман удачи',   desc: '+3% к шансу крита',           source: 'boss_ruby',     bonuses: { critAdd: 0.03 } },
+    { id: 'art_glove',       name: 'Рукавица глубин',  desc: 'урон клика x1.1',             source: 'boss_platinum', bonuses: { clickMult: 1.1 } },
+    { id: 'art_deep_compass',name: 'Компас глубин',    desc: '+15% к дропу компонентов',    source: 'boss_diamond',  bonuses: { dropBonus: 0.15 } },
+    { id: 'art_hardpick',    name: 'Закалённый бур',   desc: 'урон боссам x1.25',           source: 'r_hardpick',    bonuses: { bossDamageMult: 1.25 } },
+    { id: 'art_core_battery',name: 'Ядро-аккумулятор', desc: 'пассивная добыча x1.15',      source: 'r_battery',     bonuses: { passiveMult: 1.15 } },
+    { id: 'art_ancient_pick',name: 'Древняя кирка',    desc: 'урон клика x1.15, урон боссам x1.1', source: 'r_ancient', bonuses: { clickMult: 1.15, bossDamageMult: 1.1 } }
+];
+
+// Активируемые предметы: расходники с временными бафами (30 сек остаток —
+// перезарядка повторной активации того же слота). bossUse — только в бою.
+export const ITEMS = [
+    { id: 'item_bomb',   name: 'Шахтёрская бомба',  desc: 'урон боссу x2 на 30 сек',    cost: { scrap: 4 },                effect: { bossMult: 2, durMs: 30e3 },    stackMax: 5,  bossUse: true },
+    { id: 'item_belt',   name: 'Динамитный пояс',   desc: 'добыча x3 на 3 минуты',      cost: { scrap: 6, crystal: 1 },    effect: { miningMult: 3, durMs: 180e3 }, stackMax: 5 },
+    { id: 'item_coffee', name: 'Кофе шахтёра',      desc: 'добыча x2 на 5 минут',       cost: { crystal: 2 },              effect: { miningMult: 2, durMs: 300e3 }, stackMax: 8 },
+    { id: 'item_ration', name: 'Сухпаёк',           desc: 'мгновенно 60 сек дохода',    cost: { scrap: 3 },                effect: { instantSec: 60 },              stackMax: 10 },
+    { id: 'item_stim',   name: 'Стимулятор жилы',   desc: 'каждый удар — жила на 2 мин',cost: { core: 1, crystal: 2 },     effect: { veinForce: true, durMs: 120e3 }, stackMax: 3 }
+];
+
+// Крафт: result n — сколько единиц за крафт; craftMs=0 — мгновенный (расходник).
+export const CRAFT_RECIPES = [
+    { id: 'r_bomb',     result: { kind: 'item',     id: 'item_bomb',        n: 2 }, cost: { scrap: 4 },               craftMs: 0 },
+    { id: 'r_belt',     result: { kind: 'item',     id: 'item_belt',        n: 1 }, cost: { scrap: 6, crystal: 1 },   craftMs: 0 },
+    { id: 'r_coffee',   result: { kind: 'item',     id: 'item_coffee',      n: 1 }, cost: { crystal: 2 },             craftMs: 0 },
+    { id: 'r_ration',   result: { kind: 'item',     id: 'item_ration',      n: 2 }, cost: { scrap: 3 },               craftMs: 0 },
+    { id: 'r_stim',     result: { kind: 'item',     id: 'item_stim',        n: 1 }, cost: { core: 1, crystal: 2 },    craftMs: 0 },
+    { id: 'r_hardpick', result: { kind: 'artifact', id: 'art_hardpick',     n: 1 }, cost: { crystal: 3, core: 1 },    craftMs: 600e3 },
+    { id: 'r_battery',  result: { kind: 'artifact', id: 'art_core_battery', n: 1 }, cost: { core: 2, essence: 1 },    craftMs: 1200e3 },
+    { id: 'r_ancient',  result: { kind: 'artifact', id: 'art_ancient_pick', n: 1 }, cost: { relic: 2, essence: 2 },   craftMs: 1800e3 }
+];
+
+// Суммарный бонус артефактов по полю: мультипликаторы перемножаются (старт 1),
+// плоские прибавки суммируются (старт 0).
+export function getArtifactBonus(field) {
+    const isMult = field === 'passiveMult' || field === 'clickMult' || field === 'bossDamageMult';
+    let acc = isMult ? 1 : 0;
+    for (const def of ARTIFACTS) {
+        if (!gameState.artifacts.includes(def.id)) continue;
+        const v = def.bonuses[field];
+        if (v) acc = isMult ? acc * v : acc + v;
+    }
+    return acc;
+}
+
+export function getItemBuffMult() {
+    return Date.now() < gameState.miningBuffUntil ? gameState.miningBuffMult : 1;
+}
+
+export function isItemVeinActive() {
+    return Date.now() < gameState.itemVeinUntil;
+}
+
+// Итоговый множитель урона боссу: артефакты x предметный баф «Шахтёрская бомба».
+export function getBossDamageMult() {
+    return getArtifactBonus('bossDamageMult') * (Date.now() < gameState.bossBuffUntil ? gameState.bossBuffMult : 1);
+}
+
+// Удар по боссу = ролл клика без мутации блока (мутационные множители НЕ применяются,
+// дневные крит/жила и бафы предметов внутри) x артефактный/предметный урон боссу.
+export function rollBossHit() {
+    const r = rollClickGain(null);
+    return { gain: r.gain * getBossDamageMult(), crit: r.crit, lucky: r.lucky };
+}
+
+// Награда за убийство босса: баунти (90 сек полного дохода на момент убийства),
+// дроп компонентов (ролл таблицы x(1+dropBonus) артефакта) и артефакт за первый раз.
+export function grantBossKill(bossId) {
+    const def = BOSSES.find((b) => b.id === bossId);
+    if (!def) return null;
+    const bounty = Math.ceil(BOSS_BOUNTY_SECONDS * getEarningRate());
+    addOre(bounty);
+    const comps = {};
+    for (const compId of Object.keys(def.drops)) {
+        const [min, max] = def.drops[compId];
+        const n = Math.floor((min + Math.floor(Math.random() * (max - min + 1))) * (1 + getArtifactBonus('dropBonus')));
+        if (n > 0) {
+            comps[compId] = n;
+            gameState.components[compId] = (gameState.components[compId] || 0) + n;
+        }
+    }
+    gameState.bossesDefeated[bossId] = true;
+    let artifactId = null;
+    if (def.artifact && !gameState.artifacts.includes(def.artifact)) {
+        gameState.artifacts.push(def.artifact);
+        artifactId = def.artifact;
+    }
+    saveGame();
+    return { bounty, comps, artifactId };
+}
+
+// Крафт: верстак свободен, стоимость полностью оплачена и под результат item
+// остаётся место в стаки (проверка ДО списания).
+export function canCraft(recipeId) {
+    const recipe = CRAFT_RECIPES.find((r) => r.id === recipeId);
+    if (!recipe || gameState.crafting !== null) return false;
+    for (const compId of Object.keys(recipe.cost)) {
+        if ((gameState.components[compId] || 0) < recipe.cost[compId]) return false;
+    }
+    if (recipe.result.kind === 'item') {
+        const def = ITEMS.find((i) => i.id === recipe.result.id);
+        const space = def.stackMax - (gameState.items[def.id] || 0);
+        if (space < recipe.result.n) return false;
+    }
+    return true;
+}
+
+export function startCraft(recipeId) {
+    if (!canCraft(recipeId)) return false;
+    const recipe = CRAFT_RECIPES.find((r) => r.id === recipeId);
+    for (const compId of Object.keys(recipe.cost)) {
+        gameState.components[compId] -= recipe.cost[compId];
+    }
+    gameState.crafting = { recipeId, endsAt: Date.now() + recipe.craftMs };
+    saveGame();
+    return true;
+}
+
+export function canClaimCraft() {
+    return Boolean(gameState.crafting) && Date.now() >= gameState.crafting.endsAt;
+}
+
+export function claimCraft() {
+    if (!canClaimCraft()) return null;
+    const recipe = CRAFT_RECIPES.find((r) => r.id === gameState.crafting.recipeId);
+    gameState.crafting = null;
+    if (recipe.result.kind === 'item') {
+        gameState.items[recipe.result.id] = (gameState.items[recipe.result.id] || 0) + recipe.result.n;
+    } else if (recipe.result.kind === 'artifact') {
+        if (!gameState.artifacts.includes(recipe.result.id)) gameState.artifacts.push(recipe.result.id);
+    }
+    saveGame();
+    return recipe;
+}
+
+// Активация предмета. Отказ: нет предмета; bossUse-предмет вне боя; тот же слот
+// бафа активен с остатком >30с (меньше — догорание и перезарядка сверху).
+export function useItem(id, inBoss = false) {
+    const def = ITEMS.find((i) => i.id === id);
+    if (!def || (gameState.items[id] || 0) <= 0) return false;
+    if (def.bossUse && !inBoss) return false;
+    const eff = def.effect;
+    const now = Date.now();
+    const RESLOT_MS = 30e3;
+    if (eff.miningMult && gameState.miningBuffUntil - now > RESLOT_MS) return false;
+    if (eff.bossMult && gameState.bossBuffUntil - now > RESLOT_MS) return false;
+    if (eff.veinForce && gameState.itemVeinUntil - now > RESLOT_MS) return false;
+    if (eff.miningMult) {
+        gameState.miningBuffMult = eff.miningMult;
+        gameState.miningBuffUntil = now + eff.durMs;
+    }
+    if (eff.bossMult) {
+        gameState.bossBuffMult = eff.bossMult;
+        gameState.bossBuffUntil = now + eff.durMs;
+    }
+    if (eff.veinForce) {
+        gameState.itemVeinUntil = now + eff.durMs;
+    }
+    if (eff.instantSec) {
+        addOre(eff.instantSec * getEarningRate());
+    }
+    gameState.items[id] -= 1;
+    saveGame();
+    return true;
 }
 
 // ---------- Ежедневные награды (Этап 6, расширенный) ----------
@@ -615,11 +831,12 @@ export function claimDailyReward() {
 // Один клик: базовый урон + крит x5(+линза) + золотая жила x10(+магнит) + синергия (% от пассива).
 // mutationId — активная мутация блока: замороженная форсирует крит, радужная множит весь доход.
 // Дневные бафы: «Золотая жила» форсирует жилу, множитель бафа применяется к итогу.
+// Предметные бафы так же: стимулятор форсирует жилу, множитель бафа к итогу (как dailyMult).
 export function rollClickGain(mutationId) {
     let gain = getClickDamage() + getSynergyGain();
     const mut = mutationId ? MUTATIONS[mutationId] : null;
     const crit = (mut && mut.forceCrit) || Math.random() < getCritChance();
-    const lucky = isDailyVeinActive() || Math.random() < getLuckyChance();
+    const lucky = isDailyVeinActive() || isItemVeinActive() || Math.random() < getLuckyChance();
     // Фокус-линза: +0.5 к силе крита за уровень (x5 -> x5.5...)
     const critMult = 5 + 0.5 * getUpgradeLevel('focuslens');
     // Рудный магнит: +1 к множителю жилы за уровень (x10 -> x11...)
@@ -628,6 +845,7 @@ export function rollClickGain(mutationId) {
     if (lucky) gain *= veinMult;
     if (mut && mut.clickGainMult) gain *= mut.clickGainMult;
     gain *= getDailyMult();
+    gain *= getItemBuffMult();
     return { gain, crit, lucky };
 }
 
@@ -676,20 +894,22 @@ export function canPrestige() {
 
 export function doPrestige() {
     const gain = getStarsGain();
-    if (gain < 1) return false;
+    if (gain < 1) return 0;
     gameState.stars += gain;
     gameState.ore = 0;
     gameState.tier = 0;
     gameState.tierEarned = TIERS.map(() => 0);
     gameState.tierAnchorRate = 0;
     gameState.levels = createInitialState().levels;
+    // мета-прогресс переживает престиж; боссы бьются заново (артефакты не дублируются)
+    gameState.bossesDefeated = {};
     return gain;
 }
 
 // ---------- Офлайн-доход ----------
 
 export function getOfflineRate() {
-    return OFFLINE_BASE_RATE + OFFLINE_RATE_PER_LANTERN * getUpgradeLevel('lantern');
+    return OFFLINE_BASE_RATE + OFFLINE_RATE_PER_LANTERN * getUpgradeLevel('lantern') + getArtifactBonus('offlineAdd');
 }
 
 export function getOfflineCapSeconds() {
@@ -804,6 +1024,13 @@ export function applySave(data) {
         data = { ...data, version: SAVE_VERSION };
     }
 
+    // Миграция v4 -> v5: карта/боссы/артефакты/крафт. Мета-прогресса (компоненты,
+    // артефакты, предметы, верстак, бафы предметов) в старых сейвах нет — они
+    // остаются с дефолтами createInitialState, остальное берётся как есть.
+    if (data.version === 4) {
+        data = { ...data, version: SAVE_VERSION };
+    }
+
     if (data.version !== SAVE_VERSION) return;
 
     const o = Number(data.ore);
@@ -832,6 +1059,48 @@ export function applySave(data) {
     const dcu = Number(data.dailyCritUntil), dvt = Number(data.dailyVeinUntil);
     gameState.dailyCritUntil = Number.isFinite(dcu) && dcu > Date.now() ? dcu : 0;
     gameState.dailyVeinUntil = Number.isFinite(dvt) && dvt > Date.now() ? dvt : 0;
+    // Мета-прогресс (карта/боссы/артефакты/крафт): счётчики целые >= 0, ключи
+    // только из каталогов; бафы предметов — wall-clock, истёкшие не resurrect.
+    gameState.components = {};
+    if (data.components && typeof data.components === 'object') {
+        for (const def of COMPONENTS) {
+            gameState.components[def.id] = Math.max(0, Math.floor(Number(data.components[def.id]) || 0));
+        }
+    }
+    gameState.items = {};
+    if (data.items && typeof data.items === 'object') {
+        for (const def of ITEMS) {
+            gameState.items[def.id] = Math.max(0, Math.floor(Number(data.items[def.id]) || 0));
+        }
+    }
+    gameState.artifacts = [];
+    if (Array.isArray(data.artifacts)) {
+        gameState.artifacts = [...new Set(data.artifacts.filter((id) => ARTIFACTS.some((a) => a.id === id)))];
+    }
+    gameState.bossesDefeated = {};
+    if (data.bossesDefeated && typeof data.bossesDefeated === 'object') {
+        for (const def of BOSSES) {
+            if (data.bossesDefeated[def.id]) gameState.bossesDefeated[def.id] = true;
+        }
+    }
+    gameState.crafting = null;
+    if (data.crafting && typeof data.crafting === 'object') {
+        const endsAt = Number(data.crafting.endsAt);
+        if (Number.isFinite(endsAt) && endsAt > 0 && CRAFT_RECIPES.some((r) => r.id === data.crafting.recipeId)) {
+            gameState.crafting = { recipeId: data.crafting.recipeId, endsAt };
+        }
+    }
+    const mbu = Number(data.miningBuffUntil), mbm = Number(data.miningBuffMult);
+    const bbu = Number(data.bossBuffUntil), bbm = Number(data.bossBuffMult);
+    // «не resurrect»: истёкший баф сбрасывает и множитель (активный — только при живом until)
+    gameState.miningBuffUntil = Number.isFinite(mbu) && mbu > Date.now() ? mbu : 0;
+    gameState.miningBuffMult = gameState.miningBuffUntil && Number.isFinite(mbm) && mbm >= 1
+        ? Math.min(mbm, 1e6) : 1;
+    gameState.bossBuffUntil = Number.isFinite(bbu) && bbu > Date.now() ? bbu : 0;
+    gameState.bossBuffMult = gameState.bossBuffUntil && Number.isFinite(bbm) && bbm >= 1
+        ? Math.min(bbm, 1e6) : 1;
+    const ivu = Number(data.itemVeinUntil);
+    gameState.itemVeinUntil = Number.isFinite(ivu) && ivu > Date.now() ? ivu : 0;
     gameState.levels = { ...init.levels };
     if (data.levels && typeof data.levels === 'object') {
         for (const def of UPGRADES) {

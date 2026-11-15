@@ -156,14 +156,14 @@ check('цена при нулевом доходе = UNLOCK_FLOOR', computeNextU
     check('миграция v2: руда сохранена', gameState.ore === 12345);
     check('миграция v2: уровни сохранены', gameState.levels.pickaxe === 7 && gameState.levels.factory === 1 && gameState.levels.miner === 9);
     check('миграция v2: tierEarned перенесены по ключам', gameState.tierEarned[0] === 100 && gameState.tierEarned[2] === 200 && gameState.tierEarned[4] === 300 && gameState.tierEarned[6] === 400 && gameState.tierEarned[11] === 500);
-    check('миграция v2: версия обновлена, якорь ленивый', gameState.version === SAVE_VERSION && SAVE_VERSION === 4 && gameState.tierAnchorRate === 0);
+    check('миграция v2: версия обновлена, якорь ленивый', gameState.version === SAVE_VERSION && SAVE_VERSION === 5 && gameState.tierAnchorRate === 0);
 
     applySave({ version: 2, ore: 1, tier: 4, tierEarned: [0, 0, 0, 0, 7e10], levels: {} });
     check('миграция v2: алмазный тир 4 -> 11', gameState.tier === 11, `tier=${gameState.tier}`);
     check('миграция v2: алмазная добыча -> индекс 11', gameState.tierEarned[11] === 7e10);
 
     applySave({ version: 3, ore: 777, tier: 5, stars: 0, tierEarned: TIERS.map(() => 0), levels: { miner: 3 } });
-    check('миграция v3: сейв принят', gameState.version === 4 && gameState.ore === 777 && gameState.tier === 5 && gameState.levels.miner === 3);
+    check('миграция v3: сейв принят', gameState.version === SAVE_VERSION && gameState.ore === 777 && gameState.tier === 5 && gameState.levels.miner === 3);
     check('миграция v3: якорь пустой (ленивая фиксация)', gameState.tierAnchorRate === 0);
 }
 

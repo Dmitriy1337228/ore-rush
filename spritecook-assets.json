@@ -1,4 +1,4 @@
-{
+﻿{
     "ui_kit":  {
                    "kit_id":  "d148273c-9d4f-485a-87ae-a0405078482c",
                    "name":  "Mine Clicker UI",
@@ -1136,6 +1136,181 @@
                        "label":  "icon_magnet",
                        "file":  "assets/ui/icon_magnet.png",
                        "group":  "icons"
+                   },
+                   {
+                       "asset_id":  "1bf2dece-8d3f-433e-a4ef-6a82c4849b60",
+                       "sha12":  "eab35be3322f",
+                       "label":  "comp_scrap",
+                       "file":  "assets/ui/comp_scrap.png",
+                       "group":  "components"
+                   },
+                   {
+                       "asset_id":  "7705835c-2475-4f22-9783-e6664baafe2b",
+                       "sha12":  "366dae91a3b3",
+                       "label":  "comp_core",
+                       "file":  "assets/ui/comp_core.png",
+                       "group":  "components"
+                   },
+                   {
+                       "asset_id":  "4700318c-4f8e-4834-9fe2-940739438c0b",
+                       "sha12":  "f619f91e7c97",
+                       "label":  "comp_relic",
+                       "file":  "assets/ui/comp_relic.png",
+                       "group":  "components"
+                   },
+                   {
+                       "asset_id":  "7fe733ca-4d47-4583-aa0f-0bdf6acf482e",
+                       "sha12":  "d5d6cea6939f",
+                       "label":  "item_stim",
+                       "file":  "assets/ui/item_stim.png",
+                       "group":  "items"
+                   },
+                   {
+                       "asset_id":  "70af8630-91a2-4d88-b0b6-e0699dcaf117",
+                       "sha12":  "e4c0188221a8",
+                       "label":  "item_coffee",
+                       "file":  "assets/ui/item_coffee.png",
+                       "group":  "items"
+                   },
+                   {
+                       "asset_id":  "450551e4-5231-45bf-9e87-63136365fd8a",
+                       "sha12":  "d4005a9a4136",
+                       "label":  "art_glove",
+                       "file":  "assets/ui/art_glove.png",
+                       "group":  "artifacts"
+                   },
+                   {
+                       "asset_id":  "bdae4dce-8153-4022-b2ba-35f96d5b7c76",
+                       "sha12":  "2006400e6211",
+                       "label":  "art_miner_totem",
+                       "file":  "assets/ui/art_miner_totem.png",
+                       "group":  "artifacts"
+                   },
+                   {
+                       "asset_id":  "ee2449aa-3458-4566-af5a-56c1e77f2a33",
+                       "sha12":  "159338b5946f",
+                       "label":  "item_bomb",
+                       "file":  "assets/ui/item_bomb.png",
+                       "group":  "items"
+                   },
+                   {
+                       "asset_id":  "c2fd8568-7814-4d65-bb93-3c952018c784",
+                       "sha12":  "1875112587eb",
+                       "label":  "boss_platinum",
+                       "file":  "assets/ui/boss_platinum.png",
+                       "group":  "bosses"
+                   },
+                   {
+                       "asset_id":  "2934fdd6-a03e-4bef-9efa-0e66b7f3a1cb",
+                       "sha12":  "2a4a2fd34211",
+                       "label":  "art_lantern_old",
+                       "file":  "assets/ui/art_lantern_old.png",
+                       "group":  "artifacts"
+                   },
+                   {
+                       "asset_id":  "f5b24d42-2a8d-4d6d-8960-8e2cf3863532",
+                       "sha12":  "5c5be7613ce5",
+                       "label":  "item_ration",
+                       "file":  "assets/ui/item_ration.png",
+                       "group":  "items"
+                   },
+                   {
+                       "asset_id":  "1172163f-2b13-4497-bec8-6cfaae869eac",
+                       "sha12":  "8174ff0f7a3a",
+                       "label":  "comp_crystal",
+                       "file":  "assets/ui/comp_crystal.png",
+                       "group":  "components"
+                   },
+                   {
+                       "asset_id":  "2ab008c2-259f-46aa-94a4-f1f209e07328",
+                       "sha12":  "fa8d0558ea01",
+                       "label":  "art_lucky_charm",
+                       "file":  "assets/ui/art_lucky_charm.png",
+                       "group":  "artifacts"
+                   },
+                   {
+                       "asset_id":  "c7fa5e49-9fb8-4e72-ac97-889dcffa19e4",
+                       "sha12":  "a354a1608157",
+                       "label":  "art_magnet_ring",
+                       "file":  "assets/ui/art_magnet_ring.png",
+                       "group":  "artifacts"
+                   },
+                   {
+                       "asset_id":  "de3085a4-55fc-4753-84fe-f64e9d698ba9",
+                       "sha12":  "27189408744c",
+                       "label":  "art_deep_compass",
+                       "file":  "assets/ui/art_deep_compass.png",
+                       "group":  "artifacts"
+                   },
+                   {
+                       "asset_id":  "b24a2e4a-fd46-4b88-96dd-3b5d77ca5463",
+                       "sha12":  "36d1849590ab",
+                       "label":  "art_core_battery",
+                       "file":  "assets/ui/art_core_battery.png",
+                       "group":  "artifacts"
+                   },
+                   {
+                       "asset_id":  "3dfceaad-7ed4-4020-83ed-a6a6ce55ef5a",
+                       "sha12":  "709073bf10ea",
+                       "label":  "boss_amethyst",
+                       "file":  "assets/ui/boss_amethyst.png",
+                       "group":  "bosses"
+                   },
+                   {
+                       "asset_id":  "a65380c9-d232-4794-8c5c-97f73d4d5647",
+                       "sha12":  "b09249d88040",
+                       "label":  "art_ancient_pick",
+                       "file":  "assets/ui/art_ancient_pick.png",
+                       "group":  "artifacts"
+                   },
+                   {
+                       "asset_id":  "c9ce2e85-372b-4662-a1a3-2c69bc842150",
+                       "sha12":  "29727d8de73b",
+                       "label":  "item_belt",
+                       "file":  "assets/ui/item_belt.png",
+                       "group":  "items"
+                   },
+                   {
+                       "asset_id":  "57739035-7685-4108-a766-72ba4f069a09",
+                       "sha12":  "0ee8956a907e",
+                       "label":  "boss_ruby",
+                       "file":  "assets/ui/boss_ruby.png",
+                       "group":  "bosses"
+                   },
+                   {
+                       "asset_id":  "cd02f014-fa43-4d07-a843-3d78f289ba6a",
+                       "sha12":  "eaa82355fa6b",
+                       "label":  "boss_diamond",
+                       "file":  "assets/ui/boss_diamond.png",
+                       "group":  "bosses"
+                   },
+                   {
+                       "asset_id":  "c50b17e6-242e-4986-9c81-dea405783f40",
+                       "sha12":  "c89a4f10484a",
+                       "label":  "boss_silver",
+                       "file":  "assets/ui/boss_silver.png",
+                       "group":  "bosses"
+                   },
+                   {
+                       "asset_id":  "7ec0d337-44db-4983-bdfc-42c03ee9d02e",
+                       "sha12":  "e0d16e0ac23e",
+                       "label":  "art_hardpick",
+                       "file":  "assets/ui/art_hardpick.png",
+                       "group":  "artifacts"
+                   },
+                   {
+                       "asset_id":  "ad6106a8-9a08-46ba-85cb-5918ee77abbf",
+                       "sha12":  "87cada93f33f",
+                       "label":  "boss_copper",
+                       "file":  "assets/ui/boss_copper.png",
+                       "group":  "bosses"
+                   },
+                   {
+                       "asset_id":  "a201fb09-5650-4201-b77a-a99f2a03a242",
+                       "sha12":  "2486dbc46e08",
+                       "label":  "comp_essence",
+                       "file":  "assets/ui/comp_essence.png",
+                       "group":  "components"
                    }
                ]
 }

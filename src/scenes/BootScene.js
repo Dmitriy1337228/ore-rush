@@ -51,7 +51,20 @@ const IMAGES = [
     // Фоны локаций (пиксель-арт конверсия voxel-рендеров ComfyUI, по одному на тир)
     'bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver',
     'bg_05_gold', 'bg_06_amethyst', 'bg_07_emerald', 'bg_08_ruby',
-    'bg_09_sapphire', 'bg_10_platinum', 'bg_11_uranium', 'bg_12_diamond'
+    'bg_09_sapphire', 'bg_10_platinum', 'bg_11_uranium', 'bg_12_diamond',
+
+    // Боссы особых уровней (спрайты боя на месте блока)
+    'boss_copper', 'boss_silver', 'boss_amethyst', 'boss_ruby', 'boss_platinum', 'boss_diamond',
+
+    // Компоненты крафта (дроп с боссов)
+    'comp_scrap', 'comp_crystal', 'comp_core', 'comp_relic', 'comp_essence',
+
+    // Активируемые предметы
+    'item_bomb', 'item_belt', 'item_coffee', 'item_ration', 'item_stim',
+
+    // Артефакты (коллекция)
+    'art_miner_totem', 'art_lantern_old', 'art_magnet_ring', 'art_lucky_charm', 'art_glove',
+    'art_deep_compass', 'art_hardpick', 'art_core_battery', 'art_ancient_pick'
 ];
 
 export class BootScene extends Phaser.Scene {

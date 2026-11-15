@@ -3,7 +3,8 @@ import {
     gameState, TIERS, rollClickGain, addOre, getOrePerSecond, getAutoClicksPerSecond,
     saveGame, loadGame, saveLastExit, readLastExit, computeOfflineReward, fmt,
     MUTATIONS, MUTATION_DURATION_MS, MUTATION_CHECK_MS, MUTATION_CHANCE, getMutationBreakBonus,
-    canClaimDaily, claimDailyReward
+    canClaimDaily, claimDailyReward,
+    BOSSES, ITEMS, BOSS_FIGHT_SECONDS, bossHpFor, rollBossHit, grantBossKill, useItem
 } from '../state.js';
 import { YandexSDKStub } from '../sdk-stub.js';
 import { computeLayout } from '../layout.js';
@@ -56,6 +57,8 @@ export class GameScene extends Phaser.Scene {
         this.mutation = null;  // { id, endsAt } — активная мутация блока (Этап 3); единственный терминатор — таймер
         this.mutationUi = null;
         this.hitProgress = 0;  // удары, накопленные на текущей стадии (для hitsPerStage > 1)
+        this.boss = null;      // активный босс: { def, hp, maxHp, busy, endsAt } — режим боя
+        this.bossUi = null;    // контейнер оверлея боя (спрайт, HP-бар, кнопки)
     }
 
     create() {
@@ -475,6 +478,9 @@ export class GameScene extends Phaser.Scene {
 
         this.events.on('shutdown', () => {
             saveGame();
+            this.destroyBossOverlay();
+            this.boss = null;
+            this.registry.set('bossActive', false);
             document.removeEventListener('visibilitychange', this.onVisibility);
             window.removeEventListener('beforeunload', this.onBeforeUnload);
             this.game.events.off('tier-changed', this._onTierChanged);
@@ -580,7 +586,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Робо-рука: авто-клик по блоку. Полный урон клика, без тряски камеры.
+    // В бою робо-рука бьёт босса (машиновый доход, как пассив — под любым UI).
     autoMine() {
+        if (this.boss) {
+            const bx = this.blockX + Phaser.Math.Between(-70, 70);
+            const by = this.blockY + Phaser.Math.Between(-70, 50);
+            this.performBossHit(bx, by, true);
+            return;
+        }
         const px = this.blockX + Phaser.Math.Between(-70, 70);
         const py = this.blockY + Phaser.Math.Between(-70, 50);
         this.performMine(px, py, true);
@@ -665,6 +678,187 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
+    // ---------- Боссы (кликер-испытание вместо блока) ----------
+
+    // Бой: блок прячется (стадия сохраняется для возврата), на его месте босс с HP
+    // и лимитом времени. Ручные клики по спрайту и робо-рука наносят rollBossHit,
+    // пассив работает как обычно. HP не персистится: перезагрузка страницы сбрасывает бой.
+    startBossFight(bossId) {
+        if (this.boss || this.registry.get('blockLocked')) return;
+        const def = BOSSES.find((b) => b.id === bossId);
+        if (!def) return;
+        const hp = bossHpFor(def);
+        this.boss = { def, hp, maxHp: hp, busy: false, endsAt: this.time.now + BOSS_FIGHT_SECONDS * 1000 };
+        // Зомби-цепочки разрушения гасим так же, как buildBlock: снятие твинов и
+        // таймера заживления + смена поколения блока (иначе отложенный delayedCall
+        // восстановил бы busy/текстуру уже под боссом)
+        if (this.streakTimer) {
+            this.streakTimer.remove();
+            this.streakTimer = null;
+        }
+        this.tweens.killTweensOf(this.block);
+        this.block.setVisible(false).disableInteractive();
+        this.blockGen = (this.blockGen || 0) + 1;
+        this.blockBusy = false;
+        this.registry.set('bossActive', true);
+        this.buildBossOverlay();
+        this.refreshTick();
+    }
+
+    buildBossOverlay() {
+        const bx = this.blockX, by = this.blockY;
+        this.bossUi = this.add.container(0, 0).setDepth(27);
+
+        const sprite = this.add.image(bx, by, this.boss.def.icon).setDisplaySize(240, 240);
+        sprite.setInteractive({ useHandCursor: true });
+        sprite.on('pointerdown', (pointer) => this.performBossHit(pointer.worldX, pointer.worldY, false));
+        this.bossSprite = sprite;
+
+        this.bossBar = this.add.graphics();
+        this.bossName = makeLabel(this, bx, by - 212, this.boss.def.name, 20, '#ffd75e').setOrigin(0.5);
+        this.bossHpText = makeLabel(this, bx, by - 180, '', 13, '#ffffff').setOrigin(0.5);
+        this.bossTime = makeLabel(this, bx, by - 146, `${BOSS_FIGHT_SECONDS}с`, 16, '#ffe9b0').setOrigin(0.5);
+
+        const close = this.add.image(bx + 170, by - 235, 'close_button_square').setDisplaySize(44, 44);
+        close.setInteractive(new Phaser.Geom.Rectangle(0, 0, 196, 191), Phaser.Geom.Rectangle.Contains);
+        close.on('pointerdown', () => this.retreatBoss());
+        this.bossClose = close;
+
+        this.bossUi.add([sprite, this.bossBar, this.bossName, this.bossHpText, this.bossTime, close]);
+
+        this.bossItems = [];
+        const usable = ITEMS.filter((it) => it.bossUse && (gameState.items[it.id] || 0) > 0);
+        usable.forEach((it, i) => {
+            const cx = bx + (i - (usable.length - 1) / 2) * 92;
+            const btn = this.add.image(cx, by + 172, 'buy_button_normal').setDisplaySize(84, 44);
+            btn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
+            const icon = this.add.image(cx - 20, by + 172, it.id).setDisplaySize(26, 26);
+            const cnt = makeLabel(this, cx + 14, by + 172, `x${gameState.items[it.id] || 0}`, 14, '#ffffff').setOrigin(0.5);
+            btn.on('pointerdown', () => {
+                if (useItem(it.id, true)) {
+                    playSfx(this, 'purchase');
+                    cnt.setText(`x${gameState.items[it.id] || 0}`);
+                    btn.setAlpha((gameState.items[it.id] || 0) > 0 ? 1 : 0.35);
+                    this.refreshTick();
+                }
+            });
+            this.bossUi.add([btn, icon, cnt]);
+            this.bossItems.push({ id: it.id, btn, icon, cnt });
+        });
+
+        this.tweens.add({
+            targets: sprite,
+            scaleX: sprite.scaleX + 0.03,
+            scaleY: sprite.scaleY + 0.03,
+            duration: 1400,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+        this.drawBossBar();
+    }
+
+    drawBossBar() {
+        if (!this.boss || !this.bossBar) return;
+        const g = this.bossBar;
+        const x = this.blockX - 170, y = this.blockY - 190;
+        g.clear();
+        g.fillStyle(0x1a1c1f, 1);
+        g.fillRect(x, y, 340, 20);
+        const frac = Math.max(0, Math.min(1, this.boss.hp / this.boss.maxHp));
+        const t = 1 - frac;
+        const r = Math.round(0x7e + (0xf0 - 0x7e) * t);
+        const gr = Math.round(0xe7 + (0x63 - 0xe7) * t);
+        const b = Math.round(0x87 + (0x8c - 0x87) * t);
+        g.fillStyle(Phaser.Display.Color.GetColor(r, gr, b), 1);
+        g.fillRect(x + 2, y + 2, Math.max(0, 336 * frac), 16);
+        this.bossHpText.setText(`${fmt(Math.max(0, Math.ceil(this.boss.hp)))} / ${fmt(this.boss.maxHp)}`);
+    }
+
+    // Удар по боссу: флоат/частицы/звук по образцу performMine, но без addOre —
+    // урон идёт в HP босса, награда только за убийство (grantBossKill).
+    performBossHit(px, py, isAuto) {
+        if (!this.boss || this.boss.busy) return;
+        const { gain, crit, lucky } = rollBossHit();
+        this.boss.hp -= gain;
+        if (!isAuto) {
+            playSfx(this, 'pickaxe');
+            if (crit || lucky) playSfx(this, 'crit');
+            if (crit || lucky) this.cameras.main.shake(120, 0.004);
+        }
+        this.oreEmitter.explode(crit || lucky ? 16 : 8, px, py);
+        this.debrisEmitter.explode(crit || lucky ? 8 : 4, px, py);
+        let label = `+${fmt(gain)}`;
+        let color = TIERS[gameState.tier].floatColor;
+        if (lucky) { label = `ЖИЛА! +${fmt(gain)}`; color = '#ffec8a'; }
+        else if (crit) { label = `КРИТ! +${fmt(gain)}`; color = '#ffd75e'; }
+        const size = crit || lucky ? 30 : (isAuto ? 16 : 22);
+        const float = makeLabel(this, px, py - 30, label, size, color);
+        float.setOrigin(0.5).setDepth(28);
+        this.tweens.add({
+            targets: float,
+            y: float.y - 60,
+            alpha: 0,
+            duration: 750,
+            ease: 'Cubic.easeOut',
+            onComplete: () => float.destroy()
+        });
+        this.drawBossBar();
+        if (this.boss.hp <= 0) this.killBoss();
+        this.refreshTick();
+    }
+
+    killBoss() {
+        const b = this.boss;
+        if (!b || b.busy) return;
+        b.busy = true;
+        this.tweens.killTweensOf(this.bossSprite);
+        this.debrisEmitter.explode(40, this.blockX, this.blockY);
+        this.tweens.add({
+            targets: this.bossSprite,
+            scale: 0,
+            alpha: 0,
+            duration: 600,
+            ease: 'Quad.easeIn',
+            onComplete: () => {
+                const reward = grantBossKill(b.def.id);
+                this.destroyBossOverlay();
+                this.boss = null;
+                this.registry.set('bossActive', false);
+                this.block.setVisible(true).setInteractive({ useHandCursor: true });
+                if (reward) this.game.events.emit('boss-defeated', { bossId: b.def.id, ...reward });
+            }
+        });
+    }
+
+    // Отступление (крестик или таймер): награды нет, HP босса не сохраняется.
+    retreatBoss() {
+        const b = this.boss;
+        if (!b || b.busy) return;
+        b.busy = true;
+        this.destroyBossOverlay();
+        this.boss = null;
+        this.registry.set('bossActive', false);
+        this.block.setVisible(true).setInteractive({ useHandCursor: true });
+        const float = makeLabel(this, this.blockX, this.blockY - 120, 'Босс восстановился', 22, '#c8c8c8');
+        float.setOrigin(0.5).setDepth(28);
+        this.tweens.add({ targets: float, y: float.y - 50, alpha: 0, duration: 1100, onComplete: () => float.destroy() });
+    }
+
+    destroyBossOverlay() {
+        if (!this.bossUi) return;
+        for (const ch of this.bossUi.list.slice()) this.tweens.killTweensOf(ch);
+        this.bossUi.destroy();
+        this.bossUi = null;
+        this.bossSprite = null;
+        this.bossBar = null;
+        this.bossName = null;
+        this.bossHpText = null;
+        this.bossTime = null;
+        this.bossClose = null;
+        this.bossItems = null;
+    }
+
     // ---------- Мутации блока (Этап 3) ----------
 
     // Активирует мутацию на 10с (или указанную длительность — DevPanel/тесты).
@@ -731,6 +925,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     update() {
+        if (this.boss && this.bossTime) {
+            const remain = this.boss.endsAt - this.time.now;
+            if (remain <= 0) {
+                this.retreatBoss();
+            } else {
+                this.bossTime.setText(`${Math.ceil(remain / 1000)}с`);
+            }
+        }
         if (!this.mutation) return;
         const remaining = this.mutation.endsAt - this.time.now;
         if (remaining <= 0) {
