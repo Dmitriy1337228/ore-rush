@@ -499,6 +499,55 @@ const V5_SEED = JSON.stringify({
     if (!f.id || !f.active || f.locked !== false || !f.bar) scenarioFailures.push(`19_boss_fight: бой не активен (${JSON.stringify(f)})`);
     if (f.hp !== f.maxHp) scenarioFailures.push(`19_boss_fight: HP при старте ${f.hp}/${f.maxHp}`);
     if (!f.slots || !f.slots.some((s) => s.id === 'item_bomb')) scenarioFailures.push(`19_boss_fight: слот бомбы не найден (${JSON.stringify(f.slots)})`);
+    // Геометрия секции «Снаряжение» (пойманный скриншотом игрока наезд текстов
+    // и кнопок при addNine-карточке 10px + setDisplaySize): карточка на ширину
+    // вьюпорта, тексты не вылезают за кнопки, кнопки в нижнем ряду без наезда
+    const g = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        const r = ui.gearRows && ui.gearRows[0];
+        if (!r) return null;
+        const c = (o) => ({ x: o.x, y: o.y, w: o.displayWidth, h: o.displayHeight, right: o.x + o.displayWidth / 2, bottom: o.y + o.displayHeight / 2, top: o.y - o.displayHeight / 2, left: o.x - o.displayWidth / 2 });
+        return {
+            card: c(r.card),
+            name: { left: r.name.x, right: r.name.x + r.name.width },
+            stock: { left: r.stock.x - r.stock.width },
+            desc: { bottom: r.desc.y + r.desc.height },
+            buy: { ...c(r.buyBtn), lbl: r.buyLbl.text },
+            use: c(r.useBtn),
+            icon: c(r.icon),
+            vw: { x: ui.L.viewport.x, w: ui.L.viewport.w },
+            // HUD: статы не наезжают на «Карта», звёзды (под баром справа) — на строку бафов
+            statsRight: Math.round(ui.statsLine.x + ui.statsLine.width),
+            statsX: Math.round(ui.statsLine.x),
+            statsSize: ui.statsLine.style ? ui.statsLine.style.fontSize : null,
+            statsText: ui.statsLine.text,
+            mapBtnLeft: Math.round(ui.L.hud.mapBtn.x),
+            starsLeft: Math.round(ui.starsText.x - ui.starsText.width),
+            buffRight: Math.round(ui.buffLine.x + ui.buffLine.width)
+        };
+    })
+    if (!g) {
+        scenarioFailures.push('19_boss_fight: секция «Снаряжение» не построена');
+    } else {
+        if (g.statsRight > g.mapBtnLeft - 8)
+            scenarioFailures.push(`19_boss_fight: статы HUD наезжают на «Карта» (${JSON.stringify({ statsRight: g.statsRight, statsX: g.statsX, statsSize: g.statsSize, statsText: g.statsText, mapBtnLeft: g.mapBtnLeft })})`);
+        if (g.buffRight > 0 && g.starsLeft - g.buffRight < 12)
+            scenarioFailures.push(`19_boss_fight: звёзды наезжают на строку бафов (${JSON.stringify({ starsLeft: g.starsLeft, buffRight: g.buffRight })})`);
+        if (Math.abs(g.card.w - (g.vw.w - 8)) > 2 || Math.abs(g.card.h - 160) > 2)
+            scenarioFailures.push(`19_boss_fight: карточка снаряжения не на ширину вьюпорта (${JSON.stringify(g.card)})`);
+        // Карточка центрирована во вьюпорте (сдвиг на полширины = вылезание за край)
+        if (Math.abs((g.card.left + g.card.right) / 2 - (g.vw.x + g.vw.w / 2)) > 2)
+            scenarioFailures.push(`19_boss_fight: карточка смещена относительно вьюпорта (${JSON.stringify(g.card)})`);
+        if (g.name.right > g.card.right - 8 || g.stock.right > g.card.right - 8)
+            scenarioFailures.push(`19_boss_fight: имя/запас вылезают за карточку (${JSON.stringify({ nameRight: g.name.right, stockRight: g.card ? g.card.right - (g.card.right - g.stock.right) : 0, cardRight: Math.round(g.card.right) })})`);
+        if (g.desc.bottom > g.buy.top - 4)
+            scenarioFailures.push(`19_boss_fight: описание наезжает на кнопки (${JSON.stringify({ descBottom: Math.round(g.desc.bottom), buyTop: Math.round(g.buy.top) })})`);
+        if (g.buy.right > g.use.left - 2 || g.use.right > g.card.right - 8 || g.buy.left < g.card.left + 8)
+            scenarioFailures.push(`19_boss_fight: кнопки снаряжения наезжают/вылезают (${JSON.stringify({ buyRight: Math.round(g.buy.right), useLeft: Math.round(g.use.left), cardRight: Math.round(g.card.right) })})`);
+        if (g.icon.right > g.name.left - 6 || g.icon.left < g.card.left + 4)
+            scenarioFailures.push(`19_boss_fight: иконка вне ниши карточки (${JSON.stringify({ icon: g.icon, cardLeft: Math.round(g.card.left) })})`);
+        if (!/^Купить · /.test(g.buy.lbl)) scenarioFailures.push(`19_boss_fight: подпись кнопки покупки без цены (${g.buy.lbl})`);
+    }
     await shoot(page, '19_boss_fight');
     await page.mouse.click(400, 400); // спрайт босса в центре блока
     await page.waitForTimeout(200);

@@ -432,21 +432,25 @@ export class UIScene extends Phaser.Scene {
     // ---------- Секция «Снаряжение» панели (видна только в босс-бое) ----------
 
     // Во время боя правая панель показывает предметы для файта вместо списка
-    // улучшений (замечание игрока: снаряжение не видно). Ряды bossUse-предметов:
-    // иконка, эффект, запас, кнопки «Купить · цена» и «Использовать». Строится
-    // один раз; позиция — layoutGearSection (applyLayout), состояние —
-    // refreshGearPanel (дифф из updateBlockLock).
+    // улучшений (замечание игрока: снаряжение не видно). Геометрия — как у рядов
+    // улучшений: addImg-карточка (пропорциональный скейл; НЕ nine-slice — борды
+    // 10px-заготовки при setDisplaySize растягиваются в ~30x, поймано скриншотом
+    // игрока) и кнопки add.image. Компоновка: иконка+имя+запас сверху, описание
+    // во всю ширину, две кнопки в нижнем ряду карточки.
     buildGearSection() {
         this.gearContent = this.add.container(0, 0).setDepth(12).setVisible(false);
         this.gearTitle = makeLabel(this, 0, 0, 'Снаряжение', 18, '#ffe9b0').setOrigin(0.5);
         this.gearContent.add(this.gearTitle);
         this.gearRows = ITEMS.filter((it) => it.bossUse).map((def) => {
-            const card = addNine(this, 0, 0, 'upgrade_row_card_1', 10, 10, 7);
+            const card = addImg(this, 0, 0, 'upgrade_row_card_1', 10, 10, 11);
             const icon = this.add.image(0, 0, def.id);
             const name = makeLabel(this, 0, 0, def.name, 15, '#ffe9b0');
-            const desc = makeLabel(this, 0, 0, def.desc, 12, '#c8c8c8');
+            name.setOrigin(0, 0.5);
             const stock = makeLabel(this, 0, 0, '', 13, '#ffe9b0');
-            const buyBtn = addNine(this, 0, 0, 'buy_button_normal', 10, 10, 15);
+            stock.setOrigin(1, 0.5);
+            const desc = makeLabel(this, 0, 0, def.desc, 12, '#c8c8c8', { wordWrap: { width: 200 } });
+            desc.setOrigin(0, 0);
+            const buyBtn = this.add.image(0, 0, 'buy_button_normal').setDepth(12);
             buyBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
             const buyLbl = makeLabel(this, 0, 0, '', 12, '#ffffff').setOrigin(0.5);
             buyBtn.on('pointerup', () => {
@@ -456,7 +460,7 @@ export class UIScene extends Phaser.Scene {
                     this.refreshGearPanel(true);
                 }
             });
-            const useBtn = addNine(this, 0, 0, 'buy_button_normal', 10, 10, 15);
+            const useBtn = this.add.image(0, 0, 'buy_button_normal').setDepth(12);
             useBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
             const useLbl = makeLabel(this, 0, 0, 'Использовать', 12, '#ffffff').setOrigin(0.5);
             useBtn.on('pointerup', () => {
@@ -466,8 +470,8 @@ export class UIScene extends Phaser.Scene {
                     this.refreshGearPanel(true);
                 }
             });
-            this.gearContent.add([card, icon, name, desc, stock, buyBtn, buyLbl, useBtn, useLbl]);
-            return { def, card, icon, name, desc, stock, buyBtn, buyLbl, useBtn, useLbl, _key: null };
+            this.gearContent.add([card, icon, name, stock, desc, buyBtn, buyLbl, useBtn, useLbl]);
+            return { def, card, icon, name, stock, desc, buyBtn, buyLbl, useBtn, useLbl, _key: null };
         });
     }
 
@@ -480,32 +484,45 @@ export class UIScene extends Phaser.Scene {
         const ts = this.L.portrait ? s : 1;
         this.gearTitle.setPosition(vw.x + vw.w / 2, vw.y + 16);
         this.gearTitle.setFontSize(Math.round(18 * ts));
-        let ry = vw.y + 36;
-        const rh = Math.round(150 * ts);
+        const rh = Math.round(160 * ts);
+        let ry = vw.y + 34;
         for (const row of this.gearRows) {
-            // addNine — origin (0,0): координаты левого верхнего угла
-            row.card.setPosition(vw.x + 4, ry);
-            row.card.setDisplaySize(vw.w - 8, rh);
-            const iconSize = Math.round(56 * ts);
-            row.icon.setPosition(vw.x + 18 + iconSize / 2, ry + rh / 2);
+            const w = vw.w - 8;
+            // addImg — origin (0.5): setPosition задаёт ЦЕНТР карточки
+            // (пойманный аудит-чеком сдвиг на полширины — карточка вылезала
+            // за левый край вьюпорта, иконка висела вне карточки)
+            row.card.setPosition(vw.x + 4 + w / 2, ry + rh / 2);
+            row.card.setDisplaySize(w, rh);
+            const f = w / 835; // пропорции текстуры карточки — ниша иконки слева
+            const iconCX = vw.x + 4 + Math.round(118 * f);
+            const iconSize = Math.round(52 * ts);
+            row.icon.setPosition(iconCX, ry + Math.round(56 * ts));
             row.icon.setDisplaySize(iconSize, iconSize);
-            const tx = vw.x + 18 + iconSize + 18;
-            row.name.setPosition(tx, ry + Math.round(30 * ts));
+            const textX = iconCX + iconSize / 2 + 14;
+            const textRight = vw.x + 4 + w - 14;
+            // Столбик: имя -> запас -> описание (в ландшафте 280px «имя + запас»
+            // в одну строку не помещаются — поймано аудит-чеком наезда)
+            row.name.setPosition(textX, ry + Math.round(28 * ts));
             row.name.setFontSize(Math.round(15 * ts));
-            row.desc.setPosition(tx, ry + Math.round(56 * ts));
-            row.desc.setFontSize(Math.round(12 * ts));
-            row.stock.setPosition(tx, ry + Math.round(84 * ts));
+            row.stock.setPosition(textX, ry + Math.round(54 * ts));
             row.stock.setFontSize(Math.round(13 * ts));
-            const btnW = Math.round(118 * ts);
+            row.stock.setOrigin(0, 0.5);
+            row.desc.setPosition(textX, ry + Math.round(78 * ts));
+            row.desc.setFontSize(Math.round(12 * ts));
+            row.desc.wordWrap = { width: Math.max(80, textRight - textX) };
+            row.desc.updateText();
+            // Кнопки в нижнем ряду карточки: две по половине ширины с зазором 12;
+            // отступ от описания >= 19px (наезд текста на кнопки — скриншот игрока)
+            const btnW = Math.round((w - 28 - 12) / 2);
             const btnH = Math.round(40 * ts);
-            const btnX = vw.x + vw.w - 10 - btnW;
-            row.buyBtn.setPosition(btnX, ry + rh / 2 - btnH - 4);
+            const btnY = ry + rh - btnH - 10;
+            row.buyBtn.setPosition(vw.x + 4 + 14 + btnW / 2, btnY + btnH / 2);
             row.buyBtn.setDisplaySize(btnW, btnH);
-            row.buyLbl.setPosition(btnX + btnW / 2, row.buyBtn.y + btnH / 2);
+            row.buyLbl.setPosition(row.buyBtn.x, row.buyBtn.y);
             row.buyLbl.setFontSize(Math.round(12 * ts));
-            row.useBtn.setPosition(btnX, ry + rh / 2 + 4);
+            row.useBtn.setPosition(vw.x + 4 + 14 + btnW + 12 + btnW / 2, btnY + btnH / 2);
             row.useBtn.setDisplaySize(btnW, btnH);
-            row.useLbl.setPosition(btnX + btnW / 2, row.useBtn.y + btnH / 2);
+            row.useLbl.setPosition(row.useBtn.x, row.useBtn.y);
             row.useLbl.setFontSize(Math.round(12 * ts));
             ry += rh + 10;
         }
@@ -587,6 +604,10 @@ export class UIScene extends Phaser.Scene {
             this.coalText.setFontSize(30);
             this.oreName.setFontSize(13);
             this.statsLine.setFontSize(h.statsSize);
+            // Кегль сброшен — кеш ужина статов обязан инвалидироваться, иначе
+            // после applyLayout (босс-бой) refreshUi пропускает ужин и длинные
+            // статы наезжают на «Карта» (поймано аудитом сценария 19)
+            this._statsFitKey = null;
             this.starsText.setFontSize(16);
             this.buffLine.setFontSize(13);
         }
@@ -640,7 +661,10 @@ export class UIScene extends Phaser.Scene {
         // В портрете звёзды живут на планке заголовка панели (HUD плотный);
         // в ландшафте — в HUD перед кнопкой «Настройки»
         if (L.portrait) this.starsText.setPosition(p.px + p.pw - 24, p.py + p.titleDy);
-        else this.starsText.setPosition(h.starsRight, h.starsY);
+        // Ландшафт: звёзды ПОД HUD-баром справа (строка бафов слева) — в баре
+        // при длинных статах «клик: 2712 · крит: 31%» они наезжали на текст
+        // (скриншот сценария 19); правый край барa — якорь origin (1,0.5)
+        else this.starsText.setPosition(h.barX + h.barW - 10, h.barY + h.barH + 10);
         // Вкладки: в ландшафте две по 145 (одна ширина со списком); в портрете
         // растягиваются на весь вьюпорт, иначе сбиваются влево у широкого листа
         const tabGap = 8;
@@ -679,9 +703,9 @@ export class UIScene extends Phaser.Scene {
         this.unlockText.setFontSize(u.textSize);
         this.hint.setPosition(u.cx, u.hintY);
         this.hint.setFontSize(u.hintSize);
-        // В портретном бою спуск скрыт целиком (заблокирован и съедает место
-        // поднятой панели); в ландшафте остаётся серой кнопкой
-        const hideUnlock = L.portrait && bossNow;
+        // В бою спуск скрыт целиком (заблокирован; серая кнопка рядом с боссом
+        // читалась как «вернуться в шахту» и наезжала на подсказку слотов)
+        const hideUnlock = bossNow;
         this.unlockBtn.setVisible(!hideUnlock);
         this.unlockText.setVisible(!hideUnlock);
         this.hint.setVisible(!hideUnlock);
@@ -2422,6 +2446,9 @@ export class UIScene extends Phaser.Scene {
         // Ландшафт: в одну строку за ставкой; портрет: второй строкой под ставкой.
         // x выставляется ДО ужина — предел считается от фактического левого края
         // строки, ключ = текст|x: пересчёт и при смене текста, и при сдвиге.
+        // Текст звёзд обновляется до ужина статов (ширина звёзд влияет на предел
+        // только в портрете — там звёзды на панели; в ландшафте звёзды под баром)
+        this.starsText.setText(gameState.stars > 0 ? `★ ${gameState.stars} (x${getPrestigeMult().toFixed(1)})` : '');
         const statsTxt = `клик: ${fmt(getClickDamage() + getSynergyGain())} · крит: ${Math.round(getCritChance() * 100)}%`;
         this.statsLine.x = this.L.portrait ? this.gpsText.x : this.gpsText.x + this.gpsText.width + 26;
         const statsKey = `${statsTxt}|${Math.round(this.statsLine.x)}`;
@@ -2430,10 +2457,13 @@ export class UIScene extends Phaser.Scene {
             this.statsLine.setText(statsTxt);
             if (this.L.portrait) {
                 fitFontSize(this.statsLine, Math.round(14 * this._adaptiveScale), this.settingsBtn.x - this.settingsBtn.displayWidth / 2 - 8 - this.statsLine.x, 11);
+            } else {
+                // Ландшафт: ужин до левого края кнопки «Карта» (длинные статы
+                // «клик: 2712 · крит: 31%» наезжали на звёзды в баре)
+                fitFontSize(this.statsLine, this.L.hud.statsSize, this.L.hud.mapBtn.x - 8 - this.statsLine.x, 10);
             }
         }
         this.updateBuffLine();
-        this.starsText.setText(gameState.stars > 0 ? `★ ${gameState.stars} (x${getPrestigeMult().toFixed(1)})` : '');
         // x звёзд фиксирован (правый край перед кнопкой «Настройки»), не двигается от статов
         // Имя руды бывает длинным («Серебро», «Уранит») — ужинаем кегль строки
         // тира, чтобы текст не заходил под кнопку мультипокупки (скриншот игрока).
@@ -2455,9 +2485,9 @@ export class UIScene extends Phaser.Scene {
 
         // Кнопка спуска
         const next = getNextTier();
-        // В портретном бою спуск скрыт целиком (заблокирован и съедает место
-        // поднятой панели); в ландшафте остаётся серой кнопкой
-        const hideUnlock = this.L.portrait && !!this.registry.get('bossActive');
+        // В бою спуск скрыт целиком (заблокирован; серая кнопка в бою вводила
+        // в заблуждение и наезжала на подсказку слотов босса)
+        const hideUnlock = !!this.registry.get('bossActive');
         if (next) {
             this.unlockBtn.setVisible(!hideUnlock);
             this.unlockText.setVisible(!hideUnlock);

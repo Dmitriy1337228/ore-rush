@@ -456,8 +456,9 @@ function check(name, cond, detail = '') {
             f.gearVisible && !f.listVisible, '');
         check('портрет-бой: спуск скрыт', !f.unlockVisible, '');
         check('портрет-бой: карточка снаряжения внутри вьюпорта',
-            f.card.x >= f.vw.x - 2 && f.card.y >= f.vw.y - 2
-            && f.card.x + f.card.w <= f.vw.x + f.vw.w + 2 && f.card.y + f.card.h <= f.vw.y + f.vw.h + 2,
+            // addImg — origin (0.5): x/y карточки = центр, границы = центр ± полразмера
+            f.card.x - f.card.w / 2 >= f.vw.x - 2 && f.card.y - f.card.h / 2 >= f.vw.y - 2
+            && f.card.x + f.card.w / 2 <= f.vw.x + f.vw.w + 2 && f.card.y + f.card.h / 2 <= f.vw.y + f.vw.h + 2,
             JSON.stringify({ card: f.card, vw: f.vw }));
         check('портрет-бой: панель выше базовой 582', f.panelH > 582, String(f.panelH));
         await page.evaluate(() => window.__GAME.scene.getScene('GameScene').retreatBoss());

@@ -781,6 +781,7 @@ export class GameScene extends Phaser.Scene {
             const buyLbl = makeLabel(this, cx, by + 172, '', 11, '#ffffff').setOrigin(0.5);
             btn.on('pointerdown', () => {
                 if (!this.boss || this.boss.busy) return;
+                if (Date.now() < gameState.bossBuffUntil) return; // баф уже активен — покупка впустую
                 const stock = gameState.items[it.id] || 0;
                 if (stock > 0) {
                     if (useItem(it.id, true)) playSfx(this, 'purchase');
@@ -829,17 +830,25 @@ export class GameScene extends Phaser.Scene {
         this.bossHpText.setText(`${fmt(Math.max(0, Math.ceil(this.boss.hp)))} / ${fmt(this.boss.maxHp)}`);
     }
 
-    // Слоты предметов в бою: с запасом — активация «x N», пустые — «Купить 60с N»
-    // с динамической ценой (покупка сразу кладёт предмет в стак и активирует).
-    // Кеш-ключ на слот: performBossHit зовёт это на каждый удар — getItemPrice для
-    // пустого слота считается каждый раз (по ней строится ключ), перерисовка же
-    // только при смене запаса/цены/доступности (аффорд-статус обновляется на
-    // ударах и по клику покупки).
+    // Слоты предметов в бою, три состояния: активный баф (иконка + таймер —
+    // иначе иконка «пропадала» сразу после активации, замечание игрока),
+    // запас («x N») и пустой («купить N» с динамической ценой; покупка сразу
+    // кладёт предмет в стак и активирует). Кеш-ключ на слот: performBossHit
+    // зовёт это на каждый удар; таймер бафа тикает из update().
     refreshBossItems() {
         if (!this.bossItems) return;
         for (const slot of this.bossItems) {
             const stock = gameState.items[slot.id] || 0;
-            if (stock > 0) {
+            const buffLeft = Math.max(0, Math.ceil((gameState.bossBuffUntil - Date.now()) / 1000));
+            if (buffLeft > 0) {
+                const key = `a${buffLeft}`;
+                if (slot._key === key) continue;
+                slot._key = key;
+                slot.btn.setDisplaySize(84, 44).setTexture('buy_button_normal').setAlpha(1);
+                slot.icon.setVisible(true).setPosition(slot.btn.x - 20, slot.btn.y);
+                slot.cnt.setVisible(true).setText(`${Math.floor(buffLeft / 60)}:${String(buffLeft % 60).padStart(2, '0')}`);
+                slot.buyLbl.setVisible(false);
+            } else if (stock > 0) {
                 const key = `x${stock}`;
                 if (slot._key === key) continue;
                 slot._key = key;
@@ -873,7 +882,9 @@ export class GameScene extends Phaser.Scene {
         const { gain, crit, lucky } = rollBossHit();
         this.boss.hp -= gain;
         if (!isAuto) {
-            playSfx(this, 'boss_hit', 3);
+            // Удар по боссу звучит заметно тише рудных кликов: тяжёлый удар
+            // на каждый клик на полной громкости утомлял (замечание игрока)
+            playSfx(this, 'boss_hit', 3, 1, 0.4);
             if (crit || lucky) playSfx(this, 'crit');
             if (crit || lucky) this.cameras.main.shake(120, 0.004);
         }
@@ -1037,6 +1048,8 @@ export class GameScene extends Phaser.Scene {
                 this._bossSaveAt = this.time.now + 3000;
                 saveGame();
             }
+            // Таймер активной бомбы в слоте тикает и без кликов игрока
+            if (Date.now() < gameState.bossBuffUntil) this.refreshBossItems();
         }
         if (!this.mutation) return;
         const remaining = this.mutation.endsAt - this.time.now;

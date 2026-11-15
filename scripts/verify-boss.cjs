@@ -254,7 +254,10 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(300);
         const bomb = await state('({ n: m.gameState.items.item_bomb, mult: m.gameState.bossBuffMult, active: m.gameState.bossBuffUntil > Date.now() })');
         const bombCnt = await gsOf('gs.bossItems[0].cnt.text');
-        check('E1: бомба активирована (2->1, баф x2)', bomb.n === 1 && bomb.mult === 2 && bomb.active && bombCnt === 'x1', JSON.stringify(bomb) + ' cnt=' + bombCnt);
+        // Слот в состоянии активного бафа: иконка + таймер «0:30» (иконка больше
+        // не «пропадает» после активации — замечание игрока)
+        check('E1: бомба активирована (2->1, баф x2, слот показывает таймер)',
+            bomb.n === 1 && bomb.mult === 2 && bomb.active && /^\d+:\d{2}$/.test(bombCnt || ''), JSON.stringify(bomb) + ' cnt=' + bombCnt);
 
         const bossCenter = await gsOf('({ x: gs.blockX, y: gs.blockY })');
         await page.mouse.click(bossCenter.x, bossCenter.y);
@@ -503,14 +506,16 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(300);
         const canUnlock = await state('m.canUnlockTier()');
         check('E3a: предусловие — спуск доступен по руде (canUnlockTier)', canUnlock === true, String(canUnlock));
-        const unlockTex = await ptOf('ui.unlockBtn.texture.key');
-        check('E3b: спуск в бою — disabled-текстура', unlockTex === 'buy_button_disabled_gray', String(unlockTex));
+        const unlockVis = await ptOf('({ visible: ui.unlockBtn.visible, textVisible: ui.unlockText.visible })');
+        check('E3b: спуск в бою скрыт (серая кнопка рядом с боссом вводила в заблуждение)',
+            !unlockVis.visible && !unlockVis.textVisible, JSON.stringify(unlockVis));
+        // Клик в зоне, где кнопка спуска была бы, ничего не меняет (гвард в хендлере)
         const unlockPt = await ptOf('({ x: ui.unlockBtn.x + 260, y: ui.unlockBtn.y + 26 })');
         const tierBefore = await state('m.gameState.tier');
         await page.mouse.click(unlockPt.x, unlockPt.y);
         await page.waitForTimeout(400);
         const tierAfter = await state('m.gameState.tier');
-        check('E3: спуск заблокирован в бою (клик по кнопке глотается)', tierAfter === tierBefore, `${tierBefore} -> ${tierAfter}`);
+        check('E3: спуск заблокирован в бою (клик в зоне спуска глотается)', tierAfter === tierBefore, `${tierBefore} -> ${tierAfter}`);
 
         await page.evaluate(() => window.__GAME.scene.getScene('GameScene').retreatBoss());
         await page.waitForTimeout(600); // флоат «Босс восстановился» живёт 1100мс — ловим до затухания
@@ -520,6 +525,8 @@ const parseElapsed = (t) => {
         })()`);
         check('E4: DevPanel-ретрит — босс ушёл, блок и стадия возвращены', retreat.gone && retreat.blockVisible && retreat.stage === 2 && !retreat.active, JSON.stringify(retreat));
         check('E5: флоат «Босс восстановился» показан', retreat.floatSeen);
+        const unlockBack = await ptOf('ui.unlockBtn.visible');
+        check('E3c: после боя спуск снова виден', unlockBack === true, String(unlockBack));
         const bgmAfterRetreat = await bgmState(page);
         check('E6: после ретрита босс-тема ушла, обычный BGM вернулся',
             !bgmAfterRetreat.themePlaying && bgmAfterRetreat.bgmPlaying, JSON.stringify(bgmAfterRetreat));
@@ -589,8 +596,8 @@ const parseElapsed = (t) => {
         check('G4: слот бомбы — понятная подпись покупки', /^купить \d/.test(slot.buyLbl || ''), JSON.stringify(slot));
         check('G5: под слотами подсказка эффекта (что даёт покупка)', /урон/i.test(slot.hint || ''), slot.hint);
 
-        // Покупка кликом по кнопке снаряжения (центр кнопки)
-        const buyPt = await ptOf('({ x: ui.gearRows[0].buyBtn.x + ui.gearRows[0].buyBtn.displayWidth / 2, y: ui.gearRows[0].buyBtn.y + ui.gearRows[0].buyBtn.displayHeight / 2 })');
+        // Покупка кликом по кнопке снаряжения (add.image — x/y уже центр кнопки)
+        const buyPt = await ptOf('({ x: ui.gearRows[0].buyBtn.x, y: ui.gearRows[0].buyBtn.y })');
         await page.mouse.click(buyPt.x, buyPt.y);
         await page.waitForTimeout(400);
         const afterBuy = await state('({ stock: m.gameState.items.item_bomb || 0 })');
