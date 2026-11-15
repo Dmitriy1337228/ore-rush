@@ -9,9 +9,10 @@ import {
     gameState, UPGRADES, TIERS, addOre, resetGame,
     getUpgradeLevel, getUpgradeCost,
     canBuy, buyUpgrade,
-    getClickDamage, getOrePerSecond, getAutoClicksPerSecond, getEarningRate,
+    getClickDamage, getExpectedClickGain, getOrePerSecond, getAutoClicksPerSecond, getEarningRate,
     getCritChance, getLuckyChance,
-    unlockTier, TIER_INCOME_MULT, getPrestigeMult, getNextUnlockPrice
+    unlockTier, TIER_INCOME_MULT, getPrestigeMult, getNextUnlockPrice,
+    ARTIFACTS, UNLOCK_BASE_SECONDS, UNLOCK_FLOOR, unlockSecondsFor
 } from '../src/state.js';
 
 const ARGS = process.argv.slice(2);
@@ -179,3 +180,86 @@ function printResult(label, r) {
 
 printResult(`БЕЗ ПОКУПОК (чистое накопление, клики ${CPS_MANUAL}/с)`, runSimulation('lazy'));
 printResult(`ЖАДНАЯ ЗАКУПКА (окупаемость быстрее времени до спуска, клики ${CPS_MANUAL}/с)`, runSimulation('greedy'));
+
+// ---------- Гейт П6: «все артефакты» ----------
+// Ожидаемые множители выводятся из каталога ARTIFACTS (ground truth state.js):
+// passiveMult = 1.1 (Тотем) x 1.15 (Аккумулятор) = 1.265; clickMult = 1.1
+// (Рукавица) x 1.15 (Древняя кирка) = 1.265; плоские: critAdd +0.03,
+// autoCpsAdd +0.5, offlineAdd +0.05, dropBonus +0.15; bossDamageMult 1.25 x 1.1.
+// (В брифе П6 фигурировало «passiveMult 1.25 x 1.15» — в каталоге 1.1 x 1.15.)
+let artFails = 0;
+function artCheck(name, cond, detail = '') {
+    const ok = Boolean(cond);
+    console.log(`${ok ? 'OK  ' : 'FAIL'} ${name}${detail ? ' — ' + detail : ''}`);
+    if (!ok) artFails++;
+}
+const grantAllArtifacts = () => {
+    gameState.artifacts = ARTIFACTS.map((a) => a.id);
+};
+const critFactor = (cc) => 1 + cc * (5 + 0.5 * getUpgradeLevel('focuslens') - 1); // critMult без focuslens = 5
+
+console.log('\n=== ВСЕ АРТЕФАКТЫ СТАРТА (гейт П6) ===');
+{
+    // (а)+(б): множители клика/пассива. miner 60 — иначе отношение 0/0 (чистый старт
+    // без добычи); бафы предметов/дейли на чистом старте нейтральны.
+    resetGame();
+    gameState.levels.miner = 60;
+    const baseDmg = getClickDamage();
+    const baseClick = getExpectedClickGain();
+    const baseOps = getOrePerSecond();
+    grantAllArtifacts();
+    const artDmg = getClickDamage();
+    const artClick = getExpectedClickGain();
+    const artOps = getOrePerSecond();
+    const expClick = ARTIFACTS.reduce((acc, a) => (a.bonuses.clickMult ? acc * a.bonuses.clickMult : acc), 1);
+    const expPassive = ARTIFACTS.reduce((acc, a) => (a.bonuses.passiveMult ? acc * a.bonuses.passiveMult : acc), 1);
+    const critAdd = ARTIFACTS.reduce((acc, a) => acc + (a.bonuses.critAdd || 0), 0);
+    const expClickGain = expClick * critFactor(Math.min(0.05 + critAdd, 0.74)) / critFactor(0.05);
+    artCheck(`клик: getClickDamage x${expClick.toFixed(4)}`, Math.abs(artDmg / baseDmg - expClick) < 1e-9, `${fmtLike(baseDmg)} -> ${fmtLike(artDmg)}`);
+    artCheck(`клик: getExpectedClickGain x${expClickGain.toFixed(4)} (множители + крит от critAdd)`, Math.abs(artClick / baseClick - expClickGain) < 1e-9, `${baseClick.toFixed(4)} -> ${artClick.toFixed(4)}`);
+    artCheck(`пассив: getOrePerSecond x${expPassive.toFixed(4)}`, Math.abs(artOps / baseOps - expPassive) < 1e-9, `${fmtLike(baseOps)} -> ${fmtLike(artOps)}`);
+    console.log(`множители при 9/9 артефактах: клик x${(artDmg / baseDmg).toFixed(4)}, E-клик x${(artClick / baseClick).toFixed(4)}, пассив x${(artOps / baseOps).toFixed(4)}`);
+
+    // (в) якорь-снапшот: владение артефактами БЕЗ прокачки цену спуска не меняет
+    // (якорь фиксируется на входе, как и для престижа). Тир 5/miner 50 — пол
+    // UNLOCK_FLOOR не маскирует якорную величину.
+    resetGame();
+    gameState.tier = 5;
+    gameState.levels.miner = 50;
+    const priceNoArt = getNextUnlockPrice(); // лениво фиксирует якорь БЕЗ артефактов
+    const anchorNoArt = gameState.tierAnchorRate;
+    grantAllArtifacts();
+    const priceWithArt = getNextUnlockPrice();
+    const secNoArt = priceNoArt / anchorNoArt;
+    const expSecT5 = unlockSecondsFor(5);
+    artCheck('якорь: владение артефактами цену не меняет (снапшот)', priceWithArt === priceNoArt, `${priceNoArt} -> ${priceWithArt}`);
+    artCheck(`якорь: величина цены = N(5) = ${expSecT5.toFixed(0)}с якоря`, Math.abs(secNoArt - expSecT5) < 1 / anchorNoArt, `факт ${secNoArt.toFixed(2)}с (ceil цены = +<1 ед.)`);
+    console.log(`величины тира 5 без артефактов: якорь ${fmtLike(anchorNoArt)}/с, цена ${fmtLike(priceNoArt)} = ${secNoArt.toFixed(1)}с якоря`);
+    // величина на старте (тир 0): цена держится полом UNLOCK_FLOOR и с артефактами,
+    // и без — артефакты стартового анчора не выше пола
+    resetGame();
+    const priceFloorBase = getNextUnlockPrice();
+    grantAllArtifacts();
+    const priceFloorArt = getNextUnlockPrice();
+    artCheck(`якорь: тир 0 — цена держит пол UNLOCK_FLOOR = ${UNLOCK_FLOOR}`, priceFloorBase === UNLOCK_FLOOR && priceFloorArt === UNLOCK_FLOOR, `${priceFloorBase} / ${priceFloorArt}`);
+
+    // (г) инвариант окупаемости (ETA-чек как в verify-economy): буст кирки x10
+    // поднимает якорь над полом, после чего цена спуска = N(0) = 180с якоря
+    // (коридор 0.9..1.1). Якорь фиксируется ПОСЛЕ 10 закупок кирки (ниже) —
+    // сами закупки идут до его фиксации, поэтому цену якоря сравнивать не с чем.
+    resetGame();
+    grantAllArtifacts();
+    for (let i = 0; i < 10; i++) {
+        gameState.ore += getUpgradeCost('pickaxe');
+        buyUpgrade('pickaxe');
+    }
+    const price = getNextUnlockPrice(); // якорь фиксируется от буста кирки
+    const anchor = gameState.tierAnchorRate;
+    const sec = price / anchor;
+    const lo = UNLOCK_BASE_SECONDS * 0.9, hi = UNLOCK_BASE_SECONDS * 1.1;
+    artCheck(`окупаемость: цена спуска = ${sec.toFixed(1)}с якоря, коридор ${UNLOCK_BASE_SECONDS}с x0.9..1.1`, sec >= lo && sec <= hi, `границы ${lo}..${hi}`);
+    artCheck('окупаемость: цена = ceil(N(0) x якорь)', price === Math.ceil(unlockSecondsFor(0) * anchor), `цена ${price}, якорь ${anchor.toFixed(3)}`);
+    console.log(`величины буста: кирка ур.10, якорь ${fmtLike(anchor)}/с, цена ${fmtLike(price)}, окупаемость ${sec.toFixed(1)}с`);
+}
+console.log(artFails === 0 ? 'БАЛАНС «ВСЕ АРТЕФАКТЫ»: PASS' : `БАЛАНС «ВСЕ АРТЕФАКТЫ»: FAIL (${artFails})`);
+if (artFails > 0) process.exitCode = 1;

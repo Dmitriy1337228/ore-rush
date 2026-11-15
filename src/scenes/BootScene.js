@@ -6,7 +6,8 @@ import Phaser from 'phaser';
 const SFX = [
     'pickaxe_1', 'pickaxe_2', 'crit_1', 'crit_2',
     'break_1', 'break_2', 'mutation_1', 'mutation_2',
-    'purchase_1', 'purchase_2', 'tier_1', 'tier_2', 'prestige_1', 'prestige_2'
+    'purchase_1', 'purchase_2', 'tier_1', 'tier_2', 'prestige_1', 'prestige_2',
+    'boss_hit_1', 'boss_hit_2', 'boss_hit_3'
 ];
 
 const IMAGES = [
@@ -37,7 +38,7 @@ const IMAGES = [
     'icon_robot_arm', 'icon_lantern', 'icon_warehouse',
     'icon_hydraulic', 'icon_plasma', 'icon_disintegrator',
     'icon_quarry', 'icon_megafactory', 'icon_orbital', 'icon_quantumlab',
-    'icon_wormhole', 'icon_singularity', 'icon_dyson', 'icon_aicore',
+    'icon_wormhole', 'icon_singularity', 'icon_dyson', 'icon_aicore', 'icon_helmet',
     'icon_focuslens', 'icon_magnet',
 
     // Кнопки (чистые, подписи рендерим движком)
@@ -48,10 +49,27 @@ const IMAGES = [
     'hud_bar_background', 'upgrades_panel_wood', 'modal_panel_metal',
     'upgrade_row_card_1', 'icon_slot_frame',
 
+    // Фон карты-«настолки» (внутренняя зона панели карты)
+    'map_board',
+
     // Фоны локаций (пиксель-арт конверсия voxel-рендеров ComfyUI, по одному на тир)
     'bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver',
     'bg_05_gold', 'bg_06_amethyst', 'bg_07_emerald', 'bg_08_ruby',
-    'bg_09_sapphire', 'bg_10_platinum', 'bg_11_uranium', 'bg_12_diamond'
+    'bg_09_sapphire', 'bg_10_platinum', 'bg_11_uranium', 'bg_12_diamond',
+
+    // Боссы особых уровней (спрайты боя на месте блока)
+    'boss_copper', 'boss_silver', 'boss_amethyst', 'boss_ruby', 'boss_platinum', 'boss_diamond',
+
+    // Компоненты крафта (дроп с боссов)
+    'comp_scrap', 'comp_crystal', 'comp_core', 'comp_relic', 'comp_essence',
+
+    // Активируемые предметы
+    'item_bomb', 'item_belt', 'item_coffee', 'item_ration', 'item_stim',
+    'item_rig', 'item_oil',
+
+    // Артефакты (коллекция)
+    'art_miner_totem', 'art_lantern_old', 'art_magnet_ring', 'art_lucky_charm', 'art_glove',
+    'art_deep_compass', 'art_hardpick', 'art_core_battery', 'art_ancient_pick'
 ];
 
 export class BootScene extends Phaser.Scene {
@@ -79,6 +97,8 @@ export class BootScene extends Phaser.Scene {
         }
         // Фоновая музыка — бесшовный луп, те же два формата
         this.load.audio('bgm', ['assets/audio/bgm.ogg', 'assets/audio/bgm.mp3']);
+        // Босс-тема (луп на время боя, ключ без _N — играется напрямую, не через playSfx)
+        this.load.audio('boss_theme', ['assets/audio/boss_theme.ogg', 'assets/audio/boss_theme.mp3']);
     }
 
     create() {

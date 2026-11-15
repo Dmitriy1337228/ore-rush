@@ -1,4 +1,4 @@
-// UI review runner (по воркфлоу web-design-reviewer): снимает состояние игры
+﻿// UI review runner (по воркфлоу web-design-reviewer): снимает состояние игры
 // в разных сценариях. Запуск: node scripts/ui-review.mjs — dev-сервер поднимается
 // сам и гасится после проверки (если порт уже занят, подключается к чужому).
 import { chromium } from 'playwright';
@@ -51,7 +51,9 @@ async function auditLayout(page) {
                         let x = b.x, y = b.y, r = b.right, bt = b.bottom;
                         // Ряды живут в мировых координатах и рисуются камерой списка:
                         // переводим в экранные координаты (viewport самой камеры)
-                        // и отсеиваем невидимые строки
+                        // и отсеиваем невидимые строки. Тот же перевод для контента
+                        // карты/мастерской (П6, как в verify-map П3) — иначе их ряды
+                        // сравнивались бы по content-координатам (сдвиг на viewport).
                         let inList = false;
                         if (scene.scene.key === 'UIScene' && ui && ui.listContent && inTree(ui.listContent, go)) {
                             inList = true;
@@ -59,6 +61,20 @@ async function auditLayout(page) {
                             if (bt - listCam.scrollY + listCam.y < listCam.y - 2 || vy > listCam.y + listCam.height + 2) continue; // вне видимой полосы
                             y = vy; bt = bt - listCam.scrollY + listCam.y;
                             x = x - listCam.scrollX + listCam.x; r = r - listCam.scrollX + listCam.x;
+                        }
+                        if (scene.scene.key === 'UIScene' && ui && ui._mapOpen && ui.mapContent && inTree(ui.mapContent, go)) {
+                            const cam = ui.mapCam;
+                            const vy = y - cam.scrollY + cam.y;
+                            if (bt - cam.scrollY + cam.y < cam.y - 2 || vy > cam.y + cam.height + 2) continue; // вне вьюпорта карты
+                            y = vy; bt = bt - cam.scrollY + cam.y;
+                            x = x - cam.scrollX + cam.x; r = r - cam.scrollX + cam.x;
+                        }
+                        if (scene.scene.key === 'UIScene' && ui && ui._craftOpen && ui.craftContent && inTree(ui.craftContent, go)) {
+                            const cam = ui.craftCam;
+                            const vy = y - cam.scrollY + cam.y;
+                            if (bt - cam.scrollY + cam.y < cam.y - 2 || vy > cam.y + cam.height + 2) continue; // вне вьюпорта крафта
+                            y = vy; bt = bt - cam.scrollY + cam.y;
+                            x = x - cam.scrollX + cam.x; r = r - cam.scrollX + cam.x;
                         }
                         // Текстовый бокс выше/ниже глифов на ~3px — приближаем к глифам
                         if (go.type === 'Text') { y += 3; bt -= 3; }
@@ -135,6 +151,18 @@ async function auditLayout(page) {
 // Ошибки страниц: одна копилка на ВСЕ сценарии (раньше _list сбрасывался в
 // newPage и финальный отчёт видел только последний сценарий — гейт «console
 // errors 0» был фиктивен для 9/10 прогонов).
+// П6, аудит открытых оверлеев (17/21): полноэкранные панели легитимно перекрывают
+// под-UI (задокументированная слепая зона — depth не проверяется), поэтому классы
+// «панель оверлея × что-то под ней» выпадают; остальное сравнивается по сигнатуре
+// с базой (оверлей закрыт) — нарушение = только НОВЫЙ класс пары (как в П3).
+const sig = (v) => v.replace(/\d+(\.\d+)?/g, '#');
+const notPanelClass = (v) => !v.includes('modal_panel_metal');
+function baseSignatures(violations) {
+    return new Set(violations.filter(notPanelClass).map(sig));
+}
+function newOverlayViolations(violations, base) {
+    return violations.filter(notPanelClass).filter((v) => !base.has(sig(v)));
+}
 const consoleErrors = [];
 const scenarioFailures = [];
 
@@ -207,6 +235,8 @@ async function withState(page, fnBody) {
 // 4. Скролл списка (сохранение с 12+ улучшениями)
 {
     const { ctx, page } = await newPage({ seed: { 'ore-rush-save': SAVE_SEED }, name: '04_list' });
+    // daily-модалка перекрывала список/настройки: кадры 04-06 снимали её вместо сценария
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     await shoot(page, '04_list_top');
     const auditSeeded = await auditLayout(page);
     fs.writeFileSync(path.join(OUT, 'layout_audit_seeded.txt'), auditSeeded.violations.join('\n') || 'layout audit (seeded, stars=12): 0 violations');
@@ -260,6 +290,7 @@ async function withState(page, fnBody) {
     const rich = JSON.parse(SAVE_SEED);
     rich.ore = 26000; // >= 25000, спуск к золоту готов
     const { ctx, page } = await newPage({ seed: { 'ore-rush-save': JSON.stringify(rich) }, name: '07_unlock' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     await shoot(page, '08_unlock_ready');
     await ctx.close();
 }
@@ -267,6 +298,7 @@ async function withState(page, fnBody) {
 // 8. Меньший viewport (масштаб FIT)
 {
     const { ctx, page } = await newPage({ viewport: { width: 900, height: 506 }, name: '08_viewport900' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     await shoot(page, '09_viewport_900');
     await ctx.close();
 }
@@ -282,6 +314,7 @@ async function withState(page, fnBody) {
     };
     function TIERS_SEED_EARNED() { return Array.from({ length: 12 }, (_, i) => (i <= 6 ? 1e5 : 0)); }
     const { ctx, page } = await newPage({ seed: { 'ore-rush-save': JSON.stringify(deep) }, name: '09_deep' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     await page.mouse.move(1082, 430);
     await page.mouse.wheel(0, 2200); // scrollY ~1100: «Орбитальная» и «Квантовая» целиком в окне 262..664
     await page.waitForTimeout(400);
@@ -330,6 +363,7 @@ async function withState(page, fnBody) {
 // 10. Портрет (мобилка 390x844 -> сетка 720x1280): аудит + модалка
 {
     const { ctx, page } = await newPage({ viewport: { width: 390, height: 844 }, name: '10_portrait' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     const auditP = await auditLayout(page);
     fs.writeFileSync(path.join(OUT, 'layout_audit_portrait.txt'), auditP.violations.join('\n') || 'layout audit (portrait 390x844): 0 violations');
     console.log('portrait violations:', auditP.violations.length);
@@ -345,6 +379,294 @@ async function withState(page, fnBody) {
     await ctx.close();
 }
 
+// 17 (П6). Карта открыта: 18 узлов (12 тиров + 6 боссов), баннер уровня,
+// аудит с фильтром оверлея (база — карта закрыта)
+{
+    const { ctx, page } = await newPage({ seed: { 'ore-rush-save': SAVE_SEED }, name: '17_map_open' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
+    await page.waitForTimeout(300);
+    const base17 = baseSignatures((await auditLayout(page)).violations);
+    await page.mouse.click(885, 62); // «Карта» (центр кнопки L.hud.mapBtn)
+    await page.waitForTimeout(400);
+    const m = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        return {
+            open: ui._mapOpen,
+            locked: window.__GAME.registry.get('blockLocked'),
+            nodes: ui.mapNodes.length,
+            tiers: ui.mapNodes.filter((n) => n.kind === 'tier').length,
+            bosses: ui.mapNodes.filter((n) => n.kind === 'boss').length,
+            camVisible: ui.mapCam.visible
+        };
+    });
+    if (!m.open || !m.locked || !m.camVisible) {
+        scenarioFailures.push(`17_map_open: карта не открылась/лок не встал (${JSON.stringify(m)})`);
+    }
+    if (m.nodes !== 18 || m.tiers !== 12 || m.bosses !== 6) {
+        scenarioFailures.push(`17_map_open: узлов ${m.nodes} (тиры ${m.tiers}, боссы ${m.bosses}), ожидалось 18/12/6`);
+    }
+        // Баннер уровня: fx прибытия рисует его в mapContent (камера карты)
+        const banner = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            ui._arriveFx(0);
+            return ui.mapContent.list.some((o) => o.type === 'Text' && /^Уровень 1: /.test(o.text));
+        });
+        if (!banner) scenarioFailures.push('17_map_open: баннер «Уровень 1: …» не найден в mapContent');
+    const auditMap = (await auditLayout(page)).violations;
+    const newMap = newOverlayViolations(auditMap, base17);
+    fs.writeFileSync(path.join(OUT, 'layout_audit_map_open.txt'), newMap.join('\n') || 'layout audit (map open): 0 новых нарушений');
+    console.log('map open new violations:', newMap.length);
+    newMap.forEach((v) => console.log('  ' + v));
+    if (newMap.length) scenarioFailures.push(`17_map_open: новые нарушения вёрстки: ${newMap.join(' | ')}`);
+    await shoot(page, '17_map_open');
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeMap());
+    await ctx.close();
+}
+
+// 18 (П6). Спуск с анимацией и skip по dim: мгновенное прибытие (scroll на цели,
+// баннер), затем мгновенный closeMap-кадр без остаточных твинов/лока.
+// Сид v5 с явным тиром: SAVE_SEED тут не годится — миграция v2->v5 сдвигает
+// тир (1 -> 2), и цена спуска уходит за выданную руду (клик не срабатывает).
+const V5_SEED = JSON.stringify({
+    version: 5, ore: 5000, tier: 1, stars: 0, clicks: 50, lifetimeMined: 5e5,
+    tierEarned: [5e5, 5000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    tierAnchorRate: 50, tutorialDone: true,
+    bossesDefeated: {}, components: {}, artifacts: [], items: {}, crafting: null,
+    levels: { pickaxe: 12, miner: 10, dynamite: 0, lucky: 0, resonance: 0, focuslens: 0, magnet: 0, robotarm: 0, drill: 0, tech: 0 }
+});
+{
+    const { ctx, page } = await newPage({ seed: { 'ore-rush-save': V5_SEED }, name: '18_map_anim_skip' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
+    await page.waitForTimeout(200);
+    await withState(page, 'm => { m.addOre(200000); }'); // цена спуска тира 1 ~29K
+    await page.waitForTimeout(200);
+    const unlockPt = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        return { x: ui.unlockBtn.x + ui.unlockBtn.displayWidth / 2, y: ui.unlockBtn.y + ui.unlockBtn.displayHeight / 2 };
+    });
+    await page.mouse.click(unlockPt.x, unlockPt.y);
+    await page.waitForTimeout(300); // анимация 1400 мс — skip раньше её конца
+    const animOn = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        return { open: ui._mapOpen, anim: !!ui._mapAnim };
+    });
+    if (!animOn.open || !animOn.anim) scenarioFailures.push(`18_map_anim_skip: анимация спуска не запустилась (${JSON.stringify(animOn)})`);
+    await page.mouse.click(150, 400); // тап по dim вне панели — skip
+    await page.waitForTimeout(150);
+    const skipped = await withState(page, `m => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        return {
+            tier: m.gameState.tier,
+            anim: !!ui._mapAnim,
+            scroll: ui.mapCam.scrollY,
+            target: ui._mapScrollTarget(ui._findNodeIndex(m.gameState.tier))
+        };
+    }`);
+    if (skipped.anim) scenarioFailures.push('18_map_anim_skip: тап по dim не остановил анимацию');
+    if (skipped.scroll !== skipped.target) scenarioFailures.push(`18_map_anim_skip: scrollY ${skipped.scroll} != цель ${skipped.target}`);
+    if (skipped.tier !== 2) scenarioFailures.push(`18_map_anim_skip: тир после спуска ${skipped.tier}, ожидался 2`);
+    await shoot(page, '18_map_anim_skip');
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeMap());
+    await page.waitForTimeout(100);
+    const afterClose = await page.evaluate(() => ({
+        open: window.__GAME.scene.getScene('UIScene')._mapOpen,
+        locked: window.__GAME.registry.get('blockLocked')
+    }));
+    if (afterClose.open || afterClose.locked) scenarioFailures.push(`18_map_anim_skip: мгновенный closeMap не снял лок (${JSON.stringify(afterClose)})`);
+    await shoot(page, '18b_map_closed_instant');
+    await ctx.close();
+}
+
+// 19 (П6). Бой с боссом: HP-бар, слот бомбы (через dev-кнопку «Бомба +5»),
+// урон по спрайту, ретрит снимает бой. Аудит не гоняем: оверлей в GameScene
+// уже проверен геометрией verify-boss (P-чеки), здесь — состояния и скриншот.
+// R2 (доработка): бой НЕ держит blockLocked — locked=false на весь бой.
+{
+    const { ctx, page } = await newPage({ seed: { 'ore-rush-save': SAVE_SEED }, name: '19_boss_fight' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
+    await page.waitForTimeout(200);
+    await page.keyboard.press('Backquote');
+    await page.click('#dev-admin-panel button:has-text("Бомба +5")');
+    await page.click('#dev-admin-panel button:has-text("Босс: Медный страж")');
+    await page.keyboard.press('Backquote');
+    await page.waitForTimeout(400);
+    const f = await page.evaluate(() => {
+        const gs = window.__GAME.scene.getScene('GameScene');
+        return {
+            id: gs.boss && gs.boss.def.id,
+            hp: gs.boss && gs.boss.hp,
+            maxHp: gs.boss && gs.boss.maxHp,
+            active: window.__GAME.registry.get('bossActive'),
+            locked: window.__GAME.registry.get('blockLocked'),
+            bar: !!gs.bossBar,
+            slots: gs.bossItems ? gs.bossItems.map((s) => ({ id: s.id, cnt: s.cnt.text })) : null
+        };
+    });
+    if (!f.id || !f.active || f.locked !== false || !f.bar) scenarioFailures.push(`19_boss_fight: бой не активен (${JSON.stringify(f)})`);
+    if (f.hp !== f.maxHp) scenarioFailures.push(`19_boss_fight: HP при старте ${f.hp}/${f.maxHp}`);
+    if (!f.slots || !f.slots.some((s) => s.id === 'item_bomb')) scenarioFailures.push(`19_boss_fight: слот бомбы не найден (${JSON.stringify(f.slots)})`);
+    // Геометрия секции «Снаряжение» (пойманный скриншотом игрока наезд текстов
+    // и кнопок при addNine-карточке 10px + setDisplaySize): карточка на ширину
+    // вьюпорта, тексты не вылезают за кнопки, кнопки в нижнем ряду без наезда
+        const g = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const gs = window.__GAME.scene.getScene('GameScene');
+            const r = ui.gearRows && ui.gearRows[0];
+            if (!r) return null;
+            const c = (o) => ({ x: o.x, y: o.y, w: o.displayWidth, h: o.displayHeight, right: o.x + o.displayWidth / 2, bottom: o.y + o.displayHeight / 2, top: o.y - o.displayHeight / 2, left: o.x - o.displayWidth / 2 });
+            return {
+                card: r._geom || { x: 0, y: 0, w: 0, h: 0 },
+                name: { left: r.name.x, right: r.name.x + r.name.width },
+                stock: { left: r.stock.x - r.stock.width },
+                desc: { bottom: r.desc.y + r.desc.height },
+                buy: { ...c(r.buyBtn), lbl: r.buyLbl.text },
+                use: c(r.useBtn),
+                icon: c(r.icon),
+                vw: { x: ui.L.viewport.x, w: ui.L.viewport.w },
+                // HUD: статы не наезжают на «Карта», звёзды (под баром справа) — на строку бафов
+                statsRight: Math.round(ui.statsLine.x + ui.statsLine.width),
+                statsX: Math.round(ui.statsLine.x),
+                statsSize: ui.statsLine.style ? ui.statsLine.style.fontSize : null,
+                statsText: ui.statsLine.text,
+                mapBtnLeft: Math.round(ui.L.hud.mapBtn.x),
+                starsLeft: Math.round(ui.starsText.x - ui.starsText.width),
+                buffRight: Math.round(ui.buffLine.x + ui.buffLine.width),
+                // Полоса живучести шахтёра — ОБЪЕКТ GameScene (не UIScene)
+                playerBarText: gs.playerHpText ? gs.playerHpText.text : null,
+                playerBarVis: gs.playerBar ? gs.playerBar.visible : false
+            };
+        })
+    if (!g) {
+        scenarioFailures.push('19_boss_fight: секция «Снаряжение» не построена');
+    } else {
+        if (g.statsRight > g.mapBtnLeft - 8)
+            scenarioFailures.push(`19_boss_fight: статы HUD наезжают на «Карта» (${JSON.stringify({ statsRight: g.statsRight, statsX: g.statsX, statsSize: g.statsSize, statsText: g.statsText, mapBtnLeft: g.mapBtnLeft })})`);
+        if (g.buffRight > 0 && g.starsLeft - g.buffRight < 12)
+            scenarioFailures.push(`19_boss_fight: звёзды наезжают на строку бафов (${JSON.stringify({ starsLeft: g.starsLeft, buffRight: g.buffRight })})`);
+        if (!g.playerBarVis || !/ты: [\d.KMB]+ \/ [\d.KMB]+/.test(g.playerBarText || ''))
+            scenarioFailures.push(`19_boss_fight: полоса живучести шахтёра не видна (${g.playerBarText})`);
+        if (Math.abs(g.card.w - (g.vw.w - 8)) > 2 || Math.abs(g.card.h - 100) > 2)
+            scenarioFailures.push(`19_boss_fight: карточка снаряжения не на ширину вьюпорта (${JSON.stringify(g.card)})`);
+        // Карточка центрирована во вьюпорте (сдвиг на полширины = вылезание за край)
+        if (Math.abs((g.card.left + g.card.right) / 2 - (g.vw.x + g.vw.w / 2)) > 2)
+            scenarioFailures.push(`19_boss_fight: карточка смещена относительно вьюпорта (${JSON.stringify(g.card)})`);
+        if (g.name.right > g.card.right - 8 || g.stock.right > g.card.right - 8)
+            scenarioFailures.push(`19_boss_fight: имя/запас вылезают за карточку (${JSON.stringify({ nameRight: g.name.right, stockRight: g.card ? g.card.right - (g.card.right - g.stock.right) : 0, cardRight: Math.round(g.card.right) })})`);
+        if (g.desc.bottom > g.buy.top - 4)
+            scenarioFailures.push(`19_boss_fight: описание наезжает на кнопки (${JSON.stringify({ descBottom: Math.round(g.desc.bottom), buyTop: Math.round(g.buy.top) })})`);
+        if (g.buy.right > g.use.left - 2 || g.use.right > g.card.right - 8 || g.buy.left < g.card.left + 8)
+            scenarioFailures.push(`19_boss_fight: кнопки снаряжения наезжают/вылезают (${JSON.stringify({ buyRight: Math.round(g.buy.right), useLeft: Math.round(g.use.left), cardRight: Math.round(g.card.right) })})`);
+        if (g.icon.right > g.name.left - 6 || g.icon.left < g.card.left + 4)
+            scenarioFailures.push(`19_boss_fight: иконка вне ниши карточки (${JSON.stringify({ icon: g.icon, cardLeft: Math.round(g.card.left) })})`);
+        if (!/^Купить · /.test(g.buy.lbl)) scenarioFailures.push(`19_boss_fight: подпись кнопки покупки без цены (${g.buy.lbl})`);
+    }
+    await shoot(page, '19_boss_fight');
+    await page.mouse.click(400, 400); // спрайт босса в центре блока
+    await page.waitForTimeout(200);
+    const hp2 = await page.evaluate(() => window.__GAME.scene.getScene('GameScene').boss.hp);
+    if (!(hp2 < f.maxHp)) scenarioFailures.push(`19_boss_fight: клик по спрайту не снял HP (${hp2}/${f.maxHp})`);
+    await page.evaluate(() => window.__GAME.scene.getScene('GameScene').retreatBoss());
+    await page.waitForTimeout(300);
+    const off = await page.evaluate(() => ({
+        active: window.__GAME.registry.get('bossActive'),
+        locked: window.__GAME.registry.get('blockLocked'),
+        block: window.__GAME.scene.getScene('GameScene').block.visible
+    }));
+    if (off.active || off.locked || !off.block) scenarioFailures.push(`19_boss_fight: ретрит не вернул бой/блок/лок (${JSON.stringify(off)})`);
+    await ctx.close();
+}
+
+// 20 (П6). Награда за босса: модалка с баунти, компонентом и артефактом;
+// «Забрать» закрывает окно и снимает лок, артефакт в коллекции
+{
+    const { ctx, page } = await newPage({ seed: { 'ore-rush-save': SAVE_SEED }, name: '20_boss_reward' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
+    await page.waitForTimeout(200);
+    await page.keyboard.press('Backquote');
+    await page.click('#dev-admin-panel button:has-text("Босс: Медный страж")');
+    await page.keyboard.press('Backquote');
+    await page.waitForTimeout(400);
+    await page.evaluate(() => window.__GAME.scene.getScene('GameScene').killBoss());
+    await page.waitForTimeout(1000); // твин гибели 600 мс + grantBossKill + ивент
+    const r = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        return {
+            open: ui._bossRewardOpen,
+            visible: ui.bossRewardModal.visible,
+            bounty: ui.bossRewardBounty.text,
+            texts: ui.bossRewardComps.list.filter((o) => o.text).map((o) => o.text),
+            locked: window.__GAME.registry.get('blockLocked')
+        };
+    });
+    if (!r.open || !r.visible || !r.locked) scenarioFailures.push(`20_boss_reward: модалка не показана (${JSON.stringify(r)})`);
+    if (!/^Баунти: \+/.test(r.bounty)) scenarioFailures.push(`20_boss_reward: строка баунти «${r.bounty}»`);
+    if (!r.texts.some((t) => /^Ржавый лом ×\d+$/.test(t))) scenarioFailures.push(`20_boss_reward: дроп компонента не найден (${r.texts.join('; ')})`);
+    if (!r.texts.includes('Тотем шахтёра')) scenarioFailures.push(`20_boss_reward: артефакт в награде не найден (${r.texts.join('; ')})`);
+    await shoot(page, '20_boss_reward');
+    await page.mouse.click(640, 510); // «Забрать»
+    await page.waitForTimeout(300);
+    const done = await withState(page, `m => ({
+        has: m.gameState.artifacts.includes('art_miner_totem'),
+        open: window.__GAME.scene.getScene('UIScene')._bossRewardOpen,
+        locked: window.__GAME.registry.get('blockLocked')
+    })`);
+    if (!done.has) scenarioFailures.push('20_boss_reward: артефакт не попал в коллекцию');
+    if (done.open || done.locked) scenarioFailures.push(`20_boss_reward: «Забрать» не закрыло окно/лок (${JSON.stringify(done)})`);
+    await ctx.close();
+}
+
+// 21 (П6). Мастерская: шапка компонентов (+100 через dev-кнопку), три секции,
+// сетка артефактов (все приглушены с подписью источника), аудит с фильтром
+{
+    const { ctx, page } = await newPage({ seed: { 'ore-rush-save': SAVE_SEED }, name: '21_craft_open' });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
+    await page.waitForTimeout(300);
+    const base21 = baseSignatures((await auditLayout(page)).violations);
+    await page.keyboard.press('Backquote');
+    await page.click('#dev-admin-panel button:has-text("Все компоненты +100")');
+    await page.keyboard.press('Backquote');
+    await page.waitForTimeout(300);
+    await page.mouse.click(1007, 62); // «Крафт» (центр кнопки L.hud.craftBtn)
+    await page.waitForTimeout(400);
+    const c = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        const texts = [];
+        const walk = (list) => {
+            for (const go of list) {
+                if (go.type === 'Text') texts.push(go.text);
+                if (go.list) walk(go.list);
+            }
+        };
+        walk(ui.craftContent.list);
+        return {
+            open: ui._craftOpen,
+            locked: window.__GAME.registry.get('blockLocked'),
+            header: ui.craftCompRow.map((r) => r.text.text),
+            sections: ['Активируемые', 'Рецепты', 'Артефакты'].filter((s) => texts.includes(s)),
+            items: Object.keys(ui.craftItemRows).length,
+            recipes: Object.keys(ui.craftRecipeRows).length,
+            arts: Object.keys(ui.craftArtCells).length,
+            dim: Object.values(ui.craftArtCells).filter((cell) => cell.rc.alpha < 0.9).length,
+            srcs: Object.values(ui.craftArtCells).map((cell) => cell.line.text)
+        };
+    });
+    if (!c.open || !c.locked) scenarioFailures.push(`21_craft_open: мастерская не открылась/лок не встал (${JSON.stringify(c)})`);
+    if (c.header.join(',') !== '100,100,100,100,100') scenarioFailures.push(`21_craft_open: шапка не показала +100 (${c.header.join(',')})`);
+    if (c.sections.length !== 3) scenarioFailures.push(`21_craft_open: секции (${c.sections.join(', ')})`);
+    if (c.items !== 7 || c.recipes !== 10 || c.arts !== 9) scenarioFailures.push(`21_craft_open: ряды ${c.items}/рецепты ${c.recipes}/артефакты ${c.arts}, ожидалось 7/10/9`);
+    if (c.dim !== 9) scenarioFailures.push(`21_craft_open: приглушено ${c.dim} ячеек из 9, ожидалось 9 (артефактов нет)`);
+    if (!c.srcs.every((s) => s === 'Крафт' || /^Босс: /.test(s))) scenarioFailures.push(`21_craft_open: подписи источников некорректны (${c.srcs.join('; ')})`);
+    const auditCraft = (await auditLayout(page)).violations;
+    const newCraft = newOverlayViolations(auditCraft, base21);
+    fs.writeFileSync(path.join(OUT, 'layout_audit_craft_open.txt'), newCraft.join('\n') || 'layout audit (craft open): 0 новых нарушений');
+    console.log('craft open new violations:', newCraft.length);
+    newCraft.forEach((v) => console.log('  ' + v));
+    if (newCraft.length) scenarioFailures.push(`21_craft_open: новые нарушения вёрстки: ${newCraft.join(' | ')}`);
+    await shoot(page, '21_craft_open');
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeCraft());
+    await ctx.close();
+}
+
 // Финал: ошибки ВСЕХ сценариев + провалы сценарных ассертов (03_buys и т.п.)
 const allErrors = consoleErrors.flatMap((b) => b.errors.map((e) => `[${b.name}] ${e}`));
 const allFailures = allErrors.concat(scenarioFailures);
@@ -357,3 +679,4 @@ if (scenarioFailures.length) {
     process.exitCode = 1;
 }
 await browser.close();
+
