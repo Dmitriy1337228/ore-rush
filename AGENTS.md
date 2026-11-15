@@ -14,7 +14,7 @@
 - Нельзя «лечить проверку»: не добавлять новые нарушения в `tests/ui-check/baseline.json`, не ослаблять `UI_RULES` (`src/dev/uiAudit.js`) и не скрывать объекты ради зелёного прогона. Закрыли долг — `--update-baseline` и в сообщении коммита указать, на сколько долг уменьшился.
 - Новый экран/модалка = новое состояние в `scripts/lib/ui-matrix.mjs`.
 - Если игрок прислал `ui-report-*.json` (F9 в dev-сборке) — сначала воспроизвести: `npm run ui:check -- --replay <файл>`.
-- Новые «голые» числа раскладки не плодить: константы/токены (`src/ui/theme.js`, `src/ui/listGeometry.js`, `src/scenes/game/*Layout.js`). План системного лечения — `docs/UI_LAYOUT_TODO.md`.
+- Новые «голые» числа раскладки не плодить: константы/токены (`src/ui/theme.js`, `src/ui/listGeometry.js`, `src/scenes/game/*Layout.js`). Кегли в `src/scenes/ui` — только токены `FONT_SIZE`: `npm run ui:tokens` должен завершаться без нарушений (исключение — файлы раскладок). План системного лечения — `docs/UI_LAYOUT_TODO.md`.
 
 ## Скиллы (.kilo/skills)
 - Перед началом задачи сверься с реестром `.kilo/skills/INDEX.md` (если файл существует).

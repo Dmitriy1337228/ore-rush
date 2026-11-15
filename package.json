@@ -10,7 +10,8 @@
         "test": "node --test \"tests/characterization/*.test.mjs\"",
         "test:ui": "node tests/characterization/ui_review_golden.mjs",
         "ui:check": "node scripts/ui-check.mjs",
-        "ui:check:quick": "node scripts/ui-check.mjs --quick"
+        "ui:check:quick": "node scripts/ui-check.mjs --quick",
+        "ui:tokens": "node scripts/ui-tokens.mjs"
     },
     "keywords": [],
     "author": "",
