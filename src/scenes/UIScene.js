@@ -10,7 +10,7 @@ import {
     resetGame, saveGame, fmt, fmtDuration,
     DAILY_REWARDS, BOSSES, COMPONENTS, ARTIFACTS,
     ITEMS, CRAFT_RECIPES, useItem, canCraft, startCraft, canClaimCraft, claimCraft,
-    getItemPrice, buyItem
+    getItemPrice, buyItem, canBuyItem
 } from '../state.js';
 import { computeLayout } from '../layout.js';
 import { playSfx } from '../sfx.js';
@@ -214,6 +214,7 @@ export class UIScene extends Phaser.Scene {
         this.L = computeLayout(this.scale.gameSize.width, this.scale.gameSize.height);
         this.buildHud();
         this.buildPanel();
+        this.buildGearSection();
         this.buildUnlockButton();
         this.buildModal();
         this.buildOfflineModal();
@@ -240,6 +241,13 @@ export class UIScene extends Phaser.Scene {
         // включая карточки: покупка на кнопках висит на pointerup с гасителем драга)
 
         this.game.events.on('ui-refresh', () => this.refreshUi());
+
+        // Смена состояния боя: панель переключается на «Снаряжение» и в портрете
+        // поднимается под блок босса (пересборка сетки — applyLayout)
+        this.game.events.on('boss-changed', () => {
+            this.applyLayout();
+            this.refreshUi();
+        });
 
         // Офлайн-модалка по событию: симуляция из DevPanel и реальный возврат
         // во вкладку идут по одному пути (registry.offlineInfo + offline-applied)
@@ -421,11 +429,128 @@ export class UIScene extends Phaser.Scene {
         return { c, bg };
     }
 
+    // ---------- Секция «Снаряжение» панели (видна только в босс-бое) ----------
+
+    // Во время боя правая панель показывает предметы для файта вместо списка
+    // улучшений (замечание игрока: снаряжение не видно). Ряды bossUse-предметов:
+    // иконка, эффект, запас, кнопки «Купить · цена» и «Использовать». Строится
+    // один раз; позиция — layoutGearSection (applyLayout), состояние —
+    // refreshGearPanel (дифф из updateBlockLock).
+    buildGearSection() {
+        this.gearContent = this.add.container(0, 0).setDepth(12).setVisible(false);
+        this.gearTitle = makeLabel(this, 0, 0, 'Снаряжение', 18, '#ffe9b0').setOrigin(0.5);
+        this.gearContent.add(this.gearTitle);
+        this.gearRows = ITEMS.filter((it) => it.bossUse).map((def) => {
+            const card = addNine(this, 0, 0, 'upgrade_row_card_1', 10, 10, 7);
+            const icon = this.add.image(0, 0, def.id);
+            const name = makeLabel(this, 0, 0, def.name, 15, '#ffe9b0');
+            const desc = makeLabel(this, 0, 0, def.desc, 12, '#c8c8c8');
+            const stock = makeLabel(this, 0, 0, '', 13, '#ffe9b0');
+            const buyBtn = addNine(this, 0, 0, 'buy_button_normal', 10, 10, 15);
+            buyBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
+            const buyLbl = makeLabel(this, 0, 0, '', 12, '#ffffff').setOrigin(0.5);
+            buyBtn.on('pointerup', () => {
+                if (this._listDragging) return;
+                if (buyItem(def.id)) {
+                    playSfx(this, 'purchase');
+                    this.refreshGearPanel(true);
+                }
+            });
+            const useBtn = addNine(this, 0, 0, 'buy_button_normal', 10, 10, 15);
+            useBtn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
+            const useLbl = makeLabel(this, 0, 0, 'Использовать', 12, '#ffffff').setOrigin(0.5);
+            useBtn.on('pointerup', () => {
+                if (this._listDragging) return;
+                if ((gameState.items[def.id] || 0) > 0 && useItem(def.id, true)) {
+                    playSfx(this, 'purchase');
+                    this.refreshGearPanel(true);
+                }
+            });
+            this.gearContent.add([card, icon, name, desc, stock, buyBtn, buyLbl, useBtn, useLbl]);
+            return { def, card, icon, name, desc, stock, buyBtn, buyLbl, useBtn, useLbl, _key: null };
+        });
+    }
+
+    // Позиция секции от вьюпорта панели (пересчёт в applyLayout, включая боевой
+    // вариант портретной сетки)
+    layoutGearSection() {
+        if (!this.gearContent) return;
+        const vw = VIEWPORT;
+        const s = this._adaptiveScale || 1;
+        const ts = this.L.portrait ? s : 1;
+        this.gearTitle.setPosition(vw.x + vw.w / 2, vw.y + 16);
+        this.gearTitle.setFontSize(Math.round(18 * ts));
+        let ry = vw.y + 36;
+        const rh = Math.round(150 * ts);
+        for (const row of this.gearRows) {
+            // addNine — origin (0,0): координаты левого верхнего угла
+            row.card.setPosition(vw.x + 4, ry);
+            row.card.setDisplaySize(vw.w - 8, rh);
+            const iconSize = Math.round(56 * ts);
+            row.icon.setPosition(vw.x + 18 + iconSize / 2, ry + rh / 2);
+            row.icon.setDisplaySize(iconSize, iconSize);
+            const tx = vw.x + 18 + iconSize + 18;
+            row.name.setPosition(tx, ry + Math.round(30 * ts));
+            row.name.setFontSize(Math.round(15 * ts));
+            row.desc.setPosition(tx, ry + Math.round(56 * ts));
+            row.desc.setFontSize(Math.round(12 * ts));
+            row.stock.setPosition(tx, ry + Math.round(84 * ts));
+            row.stock.setFontSize(Math.round(13 * ts));
+            const btnW = Math.round(118 * ts);
+            const btnH = Math.round(40 * ts);
+            const btnX = vw.x + vw.w - 10 - btnW;
+            row.buyBtn.setPosition(btnX, ry + rh / 2 - btnH - 4);
+            row.buyBtn.setDisplaySize(btnW, btnH);
+            row.buyLbl.setPosition(btnX + btnW / 2, row.buyBtn.y + btnH / 2);
+            row.buyLbl.setFontSize(Math.round(12 * ts));
+            row.useBtn.setPosition(btnX, ry + rh / 2 + 4);
+            row.useBtn.setDisplaySize(btnW, btnH);
+            row.useLbl.setPosition(btnX + btnW / 2, row.useBtn.y + btnH / 2);
+            row.useLbl.setFontSize(Math.round(12 * ts));
+            ry += rh + 10;
+        }
+        this.refreshGearPanel(true);
+    }
+
+    // Дифф-обновление рядов снаряжения: запас, цена (динамическая), доступность
+    refreshGearPanel(force = false) {
+        if (!this.gearContent) return;
+        for (const row of this.gearRows) {
+            const stock = gameState.items[row.def.id] || 0;
+            const price = getItemPrice(row.def.id);
+            const canBuy = canBuyItem(row.def.id);
+            const key = `${stock}|${price}|${canBuy ? 'n' : 'g'}`;
+            if (!force && row._key === key) continue;
+            row._key = key;
+            row.stock.setText(`в запасе: ${stock}`);
+            row.buyBtn.setTexture(canBuy ? 'buy_button_normal' : 'buy_button_disabled_gray');
+            row.buyLbl.setText(`Купить · ${fmt(price)}`);
+            row.useBtn.setTexture(stock > 0 ? 'buy_button_normal' : 'buy_button_disabled_gray');
+        }
+    }
+
     // ---------- Адаптивная раскладка (см. src/layout.js) ----------
 
     applyLayout() {
         const L = computeLayout(this.scale.gameSize.width, this.scale.gameSize.height);
         this.L = L;
+        // Боевой вариант портретной сетки: панель поднимается под блок босса
+        // (пустота под боссом и сжатая панель — замечание игрока), кнопки
+        // Карта/Крафт следуют за панелью. Формула byF синхронна с
+        // GameScene.buildBossOverlay (кламп 386).
+        const bossNow = !!this.registry.get('bossActive');
+        if (L.portrait && bossNow) {
+            const byF = Math.max(L.block.y, 386);
+            const fightPy = byF + 224;
+            L.panel.py = fightPy;
+            L.panel.ph = L.H - fightPy;
+            L.viewport.y = fightPy + 156;
+            L.viewport.h = Math.max(220, L.panel.ph - 156 - 32);
+            L.hud.mapBtn.y = fightPy + 24;
+            L.hud.craftBtn.y = fightPy + 24;
+            L.unlock.y = fightPy - 56;
+            L.unlock.hintY = fightPy - 24;
+        }
         Object.assign(VIEWPORT, L.viewport);
         // Портретный масштаб кеглей: 390px -> 1.8, 720px -> 1.0 (FIT-даунскейл
         // съедает мелкий шрифт на телефонах — замечание игрока R7-R9)
@@ -554,6 +679,15 @@ export class UIScene extends Phaser.Scene {
         this.unlockText.setFontSize(u.textSize);
         this.hint.setPosition(u.cx, u.hintY);
         this.hint.setFontSize(u.hintSize);
+        // В портретном бою спуск скрыт целиком (заблокирован и съедает место
+        // поднятой панели); в ландшафте остаётся серой кнопкой
+        const hideUnlock = L.portrait && bossNow;
+        this.unlockBtn.setVisible(!hideUnlock);
+        this.unlockText.setVisible(!hideUnlock);
+        this.hint.setVisible(!hideUnlock);
+
+        // Секция «Снаряжение» панели — позиция от вьюпорта (в бою панель выше)
+        this.layoutGearSection();
 
         // Модалки: затемнение на всю сетку, панель по центру; текст в портрете
         // крупнее (FIT-даунскейл ~0.52 на телефонах съедает кегль)
@@ -2212,7 +2346,13 @@ export class UIScene extends Phaser.Scene {
         if (locked !== this._blockLocked) {
             this._blockLocked = locked;
             this.registry.set('blockLocked', locked);
-            this.listContent.setVisible(!locked);
+        }
+        const bossNow = !!this.registry.get('bossActive');
+        // В бою панель показывает «Снаряжение» вместо списка улучшений
+        this.listContent.setVisible(!locked && !bossNow);
+        if (this.gearContent) {
+            this.gearContent.setVisible(bossNow && !locked);
+            this.refreshGearPanel();
         }
         if (this.mapRoot) {
             this.mapRoot.setVisible(this._mapOpen);
@@ -2315,9 +2455,12 @@ export class UIScene extends Phaser.Scene {
 
         // Кнопка спуска
         const next = getNextTier();
+        // В портретном бою спуск скрыт целиком (заблокирован и съедает место
+        // поднятой панели); в ландшафте остаётся серой кнопкой
+        const hideUnlock = this.L.portrait && !!this.registry.get('bossActive');
         if (next) {
-            this.unlockBtn.setVisible(true);
-            this.unlockText.setVisible(true);
+            this.unlockBtn.setVisible(!hideUnlock);
+            this.unlockText.setVisible(!hideUnlock);
             this.unlockText.setText(`Спуск: ${next.name} — ${fmt(getNextUnlockPrice())} ${tier.gen || tier.name.toLowerCase()}`);
             const bossLocked = !!this.registry.get('bossActive');
             if (canUnlockTier() && !bossLocked) {
@@ -2343,7 +2486,7 @@ export class UIScene extends Phaser.Scene {
                 this.hint.setText(hintTxt);
                 this._hintText = hintTxt;
             }
-            this.hint.setVisible(true);
+            this.hint.setVisible(!hideUnlock);
         } else {
             this.unlockBtn.setVisible(false);
             this.unlockText.setVisible(false);

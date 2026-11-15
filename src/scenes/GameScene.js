@@ -5,7 +5,7 @@ import {
     MUTATIONS, MUTATION_DURATION_MS, MUTATION_CHECK_MS, MUTATION_CHANCE, getMutationBreakBonus,
     canClaimDaily, claimDailyReward,
     BOSSES, ITEMS, BOSS_FIGHT_SECONDS, bossHpFor, rollBossHit, grantBossKill, useItem,
-    getItemPrice, buyItem
+    getItemPrice, buyItem, updateBossFight, clearBossFight
 } from '../state.js';
 import { YandexSDKStub } from '../sdk-stub.js';
 import { computeLayout } from '../layout.js';
@@ -61,6 +61,8 @@ export class GameScene extends Phaser.Scene {
         this.boss = null;      // активный босс: { def, hp, maxHp, busy, startedAt, endsAt } — режим боя
         this.bossUi = null;    // контейнер оверлея боя (спрайт, HP-бар, кнопки)
         this._preBossBgm = null; // обычный BGM, замещённый босс-темой на время боя
+        this._bossBy = 0;      // фактический Y оверлея боя (портретный кламп)
+        this._bossSaveAt = 0;  // троттлинг сейва персиста боя (раз в 3 с)
     }
 
     create() {
@@ -87,6 +89,9 @@ export class GameScene extends Phaser.Scene {
 
         this.scene.launch('UIScene');
         this.startBgm();
+        // Незавершённый бой из сейва продолжается (F5 не сбрасывает босса):
+        // HP и накопленное время восстановлены, модалки дневной награды откладываются.
+        if (gameState.bossFight) this.startBossFight(gameState.bossFight.bossId, gameState.bossFight);
         this.setGameplay(true);
         this.refreshTick();
         this.claimDaily();
@@ -688,13 +693,17 @@ export class GameScene extends Phaser.Scene {
     // Бой: блок прячется (стадия сохраняется для возврата), на его месте босс с HP.
     // Лимита времени и ретрита нет — бой до победы (retreatBoss остался только для
     // shutdown/DevPanel). Ручные клики по спрайту и робо-рука наносят rollBossHit,
-    // пассив работает как обычно. HP не персистится: перезагрузка страницы сбрасывает бой.
-    startBossFight(bossId) {
+    // пассив работает как обычно. HP и время боя персистятся в сейве (bossFight):
+    // перезагрузка страницы продолжает бой, а не отменяет его.
+    startBossFight(bossId, restore = null) {
         if (this.boss || this.registry.get('blockLocked')) return;
         const def = BOSSES.find((b) => b.id === bossId);
         if (!def) return;
-        const hp = bossHpFor(def);
-        this.boss = { def, hp, maxHp: hp, busy: false, startedAt: this.time.now, endsAt: this.time.now + BOSS_FIGHT_SECONDS * 1000 };
+        const maxHp = bossHpFor(def);
+        const hp = restore ? Math.min(Math.max(1, Math.ceil(restore.hp)), maxHp) : maxHp;
+        const elapsedMs = restore ? Math.max(0, Math.floor(restore.elapsedMs) || 0) : 0;
+        this.boss = { def, hp, maxHp, busy: false, startedAt: this.time.now - elapsedMs, endsAt: this.time.now + BOSS_FIGHT_SECONDS * 1000 };
+        gameState.bossFight = { bossId: def.id, hp: Math.ceil(hp), elapsedMs };
         // Зомби-цепочки разрушения гасим так же, как buildBlock: снятие твинов и
         // таймера заживления + смена поколения блока (иначе отложенный delayedCall
         // восстановил бы busy/текстуру уже под боссом)
@@ -709,6 +718,10 @@ export class GameScene extends Phaser.Scene {
         this.registry.set('bossActive', true);
         this.buildBossOverlay();
         this.startBossBgm();
+        // Персист сразу: F5 сразу после входа в бой продолжает его с полного HP
+        saveGame();
+        // UIScene перестраивает панель (секция «Снаряжение») и портретную сетку
+        this.game.events.emit('boss-changed');
         this.refreshTick();
     }
 
@@ -737,7 +750,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     buildBossOverlay() {
-        const bx = this.blockX, by = this.blockY;
+        const bx = this.blockX;
+        // В портретном бое оверлей центрируется в свободной зоне над панелью:
+        // на низкой сетке blockY прижимает имя босса к HUD-бару — клампим вниз
+        const isPortrait = this.scale.gameSize.height > this.scale.gameSize.width;
+        const by = isPortrait ? Math.max(this.blockY, 386) : this.blockY;
+        this._bossBy = by;
         this.bossUi = this.add.container(0, 0).setDepth(27);
 
         const sprite = this.add.image(bx, by, this.boss.def.icon).setDisplaySize(240, 240);
@@ -778,6 +796,10 @@ export class GameScene extends Phaser.Scene {
         });
         this.refreshBossItems();
 
+        // Подсказка эффектов под слотами: игрок должен видеть, что покупает
+        this.bossHint = makeLabel(this, bx, by + 204, usable.map((it) => it.desc).join(' · '), 12, '#c8c8c8').setOrigin(0.5);
+        this.bossUi.add(this.bossHint);
+
         this.tweens.add({
             targets: sprite,
             scaleX: sprite.scaleX + 0.03,
@@ -793,7 +815,7 @@ export class GameScene extends Phaser.Scene {
     drawBossBar() {
         if (!this.boss || !this.bossBar) return;
         const g = this.bossBar;
-        const x = this.blockX - 170, y = this.blockY - 190;
+        const x = this.blockX - 170, y = (this._bossBy || this.blockY) - 190;
         g.clear();
         g.fillStyle(0x1a1c1f, 1);
         g.fillRect(x, y, 340, 20);
@@ -833,7 +855,7 @@ export class GameScene extends Phaser.Scene {
                 slot.btn.setDisplaySize(132, 44).setTexture(gameState.ore >= price ? 'buy_button_normal' : 'buy_button_disabled_gray').setAlpha(1);
                 slot.icon.setVisible(false);
                 slot.cnt.setVisible(false);
-                slot.buyLbl.setVisible(true).setText(`Купить ${slot.def.priceSeconds}с ${fmt(price)}`);
+                slot.buyLbl.setVisible(true).setText(`купить ${fmt(price)}`);
                 let size = 11;
                 slot.buyLbl.setFontSize(size);
                 while (size > 8 && slot.buyLbl.width > 120) {
@@ -883,7 +905,7 @@ export class GameScene extends Phaser.Scene {
         if (!b || b.busy) return;
         b.busy = true;
         this.tweens.killTweensOf(this.bossSprite);
-        this.debrisEmitter.explode(40, this.blockX, this.blockY);
+        this.debrisEmitter.explode(40, this.blockX, this._bossBy || this.blockY);
         this.tweens.add({
             targets: this.bossSprite,
             scale: 0,
@@ -891,19 +913,24 @@ export class GameScene extends Phaser.Scene {
             duration: 600,
             ease: 'Quad.easeIn',
             onComplete: () => {
+                // Бой завершён — персист-запись гасится до сейва награды,
+                // иначе перезагрузка в окне анимации возобновила бы мёртвый бой
+                clearBossFight();
                 const reward = grantBossKill(b.def.id);
                 this.destroyBossOverlay();
                 this.boss = null;
                 this.registry.set('bossActive', false);
                 this.stopBossBgm();
                 this.block.setVisible(true).setInteractive({ useHandCursor: true });
+                this.game.events.emit('boss-changed');
                 if (reward) this.game.events.emit('boss-defeated', { bossId: b.def.id, ...reward });
             }
         });
     }
 
-    // Отступление: награды нет, HP босса не сохраняется. Игроку недоступно
-    // (крестика и лимита времени больше нет) — путь остался для shutdown/DevPanel.
+    // Отступление: награды нет, запись боя из сейва стирается. Игроку недоступно
+    // (крестика и лимита времени больше нет, F5 продолжает бой) — путь остался
+    // для shutdown/DevPanel.
     retreatBoss() {
         const b = this.boss;
         if (!b || b.busy) return;
@@ -912,7 +939,10 @@ export class GameScene extends Phaser.Scene {
         this.boss = null;
         this.registry.set('bossActive', false);
         this.stopBossBgm();
+        clearBossFight();
+        saveGame();
         this.block.setVisible(true).setInteractive({ useHandCursor: true });
+        this.game.events.emit('boss-changed');
         const float = makeLabel(this, this.blockX, this.blockY - 120, 'Босс восстановился', 22, '#c8c8c8');
         float.setOrigin(0.5).setDepth(28);
         this.tweens.add({ targets: float, y: float.y - 50, alpha: 0, duration: 1100, onComplete: () => float.destroy() });
@@ -1000,6 +1030,13 @@ export class GameScene extends Phaser.Scene {
         if (this.boss && this.bossTime) {
             const secs = Math.max(0, Math.floor((this.time.now - this.boss.startedAt) / 1000));
             this.bossTime.setText(`${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`);
+            // Персист боя: HP/время в состоянии; сейв не чаще раза в 3 с
+            // (клики по боссу частые — localStorage на каждый удар недопустим)
+            updateBossFight(this.boss.hp, this.time.now - this.boss.startedAt);
+            if (this.time.now >= this._bossSaveAt) {
+                this._bossSaveAt = this.time.now + 3000;
+                saveGame();
+            }
         }
         if (!this.mutation) return;
         const remaining = this.mutation.endsAt - this.time.now;

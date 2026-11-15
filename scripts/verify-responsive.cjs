@@ -426,6 +426,55 @@ function check(name, cond, detail = '') {
         await ctx.close();
     }
 
+    // ---------- 10. Портрет-бой: панель поднимается под босса, «Снаряжение» ----------
+    {
+        const { ctx, page } = await newPage({ width: 390, height: 844 });
+        await page.evaluate(() => window.__GAME.scene.getScene('GameScene').startBossFight('boss_copper'));
+        await page.waitForTimeout(500);
+        const f = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const gs = window.__GAME.scene.getScene('GameScene');
+            const L = ui.L;
+            const byF = Math.max(L.block.y, 386);
+            const hintBottom = gs.bossHint ? gs.bossHint.y + gs.bossHint.height / 2 : 0;
+            const card = ui.gearRows[0].card;
+            return {
+                py: L.panel.py, fightPyExpected: byF + 224,
+                hintBottom,
+                gearVisible: ui.gearContent.visible, listVisible: ui.listContent.visible,
+                unlockVisible: ui.unlockBtn.visible,
+                card: { x: card.x, y: card.y, w: card.displayWidth, h: card.displayHeight },
+                vw: { x: L.viewport.x, y: L.viewport.y, w: L.viewport.w, h: L.viewport.h },
+                panelH: L.panel.ph
+            };
+        });
+        check('портрет-бой: панель поднята под босса (fightPy)',
+            Math.abs(f.py - f.fightPyExpected) <= 1, JSON.stringify({ py: f.py, exp: f.fightPyExpected }));
+        check('портрет-бой: зазор босс-панель мал (пустоты нет)',
+            f.py - f.hintBottom <= 40 && f.py - f.hintBottom >= -10, JSON.stringify({ gap: Math.round(f.py - f.hintBottom) }));
+        check('портрет-бой: «Снаряжение» видно, список улучшений скрыт',
+            f.gearVisible && !f.listVisible, '');
+        check('портрет-бой: спуск скрыт', !f.unlockVisible, '');
+        check('портрет-бой: карточка снаряжения внутри вьюпорта',
+            f.card.x >= f.vw.x - 2 && f.card.y >= f.vw.y - 2
+            && f.card.x + f.card.w <= f.vw.x + f.vw.w + 2 && f.card.y + f.card.h <= f.vw.y + f.vw.h + 2,
+            JSON.stringify({ card: f.card, vw: f.vw }));
+        check('портрет-бой: панель выше базовой 582', f.panelH > 582, String(f.panelH));
+        await page.evaluate(() => window.__GAME.scene.getScene('GameScene').retreatBoss());
+        await page.waitForTimeout(600);
+        const after = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return {
+                gear: ui.gearContent.visible, list: ui.listContent.visible,
+                unlock: ui.unlockBtn.visible, py: ui.L.panel.py, H: ui.L.H
+            };
+        });
+        check('портрет-бой: после победы панель возвращается на базовое место',
+            !after.gear && after.list && after.unlock && Math.abs(after.py - (after.H - 582)) <= 2,
+            JSON.stringify(after));
+        await ctx.close();
+    }
+
     check('page errors', errors.length === 0, errors.slice(0, 3).join('; '));
     console.log(`\nИтого: ${passed} OK, ${failed} FAIL`);
     await b.close();

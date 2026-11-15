@@ -19,6 +19,7 @@ const {
     getArtifactBonus, getItemBuffMult, isItemVeinActive, getBossDamageMult,
     rollClickGain, rollBossHit, grantBossKill, addOre,
     canCraft, startCraft, canClaimCraft, claimCraft, useItem,
+    updateBossFight, clearBossFight, saveGame,
     getClickDamage, getOrePerSecond, getExpectedClickGain, getEarningRate,
     getCritChance, getAutoClicksPerSecond, getOfflineRate
 } = state;
@@ -295,6 +296,39 @@ check('рецепты: cost предмета совпадает с ITEMS.cost', 
         startCraft('r_bomb') && canClaimCraft() && claimCraft() &&
         gameState.items.item_bomb === 2 && gameState.crafting === null);
 
+    // персист босс-боя: валидация сейва, update/clear
+    const copperMax = bossHpFor(BOSSES.find((b) => b.id === 'boss_copper'));
+    gameState.bossFight = { bossId: 'boss_copper', hp: copperMax - 100, elapsedMs: 65000 };
+    const bossFightSave = JSON.parse(saveGameToString());
+    check('персист боя: валидный бой сохраняется и принимается сейвом',
+        bossFightSave.bossFight && bossFightSave.bossFight.bossId === 'boss_copper' &&
+        applySave(JSON.parse(JSON.stringify(bossFightSave))) !== false &&
+        gameState.bossFight && gameState.bossFight.hp === copperMax - 100 &&
+        gameState.bossFight.elapsedMs === 65000);
+    check('персист боя: неизвестный босс отбрасывается',
+        (() => { const d = { ...bossFightSave, bossFight: { bossId: 'boss_nope', hp: 10, elapsedMs: 1 } }; applySave(d); return gameState.bossFight === null; })());
+    check('персист боя: hp <= 0 и hp > максимума отбрасываются',
+        (() => {
+            let bad = 0;
+            for (const hp of [0, -5, copperMax + 1]) {
+                applySave({ ...bossFightSave, bossFight: { bossId: 'boss_copper', hp, elapsedMs: 1 } });
+                if (gameState.bossFight !== null) bad++;
+            }
+            return bad === 0;
+        })());
+    gameState.bossFight = { bossId: 'boss_copper', hp: copperMax - 100, elapsedMs: 1000 };
+    updateBossFight(copperMax - 250, 9876);
+    check('персист боя: updateBossFight пишет hp/время (ceil/floor)',
+        gameState.bossFight.hp === copperMax - 250 && gameState.bossFight.elapsedMs === 9876);
+    clearBossFight();
+    check('персист боя: clearBossFight гасит запись', gameState.bossFight === null);
+
+}
+
+// Сериализация сейва (saveGame пишет в стаб — читаем через тот же gameState):
+// используем JSON gameState напрямую, как его сериализует saveGame.
+function saveGameToString() {
+    return JSON.stringify(gameState);
 }
 
 // --- 7. useItem: активация, слоты бафов, перезарядка, мгновенный расходник ---

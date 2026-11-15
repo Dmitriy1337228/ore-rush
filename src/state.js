@@ -231,6 +231,7 @@ export function createInitialState() {
         items: {},          // активируемые предметы: {itemId: количество}
         crafting: null,     // верстак (1 слот): {recipeId, endsAt} либо null
         bossesDefeated: {}, // побеждённые боссы: {bossId: true}
+        bossFight: null,    // незавершённый босс-бой: {bossId, hp, elapsedMs} — переживает F5
         miningBuffUntil: 0, // баф добычи от предметов (wall-clock ms, как dailyBuffUntil)
         miningBuffMult: 1,
         bossBuffUntil: 0,   // баф урона боссу от предметов (wall-clock ms)
@@ -578,6 +579,18 @@ export function getBossDamageMult() {
 export function rollBossHit() {
     const r = rollClickGain(null);
     return { gain: r.gain * getBossDamageMult(), crit: r.crit, lucky: r.lucky };
+}
+
+// Персист незавершённого боя: HP и накопленное время пишутся в состояние, чтобы
+// перезагрузка страницы (F5) не была бесплатным отступлением — бой продолжается.
+export function updateBossFight(hp, elapsedMs) {
+    if (!gameState.bossFight) return;
+    gameState.bossFight.hp = Math.max(0, Math.ceil(hp));
+    gameState.bossFight.elapsedMs = Math.max(0, Math.floor(elapsedMs));
+}
+
+export function clearBossFight() {
+    gameState.bossFight = null;
 }
 
 // Награда за убийство босса: баунти (90 сек полного дохода на момент убийства),
@@ -1105,6 +1118,18 @@ export function applySave(data) {
     if (data.bossesDefeated && typeof data.bossesDefeated === 'object') {
         for (const def of BOSSES) {
             if (data.bossesDefeated[def.id]) gameState.bossesDefeated[def.id] = true;
+        }
+    }
+    // Незавершённый босс-бой: валиден только при живом боссе каталога и
+    // осмысленном HP (0 < hp <= максимум); иначе бой молча сбрасывается.
+    gameState.bossFight = null;
+    if (data.bossFight && typeof data.bossFight === 'object') {
+        const bfId = data.bossFight.bossId;
+        const bfDef = BOSSES.find((b) => b.id === bfId);
+        const bfHp = Math.floor(Number(data.bossFight.hp));
+        const bfEl = Math.max(0, Math.floor(Number(data.bossFight.elapsedMs)) || 0);
+        if (bfDef && bfHp > 0 && bfHp <= bossHpFor(bfDef)) {
+            gameState.bossFight = { bossId: bfId, hp: bfHp, elapsedMs: bfEl };
         }
     }
     gameState.crafting = null;

@@ -571,6 +571,60 @@ const parseElapsed = (t) => {
         await page.close();
     }
 
+    // ---------- Страница 4: персист боя (F5 продолжает) + секция «Снаряжение» ----------
+    // Тир 1 (медь, 75K HP): ОДИН клик (~13K урона) наносит урон, не убивая.
+    // Руда 5M покрывает динамическую цену бомбы (60с дохода, ~1.8M на этой сетке).
+    {
+        const { page, state, gsOf, ptOf } = await newPage(mkSave({ ore: 5e6, tier: 1, tierEarned: [1e5, 5000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }), { width: 1280, height: 720 });
+        await page.evaluate(() => window.__GAME.scene.getScene('GameScene').startBossFight('boss_copper'));
+        await page.waitForTimeout(500);
+
+        // Панель в бою: «Снаряжение» вместо списка улучшений (замечание игрока)
+        const gear = await ptOf('({ gear: ui.gearContent.visible, list: ui.listContent.visible, stock: ui.gearRows[0].stock.text, buyLbl: ui.gearRows[0].buyLbl.text, useLbl: ui.gearRows[0].useLbl.text })');
+        check('G1: в бою панель показывает «Снаряжение» вместо улучшений', gear.gear && !gear.list, JSON.stringify(gear));
+        check('G2: ряд снаряжения — запас и динамическая цена', /^в запасе: \d+$/.test(gear.stock) && /^Купить · /.test(gear.buyLbl) && gear.useLbl === 'Использовать', JSON.stringify(gear));
+
+        // Слот под боссом (пока пуст): «купить N», подсказка эффекта под слотами
+        const slot = await gsOf('({ buyLbl: gs.bossItems[0].buyLbl.visible ? gs.bossItems[0].buyLbl.text : null, cnt: gs.bossItems[0].cnt.visible ? gs.bossItems[0].cnt.text : null, hint: gs.bossHint && gs.bossHint.text })');
+        check('G4: слот бомбы — понятная подпись покупки', /^купить \d/.test(slot.buyLbl || ''), JSON.stringify(slot));
+        check('G5: под слотами подсказка эффекта (что даёт покупка)', /урон/i.test(slot.hint || ''), slot.hint);
+
+        // Покупка кликом по кнопке снаряжения (центр кнопки)
+        const buyPt = await ptOf('({ x: ui.gearRows[0].buyBtn.x + ui.gearRows[0].buyBtn.displayWidth / 2, y: ui.gearRows[0].buyBtn.y + ui.gearRows[0].buyBtn.displayHeight / 2 })');
+        await page.mouse.click(buyPt.x, buyPt.y);
+        await page.waitForTimeout(400);
+        const afterBuy = await state('({ stock: m.gameState.items.item_bomb || 0 })');
+        check('G3: покупка снаряжения из панели работает', afterBuy.stock === 1, JSON.stringify(afterBuy));
+
+        // Персист: один клик по боссу -> форс-сейв -> F5 -> бой продолжается
+        const sprite0 = await gsOf('({ x: gs.bossSprite.x, y: gs.bossSprite.y })');
+        await page.mouse.click(sprite0.x, sprite0.y);
+        await page.waitForTimeout(400);
+        const beforeReload = await gsOf('({ hp: gs.boss.hp, maxHp: gs.boss.maxHp, elapsed: Math.floor((gs.time.now - gs.boss.startedAt) / 1000) })');
+        check('G6: урон засчитан до перезагрузки', beforeReload.hp < beforeReload.maxHp, JSON.stringify(beforeReload));
+        await state('m.saveGame()'); // форсируем персист вне троттлинга 3с
+        await page.waitForTimeout(200);
+        // F5 = перезагрузка с ТЕКУЩИМ сейвом: читаем его из localStorage и
+        // открываем новую страницу с ним (addInitScript исходной страницы при
+        // reload перезаписал бы localStorage стартовым сейвом)
+        const savedJson = await page.evaluate(() => localStorage.getItem('ore-rush-save'));
+        await page.close();
+        const p2 = await newPage(savedJson, { width: 1280, height: 720 });
+        await p2.page.waitForTimeout(1000);
+        const restored = await p2.gsOf('({ alive: !!gs.boss, hp: gs.boss && gs.boss.hp, maxHp: gs.boss && gs.boss.maxHp, active: gs.registry.get("bossActive"), blockHidden: !gs.block.visible, time: gs.bossTime && gs.bossTime.text })');
+        check('G7: F5 продолжает бой (босс жив, HP восстановлен)',
+            restored.alive && restored.active && restored.blockHidden && Math.abs(restored.hp - beforeReload.hp) <= 1 && restored.maxHp === beforeReload.maxHp,
+            JSON.stringify({ restored, beforeReload }));
+        check('G8: счётчик времени продолжается с сохранённого', parseElapsed(restored.time) >= beforeReload.elapsed - 1, restored.time);
+
+        // После продолжения боя убийство чистит персист-запись
+        const pt2 = await p2.gsOf('({ x: gs.bossSprite.x, y: gs.bossSprite.y })');
+        await killLoop(p2.page, pt2);
+        const after = await p2.state('({ bossFight: m.gameState.bossFight, items: m.gameState.items.item_bomb || 0 })');
+        check('G9: после победы персист-запись боя очищена', after.bossFight === null, JSON.stringify(after));
+        await p2.page.close();
+    }
+
     console.log(`page errors: ${errors.length ? errors.join(' | ') : '0'}`);
     console.log(`итого: ${passed} OK, ${failed} FAIL`);
     await b.close();
