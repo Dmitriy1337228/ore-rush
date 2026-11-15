@@ -1,7 +1,8 @@
 import {
     gameState, TIERS, getUpgradeLevel, getOrePerSecond, getOfflineRate, OFFLINE_CAP_HOURS, fmt, fmtDuration, DAILY_REWARDS, COMPONENTS, ARTIFACTS
 } from '../../state.js';
-import { addNineC, addImgC, makeLabel, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
+import { addImgC, makeLabel, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
+import { addButton } from '../../ui/button.js';
 import { TEXT, DEPTH, TEX, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 
 const OK_BUTTON = { w: 190, h: 46 };
@@ -21,11 +22,13 @@ function createAlertShell(scene, { w, h, title, titleY, titleColor = TEXT.cream,
         modal,
         // кнопка создаётся после содержимого окна (порядок объектов сцены сохранён)
         assemble(extras, after = []) {
-            const okBtn = addNineC(scene, 0, okY, TEX.button, OK_BUTTON.w, OK_BUTTON.h);
-            setHitRect(okBtn, OK_BUTTON.w, OK_BUTTON.h);
-            const okText = makeLabel(scene, 0, okY, okLabel, FONT_SIZE.button, TEXT.white).setOrigin(0.5);
-            okBtn.on('pointerdown', onOk);
-            modal.add([panel, titleLabel, ...extras, okBtn, okText, ...after]);
+            const ok = addButton(scene, 0, okY, {
+                w: OK_BUTTON.w, h: OK_BUTTON.h, key: TEX.button,
+                text: okLabel, fontSize: FONT_SIZE.button, color: TEXT.white,
+                fitMaxW: OK_BUTTON.w - SPACE.lg * 2
+            });
+            ok.bg.on('pointerdown', onOk);
+            modal.add([panel, titleLabel, ...extras, ok.bg, ok.label, ...after]);
         }
     };
 }

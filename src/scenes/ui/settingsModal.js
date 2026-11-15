@@ -2,8 +2,9 @@ import Phaser from 'phaser';
 import {
     gameState, TIERS, getOfflineRate, getOfflineCapSeconds, canPrestige, getStarsGain, doPrestige, PRESTIGE_REQUIREMENT, getPrestigeMult, DIAMOND_INDEX, resetGame, saveGame, fmt
 } from '../../state.js';
-import { addNineC, addImgC, makeLabel, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
-import { TEXT, DEPTH, TEX, HIT, EVENTS, REG, FONT_SIZE } from '../../ui/theme.js';
+import { addImgC, makeLabel, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
+import { addButton } from '../../ui/button.js';
+import { TEXT, DEPTH, TEX, HIT, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
 
 export const settingsModalMethods = {
@@ -33,9 +34,11 @@ export const settingsModalMethods = {
         // Звук (эффекты) и Музыка (фон): два тумблера в ряд
         const tbW = 200;
         const tbH = 44;
-        this.soundBtn = addNineC(this, -105, -34, TEX.button, tbW, tbH);
-        setHitRect(this.soundBtn, tbW, tbH);
-        this.soundText = makeLabel(this, -105, -34, 'Звук: вкл', FONT_SIZE.body, TEXT.white).setOrigin(0.5);
+        ({ bg: this.soundBtn, label: this.soundText } = addButton(this, -105, -34, {
+            w: tbW, h: tbH, key: TEX.button,
+            text: 'Звук: вкл', fontSize: FONT_SIZE.body, color: TEXT.white,
+            fitMaxW: tbW - SPACE.lg * 2
+        }));
         this.soundBtn.on('pointerdown', () => {
             gameState.soundOn = !gameState.soundOn;
             this.refreshSoundToggle();
@@ -44,9 +47,11 @@ export const settingsModalMethods = {
             this.refreshUi();
         });
 
-        this.musicBtn = addNineC(this, 105, -34, TEX.button, tbW, tbH);
-        setHitRect(this.musicBtn, tbW, tbH);
-        this.musicText = makeLabel(this, 105, -34, 'Музыка: вкл', FONT_SIZE.body, TEXT.white).setOrigin(0.5);
+        ({ bg: this.musicBtn, label: this.musicText } = addButton(this, 105, -34, {
+            w: tbW, h: tbH, key: TEX.button,
+            text: 'Музыка: вкл', fontSize: FONT_SIZE.body, color: TEXT.white,
+            fitMaxW: tbW - SPACE.lg * 2
+        }));
         this.musicBtn.on('pointerdown', () => {
             gameState.musicOn = !gameState.musicOn;
             this.refreshMusicControls();
@@ -89,17 +94,22 @@ export const settingsModalMethods = {
 
         const pbW = 300;
         const pbH = 50;
-        this.prestigeBtn = addNineC(this, 0, 158, TEX.buttonDisabled, pbW, pbH);
-        setHitRect(this.prestigeBtn, pbW, pbH);
-        // addNineC ставит origin (0.5): координата кнопки = её центр, подпись — в тот же центр
-        this.prestigeText = makeLabel(this, 0, 158, 'Сбросить шахту', FONT_SIZE.button, TEXT.white).setOrigin(0.5);
+        // addNineC внутри addButton ставит origin (0.5): координата кнопки = её
+        // центр, подпись — в тот же центр
+        ({ bg: this.prestigeBtn, label: this.prestigeText } = addButton(this, 0, 158, {
+            w: pbW, h: pbH, key: TEX.buttonDisabled,
+            text: 'Сбросить шахту', fontSize: FONT_SIZE.button, color: TEXT.white,
+            fitMaxW: pbW - SPACE.lg * 2
+        }));
         this.prestigeBtn.on('pointerdown', () => this.tryPrestige());
 
         const rbW = 300;
         const rbH = 46;
-        this.resetBtn = addNineC(this, 0, 216, TEX.buttonDisabled, rbW, rbH);
-        setHitRect(this.resetBtn, rbW, rbH);
-        this.resetText = makeLabel(this, 0, 216, 'Сбросить весь прогресс', FONT_SIZE.body, TEXT.white).setOrigin(0.5);
+        ({ bg: this.resetBtn, label: this.resetText } = addButton(this, 0, 216, {
+            w: rbW, h: rbH, key: TEX.buttonDisabled,
+            text: 'Сбросить весь прогресс', fontSize: FONT_SIZE.body, color: TEXT.white,
+            fitMaxW: rbW - SPACE.lg * 2
+        }));
         this.resetBtn.on('pointerdown', () => this.tryReset());
 
         this.modal.add([panel, title, closeBtn, this.modalStats, this.soundBtn, this.soundText, this.musicBtn, this.musicText, this.volLabel, this.volG, this.volPct, volZone, presTitle, this.prestigeInfo, this.prestigeBtn, this.prestigeText, this.resetBtn, this.resetText]);
