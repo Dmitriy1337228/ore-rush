@@ -213,20 +213,17 @@ export class GameScene extends Phaser.Scene {
         this.drawFade();
     }
 
-    // Тень над панелью (только портрет): 12 полос с нарастающим альфакрашиванием
-    // от прозрачного к чёрному — нижняя кромка фото «тонет» в тени перед листом.
+    // Тень над панелью (только портрет): плавный градиент от прозрачного к
+    // чёрному — нижняя кромка фото «тонет» в тени перед листом. Прежние
+    // ступенчатые 16 полос читались на телефоне как «полоски» (вопрос игрока)
     drawFade() {
         if (!this.bgFade || !this.L) return;
         const g = this.bgFade;
         g.clear();
         if (!this.L.portrait) return;
         const FH = 260;
-        const top = this.L.bgCoverToY - FH;
-        const steps = 16;
-        for (let i = 0; i < steps; i++) {
-            g.fillStyle(0x000000, Math.pow((i + 1) / steps, 1.7) * 0.88);
-            g.fillRect(0, Math.floor(top + (FH * i) / steps), this.L.W, Math.ceil(FH / steps) + 1);
-        }
+        g.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0, 0.88, 0.88);
+        g.fillRect(0, this.L.bgCoverToY - FH, this.L.W, FH);
     }
 
     // Плавная смена фона при переходе на новый тир (или «Полный сброс» на тир 1).
@@ -760,14 +757,19 @@ export class GameScene extends Phaser.Scene {
 
     buildBossOverlay() {
         const bx = this.blockX;
-        // В портретном бое оверлей центрируется в свободной зоне над панелью:
-        // на низкой сетке blockY прижимает имя босса к HUD-бару — клампим вниз
-        const isPortrait = this.scale.gameSize.height > this.scale.gameSize.width;
-        const by = isPortrait ? Math.max(this.blockY, 386) : this.blockY;
+        // Оверлей босса — от ОДНОГО источника геометрии: L.fight.by (спека
+        // мобильного редизайна; ландшафтная ветка не тронута)
+        const L = computeLayout(this.scale.gameSize.width, this.scale.gameSize.height);
+        const isPortrait = L.portrait;
+        const by = isPortrait ? L.fight.by : this.blockY;
         this._bossBy = by;
         this.bossUi = this.add.container(0, 0).setDepth(27);
+        const ui = this.scene.get('UIScene');
+        const ps = (ui && ui._adaptiveScale) || 1;
+        const ps14 = Math.round(20 * Phaser.Math.Clamp(ps, 1, 1.4));
 
-        const sprite = this.add.image(bx, by, this.boss.def.icon).setDisplaySize(240, 240);
+        const sprite = this.add.image(bx, isPortrait ? by + 10 : by, this.boss.def.icon)
+            .setDisplaySize(isPortrait ? 190 : 240, isPortrait ? 190 : 240);
         sprite.setInteractive({ useHandCursor: true });
         sprite.on('pointerdown', (pointer) => this.performBossHit(pointer.worldX, pointer.worldY, false));
         this.bossSprite = sprite;
@@ -776,24 +778,33 @@ export class GameScene extends Phaser.Scene {
         // Полоса живучести шахтёра — под баром босса (цвет другой, чтобы читались
         // обе: босс зелёно-красный, шахтёр оранжевый)
         this.playerBar = this.add.graphics();
-        this.playerHpText = makeLabel(this, bx, by - 128, '', 11, '#ffb38a').setOrigin(0.5);
-        this.bossName = makeLabel(this, bx, by - 212, this.boss.def.name, 20, '#ffd75e').setOrigin(0.5);
-        this.bossHpText = makeLabel(this, bx, by - 180, '', 13, '#ffffff').setOrigin(0.5);
-        this.bossTime = makeLabel(this, bx, by - 146, '0:00', 16, '#ffe9b0').setOrigin(0.5);
+        if (isPortrait) {
+            this.playerHpText = makeLabel(this, bx, by - 100, '', Math.max(24, Math.round(11 * Phaser.Math.Clamp(ps, 1, 1.4))), '#ffb38a').setOrigin(0.5);
+            this.bossName = makeLabel(this, bx, by - 176, this.boss.def.name, ps14, '#ffd75e').setOrigin(0.5);
+            this.bossHpText = makeLabel(this, bx, by - 144, '', 20, '#ffffff').setOrigin(0.5).setStroke('#14161a', 3);
+            this.bossTime = makeLabel(this, bx + 190, by - 176, '0:00', Math.round(16 * Phaser.Math.Clamp(ps, 1, 1.3)), '#ffe9b0').setOrigin(1, 0.5);
+        } else {
+            this.playerHpText = makeLabel(this, bx, by - 128, '', 11, '#ffb38a').setOrigin(0.5);
+            this.bossName = makeLabel(this, bx, by - 212, this.boss.def.name, 20, '#ffd75e').setOrigin(0.5);
+            this.bossHpText = makeLabel(this, bx, by - 180, '', 13, '#ffffff').setOrigin(0.5);
+            this.bossTime = makeLabel(this, bx, by - 146, '0:00', 16, '#ffe9b0').setOrigin(0.5);
+        }
 
         this.bossUi.add([sprite, this.bossBar, this.playerBar, this.playerHpText, this.bossName, this.bossHpText, this.bossTime]);
 
         this.bossItems = [];
         const usable = ITEMS.filter((it) => it.bossUse);
-        // Шаг слотов 110: пустой слот «купить N» шире активного (100 vs 84) —
-        // при шаге 92 широкие кнопки наезжали друг на друга (скриншот игрока)
+        // Шаг слотов: ландшафт 110 (пустой слот 100 шире активного 84 — при шаге
+        // 92 наезжали, скриншот игрока); портрет 130 при кнопках 120/132
+        const slotStep = isPortrait ? 130 : 110;
         usable.forEach((it, i) => {
-            const cx = bx + (i - (usable.length - 1) / 2) * 110;
-            const btn = this.add.image(cx, by + 172, 'buy_button_normal').setDisplaySize(84, 44);
+            const cx = bx + (i - (usable.length - 1) / 2) * slotStep;
+            const slotY = isPortrait ? by + 142 : by + 172;
+            const btn = this.add.image(cx, slotY, 'buy_button_normal').setDisplaySize(isPortrait ? 120 : 84, isPortrait ? 60 : 44);
             btn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
-            const icon = this.add.image(cx - 20, by + 172, it.id).setDisplaySize(26, 26);
-            const cnt = makeLabel(this, cx + 14, by + 172, '', 14, '#ffffff').setOrigin(0.5);
-            const buyLbl = makeLabel(this, cx, by + 172, '', 11, '#ffffff').setOrigin(0.5);
+            const icon = this.add.image(cx - (isPortrait ? 28 : 20), slotY, it.id).setDisplaySize(isPortrait ? 34 : 26, isPortrait ? 34 : 26);
+            const cnt = makeLabel(this, cx + (isPortrait ? 20 : 14), slotY, '', isPortrait ? Math.round(14 * Phaser.Math.Clamp(ps, 1, 1.3)) : 14, '#ffffff').setOrigin(0.5);
+            const buyLbl = makeLabel(this, cx, slotY, '', isPortrait ? Math.round(13 * Phaser.Math.Clamp(ps, 1, 1.3)) : 11, '#ffffff').setOrigin(0.5);
             btn.on('pointerdown', () => {
                 if (!this.boss || this.boss.busy) return;
                 if (Date.now() < gameState.bossBuffUntil) return; // баф уже активен — покупка впустую
@@ -812,9 +823,12 @@ export class GameScene extends Phaser.Scene {
         });
         this.refreshBossItems();
 
-        // Подсказка эффектов под слотами: игрок должен видеть, что покупает
-        this.bossHint = makeLabel(this, bx, by + 204, usable.map((it) => it.desc).join(' · '), 12, '#c8c8c8').setOrigin(0.5);
-        this.bossUi.add(this.bossHint);
+        // Подсказка эффектов под слотами: только в ландшафте — в портрете
+        // описания читаются в панели «Снаряжение» (спека редизайна)
+        if (!isPortrait) {
+            this.bossHint = makeLabel(this, bx, by + 204, usable.map((it) => it.desc).join(' · '), 12, '#c8c8c8').setOrigin(0.5);
+            this.bossUi.add(this.bossHint);
+        }
 
         this.tweens.add({
             targets: sprite,
@@ -831,17 +845,21 @@ export class GameScene extends Phaser.Scene {
     drawBossBar() {
         if (!this.boss || !this.bossBar) return;
         const g = this.bossBar;
-        const x = this.blockX - 170, y = (this._bossBy || this.blockY) - 190;
+        // Портрет (спека): бар 380x24 в стэке над слотами; ландшафт — 340x20
+        const portrait = this.scale.gameSize.height > this.scale.gameSize.width;
+        const w = portrait ? 380 : 340;
+        const h = portrait ? 24 : 20;
+        const x = this.blockX - w / 2, y = (this._bossBy || this.blockY) - (portrait ? 156 : 190);
         g.clear();
         g.fillStyle(0x1a1c1f, 1);
-        g.fillRect(x, y, 340, 20);
+        g.fillRect(x, y, w, h);
         const frac = Math.max(0, Math.min(1, this.boss.hp / this.boss.maxHp));
         const t = 1 - frac;
         const r = Math.round(0x7e + (0xf0 - 0x7e) * t);
         const gr = Math.round(0xe7 + (0x63 - 0xe7) * t);
         const b = Math.round(0x87 + (0x8c - 0x87) * t);
         g.fillStyle(Phaser.Display.Color.GetColor(r, gr, b), 1);
-        g.fillRect(x + 2, y + 2, Math.max(0, 336 * frac), 16);
+        g.fillRect(x + 2, y + 2, Math.max(0, (w - 4) * frac), h - 4);
         this.bossHpText.setText(`${fmt(Math.max(0, Math.ceil(this.boss.hp)))} / ${fmt(this.boss.maxHp)}`);
         this.drawPlayerBar();
     }
@@ -850,13 +868,16 @@ export class GameScene extends Phaser.Scene {
     drawPlayerBar() {
         if (!this.boss || !this.playerBar) return;
         const g = this.playerBar;
-        const x = this.blockX - 170, y = (this._bossBy || this.blockY) - 166;
+        // Портрет: 380x12 при y by-128; ландшафт — 340x12 при by-166
+        const portrait = this.scale.gameSize.height > this.scale.gameSize.width;
+        const w = portrait ? 380 : 340;
+        const x = this.blockX - w / 2, y = (this._bossBy || this.blockY) - (portrait ? 128 : 166);
         g.clear();
         g.fillStyle(0x1a1c1f, 1);
-        g.fillRect(x, y, 340, 12);
+        g.fillRect(x, y, w, 12);
         const frac = Math.max(0, Math.min(1, this.boss.playerHp / this.boss.maxPlayer));
         g.fillStyle(0xff8a4a, 1);
-        g.fillRect(x + 2, y + 2, Math.max(0, 336 * frac), 8);
+        g.fillRect(x + 2, y + 2, Math.max(0, (w - 4) * frac), 8);
         this.playerHpText.setText(`ты: ${fmt(Math.max(0, Math.ceil(this.boss.playerHp)))} / ${fmt(this.boss.maxPlayer)} · удар босса ${fmt(bossAttackPower(this.boss.def))}`);
     }
 
@@ -917,7 +938,17 @@ export class GameScene extends Phaser.Scene {
         if (!this.bossItems) return;
         // Своё состояние бафа у каждого предмета: бомба -> bossBuff, рама ->
         // rigBuff, точило -> oilBuff (общий bossBuffUntil для всех слотов —
-        // прежний баг: слоты рамы/точила показывали чужой таймер)
+        // прежний баг: слоты рамы/точила показывали чужой таймер).
+        // Размеры слотов — от ориентации (портрет: 120x60/132x60, спека редизайна)
+        const portrait = this.scale.gameSize.height > this.scale.gameSize.width;
+        const ui = this.scene.get('UIScene');
+        const ps = (ui && ui._adaptiveScale) || 1;
+        const activeW = portrait ? 120 : 84;
+        const slotH = portrait ? 60 : 44;
+        const emptyW = portrait ? 132 : 100;
+        const iconDX = portrait ? -28 : -20;
+        const iconSize = portrait ? 34 : 26;
+        const cntDX = portrait ? 20 : 14;
         for (const slot of this.bossItems) {
             const stock = gameState.items[slot.id] || 0;
             const buffUntil = slot.id === 'item_bomb' ? gameState.bossBuffUntil
@@ -928,16 +959,16 @@ export class GameScene extends Phaser.Scene {
                 const key = `a${buffLeft}`;
                 if (slot._key === key) continue;
                 slot._key = key;
-                slot.btn.setDisplaySize(84, 44).setTexture('buy_button_normal').setAlpha(1);
-                slot.icon.setVisible(true).setPosition(slot.btn.x - 20, slot.btn.y);
+                slot.btn.setDisplaySize(activeW, slotH).setTexture('buy_button_normal').setAlpha(1);
+                slot.icon.setVisible(true).setPosition(slot.btn.x + iconDX, slot.btn.y).setDisplaySize(iconSize, iconSize);
                 slot.cnt.setVisible(true).setText(`${Math.floor(buffLeft / 60)}:${String(buffLeft % 60).padStart(2, '0')}`);
                 slot.buyLbl.setVisible(false);
             } else if (stock > 0) {
                 const key = `x${stock}`;
                 if (slot._key === key) continue;
                 slot._key = key;
-                slot.btn.setDisplaySize(84, 44).setTexture('buy_button_normal').setAlpha(1);
-                slot.icon.setVisible(true).setPosition(slot.btn.x - 20, slot.btn.y);
+                slot.btn.setDisplaySize(activeW, slotH).setTexture('buy_button_normal').setAlpha(1);
+                slot.icon.setVisible(true).setPosition(slot.btn.x + iconDX, slot.btn.y).setDisplaySize(iconSize, iconSize);
                 slot.cnt.setVisible(true).setText(`x${stock}`);
                 slot.buyLbl.setVisible(false);
             } else {
@@ -945,13 +976,15 @@ export class GameScene extends Phaser.Scene {
                 const key = `b${price}|${gameState.ore >= price ? 'n' : 'g'}`;
                 if (slot._key === key) continue;
                 slot._key = key;
-                slot.btn.setDisplaySize(100, 44).setTexture(gameState.ore >= price ? 'buy_button_normal' : 'buy_button_disabled_gray').setAlpha(1);
+                slot.btn.setDisplaySize(emptyW, slotH).setTexture(gameState.ore >= price ? 'buy_button_normal' : 'buy_button_disabled_gray').setAlpha(1);
                 slot.icon.setVisible(false);
                 slot.cnt.setVisible(false);
                 slot.buyLbl.setVisible(true).setText(`Купить ${fmt(price)}`);
-                let size = 11;
+                const base = portrait ? Math.round(13 * Phaser.Math.Clamp(ps, 1, 1.3)) : 11;
+                let size = base;
                 slot.buyLbl.setFontSize(size);
-                while (size > 8 && slot.buyLbl.width > 88) {
+                const maxW = emptyW - 12;
+                while (size > 8 && slot.buyLbl.width > maxW) {
                     size -= 1;
                     slot.buyLbl.setFontSize(size);
                 }

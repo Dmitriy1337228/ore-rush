@@ -646,7 +646,7 @@ const V5_SEED = JSON.stringify({
             items: Object.keys(ui.craftItemRows).length,
             recipes: Object.keys(ui.craftRecipeRows).length,
             arts: Object.keys(ui.craftArtCells).length,
-            dim: Object.values(ui.craftArtCells).filter((cell) => cell.rc.alpha < 0.5).length,
+            dim: Object.values(ui.craftArtCells).filter((cell) => cell.rc.alpha < 0.9).length,
             srcs: Object.values(ui.craftArtCells).map((cell) => cell.line.text)
         };
     });
