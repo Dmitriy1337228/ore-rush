@@ -65,8 +65,10 @@ function normalizeStdout(s) {
     return normalizeText(s).replace(/hud buff "x2 \d+:\d+"/g, 'hud buff "x2 #:#"');
 }
 
+// Результат прогона живёт на уровне модуля: его читает и очистка tmp в process.on('exit')
+let result;
+
 describe('scripts/ui-review.mjs: полный golden-прогон (медленный)', { timeout: 480000 }, () => {
-    let result;
     it('прогон в песочнице OUT_DIR=tmp и код выхода как в golden', async () => {
         const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ui-review-golden-'));
         result = await new Promise((resolve) => {
