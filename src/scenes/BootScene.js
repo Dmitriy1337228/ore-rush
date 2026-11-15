@@ -6,7 +6,8 @@ import Phaser from 'phaser';
 const SFX = [
     'pickaxe_1', 'pickaxe_2', 'crit_1', 'crit_2',
     'break_1', 'break_2', 'mutation_1', 'mutation_2',
-    'purchase_1', 'purchase_2', 'tier_1', 'tier_2', 'prestige_1', 'prestige_2'
+    'purchase_1', 'purchase_2', 'tier_1', 'tier_2', 'prestige_1', 'prestige_2',
+    'boss_hit_1', 'boss_hit_2', 'boss_hit_3'
 ];
 
 const IMAGES = [
@@ -47,6 +48,9 @@ const IMAGES = [
     // Панели
     'hud_bar_background', 'upgrades_panel_wood', 'modal_panel_metal',
     'upgrade_row_card_1', 'icon_slot_frame',
+
+    // Фон карты-«настолки» (внутренняя зона панели карты)
+    'map_board',
 
     // Фоны локаций (пиксель-арт конверсия voxel-рендеров ComfyUI, по одному на тир)
     'bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver',
@@ -92,6 +96,8 @@ export class BootScene extends Phaser.Scene {
         }
         // Фоновая музыка — бесшовный луп, те же два формата
         this.load.audio('bgm', ['assets/audio/bgm.ogg', 'assets/audio/bgm.mp3']);
+        // Босс-тема (луп на время боя, ключ без _N — играется напрямую, не через playSfx)
+        this.load.audio('boss_theme', ['assets/audio/boss_theme.ogg', 'assets/audio/boss_theme.mp3']);
     }
 
     create() {

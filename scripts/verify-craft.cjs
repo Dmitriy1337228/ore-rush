@@ -125,6 +125,12 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps === undefined ? 1e-6 : eps);
                 btnColor: row.btnText.style.color,
                 sub: row.sub ? row.sub.text : null,
                 hint: row.hint ? row.hint.text : null,
+                buyTex: row.buyBtn ? row.buyBtn.texture.key : null,
+                buyText: row.buyBtnText ? row.buyBtnText.text : null,
+                buyColor: row.buyBtnText ? row.buyBtnText.style.color : null,
+                desc: row.desc ? row.desc.text : null,
+                need: row.needLbl ? row.needLbl.text : null,
+                src: row.src ? row.src.text : null,
                 status: row.status ? row.status.text : null
             };
         }, [kind, id]);
@@ -133,12 +139,40 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps === undefined ? 1e-6 : eps);
             const c = ui.craftArtCells[i];
             return { alpha: c.rc.alpha, line: c.line.text, owned: c._owned };
         }, id);
-        return { page, state, uiState, livePt, rowPt, rowInfo, cellInfo };
+        const buyPt = async (id, dy = -140) => {
+            const pt = await page.evaluate(([i, off]) => {
+                const ui = window.__GAME.scene.getScene('UIScene');
+                const row = ui.craftItemRows[i];
+                const worldY = row.rc.y + row.buyBtn.y;
+                const target = Math.max(0, Math.min(worldY + off, ui._craftMaxScroll));
+                ui.craftCam.scrollY = target;
+                const sc = window.__GAME.scale;
+                return {
+                    x: (row.buyBtn.x + ui.craftCam.x) * sc.displaySize.width / sc.gameSize.width,
+                    y: (worldY - ui.craftCam.scrollY + ui.craftCam.y) * sc.displaySize.height / sc.gameSize.height
+                };
+            }, [id, dy]);
+            await page.waitForTimeout(120);
+            return pt;
+        };
+        const cellPt = (id) => page.evaluate((i) => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const c = ui.craftArtCells[i];
+            const worldY = c.rc.y;
+            const target = Math.max(0, Math.min(worldY - 120, ui._craftMaxScroll));
+            ui.craftCam.scrollY = target;
+            const sc = window.__GAME.scale;
+            return {
+                x: (40 + ui.craftCam.x) * sc.displaySize.width / sc.gameSize.width,
+                y: (worldY - ui.craftCam.scrollY + ui.craftCam.y) * sc.displaySize.height / sc.gameSize.height
+            };
+        }, id).then((pt) => { return page.waitForTimeout(120).then(() => pt); });
+        return { page, state, uiState, livePt, rowPt, rowInfo, cellInfo, buyPt, cellPt };
     };
 
     // ---------- Страница 1: полный цикл (ландшафт) ----------
     {
-        const { page, state, uiState, livePt, rowPt, rowInfo, cellInfo } = await newPage(mkSave(), { width: 1280, height: 720 });
+        const { page, state, uiState, livePt, rowPt, rowInfo, cellInfo, buyPt, cellPt } = await newPage(mkSave(), { width: 1280, height: 720 });
 
         // A: структура
         const craftBtnPt = await livePt('({ x: ui.craftBtn.x, y: ui.craftBtn.y })');
@@ -181,7 +215,8 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps === undefined ? 1e-6 : eps);
         check('B3: счётчик лома 8 после списания', s.compCounts[0] === '8', s.compCounts.join(','));
         let ri = await rowInfo('item', 'item_bomb');
         check('B4: бомба вне боя — запас 2, кнопка disabled, «только в бою»',
-            ri.sub === 'в запасе: 2' && ri.btnTex === 'buy_button_disabled_gray' && ri.hint === 'только в бою',
+            ri.sub === 'эффект: урон боссу x2 на 30 сек' && ri.btnTex === 'buy_button_disabled_gray'
+            && ri.hint === 'в запасе: 2 · только в бою',
             JSON.stringify(ri));
 
         // C: пояс — активация и баф x3
@@ -191,7 +226,7 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps === undefined ? 1e-6 : eps);
         await page.waitForTimeout(300);
         ri = await rowInfo('item', 'item_belt');
         check('C1: пояс скрафчен (кнопка снова «Активировать», запас 1)',
-            ri.btnText === 'Активировать' && ri.btnTex === 'buy_button_normal' && ri.sub === 'в запасе: 1', JSON.stringify(ri));
+            ri.btnText === 'Активировать' && ri.btnTex === 'buy_button_normal' && ri.hint === 'в запасе: 1', JSON.stringify(ri));
         pt = await rowPt('item', 'item_belt');
         await page.mouse.click(pt.x, pt.y);
         await page.waitForTimeout(300);
@@ -202,17 +237,17 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps === undefined ? 1e-6 : eps);
         const buffText = await page.evaluate(() => window.__GAME.scene.getScene('UIScene').buffLine.text);
         check('C4: buffLine содержит «x3»', buffText.includes('x3'), buffText);
         ri = await rowInfo('item', 'item_belt');
-        check('C5: таймер бафа под рядом пояса «x3 m:ss»', /^x3 \d+:\d{2}$/.test(ri.hint), ri.hint);
+        check('C5: таймер бафа под рядом пояса «в запасе: 0 · x3 m:ss»', /^в запасе: 0 · x3 \d+:\d{2}$/.test(ri.hint), ri.hint);
         pt = await rowPt('recipe', 'r_coffee');
         await page.mouse.click(pt.x, pt.y);
         await page.waitForTimeout(300);
         ri = await rowInfo('item', 'item_coffee');
-        check('C5b: кофе скрафчен (запас 1, тот же слот добычи)', ri.sub === 'в запасе: 1', JSON.stringify(ri));
+        check('C5b: кофе скрафчен (запас 1, таймер слота добычи)', ri.sub === 'эффект: добыча x2 на 5 минут' && /^в запасе: 1 · x3 \d+:\d{2}$/.test(ri.hint), JSON.stringify(ri));
         ri = await rowInfo('item', 'item_coffee');
         check('C6: кофе disabled — слот добычи занят (остаток > 30с)',
             ri.btnTex === 'buy_button_disabled_gray', JSON.stringify(ri));
         const beltDisabled = await rowInfo('item', 'item_belt');
-        check('C7: пустой пояс — кнопка снова disabled', beltDisabled.btnTex === 'buy_button_disabled_gray' && beltDisabled.sub === 'в запасе: 0', JSON.stringify(beltDisabled));
+        check('C7: пустой пояс — кнопка снова disabled, таймер слота тикает', beltDisabled.btnTex === 'buy_button_disabled_gray' && /^в запасе: 0 · x3 \d+:\d{2}$/.test(beltDisabled.hint), JSON.stringify(beltDisabled));
 
         // D: таймированный крафт — «Закалённый бур»
         await state('m.gameState.components = { scrap: 12, crystal: 5, core: 3 }');
@@ -264,6 +299,57 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps === undefined ? 1e-6 : eps);
         const hardCell = await cellInfo('art_hardpick');
         check('E3: ячейка бура стала яркой с desc бонуса',
             near(hardCell.alpha, 1) && hardCell.line === 'урон боссам x1.25' && hardCell.owned === true, JSON.stringify(hardCell));
+
+        // G: покупка предметов за руду (R1, цена-снапшот) + инлайн-подсказки (R5)
+        await state('(() => { m.gameState.levels.miner = 0; m.gameState.miningBuffUntil = 0; m.gameState.miningBuffMult = 1; })()');
+        await page.waitForTimeout(400);
+        const price0 = await state('m.getItemPrice("item_belt")');
+        const expectedBuy = await state('`Купить ${m.fmt(m.getItemPrice("item_belt"))}`');
+        ri = await rowInfo('item', 'item_belt');
+        check('G1: кнопка «Купить N руды» показывает динамическую цену',
+            ri.buyText === expectedBuy && ri.buyTex === 'buy_button_normal', `${ri.buyText} vs ${expectedBuy}`);
+        check('G1b: строка «Нужно:» и источник компонентов в рецептах',
+            (await rowInfo('recipe', 'r_bomb')).desc === 'Получишь: урон боссу x2 на 30 сек'
+            && (await rowInfo('recipe', 'r_bomb')).need === 'Нужно:'
+            && (await rowInfo('recipe', 'r_bomb')).src === 'дроп: Медный страж'
+            && (await rowInfo('recipe', 'r_hardpick')).src === 'крафт',
+            JSON.stringify(await rowInfo('recipe', 'r_bomb')));
+        const ore0 = await state('m.gameState.ore');
+        pt = await buyPt('item_belt');
+        await page.mouse.click(pt.x, pt.y);
+        await page.waitForTimeout(300);
+        const buy1 = await state('({ n: m.gameState.items.item_belt, ore: m.gameState.ore })');
+        check('G2: покупка пояса кладёт в стак и списывает цену-снапшот',
+            buy1.n === 1 && buy1.ore === ore0 - price0, `ore ${ore0} -> ${buy1.ore}, price ${price0}`);
+        ri = await rowInfo('item', 'item_belt');
+        check('G3: подсказка показала новый запас', ri.hint === 'в запасе: 1', ri.hint);
+        await state('m.gameState.ore = 1');
+        await page.waitForTimeout(300);
+        ri = await rowInfo('item', 'item_belt');
+        check('G4: при нехватке руды кнопка покупки серая', ri.buyTex === 'buy_button_disabled_gray', JSON.stringify(ri));
+        await page.mouse.click(pt.x, pt.y);
+        await page.waitForTimeout(300);
+        const nG5 = await state('m.gameState.items.item_belt');
+        check('G5: клик по серой кнопке покупки не покупает', nG5 === 1, String(nG5));
+        ri = await rowInfo('item', 'item_belt');
+        check('G6: инлайн-подсказка «не хватает руды» красным', ri.hint === 'не хватает руды', ri.hint);
+        await page.waitForTimeout(2300);
+        ri = await rowInfo('item', 'item_belt');
+        check('G7: подсказка ошибки исчезла через 2с', ri.hint === 'в запасе: 1', ri.hint);
+        await state('(() => { m.gameState.ore = 1e9; m.gameState.items.item_belt = 5; })()');
+        await page.waitForTimeout(300);
+        ri = await rowInfo('item', 'item_belt');
+        check('G8: полный стак — покупка заблокирована', ri.buyTex === 'buy_button_disabled_gray' && ri.hint === 'в запасе: 5', JSON.stringify(ri));
+        ri = await rowInfo('item', 'item_ration');
+        check('G9: пустой ряд — «нет предмета» красным', ri.hint === 'нет предмета' && ri.btnTex === 'buy_button_disabled_gray', JSON.stringify(ri));
+        let cpt = await cellPt('art_miner_totem');
+        await page.mouse.click(cpt.x, cpt.y);
+        await page.waitForTimeout(300);
+        let ci = await cellInfo('art_miner_totem');
+        check('G10: тап по серой ячейке — инлайн «Получишь у босса: …»', ci.line === 'Получишь у босса: Медный страж', ci.line);
+        await page.waitForTimeout(2300);
+        ci = await cellInfo('art_miner_totem');
+        check('G11: ячейка вернулась к строке-источнику', ci.line === 'Босс: Медный страж', ci.line);
 
         // F: лок и конфликты updateBlockLock
         const closePt = await livePt('({ x: ui.craftRoot.x + ui.craftClose.x, y: ui.craftRoot.y + ui.craftClose.y })');

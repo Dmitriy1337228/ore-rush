@@ -243,6 +243,189 @@ function check(name, cond, detail = '') {
         await ctx.close();
     }
 
+    // ---------- 6. Портрет-HUD: кегли по _adaptiveScale, без наездов ----------
+    {
+        const { ctx, page } = await newPage({ width: 390, height: 844 });
+        const h = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const f = (o) => parseFloat(o.style.fontSize);
+            return {
+                s: ui._adaptiveScale,
+                mapLbl: f(ui.mapLbl), craftLbl: f(ui.craftLbl),
+                mapBtnH: ui.mapBtn.displayHeight,
+                mapBtnBottom: ui.mapBtn.y + ui.mapBtn.displayHeight / 2,
+                tabsTop: ui.L.panel.py + 58,
+                settingsW: ui.settingsBtn.displayWidth, settingsH: ui.settingsBtn.displayHeight,
+                settingsLbl: f(ui.settingsLbl),
+                coal: f(ui.coalText), oreName: f(ui.oreName),
+                stats: f(ui.statsLine), stars: f(ui.starsText), buff: f(ui.buffLine),
+                gpsRight: ui.gpsText.x + ui.gpsText.width,
+                statsRight: ui.statsLine.x + ui.statsLine.width,
+                settingsLeft: ui.settingsBtn.x - ui.settingsBtn.displayWidth / 2,
+                settingsRight: ui.settingsBtn.x + ui.settingsBtn.displayWidth / 2,
+                btnX: ui.L.hud.btnX,
+                W: ui.L.W
+            };
+        });
+        check('портрет-HUD: масштаб 1.8 (390px)', Math.abs(h.s - 1.8) <= 0.05, String(h.s));
+        check('портрет-HUD: кнопки Карта/Крафт выросли, низ не на вкладках', h.mapBtnH >= 36 && h.mapBtnH <= 38 && h.mapBtnBottom <= h.tabsTop && h.mapLbl >= 18 && h.craftLbl >= 18, JSON.stringify({ h: h.mapBtnH, bottom: h.mapBtnBottom, tabs: h.tabsTop, map: h.mapLbl, craft: h.craftLbl }));
+        check('портрет-HUD: кнопка Настройки крупнее', h.settingsW >= 176 && h.settingsH >= 56 && h.settingsLbl >= 16, JSON.stringify({ w: h.settingsW, h: h.settingsH, lbl: h.settingsLbl }));
+        check('портрет-HUD: кегли строк выросли', h.coal >= 32 && h.oreName >= 13 && h.stars >= 18 && h.buff >= 18 && h.stats >= 14, JSON.stringify(h));
+        check('портрет-HUD: строки не заходят под Настройки (предел = левый край кнопки)', h.gpsRight <= h.settingsLeft - 7 && h.statsRight <= h.settingsLeft - 7, JSON.stringify({ gps: h.gpsRight, stats: h.statsRight, settingsLeft: h.settingsLeft }));
+        check('портрет-HUD: Настройки в границах бара', h.settingsRight <= h.W - 20, String(h.settingsRight));
+        await ctx.close();
+    }
+
+    // ---------- 6b. Портрет-HUD с длинными значениями: ужин проверяется по-настоящему ----------
+    // Короткие стартовые строки проходят проверку предела тривиально; здесь — позднеигровой
+    // максимум из state-модуля: тир 11 (алмазы), большой счётчик руды (сдвигает строку
+    // ставки вправо), огромная ставка и урон. statsLine обязан реально ужаться
+    // (25 -> ~12); gpsText в пределе — ужин недостижим, кегль остаётся целевым,
+    // а честную гарантию даёт следующий чек: обе строки левее кнопки «Настройки».
+    {
+        const { ctx, page } = await newPage({ width: 390, height: 844 });
+        await state(page, '(m => { m.gameState.ore = 987654321098; m.gameState.tier = 11; m.gameState.stars = 100; m.gameState.levels.miner = 180; m.gameState.levels.drill = 150; m.gameState.levels.tech = 90; })(m)');
+        await page.waitForTimeout(500); // refreshUi каждый кадр: длинные строки -> ужин
+        const h = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const f = (o) => parseFloat(o.style.fontSize);
+            return {
+                s: ui._adaptiveScale,
+                gpsSize: f(ui.gpsText), statsSize: f(ui.statsLine),
+                gpsText: ui.gpsText.text, statsText: ui.statsLine.text,
+                gpsRight: ui.gpsText.x + ui.gpsText.width,
+                statsRight: ui.statsLine.x + ui.statsLine.width,
+                settingsLeft: ui.settingsBtn.x - ui.settingsBtn.displayWidth / 2
+            };
+        });
+        check('портрет-HUD 6b: строки действительно длинные', h.gpsText.length >= 14 && h.statsText.length >= 17, JSON.stringify({ gps: h.gpsText, stats: h.statsText }));
+        check('портрет-HUD 6b: statsLine ужат ниже целевого кегля', h.statsSize < Math.round(14 * h.s) && h.statsSize >= 11, `size=${h.statsSize} target=${Math.round(14 * h.s)}`);
+        check('портрет-HUD 6b: gpsText в пределе — ужин недостижим, целевой кегль сохранён (не-наезд проверяет чек ниже)', h.gpsSize <= 16, `size=${h.gpsSize} text="${h.gpsText}"`);
+        check('портрет-HUD 6b: длинные строки не заходят под Настройки', h.gpsRight <= h.settingsLeft - 7 && h.statsRight <= h.settingsLeft - 7, JSON.stringify({ gps: Math.round(h.gpsRight), stats: Math.round(h.statsRight), settingsLeft: Math.round(h.settingsLeft) }));
+        await ctx.close();
+    }
+
+    // ---------- 7. Портрет-панель: кегли рядов внутри карточки 108 ----------
+    {
+        const { ctx, page } = await newPage({ width: 390, height: 844 });
+        const p = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const f = (o) => parseFloat(o.style.fontSize);
+            const row = ui.rows.find((r) => r.def.id === 'pickaxe');
+            const g = ui.rowGeom();
+            return {
+                s: ui._adaptiveScale, rowsS: ui._rowsBuiltS, rows: ui.rows.length,
+                name: f(row.nameText), nameW: row.nameText.width, nameMaxW: row.nameMaxW,
+                desc: f(row.descText), descH: row.descText.height,
+                price: f(row.priceText), btn: f(row.btnText), btnW: row.btnText.width,
+                rowH: g.h, iconSize: g.iconSize,
+                nameBottom: row.nameText.y + row.nameText.height,
+                priceBottom: row.priceText.y + row.priceText.height / 2
+            };
+        });
+        check('портрет-панель: ряды пересобраны под масштаб', Math.abs(p.rowsS - 1.8) <= 0.05 && p.rows > 0, `s=${p.rowsS}`);
+        check('портрет-панель: высота ряда сохранена (108), иконка в нише', p.rowH === 108 && p.iconSize <= 64, JSON.stringify({ h: p.rowH, icon: p.iconSize }));
+        check('портрет-панель: имя/цена/кнопка выросли', p.name === 27 && p.price >= 18 && p.btn >= 18 && p.btnW <= 94, JSON.stringify({ name: p.name, price: p.price, btn: p.btn }));
+        check('портрет-панель: desc без переносов', p.desc === 21 && p.descH <= 21 * 1.6, JSON.stringify({ size: p.desc, h: p.descH }));
+        check('портрет-панель: тексты в карточке', p.nameBottom <= 104 && p.priceBottom <= 106 && p.nameW <= p.nameMaxW + 1, JSON.stringify(p));
+        await ctx.close();
+    }
+
+    // ---------- 8. Портрет-карта: узлы по масштабу, без вылезаний ----------
+    {
+        const { ctx, page } = await newPage({ width: 390, height: 844 });
+        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openMap());
+        await page.waitForTimeout(400);
+        const m = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const f = (o) => parseFloat(o.style.fontSize);
+            const nodes = ui.mapNodes.map((n) => ({
+                kind: n.kind,
+                y: n.root.y,
+                name: f(n.name),
+                nameW: n.name.width,
+                status: n.status ? f(n.status) : null,
+                statusW: n.status ? n.status.width : 0,
+                ring: n.ring ? n.ring.type : null,
+                ringX: n.ring ? n.ring.x : null,
+                ringY: n.ring ? n.ring.y : null
+            }));
+            return {
+                s: ui._adaptiveScale, mapS: ui._mapS, open: ui._mapOpen,
+                contentH: ui._mapContentH, maxScroll: ui._mapMaxScroll,
+                viewW: ui._mapView.w, board: ui.mapBoard.visible && ui.mapBoard.texture.key === 'map_board',
+                trail: ui.mapTrail.type, boardW: ui.mapBoard.displayWidth, nodes
+            };
+        });
+        check('портрет-карта: узлы пересчитаны по масштабу', m.open && Math.abs(m.mapS - 1.8) <= 0.05
+            && Math.abs(m.contentH - Math.round((90 + m.nodes.length * 132 + 60) * 1.8)) <= 1, `contentH=${m.contentH}`);
+        check('портрет-карта: первый узел на (90)*s', m.nodes[0].y === Math.round(90 * 1.8), String(m.nodes[0].y));
+        check('портрет-карта: доска/тропа/кружки на месте', m.board && m.trail === 'Graphics'
+            && m.nodes.every((n) => n.ring === 'Graphics' && n.ringX === 0 && n.ringY > 0)
+            && Math.abs(m.boardW - m.viewW) <= 1, JSON.stringify({ board: m.board, trail: m.trail, boardW: m.boardW, viewW: m.viewW }));
+        check('портрет-карта: кегли ≥ 10 и тексты под кружком в границах вьюпорта',
+            m.nodes.every((n) => n.name >= 10 && n.nameW <= m.viewW - 20)
+            && m.nodes.filter((n) => n.kind === 'boss').every((n) => n.statusW <= m.viewW - 20),
+            JSON.stringify(m.nodes.map((n) => [n.name, Math.round(n.nameW)])));
+        check('портрет-карта: статусы боссов ≥ 10',
+            m.nodes.filter((n) => n.kind === 'boss').every((n) => n.status >= 10));
+        check('портрет-карта: скролл жив', m.maxScroll > 0);
+        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeMap());
+        await page.waitForTimeout(200);
+        await ctx.close();
+    }
+
+    // ---------- 9. Портрет-крафт: R5/R6-ряды, покупка, без вылезаний ----------
+    {
+        const { ctx, page } = await newPage({ width: 390, height: 844 });
+        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
+        await page.waitForTimeout(400);
+        const c = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const f = (o) => parseFloat(o.style.fontSize);
+            const items = Object.values(ui.craftItemRows).map((r) => ({
+                rowH: r.rc.list[0].displayHeight,
+                buyText: r.buyBtnText.text, buySize: f(r.buyBtnText),
+                actSize: f(r.btnText), hintSize: f(r.hint),
+                nameW: r.name.width,
+                nameMaxW: r.btn.x - r.btn.displayWidth / 2 - 8 - r.name.x
+            }));
+            const recipes = Object.values(ui.craftRecipeRows).map((r) => ({
+                desc: r.desc.text, descSize: f(r.desc), src: r.src.text,
+                nameSize: f(r.name),
+                lastPairRight: r.costPairs.length ? r.costPairs[r.costPairs.length - 1].text.x + r.costPairs[r.costPairs.length - 1].text.width : 0,
+                btnLeft: r.btn.x - r.btn.displayWidth / 2
+            }));
+            const texts = [];
+            const walk = (list) => {
+                for (const o of list) {
+                    if (o.type === 'Text') texts.push(o);
+                    if (o.list) walk(o.list);
+                }
+            };
+            walk(ui.craftContent.list);
+            return {
+                s: ui._adaptiveScale, rowsS: ui._craftRowsS, items, recipes,
+                minFont: Math.min(...texts.map((t) => parseFloat(t.style.fontSize)))
+            };
+        });
+        check('портрет-крафт: ряды собраны с масштабом (rowH=151)', Math.abs(c.rowsS - 1.8) <= 0.05 && c.items.length === 5
+            && c.items.every((r) => Math.abs(r.rowH - Math.round(84 * 1.8)) <= 2), `s=${c.rowsS}`);
+        check('портрет-крафт: кнопка покупки с ценой в каждом ряду',
+            c.items.every((r) => r.buyText.startsWith('Купить ') && r.buySize >= 8 && r.actSize >= 8),
+            JSON.stringify(c.items.map((r) => r.buyText)));
+        check('портрет-крафт: «Получишь:/источник» в рецептах',
+            c.recipes.every((r) => r.desc.startsWith('Получишь: ') && r.src.length > 0 && r.descSize >= 9),
+            JSON.stringify(c.recipes[0]));
+        check('портрет-крафт: тексты не наезжают на кнопки',
+            c.items.every((r) => r.nameW <= r.nameMaxW + 1) && c.recipes.every((r) => r.lastPairRight <= r.btnLeft - 4),
+            JSON.stringify(c.recipes.map((r) => Math.round(r.lastPairRight))));
+        check('портрет-крафт: минимальный кегль ≥ 9', c.minFont >= 9, String(c.minFont));
+        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeCraft());
+        await page.waitForTimeout(200);
+        await ctx.close();
+    }
+
     check('page errors', errors.length === 0, errors.slice(0, 3).join('; '));
     console.log(`\nИтого: ${passed} OK, ${failed} FAIL`);
     await b.close();

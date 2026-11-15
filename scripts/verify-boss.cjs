@@ -1,9 +1,12 @@
-// Проверка боссов (П4): старт с карты (реальный путь тапа по слоту), HP/имя/таймер,
-// слот боссового предмета (бомба), settings-гейт в бою, клик-килл с наградой
-// (баунти = 90 сек дохода, дропы, артефакт только за первое убийство), повторный
-// файт без дубля артефакта, робо-рука бьёт босса без ручных кликов, ретрит по
-// таймеру (укороченный endsAt) и крестиком, снятие лока после модалки награды,
-// статус «побеждён» на карте, сохранение стадии блока, портретный оверлей.
+// Проверка боссов (П4 + R2/R3/R4): старт с карты (реальный путь тапа по слоту),
+// HP/имя/счётчик прошедшего времени, слот боссового предмета (бомба), клик-килл
+// с наградой (баунти = 90 сек дохода, дропы, артефакт только за первое убийство),
+// повторный файт без дубля артефакта, робо-рука бьёт босса без ручных кликов,
+// экраны карта/крафт/настройки открываются В бою, спуск/престиж/сброс заблокированы,
+// бой жив «дольше 65с» (симуляция: startedAt/endsAt в прошлом — ретрита по времени нет),
+// босс-тема замещает BGM на время боя и возвращается после (kill/ретрит DevPanel),
+// SFX удара boss_hit_1..3, снятие лока после модалки награды, статус «побеждён»,
+// сохранение стадии блока, портретный оверлей.
 // Запуск: node scripts/verify-boss.cjs — dev-сервер поднимается сам (порт 5174).
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
@@ -21,6 +24,12 @@ const mkSave = (over = {}) => JSON.stringify(Object.assign({
     bossesDefeated: {}, components: {}, artifacts: [], items: {}, crafting: null,
     levels: { pickaxe: 30, sledge: 12, dynamite: 5, lucky: 0, resonance: 0, focuslens: 0, magnet: 0, robotarm: 0, miner: 10, drill: 5, tech: 3 }
 }, over));
+
+// «1:07» -> секунды (счётчик прошедшего времени боя m:ss)
+const parseElapsed = (t) => {
+    const m = /^(\d+):(\d{2})$/.exec(t || '');
+    return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : -1;
+};
 
 (async () => {
     const server = await ensureDevServer();
@@ -87,6 +96,24 @@ const mkSave = (over = {}) => JSON.stringify(Object.assign({
         await page.waitForTimeout(900); // твин смерти 600мс + grantBossKill + очистка
     };
 
+    const bgmState = (page) => page.evaluate(() => {
+        const s = window.__GAME.scene.getScene('GameScene').sound;
+        const playing = s.getAllPlaying().map((x) => x.key);
+        const theme = s.getAllPlaying().find((x) => x.key === 'boss_theme');
+        return {
+            themePlaying: !!theme && theme.isPlaying,
+            themeLoop: !!theme && theme.loop,
+            bgmPlaying: playing.includes('bgm'),
+            playing
+        };
+    });
+
+    // Текущий BGM сцены: ключ + mute (WebAudioSound/HTML5AudioSound имеют getter mute)
+    const bgmMuteState = (page) => page.evaluate(() => {
+        const gs = window.__GAME.scene.getScene('GameScene');
+        return gs.bgm ? { key: gs.bgm.key, muted: !!gs.bgm.mute, playing: !!gs.bgm.isPlaying } : null;
+    });
+
     const rewardInfo = (page) => page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
         // подписи компонентов/артефакта — дети bossRewardComps (контейнер внутри модалки)
@@ -126,7 +153,7 @@ const mkSave = (over = {}) => JSON.stringify(Object.assign({
         const bossPt = await ptOf(`(() => {
             const n = ui.mapNodes.find((x) => x.boss && x.boss.id === 'boss_copper');
             const v = ui._mapView;
-            return { x: v.x + n.root.x - 60, y: v.y + n.root.y - ui.mapCam.scrollY };
+            return { x: v.x + n.root.x + n.ring.x, y: v.y + n.root.y + n.ring.y - ui.mapCam.scrollY };
         })()`);
         await page.mouse.click(bossPt.x, bossPt.y);
         await page.waitForTimeout(500);
@@ -150,18 +177,77 @@ const mkSave = (over = {}) => JSON.stringify(Object.assign({
                 itemBtns: gs.bossItems ? gs.bossItems.map((x) => ({ id: x.id, cnt: x.cnt.text })) : []
             };
         })()`);
-        check('C1: тап босса на карте начал бой', !fight.mapOpen && fight.bossActive && fight.locked && fight.hasBoss && fight.bossId === 'boss_copper', JSON.stringify({ mapOpen: fight.mapOpen, bossActive: fight.bossActive, hasBoss: fight.hasBoss }));
+        check('C1: тап босса на карте начал бой (бой НЕ держит blockLocked)',
+            !fight.mapOpen && fight.bossActive && fight.locked === false && fight.hasBoss && fight.bossId === 'boss_copper',
+            JSON.stringify({ mapOpen: fight.mapOpen, bossActive: fight.bossActive, locked: fight.locked, hasBoss: fight.hasBoss }));
         check('C2: блок скрыт на время боя', fight.blockHidden);
         check('C3: HP-текст «75K / 75K»', fight.hpText === '75K / 75K', fight.hpText);
         check('C4: имя босса над баром', fight.nameText === 'Медный страж', fight.nameText);
-        check('C5: таймер «60с»', fight.timeText === '60с', fight.timeText);
-        check('C6: крестик + слот бомбы «x2»', fight.hasClose && fight.itemBtns.length === 1 && fight.itemBtns[0].id === 'item_bomb' && fight.itemBtns[0].cnt === 'x2', JSON.stringify(fight.itemBtns));
+        check('C5: счётчик прошедшего времени стартует с «0:00»', fight.timeText === '0:00', fight.timeText);
+        check('C6: крестика нет, слот бомбы «x2»', !fight.hasClose && fight.itemBtns.length === 1 && fight.itemBtns[0].id === 'item_bomb' && fight.itemBtns[0].cnt === 'x2', JSON.stringify(fight.itemBtns));
 
+        // R2: настройки/карта/крафт открываются В бою; спуск/престиж/сброс заблокированы
+        await state('m.gameState.tierEarned[11] = 1e12');
+        const canPr = await state('m.canPrestige()');
+        check('D2a: предусловие — canPrestige=true (disabled-текстура в бою именно от боя)', canPr === true, String(canPr));
         const setPt = await ptOf('({ x: ui.settingsBtn.x, y: ui.settingsBtn.y })');
         await page.mouse.click(setPt.x, setPt.y);
         await page.waitForTimeout(300);
-        const settingsBlocked = await page.evaluate(() => !window.__GAME.scene.getScene('UIScene').modal.visible);
-        check('D1: настройки не открываются в бою', settingsBlocked);
+        const settings = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return { open: ui.modal.visible, presTex: ui.prestigeBtn.texture.key, presText: ui.prestigeText.text, resetText: ui.resetText.text };
+        });
+        check('D1: настройки открываются в бою', settings.open, JSON.stringify(settings));
+        check('D2: престиж в бою — disabled-текстура, клик не активирует',
+            settings.presTex === 'buy_button_disabled_gray',
+            settings.presTex);
+        await page.mouse.click(640, 518); // prestigeBtn (0,158) от модалки (640,360)
+        await page.waitForTimeout(200);
+        const presAfter = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return { text: ui.prestigeText.text, armed: ui.prestigeArmed };
+        });
+        check('D3: клик престижа в бою глотается (не armed)', presAfter.text === 'Сбросить шахту' && presAfter.armed === false, JSON.stringify(presAfter));
+        await page.mouse.click(640, 576); // resetBtn (0,216)
+        await page.waitForTimeout(200);
+        const resetAfter = await page.evaluate(() => window.__GAME.scene.getScene('UIScene').resetText.text);
+        check('D4: клик сброса в бою глотается', resetAfter === 'Сбросить весь прогресс', resetAfter);
+        await page.mouse.click(860, 132); // крестик настроек
+        await page.waitForTimeout(300);
+        const afterSettings = await gsOf('({ alive: !!gs.boss, sprite: gs.bossSprite && gs.bossSprite.visible, active: gs.registry.get("bossActive") })');
+        check('D5: после закрытия настроек бой жив, оверлей цел', afterSettings.alive && afterSettings.sprite && afterSettings.active, JSON.stringify(afterSettings));
+
+        // Фикспак: музыка выключается В бою — syncBgm глушит активную босс-тему;
+        // после kill вернувшийся BGM обязан остаться заглушённым (syncBgm в stopBossBgm)
+        await state('m.gameState.musicOn = false');
+        await page.evaluate(() => window.__GAME.events.emit('music-changed'));
+        await page.waitForTimeout(250);
+        const bgmOffFight = await bgmMuteState(page);
+        check('D8b: музыка «выкл» в бою — босс-тема заглушена',
+            !!bgmOffFight && bgmOffFight.key === 'boss_theme' && bgmOffFight.muted, JSON.stringify(bgmOffFight));
+
+        await page.mouse.click(mapBtnPt.x, mapBtnPt.y);
+        await page.waitForTimeout(300);
+        const mapInFight = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return { open: ui._mapOpen, active: window.__GAME.registry.get('bossActive'), alive: !!window.__GAME.scene.getScene('GameScene').boss };
+        });
+        check('D6: карта открывается в бою, бой продолжается', mapInFight.open && mapInFight.active && mapInFight.alive, JSON.stringify(mapInFight));
+        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeMap());
+        await page.waitForTimeout(250);
+        const aliveAfterMap = await gsOf('!!gs.boss && gs.bossSprite.visible');
+        check('D7: после закрытия карты бой жив', aliveAfterMap === true, String(aliveAfterMap));
+
+        const craftBtnPt = await ptOf('({ x: ui.craftBtn.x, y: ui.craftBtn.y })');
+        await page.mouse.click(craftBtnPt.x, craftBtnPt.y);
+        await page.waitForTimeout(300);
+        const craftInFight = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return { open: ui._craftOpen, active: window.__GAME.registry.get('bossActive'), alive: !!window.__GAME.scene.getScene('GameScene').boss };
+        });
+        check('D8: крафт открывается в бою', craftInFight.open && craftInFight.active && craftInFight.alive, JSON.stringify(craftInFight));
+        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeCraft());
+        await page.waitForTimeout(250);
 
         const bombPt = await gsOf('({ x: gs.bossItems[0].btn.x, y: gs.bossItems[0].btn.y })');
         await page.mouse.click(bombPt.x, bombPt.y);
@@ -172,9 +258,14 @@ const mkSave = (over = {}) => JSON.stringify(Object.assign({
 
         const bossCenter = await gsOf('({ x: gs.blockX, y: gs.blockY })');
         await page.mouse.click(bossCenter.x, bossCenter.y);
-        await page.waitForTimeout(300);
+        await page.waitForTimeout(120);
+        const hitSfx = await page.evaluate(() => {
+            const s = window.__GAME.scene.getScene('GameScene').sound;
+            return s.getAllPlaying().map((x) => x.key).some((k) => k.startsWith('boss_hit'));
+        });
         const hpTextAfterHit = await gsOf('gs.bossHpText.text');
         check('F1: HP-текст уменьшился после удара', hpTextAfterHit !== '75K / 75K', hpTextAfterHit);
+        check('F1b: ручной удар звучит boss_hit_1..3 (не pickaxe)', hitSfx);
 
         await killLoop(page, bossCenter);
         const after = await gsOf(`(() => {
@@ -183,7 +274,17 @@ const mkSave = (over = {}) => JSON.stringify(Object.assign({
         })()`);
         check('F2: босс убит ручными кликами', after.dead);
         check('F3: блок возвращён, стадия сохранена (2), интерактивен', after.blockVisible && after.stage === 2 && after.interactive, JSON.stringify({ stage: after.stage, interactive: after.interactive }));
-        check('F4: bossActive снят, лок держит модалку награды', !after.active && after.locked, JSON.stringify(after));
+        check('F4: bossActive снят, лок держит модалка награды', !after.active && after.locked, JSON.stringify(after));
+
+        const bgmAfterKill = await bgmState(page);
+        check('F9: после убийства босс-тема ушла, обычный BGM вернулся',
+            !bgmAfterKill.themePlaying && bgmAfterKill.bgmPlaying, JSON.stringify(bgmAfterKill));
+        const bgmAfterKillMute = await bgmMuteState(page);
+        check('F9b: mute, выставленный в бою, применён к вернувшемуся BGM',
+            !!bgmAfterKillMute && bgmAfterKillMute.key === 'bgm' && bgmAfterKillMute.muted, JSON.stringify(bgmAfterKillMute));
+        await state('m.gameState.musicOn = true');
+        await page.evaluate(() => window.__GAME.events.emit('music-changed'));
+        await page.waitForTimeout(250);
 
         const rw = await rewardInfo(page);
         check('F5: модалка награды показана', rw.visible && rw.open, JSON.stringify({ visible: rw.visible, open: rw.open }));
@@ -238,19 +339,68 @@ const mkSave = (over = {}) => JSON.stringify(Object.assign({
         await page.close();
     }
 
-    // ---------- Страница 2: робо-рука и ретрит (ландшафт) ----------
+    // ---------- Страница 2: робо-рука, бой без лимита, спуск/ретрит (ландшафт) ----------
     {
-        const { page, state, gsOf } = await newPage(mkSave({ levels: { pickaxe: 12, sledge: 2, dynamite: 0, lucky: 0, resonance: 0, focuslens: 0, magnet: 0, robotarm: 20, miner: 0, drill: 0, tech: 0 } }), { width: 1280, height: 720 });
+        const { page, state, ptOf, gsOf } = await newPage(mkSave({ levels: { pickaxe: 12, sledge: 2, dynamite: 0, lucky: 0, resonance: 0, focuslens: 0, magnet: 0, robotarm: 20, miner: 0, drill: 0, tech: 0 } }), { width: 1280, height: 720 });
+
+        // База для D2: вне боя (canPrestige) престиж — normal-текстура,
+        // т.е. disabled в бою на странице 1 обусловлен именно боем
+        await state('m.gameState.tierEarned[11] = 1e12');
+        const setPt2 = await ptOf('({ x: ui.settingsBtn.x, y: ui.settingsBtn.y })');
+        await page.mouse.click(setPt2.x, setPt2.y);
+        await page.waitForTimeout(300);
+        const presNormal = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return { open: ui.modal.visible, tex: ui.prestigeBtn.texture.key };
+        });
+        check('A1b: вне боя престиж — normal-текстура (база для D2)', presNormal.open && presNormal.tex === 'buy_button_normal', JSON.stringify(presNormal));
+        await page.mouse.click(860, 132); // крестик настроек
+        await page.waitForTimeout(300);
+
+        // Фикспак: музыка выключена ДО боя, включается В бою — после kill
+        // вернувшийся BGM обязан размьючиться (иначе «тишина» при включённой музыке)
+        await state('m.gameState.musicOn = false');
+        await page.evaluate(() => window.__GAME.events.emit('music-changed'));
+        await page.waitForTimeout(250);
+        const bgmOffPre = await bgmMuteState(page);
+        check('A0: музыка «выкл» до боя — обычный BGM заглушен',
+            !!bgmOffPre && bgmOffPre.key === 'bgm' && bgmOffPre.muted, JSON.stringify(bgmOffPre));
 
         await page.evaluate(() => window.__GAME.scene.getScene('GameScene').startBossFight('boss_copper'));
         await page.waitForTimeout(400);
         const start = await gsOf('({ hpText: gs.bossHpText.text, time: gs.bossTime.text, active: gs.registry.get("bossActive") })');
-        check('A1: бой стартовал напрямую, HP полный', start.active && /\/ 75K$/.test(start.hpText) && start.time === '60с', JSON.stringify(start));
+        check('A1: бой стартовал напрямую, HP полный, таймер «0:00»', start.active && /\/ 75K$/.test(start.hpText) && start.time === '0:00', JSON.stringify(start));
+
+        const keys = await page.evaluate(() => {
+            const c = window.__GAME.scene.getScene('GameScene').cache.audio;
+            return ['boss_hit_1', 'boss_hit_2', 'boss_hit_3', 'boss_theme'].filter((k) => !c.exists(k));
+        });
+        check('A2: ключи boss_hit_1..3 и boss_theme в аудио-кэше', keys.length === 0, `missing: ${keys.join(', ')}`);
 
         await page.waitForTimeout(2000);
         const auto = await gsOf('({ hp: gs.boss.hp, max: gs.boss.maxHp, time: gs.bossTime.text })');
         check('B1: робо-рука бьёт босса без ручных кликов', auto.hp < auto.max && auto.hp >= 70000, `hp=${Math.round(auto.hp)}`);
-        check('B2: таймер боя тикает', parseInt(auto.time, 10) < 60, auto.time);
+        const elapsed = parseElapsed(auto.time);
+        check('B2: счётчик прошедшего времени тикает (m:ss)', elapsed >= 1 && elapsed <= 6, auto.time);
+
+        const bgmFight = await bgmState(page);
+        check('B3: босс-тема играет лупом, обычный BGM остановлен',
+            bgmFight.themePlaying && bgmFight.themeLoop && !bgmFight.bgmPlaying, JSON.stringify(bgmFight));
+
+        await state('m.gameState.musicOn = true');
+        await page.evaluate(() => window.__GAME.events.emit('music-changed'));
+        await page.waitForTimeout(250);
+        const bgmOnFight = await bgmMuteState(page);
+        check('B3b: музыка включена в бою — босс-тема играет без mute',
+            !!bgmOnFight && bgmOnFight.key === 'boss_theme' && !bgmOnFight.muted && bgmOnFight.playing, JSON.stringify(bgmOnFight));
+
+        await page.mouse.click(400, 400);
+        await page.waitForTimeout(120);
+        const hitSfx = await page.evaluate(() => {
+            const s = window.__GAME.scene.getScene('GameScene').sound;
+            return s.getAllPlaying().map((x) => x.key).some((k) => k.startsWith('boss_hit'));
+        });
+        check('B4: ручной удар играет boss_hit_1..3', hitSfx);
 
         await page.evaluate(() => { window.__GAME.scene.getScene('GameScene').boss.hp = 200; });
         await page.waitForTimeout(2500);
@@ -261,12 +411,65 @@ const mkSave = (over = {}) => JSON.stringify(Object.assign({
         const defeated = await state('m.gameState.bossesDefeated.boss_copper === true');
         const clicks = await state('m.gameState.clicks');
         check('C1: робо-рука добила босса, награда выдана', killed.dead && defeated && killed.modal && !killed.active && killed.blockVisible, JSON.stringify(killed));
-        check('C2: ручных кликов не было (clicks = 50)', clicks === 50, String(clicks));
+        check('C2: ручных кликов не было (clicks = 50; удары по боссу счётчик кликов не растят)', clicks === 50, String(clicks));
 
         await page.mouse.click(640, 510); // «Забрать»
         await page.waitForTimeout(400);
         check('D1: модалка закрыта, лок снят', await gsOf('!gs.registry.get("blockLocked") && !window.__GAME.scene.getScene("UIScene").bossRewardModal.visible'));
-        // снимок награды ДО ретрит-теста: награда уже выдана киллом C1 — ретрит не должен ничего добавить
+        const bgmRestored = await bgmMuteState(page);
+        check('D1b: музыка, включённая в бою, применена к вернувшемуся BGM (не тишина)',
+            !!bgmRestored && bgmRestored.key === 'bgm' && !bgmRestored.muted && bgmRestored.playing, JSON.stringify(bgmRestored));
+
+        // Фикспак: робо-рука добивает босса при открытой мастерской — окно награды
+        // вытесняет крафт (флаг до closeCraft; daily не вскроется поверх), «Забрать»
+        // кликается по кнопке награды, ряды крафта не срабатывают, крафт переоткрывается
+        await page.evaluate(() => window.__GAME.scene.getScene('GameScene').startBossFight('boss_copper'));
+        await page.waitForTimeout(400);
+        const craftBtnPt2 = await ptOf('({ x: ui.craftBtn.x, y: ui.craftBtn.y })');
+        await page.mouse.click(craftBtnPt2.x, craftBtnPt2.y);
+        await page.waitForTimeout(300);
+        const k1 = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return { open: ui._craftOpen, root: ui.craftRoot.visible };
+        });
+        check('K1: крафт открыт в бою', k1.open && k1.root, JSON.stringify(k1));
+        await page.evaluate(() => { window.__GAME.scene.getScene('GameScene').boss.hp = 200; });
+        await page.waitForTimeout(2500);
+        const k2 = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return {
+                reward: ui.bossRewardModal.visible, open: ui._bossRewardOpen,
+                craftOpen: ui._craftOpen, craftRoot: ui.craftRoot.visible, craftDim: ui.craftDim.visible,
+                mapOpen: ui._mapOpen, locked: window.__GAME.registry.get('blockLocked')
+            };
+        });
+        check('K2: добитие робо-рукой при открытом крафте — окно награды вытеснило мастерскую',
+            k2.reward && k2.open && !k2.craftOpen && !k2.craftRoot && !k2.craftDim && !k2.mapOpen && k2.locked, JSON.stringify(k2));
+        const claimHit = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const btn = ui.bossRewardModal.list.find((o) => o.texture && o.texture.key === 'buy_button_normal');
+            return { x: ui.bossRewardModal.x + btn.x, y: ui.bossRewardModal.y + btn.y };
+        });
+        const invBefore = await state('JSON.stringify({ i: m.gameState.items, c: m.gameState.components, cr: m.gameState.crafting })');
+        await page.mouse.click(claimHit.x, claimHit.y);
+        await page.waitForTimeout(400);
+        const k3 = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return { visible: ui.bossRewardModal.visible, open: ui._bossRewardOpen, locked: window.__GAME.registry.get('blockLocked') };
+        });
+        check('K3: «Забрать» кликается по кнопке награды (хит-тест центра кнопки)', !k3.visible && !k3.open && !k3.locked, JSON.stringify(k3));
+        const invAfter = await state('JSON.stringify({ i: m.gameState.items, c: m.gameState.components, cr: m.gameState.crafting })');
+        check('K4: ряды крафта не сработали (предметы/компоненты/крафт не изменились от клика)', invAfter === invBefore, `${invBefore} -> ${invAfter}`);
+        await page.mouse.click(craftBtnPt2.x, craftBtnPt2.y);
+        await page.waitForTimeout(300);
+        const k5 = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return { open: ui._craftOpen, root: ui.craftRoot.visible };
+        });
+        check('K5: после закрытия награды крафт открывается заново', k5.open && k5.root, JSON.stringify(k5));
+        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeCraft());
+        await page.waitForTimeout(250);
+        // снимок награды ДО ретрит-теста: награды выданы киллами C1 и K — ретрит не должен ничего добавить
         const rewardBefore = await state('({ art: m.gameState.artifacts.length, scrap: m.gameState.components.scrap || 0 })');
 
         await state('m.gameState.levels.robotarm = 0');
@@ -275,27 +478,60 @@ const mkSave = (over = {}) => JSON.stringify(Object.assign({
         await page.mouse.click(400, 400); await page.waitForTimeout(350);
         await page.mouse.click(400, 400); await page.waitForTimeout(350);
         const stageA = await gsOf('gs.blockStage');
-        check('E1: стадия блока 2 перед ретрит-тестом', stageA === 2, String(stageA));
+        check('E1: стадия блока 2 перед проверкой боя без лимита', stageA === 2, String(stageA));
 
         await page.evaluate(() => window.__GAME.scene.getScene('GameScene').startBossFight('boss_copper'));
         await page.waitForTimeout(300);
-        await page.evaluate(() => { const gs = window.__GAME.scene.getScene('GameScene'); gs.boss.endsAt = gs.time.now + 800; });
-        await page.waitForTimeout(1600);
+        // Симуляция «бой > 65с»: часы боя в прошлом (и endsAt тоже — по нему
+        // ретрита больше нет) — бой обязан продолжаться, счётчик показать 1:07
+        await page.evaluate(() => {
+            const gs = window.__GAME.scene.getScene('GameScene');
+            gs.boss.startedAt = gs.time.now - 67000;
+            gs.boss.endsAt = gs.time.now - 1000;
+        });
+        await page.waitForTimeout(400);
+        const longFight = await gsOf(`(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return { alive: !!gs.boss, active: gs.registry.get('bossActive'), time: gs.bossTime.text, locked: gs.registry.get('blockLocked') };
+        })()`);
+        const longSecs = parseElapsed(longFight.time);
+        check('E2: бой жив «>65с» — ретрита по времени нет, счётчик 1:07',
+            longFight.alive && longFight.active && longSecs >= 66 && longSecs <= 69 && longFight.locked === false,
+            JSON.stringify(longFight));
+
+        await state('m.gameState.ore = 1000000000');
+        await page.waitForTimeout(300);
+        const canUnlock = await state('m.canUnlockTier()');
+        check('E3a: предусловие — спуск доступен по руде (canUnlockTier)', canUnlock === true, String(canUnlock));
+        const unlockTex = await ptOf('ui.unlockBtn.texture.key');
+        check('E3b: спуск в бою — disabled-текстура', unlockTex === 'buy_button_disabled_gray', String(unlockTex));
+        const unlockPt = await ptOf('({ x: ui.unlockBtn.x + 260, y: ui.unlockBtn.y + 26 })');
+        const tierBefore = await state('m.gameState.tier');
+        await page.mouse.click(unlockPt.x, unlockPt.y);
+        await page.waitForTimeout(400);
+        const tierAfter = await state('m.gameState.tier');
+        check('E3: спуск заблокирован в бою (клик по кнопке глотается)', tierAfter === tierBefore, `${tierBefore} -> ${tierAfter}`);
+
+        await page.evaluate(() => window.__GAME.scene.getScene('GameScene').retreatBoss());
+        await page.waitForTimeout(600); // флоат «Босс восстановился» живёт 1100мс — ловим до затухания
         const retreat = await gsOf(`(() => {
             const floatSeen = gs.children.list.some((o) => o.type === 'Text' && o.text === 'Босс восстановился');
             return { gone: !gs.boss, blockVisible: gs.block.visible, stage: gs.blockStage, active: gs.registry.get('bossActive'), floatSeen };
         })()`);
-        check('E2: ретрит по таймеру — босс ушёл, блок и стадия возвращены', retreat.gone && retreat.blockVisible && retreat.stage === 2 && !retreat.active, JSON.stringify(retreat));
-        check('E3: флоат «Босс восстановился» показан', retreat.floatSeen);
+        check('E4: DevPanel-ретрит — босс ушёл, блок и стадия возвращены', retreat.gone && retreat.blockVisible && retreat.stage === 2 && !retreat.active, JSON.stringify(retreat));
+        check('E5: флоат «Босс восстановился» показан', retreat.floatSeen);
+        const bgmAfterRetreat = await bgmState(page);
+        check('E6: после ретрита босс-тема ушла, обычный BGM вернулся',
+            !bgmAfterRetreat.themePlaying && bgmAfterRetreat.bgmPlaying, JSON.stringify(bgmAfterRetreat));
         const noReward = await state('({ art: m.gameState.artifacts.length, scrap: m.gameState.components.scrap || 0 })');
-        check('E4: ретрит без награды (дроп и артефакт не изменились)',
+        check('E7: ретрит без награды (дроп и артефакт не изменились)',
             noReward.art === rewardBefore.art && noReward.scrap === rewardBefore.scrap, JSON.stringify({ before: rewardBefore, after: noReward }));
 
         const ore0 = await state('m.gameState.ore');
         await page.mouse.click(400, 400);
         await page.waitForTimeout(300);
         const ore1 = await state('m.gameState.ore');
-        check('E5: блок снова добывает после ретрита', ore1 > ore0, `${ore0} -> ${ore1}`);
+        check('E8: блок снова добывает после ретрита', ore1 > ore0, `${ore0} -> ${ore1}`);
         await page.close();
     }
 
@@ -313,21 +549,25 @@ const mkSave = (over = {}) => JSON.stringify(Object.assign({
                 W: gs.L.W, bx: gs.blockX, by: gs.blockY, py,
                 sprite: gs.bossSprite && gs.bossSprite.visible,
                 name: gs.bossName && { x: gs.bossName.x, y: gs.bossName.y, ok: inX(gs.bossName.x) && inY(gs.bossName.y) },
-                close: gs.bossClose && { x: gs.bossClose.x, y: gs.bossClose.y, ok: inX(gs.bossClose.x) && inY(gs.bossClose.y) },
+                close: gs.bossClose,
+                time: gs.bossTime && gs.bossTime.text,
                 item: gs.bossItems && gs.bossItems[0] && { x: gs.bossItems[0].btn.x, y: gs.bossItems[0].btn.y, ok: inX(gs.bossItems[0].btn.x) && inY(gs.bossItems[0].btn.y) },
                 hpText: gs.bossHpText && gs.bossHpText.text,
                 active: gs.registry.get('bossActive')
             };
         })()`);
-        check('P1: портрет — оверлей собран в границах экрана',
-            ovl.active && ovl.sprite && ovl.name.ok && ovl.close.ok && ovl.item.ok, JSON.stringify(ovl));
+        check('P1: портрет — оверлей собран в границах экрана, крестика нет',
+            ovl.active && ovl.sprite && ovl.name.ok && !ovl.close && ovl.item.ok && ovl.time === '0:00', JSON.stringify({ ...ovl, close: !!ovl.close }));
         check('P2: HP-текст и позиция бара от blockX/blockY',
             ovl.hpText === '75K / 75K' && Math.abs(ovl.bx - ovl.W / 2) <= 1, JSON.stringify({ hpText: ovl.hpText, bx: ovl.bx }));
 
-        await page.evaluate(() => window.__GAME.scene.getScene('GameScene').bossClose.emit('pointerdown'));
-        await page.waitForTimeout(400);
+        const bgmPortrait = await bgmState(page);
+        check('P3: босс-тема играет и в портрете', bgmPortrait.themePlaying && !bgmPortrait.bgmPlaying, JSON.stringify(bgmPortrait));
+
+        await page.evaluate(() => window.__GAME.scene.getScene('GameScene').retreatBoss());
+        await page.waitForTimeout(1300);
         const done = await gsOf('({ gone: !gs.boss, blockVisible: gs.block.visible, active: gs.registry.get("bossActive") })');
-        check('P3: крестик оверлея уходит в ретрит (портрет)', done.gone && done.blockVisible && !done.active, JSON.stringify(done));
+        check('P4: ретрит (DevPanel) в портрете возвращает блок', done.gone && done.blockVisible && !done.active, JSON.stringify(done));
         await page.close();
     }
 

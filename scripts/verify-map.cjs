@@ -1,4 +1,5 @@
-// Проверка карты шахты (П3): открытие по кнопке, 18 узлов и их состояния,
+// Проверка карты шахты (П3, редизайн «настолка»): открытие по кнопке, фон-доска
+// map_board, 18 кружков с обводками по статусу, тропа (пунктир+шевроны),
 // лок/разлок реестра blockLocked, спуск с анимацией и skip-тапом, очередь
 // дневной награды под картой, каркас мастерской, аудит вёрстки (дифф против
 // бейзлайна настроек-модалки: полноэкранные оверлеи дают одинаковый класс
@@ -184,7 +185,10 @@ const DEEP_SAVE = JSON.stringify({
             anim: ui._mapAnim ? 'run' : null,
             minerVisible: ui.mapMiner.visible,
             minerY: ui.mapMiner.y,
-            mapCamVisible: ui.mapCam.visible
+            mapCamVisible: ui.mapCam.visible,
+            boardTex: ui.mapBoard ? ui.mapBoard.texture.key : null,
+            boardVisible: ui.mapBoard ? ui.mapBoard.visible : false,
+            trailType: ui.mapTrail ? ui.mapTrail.type : null
         };
     });
 
@@ -207,6 +211,25 @@ const DEEP_SAVE = JSON.stringify({
         check('A2: registry blockLocked = true', s.locked === true);
         check('A3: 18 узлов (12 тиров + 6 боссов)', s.nodes === 18, String(s.nodes));
         check('A4: карта видна камере', s.mapCamVisible);
+        check('A4b: фон-доска map_board внутри панели видна', s.boardTex === 'map_board' && s.boardVisible, JSON.stringify({ tex: s.boardTex, vis: s.boardVisible }));
+        check('A4c: тропа-Graphics в mapContent', s.trailType === 'Graphics', String(s.trailType));
+        // A1(П2-ревью): зазор тропы валиден для КАЖДОЙ пары соседних узлов —
+        // низ подписи + 4s + 6 <= верх следующего кружка − 9s (иначе пунктир
+        // не рисуется; ловилось только на сегментах «босс → следующий тир»)
+        const trailGaps = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const sc = ui._adaptiveScale || 1;
+            const bad = [];
+            for (let k = 0; k < ui.mapNodes.length - 1; k++) {
+                const a = ui.mapNodes[k], b = ui.mapNodes[k + 1];
+                const lbl = a.kind === 'tier' ? a.name : a.status;
+                const from = a.root.y + lbl.y + lbl.height + Math.round(4 * sc);
+                const to = b.root.y - Math.round(9 * sc);
+                if (from + 6 > to) bad.push({ k, from: Math.round(from), to: Math.round(to) });
+            }
+            return bad;
+        });
+        check('A4d: тропа — зазор валиден для всех 17 пар соседних узлов', trailGaps.length === 0, JSON.stringify(trailGaps));
         check('A5: scroll на текущем узле (тир 0)', Math.abs(s.scrollY - 0) < 1, String(s.scrollY));
 
         const states = await page.evaluate(() => {
@@ -217,15 +240,17 @@ const DEEP_SAVE = JSON.stringify({
                 id: n.boss ? n.boss.id : null,
                 state: n._state,
                 status: n.status ? n.status.text : null,
-                slotTint: n.slot.tintTopLeft,
+                ringType: n.ring ? n.ring.type : null,
+                ringColor: n._ringColor,
                 pulsing: !!n.pulse
             }));
         });
         check('A6: тир 1 текущий с пульсом', states[0].kind === 'tier' && states[0].tier === 0 && states[0].state === 'current' && states[0].pulsing);
         // Порядок по ТЗ: [t0, t1, boss_copper, t2, t3, boss_silver, ...]
         check('A6b: boss_copper стоит после узла тира 1', states[1].kind === 'tier' && states[1].tier === 1 && states[2].id === 'boss_copper');
-        check('A7: тиры 2..12 будущие tint 0x505050', states.filter((n) => n.kind === 'tier' && n.tier > 0).every((n) => n.state === 'future' && n.slotTint === 0x505050 && !n.pulsing));
-        check('A8: все боссы закрыты «нужен: шахта N+1»', states.filter((n) => n.kind === 'boss').every((n) => n.state === 'locked' && /нужен: шахта \d+/.test(n.status) && n.slotTint === 0x505050));
+        check('A6c: у каждого узла кружок-Graphics с обводкой по статусу', states.every((n) => n.ringType === 'Graphics' && typeof n.ringColor === 'number'), JSON.stringify(states.filter((n) => n.ringType !== 'Graphics').length));
+        check('A7: тиры 2..12 будущие — тёмная обводка 0x3a3d40', states.filter((n) => n.kind === 'tier' && n.tier > 0).every((n) => n.state === 'future' && n.ringColor === 0x3a3d40 && !n.pulsing));
+        check('A8: все боссы закрыты «нужен: шахта N+1», серая обводка', states.filter((n) => n.kind === 'boss').every((n) => n.state === 'locked' && /нужен: шахта \d+/.test(n.status) && n.ringColor === 0x6a6a6a));
         check('A9: подпись босса тира 1 «нужен: шахта 2»', states.find((n) => n.id === 'boss_copper').status === 'нужен: шахта 2');
 
         // B: закрытие снимает lock, клик по блоку добывает
@@ -251,10 +276,14 @@ const DEEP_SAVE = JSON.stringify({
         await page.mouse.click(500, 500); // skip-тап по карте
         await page.waitForTimeout(150);
         s = await uiState(page);
-        // Порядок по ТЗ: узел тира 1 = idx 1 -> y = 90 + 78 = 168;
-        // 168 - 232 < 0 -> цель scroll 0 (узел и так в кадре)
-        check('C2: skip завершил анимацию на целевом узле', !s.anim && Math.abs(s.scrollY - 0) < 1, `scrollY=${s.scrollY}`);
-        check('C3: шахтёр на узле нового тира', s.minerVisible && Math.abs(s.minerY - 168) < 1, `y=${s.minerY}`);
+        // Цели скролла считаем по живой геометрии узлов (root.y + _r — центр
+        // кружка, не верх): target = clamp(centerY - h/2, 0, maxScroll)
+        const c2 = await ptOf(page, `(() => {
+            const n = ui.mapNodes.find((x) => x.kind === 'tier' && x.tier === 1);
+            return { y: n.root.y + n._r, target: Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2)) };
+        })()`);
+        check('C2: skip завершил анимацию на целевом узле', !s.anim && Math.abs(s.scrollY - c2.target) < 1, `scrollY=${s.scrollY} target=${c2.target}`);
+        check('C3: шахтёр на узле нового тира', s.minerVisible && Math.abs(s.minerY - c2.y) < 1, `y=${s.minerY} узел=${c2.y}`);
         const banner = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             return ui.mapRoot.list.some((o) => o.type === 'Text' && /Уровень 2: Медь!/.test(o.text));
@@ -281,8 +310,11 @@ const DEEP_SAVE = JSON.stringify({
         await page.mouse.click(mapBtnPt.x, mapBtnPt.y);
         await page.waitForTimeout(300);
         let s = await uiState(page);
-        // Узел тира 3 = idx 4 -> y = 90 + 4*78 = 402; центр вьюпорта 232 -> scroll 170
-        check('D1: карта открыта, scroll на тире 3 (idx 4 -> 170)', s.mapOpen && Math.abs(s.scrollY - 170) < 1, `scrollY=${s.scrollY}`);
+        const d1 = await ptOf(page, `(() => {
+            const n = ui.mapNodes.find((x) => x.kind === 'tier' && x.tier === 3);
+            return Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2));
+        })()`);
+        check('D1: карта открыта, scroll на тире 3 (по коду)', s.mapOpen && Math.abs(s.scrollY - d1) < 1, `scrollY=${s.scrollY} target=${d1}`);
 
         // D1b: физический драг двигает скролл (старт — с dim: его stopPropagation
         // гасит scene-level pointerdown)
@@ -292,13 +324,13 @@ const DEEP_SAVE = JSON.stringify({
         await page.mouse.up();
         await page.waitForTimeout(150);
         const dragScroll = await page.evaluate(() => window.__GAME.scene.getScene('UIScene').mapCam.scrollY);
-        check('D1b: драг двигает скролл (+100px)', Math.abs(dragScroll - 270) < 1, `scrollY=${dragScroll}`);
+        check('D1b: драг двигает скролл (+100px)', Math.abs(dragScroll - (d1 + 100)) < 1, `scrollY=${dragScroll}`);
 
         // D1c: колесо поверх карты докручивает (dy 200 x коэф. 0.5 = +100px)
         await page.mouse.wheel(0, 200);
         await page.waitForTimeout(150);
         const wheelScroll = await page.evaluate(() => window.__GAME.scene.getScene('UIScene').mapCam.scrollY);
-        check('D1c: колесо докручивает (+100px)', Math.abs(wheelScroll - 370) < 1, `scrollY=${wheelScroll}`);
+        check('D1c: колесо докручивает (+100px)', Math.abs(wheelScroll - (d1 + 200)) < 1, `scrollY=${wheelScroll}`);
         const states = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             return ui.mapNodes.map((n) => ({
@@ -307,23 +339,27 @@ const DEEP_SAVE = JSON.stringify({
                 id: n.boss ? n.boss.id : null,
                 state: n._state,
                 status: n.status ? n.status.text : null,
-                slotTint: n.slot.tintTopLeft,
-                pulsing: !!n.pulse
+                ringType: n.ring ? n.ring.type : null,
+                ringColor: n._ringColor,
+                pulsing: !!n.pulse,
+                ringPulse: !!n.ringPulse
             }));
         });
-        check('D2: тиры 0..2 пройдены tint 0x909090', states.filter((n) => n.kind === 'tier' && n.tier < 3).every((n) => n.state === 'passed' && n.slotTint === 0x909090 && !n.pulsing));
-        check('D3: тир 3 текущий с пульсом', states.filter((n) => n.kind === 'tier' && n.tier === 3).every((n) => n.state === 'current' && n.pulsing));
-        check('D4: boss_copper побеждён', states.find((n) => n.id === 'boss_copper').state === 'defeated'
+        check('D2: тиры 0..2 пройдены — серая обводка 0x6a6a6a', states.filter((n) => n.kind === 'tier' && n.tier < 3).every((n) => n.state === 'passed' && n.ringColor === 0x6a6a6a && !n.pulsing));
+        check('D3: тир 3 текущий с пульсом (жёлтая обводка)', states.filter((n) => n.kind === 'tier' && n.tier === 3).every((n) => n.state === 'current' && n.ringColor === 0xffd75e && n.pulsing));
+        check('D4: boss_copper побеждён — зелёная обводка', states.find((n) => n.id === 'boss_copper').state === 'defeated'
+            && states.find((n) => n.id === 'boss_copper').ringColor === 0x7ee787
             && states.find((n) => n.id === 'boss_copper').status === 'побеждён');
         const silver = states.find((n) => n.id === 'boss_silver');
-        check('D5: boss_silver доступен «Сразиться!» с пульсом', silver.state === 'available' && silver.status === 'Сразиться!' && silver.pulsing && silver.slotTint === 0xffffff);
+        check('D5: boss_silver доступен «Сразиться!» с пульсом текста И обводки', silver.state === 'available' && silver.status === 'Сразиться!' && silver.pulsing && silver.ringPulse && silver.ringColor === 0xffd75e);
         check('D6: боссы 5..11 закрыты гейтом', states.filter((n) => n.id && n.id !== 'boss_copper' && n.id !== 'boss_silver').every((n) => n.state === 'locked' && /нужен: шахта \d+/.test(n.status)));
 
-        // E: тап доступного босса — closeMap + старт боя (П4 заменил заглушку П3)
+        // E: тап доступного босса — closeMap + старт боя (П4 заменил заглушку П3);
+        // клик в центр кружка (ring — ребёнок root со сдвигом r вниз)
         const silverPt = await ptOf(page, `(() => {
             const n = ui.mapNodes.find((x) => x.boss && x.boss.id === 'boss_silver');
             const v = ui._mapView;
-            return { x: v.x + n.root.x - 60, y: v.y + n.root.y - ui.mapCam.scrollY };
+            return { x: v.x + n.root.x + n.ring.x, y: v.y + n.root.y + n.ring.y - ui.mapCam.scrollY };
         })()`);
         await page.mouse.click(silverPt.x, silverPt.y);
         await page.waitForTimeout(400);
@@ -332,7 +368,7 @@ const DEEP_SAVE = JSON.stringify({
             const gs = window.__GAME.scene.getScene('GameScene');
             return !!gs.boss && gs.boss.def.id === 'boss_silver' && window.__GAME.registry.get('bossActive');
         });
-        check('E1: тап босса закрыл карту и начал бой', !s.mapOpen && s.locked === true && fightOn, JSON.stringify(s));
+        check('E1: тап босса закрыл карту и начал бой (бой НЕ держит blockLocked)', !s.mapOpen && s.locked === false && fightOn, JSON.stringify(s));
         // ретрит: босс — мягкий контент, спуск не гейтит; ждём затухания флоата до аудита F
         await page.evaluate(() => window.__GAME.scene.getScene('GameScene').retreatBoss());
         await page.waitForTimeout(1500);
@@ -344,13 +380,14 @@ const DEEP_SAVE = JSON.stringify({
 
         // F: аудит вёрстки. Полноэкранные оверлеи легитимно перекрывают под-UI
         // (задокументированная слепая зона аудита: depth не проверяется), поэтому
-        // класс «панель × что-то под ней» выпадает; сравниваем остальное с фоном
-        // (карта закрыта) — новые пересечения контента запрещены.
+        // класс «панель × что-то под ней» выпадает; фон-доска map_board — часть
+        // хрома карты (край под крестиком/заголовком) — тоже выпадает; сравниваем
+        // остальное с фоном (карта закрыта) — новые пересечения контента запрещены.
         const baseRelevant = new Set((await auditLayout(page)).violations
-            .filter((v) => !v.includes('modal_panel_metal')).map(sig));
+            .filter((v) => !v.includes('modal_panel_metal') && !v.includes('map_board')).map(sig));
         await page.mouse.click(mapBtnPt.x, mapBtnPt.y);
         await page.waitForTimeout(400);
-        const mapAudit = (await auditLayout(page)).violations.filter((v) => !v.includes('modal_panel_metal'));
+        const mapAudit = (await auditLayout(page)).violations.filter((v) => !v.includes('modal_panel_metal') && !v.includes('map_board'));
         const mapNew = mapAudit.filter((v) => !baseRelevant.has(sig(v)));
         check('F1: аудит при открытой карте — новых нарушений нет', mapNew.length === 0, mapNew.join(' | ') || mapAudit.join(' | '));
         await page.mouse.click(closePt.x, closePt.y);
@@ -402,8 +439,8 @@ const DEEP_SAVE = JSON.stringify({
         await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeCraft());
         await page.waitForTimeout(200);
 
-        // J: глубокий спуск — ненулевая цель скролла: тир 3 -> 4 (золото),
-        // узел тира 4 = idx 6 -> y 558, цель scroll 326; from = узел тира 3 (170)
+        // J: глубокий спуск — ненулевая цель скролла: тир 3 -> 4 (золото);
+        // цель скролла и позицию шахтёра берём из живой геометрии узла тира 4
         await state('m.gameState.ore = 1000000');
         await page.waitForTimeout(200);
         const unlockPt2 = await ptOf(page, '({ x: ui.unlockBtn.x + 260, y: ui.unlockBtn.y + 26 })');
@@ -414,8 +451,12 @@ const DEEP_SAVE = JSON.stringify({
         await page.mouse.click(500, 500); // skip-тап по карте
         await page.waitForTimeout(150);
         s = await uiState(page);
-        check('J2: skip поставил scroll на цель 326', !s.anim && Math.abs(s.scrollY - 326) < 1, `scrollY=${s.scrollY}`);
-        check('J3: шахтёр на узле тира 4 (y 558)', s.minerVisible && Math.abs(s.minerY - 558) < 1, `y=${s.minerY}`);
+        const j2 = await ptOf(page, `(() => {
+            const n = ui.mapNodes.find((x) => x.kind === 'tier' && x.tier === 4);
+            return { y: n.root.y + n._r, target: Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2)) };
+        })()`);
+        check('J2: skip поставил scroll на цель (по коду)', !s.anim && Math.abs(s.scrollY - j2.target) < 1, `scrollY=${s.scrollY} target=${j2.target}`);
+        check('J3: шахтёр на узле тира 4', s.minerVisible && Math.abs(s.minerY - j2.y) < 1, `y=${s.minerY} узел=${j2.y}`);
         await page.mouse.click(closePt.x, closePt.y);
         await page.waitForTimeout(1200);
         const deepTier = await state('m.gameState.tier');
@@ -438,6 +479,32 @@ const DEEP_SAVE = JSON.stringify({
             return { w: v.w, h: v.h, inGrid: v.w > 100 && v.h > 100 && v.y + v.h <= 1558 };
         });
         check('I3: вьюпорт карты в портрете адекватен', view.inGrid, JSON.stringify(view));
+        const ip = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return {
+                s: ui._adaptiveScale,
+                board: ui.mapBoard.visible && ui.mapBoard.texture.key === 'map_board',
+                tierR: ui.mapNodes.find((n) => n.kind === 'tier')._r,
+                bossR: ui.mapNodes.find((n) => n.kind === 'boss')._r,
+                trail: ui.mapTrail.type
+            };
+        });
+        check('I5: доска/кружки/тропа в портрете (радиусы по s)', ip.board && ip.trail === 'Graphics'
+            && ip.tierR === Math.round(28 * ip.s) && ip.bossR === Math.round(34 * ip.s), JSON.stringify(ip));
+        const trailGapsP = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const sc = ui._adaptiveScale || 1;
+            const bad = [];
+            for (let k = 0; k < ui.mapNodes.length - 1; k++) {
+                const a = ui.mapNodes[k], b = ui.mapNodes[k + 1];
+                const lbl = a.kind === 'tier' ? a.name : a.status;
+                const from = a.root.y + lbl.y + lbl.height + Math.round(4 * sc);
+                const to = b.root.y - Math.round(9 * sc);
+                if (from + 6 > to) bad.push({ k, from: Math.round(from), to: Math.round(to) });
+            }
+            return bad;
+        });
+        check('I6: тропа в портрете — зазор валиден для всех 17 пар', trailGapsP.length === 0, JSON.stringify(trailGapsP));
         await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             ui.mapClose.emit('pointerdown');
@@ -445,6 +512,30 @@ const DEEP_SAVE = JSON.stringify({
         await page.waitForTimeout(300);
         const s2 = await uiState(page);
         check('I4: карта закрылась в портрете', !s2.mapOpen && s2.locked === false);
+        await page.close();
+    }
+
+    // ---------- Страница 4: смена ориентации при s=1.0 (планшет-портрет) ----------
+    {
+        const { page } = await newPage(DEEP_SAVE, { width: 720, height: 1500 });
+        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openMap());
+        await page.waitForTimeout(400);
+        const before = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return { cx: ui._nodeCX, trailCX: ui._trailCX, s: ui._adaptiveScale, open: ui._mapOpen };
+        });
+        check('K1: портрет-планшет s=1.0, тропа на колонке узлов', before.open && Math.abs(before.s - 1) < 0.01 && before.cx === before.trailCX, JSON.stringify(before));
+        await page.setViewportSize({ width: 1280, height: 720 });
+        await page.waitForTimeout(700);
+        const after = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return {
+                cx: ui._nodeCX, trailCX: ui._trailCX, s: ui._adaptiveScale, open: ui._mapOpen,
+                rootsOnCX: ui.mapNodes.every((n) => n.root.x === ui._nodeCX)
+            };
+        });
+        check('K2: ротация при s=1.0 — тропа переехала за узлами (A2 ревью П2)',
+            after.open && Math.abs(after.s - 1) < 0.01 && after.cx === 340 && after.cx === after.trailCX && after.rootsOnCX, JSON.stringify(after));
         await page.close();
     }
 

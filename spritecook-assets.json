@@ -1311,6 +1311,13 @@
                        "label":  "comp_essence",
                        "file":  "assets/ui/comp_essence.png",
                        "group":  "components"
+                   },
+                   {
+                       "asset_id":  "c48694c2-8895-41e3-8d8b-9070c91de3e6",
+                       "sha12":  "3e6d6e047f02",
+                       "label":  "map_board",
+                       "file":  "assets/ui/map_board.png",
+                       "group":  "map"
                    }
                ]
 }

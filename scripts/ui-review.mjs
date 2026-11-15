@@ -472,8 +472,9 @@ const V5_SEED = JSON.stringify({
 }
 
 // 19 (П6). Бой с боссом: HP-бар, слот бомбы (через dev-кнопку «Бомба +5»),
-// урон по спрайту, ретрит снимает бой/лок. Аудит не гоняем: оверлей в GameScene
+// урон по спрайту, ретрит снимает бой. Аудит не гоняем: оверлей в GameScene
 // уже проверен геометрией verify-boss (P-чеки), здесь — состояния и скриншот.
+// R2 (доработка): бой НЕ держит blockLocked — locked=false на весь бой.
 {
     const { ctx, page } = await newPage({ seed: { 'ore-rush-save': SAVE_SEED }, name: '19_boss_fight' });
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
@@ -495,7 +496,7 @@ const V5_SEED = JSON.stringify({
             slots: gs.bossItems ? gs.bossItems.map((s) => ({ id: s.id, cnt: s.cnt.text })) : null
         };
     });
-    if (!f.id || !f.active || !f.locked || !f.bar) scenarioFailures.push(`19_boss_fight: бой не активен (${JSON.stringify(f)})`);
+    if (!f.id || !f.active || f.locked !== false || !f.bar) scenarioFailures.push(`19_boss_fight: бой не активен (${JSON.stringify(f)})`);
     if (f.hp !== f.maxHp) scenarioFailures.push(`19_boss_fight: HP при старте ${f.hp}/${f.maxHp}`);
     if (!f.slots || !f.slots.some((s) => s.id === 'item_bomb')) scenarioFailures.push(`19_boss_fight: слот бомбы не найден (${JSON.stringify(f.slots)})`);
     await shoot(page, '19_boss_fight');

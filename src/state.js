@@ -528,11 +528,11 @@ export const ARTIFACTS = [
 // Активируемые предметы: расходники с временными бафами (30 сек остаток —
 // перезарядка повторной активации того же слота). bossUse — только в бою.
 export const ITEMS = [
-    { id: 'item_bomb',   name: 'Шахтёрская бомба',  desc: 'урон боссу x2 на 30 сек',    cost: { scrap: 4 },                effect: { bossMult: 2, durMs: 30e3 },    stackMax: 5,  bossUse: true },
-    { id: 'item_belt',   name: 'Динамитный пояс',   desc: 'добыча x3 на 3 минуты',      cost: { scrap: 6, crystal: 1 },    effect: { miningMult: 3, durMs: 180e3 }, stackMax: 5 },
-    { id: 'item_coffee', name: 'Кофе шахтёра',      desc: 'добыча x2 на 5 минут',       cost: { crystal: 2 },              effect: { miningMult: 2, durMs: 300e3 }, stackMax: 8 },
-    { id: 'item_ration', name: 'Сухпаёк',           desc: 'мгновенно 60 сек дохода',    cost: { scrap: 3 },                effect: { instantSec: 60 },              stackMax: 10 },
-    { id: 'item_stim',   name: 'Стимулятор жилы',   desc: 'каждый удар — жила на 2 мин',cost: { core: 1, crystal: 2 },     effect: { veinForce: true, durMs: 120e3 }, stackMax: 3 }
+    { id: 'item_bomb',   name: 'Шахтёрская бомба',  desc: 'урон боссу x2 на 30 сек',    cost: { scrap: 4 },                effect: { bossMult: 2, durMs: 30e3 },    stackMax: 5,  bossUse: true, priceSeconds: 60 },
+    { id: 'item_belt',   name: 'Динамитный пояс',   desc: 'добыча x3 на 3 минуты',      cost: { scrap: 6, crystal: 1 },    effect: { miningMult: 3, durMs: 180e3 }, stackMax: 5, priceSeconds: 90 },
+    { id: 'item_coffee', name: 'Кофе шахтёра',      desc: 'добыча x2 на 5 минут',       cost: { crystal: 2 },              effect: { miningMult: 2, durMs: 300e3 }, stackMax: 8, priceSeconds: 45 },
+    { id: 'item_ration', name: 'Сухпаёк',           desc: 'мгновенно 60 сек дохода',    cost: { scrap: 3 },                effect: { instantSec: 60 },              stackMax: 10, priceSeconds: 30 },
+    { id: 'item_stim',   name: 'Стимулятор жилы',   desc: 'каждый удар — жила на 2 мин',cost: { core: 1, crystal: 2 },     effect: { veinForce: true, durMs: 120e3 }, stackMax: 3, priceSeconds: 120 }
 ];
 
 // Крафт: result n — сколько единиц за крафт; craftMs=0 — мгновенный (расходник).
@@ -677,6 +677,30 @@ export function useItem(id, inBoss = false) {
         addOre(eff.instantSec * getEarningRate());
     }
     gameState.items[id] -= 1;
+    saveGame();
+    return true;
+}
+
+// Покупка предмета за руду: цена — снапшот полного дохода на момент покупки
+// (ceil(getEarningRate() * priceSeconds)), по прецеденту баунти босса —
+// снаряжение остаётся значимым на всех тирах.
+export function getItemPrice(id) {
+    const def = ITEMS.find((i) => i.id === id);
+    if (!def) return 0;
+    return Math.ceil(getEarningRate() * def.priceSeconds);
+}
+
+export function canBuyItem(id) {
+    const def = ITEMS.find((i) => i.id === id);
+    if (!def) return false;
+    return gameState.ore >= getItemPrice(id) && (gameState.items[id] || 0) < def.stackMax;
+}
+
+export function buyItem(id) {
+    if (!canBuyItem(id)) return false;
+    const def = ITEMS.find((i) => i.id === id);
+    gameState.ore -= getItemPrice(id);
+    gameState.items[id] = (gameState.items[id] || 0) + 1;
     saveGame();
     return true;
 }
