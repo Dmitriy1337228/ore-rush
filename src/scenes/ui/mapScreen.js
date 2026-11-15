@@ -2,9 +2,10 @@ import Phaser from 'phaser';
 import {
     gameState, TIERS, BOSSES, getBossRecord
 } from '../../state.js';
-import { addImgC, makeLabel, fitFontSize, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
+import { addImgC, makeLabel, fitFontSize, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
 import { MAP_NODE_H, MAP_HEAD, MAP_TAIL, MAP_R_TIER, MAP_R_BOSS } from '../../ui/listGeometry.js';
-import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE } from '../../ui/theme.js';
+import { createPanel } from '../../ui/panel.js';
+import { TEXT, DEPTH, REG, FONT_SIZE } from '../../ui/theme.js';
 
 export const mapScreenMethods = {
     buildMapScreen() {
@@ -18,16 +19,18 @@ export const mapScreenMethods = {
         });
 
         this.mapRoot = addModalContainer(this).setDepth(DEPTH.screen).setVisible(false);
-        this.mapPanel = addImgC(this, 0, 0, TEX.modalPanel, 760, 620);
+        this.mapWin = createPanel(this, {
+            w: 760, h: 620, title: 'Карта шахты', titleY: -246, titleSize: FONT_SIZE.display,
+            close: { x: 320, y: -238, onClose: () => this.closeMap() }
+        });
+        this.mapPanel = this.mapWin.panel;
+        this.mapTitle = this.mapWin.title;
+        this.mapClose = this.mapWin.close;
         // Фон-доска на внутренней зоне панели (растягивается в applyLayout):
         // ребёнок mapRoot сразу после панели — над металлом, под заголовком/
         // крестиком; узлы рисует mapCam ПОВЕРХ (камеры рендерятся после main)
         this.mapBoard = addImgC(this, 0, 0, 'map_board', 680, 464);
         this.mapBoard.setAlpha(0.9);
-        this.mapTitle = makeLabel(this, 0, -246, 'Карта шахты', FONT_SIZE.display, TEXT.cream).setOrigin(0.5);
-        this.mapClose = addImgC(this, 320, -238, TEX.closeButton, 44, 44);
-        setHitRect(this.mapClose, ...HIT.closeSquare);
-        this.mapClose.on('pointerdown', () => this.closeMap());
         this.mapRoot.add([this.mapPanel, this.mapBoard, this.mapTitle, this.mapClose]);
 
         // Контент — top-level контейнер (как listContent): вложенный в mapRoot
@@ -429,23 +432,24 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
         this.mapTitle.setFontSize(L.portrait ? FONT_SIZE.title : FONT_SIZE.display);
             this.mapClose.setPosition(mpw / 2 - 48, -mph / 2 + 72);
             this.mapClose.setDisplaySize(L.portrait ? 64 : 44, L.portrait ? 64 : 44);
-        const mvx = L.modal.cx - mpw / 2 + 40;
-        const mvw = mpw - 80;
-        const mvy = mcy - mph / 2 + 96;
-        const mvh = mph - 156;
-        this.mapCam.setViewport(mvx, mvy, mvw, mvh);
-        this._mapView = { x: mvx, y: mvy, w: mvw, h: mvh };
-        this.mapBoard.setPosition(mvx + mvw / 2 - L.modal.cx, mvy + mvh / 2 - mcy);
-        this.mapBoard.setDisplaySize(mvw, mvh);
+        // Внутренняя область врезки (contentRect): поля 40 по бокам, 96 сверху,
+        // 60 снизу — в контейнерных координатах, в мир переводит сдвиг на центр
+        const board = this.mapWin.contentRect({ left: 40, right: 40, top: 96, bottom: 60 });
+        const mvx = L.modal.cx + board.x;
+        const mvy = mcy + board.y;
+        this.mapCam.setViewport(mvx, mvy, board.w, board.h);
+        this._mapView = { x: mvx, y: mvy, w: board.w, h: board.h };
+        this.mapBoard.setPosition(board.x + board.w / 2, board.y + board.h / 2);
+        this.mapBoard.setDisplaySize(board.w, board.h);
         if (this.mapNodes && this._mapS !== s) {
             this._mapS = s;
             if (this._mapAnim) this.skipMapAnim();
             this.buildMapNodes();
         }
         this._mapHalfH = mph / 2;
-        this._mapMaxScroll = Math.max(0, this._mapContentH - mvh);
+        this._mapMaxScroll = Math.max(0, this._mapContentH - board.h);
         this.mapCam.scrollY = Phaser.Math.Clamp(this.mapCam.scrollY, 0, this._mapMaxScroll);
-        this._nodeCX = mvw / 2;
+        this._nodeCX = board.w / 2;
         for (const node of this.mapNodes) node.root.x = this._nodeCX;
         if (this.mapMiner) this.mapMiner.x = this._nodeCX + Math.round(-150 * s);
         // Смена ориентации без смены s (s=1.0): узлы не пересобираются, но cx

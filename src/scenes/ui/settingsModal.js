@@ -2,9 +2,10 @@ import Phaser from 'phaser';
 import {
     gameState, TIERS, getOfflineRate, getOfflineCapSeconds, canPrestige, getStarsGain, doPrestige, PRESTIGE_REQUIREMENT, getPrestigeMult, DIAMOND_INDEX, resetGame, saveGame, fmt
 } from '../../state.js';
-import { addImgC, makeLabel, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
+import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
-import { TEXT, DEPTH, TEX, HIT, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
+import { createPanel } from '../../ui/panel.js';
+import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
 
 export const settingsModalMethods = {
@@ -17,16 +18,15 @@ export const settingsModalMethods = {
 
         this.modal = addModalContainer(this).setDepth(DEPTH.screen).setVisible(false);
 
-        const panel = addImgC(this, 0, 0, TEX.modalPanel, pw, ph);
-        // Врезка панели (image): content y -261..249, x -216..216 (контейнерные координаты)
-        const title = makeLabel(this, 0, -232, 'Настройки', FONT_SIZE.display, TEXT.cream).setOrigin(0.5);
-
-        const cbW = 44;
+        // Врезка панели (image): content y -261..249, x -216..216 (контейнерные координаты).
         // Крестик в правом верхнем углу: заходит за врезку в зону рамки, не задевая заклёпку
-        const closeBtn = addImgC(this, pw / 2 - 60, -228, TEX.closeButton, cbW, cbW);
-        // Hit-area в координатах кадра текстуры (196x191)
-        setHitRect(closeBtn, ...HIT.closeSquare);
-        closeBtn.on('pointerdown', () => this.closeModal());
+        const win = createPanel(this, {
+            w: pw, h: ph, title: 'Настройки', titleY: -232, titleSize: FONT_SIZE.display,
+            close: { x: pw / 2 - 60, y: -228, onClose: () => this.closeModal() }
+        });
+        const panel = win.panel;
+        const title = win.title;
+        const closeBtn = win.close;
 
         this.modalStats = makeLabel(this, -pw / 2 + 56, -186, '', FONT_SIZE.body, TEXT.pale, { lineSpacing: 5 });
         this.modalStats.setOrigin(0, 0);

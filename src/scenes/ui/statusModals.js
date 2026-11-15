@@ -1,8 +1,9 @@
 import {
     gameState, TIERS, getUpgradeLevel, getOrePerSecond, getOfflineRate, OFFLINE_CAP_HOURS, fmt, fmtDuration, DAILY_REWARDS, COMPONENTS, ARTIFACTS
 } from '../../state.js';
-import { addImgC, makeLabel, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
+import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
+import { createPanel } from '../../ui/panel.js';
 import { TEXT, DEPTH, TEX, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 
 const OK_BUTTON = { w: 190, h: 46 };
@@ -15,8 +16,7 @@ function createAlertShell(scene, { w, h, title, titleY, titleColor = TEXT.cream,
         .setDepth(DEPTH.alertDim).setVisible(false).setInteractive();
     dim.on('pointerdown', (pointer, lx, ly, event) => event.stopPropagation());
     const modal = addModalContainer(scene).setDepth(DEPTH.alert).setVisible(false);
-    const panel = addImgC(scene, 0, 0, TEX.modalPanel, w, h);
-    const titleLabel = makeLabel(scene, 0, titleY, title, FONT_SIZE.title, titleColor).setOrigin(0.5);
+    const win = createPanel(scene, { w, h, title, titleY, titleSize: FONT_SIZE.title, titleColor });
     return {
         dim,
         modal,
@@ -28,7 +28,7 @@ function createAlertShell(scene, { w, h, title, titleY, titleColor = TEXT.cream,
                 fitMaxW: OK_BUTTON.w - SPACE.lg * 2
             });
             ok.bg.on('pointerdown', onOk);
-            modal.add([panel, titleLabel, ...extras, ok.bg, ok.label, ...after]);
+            modal.add([win.panel, win.title, ...extras, ok.bg, ok.label, ...after]);
         }
     };
 }

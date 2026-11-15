@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import {
     gameState, fmt, BOSSES, COMPONENTS, ARTIFACTS, ITEMS, CRAFT_RECIPES, useItem, canCraft, startCraft, canClaimCraft, claimCraft, getItemPrice, buyItem
 } from '../../state.js';
-import { FONT, addImg, addImgC, makeLabel, fitFontSize, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
+import { FONT, addImg, makeLabel, fitFontSize, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
+import { createPanel } from '../../ui/panel.js';
 import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
 
@@ -17,11 +18,13 @@ export const craftScreenMethods = {
         });
 
         this.craftRoot = addModalContainer(this).setDepth(DEPTH.screen).setVisible(false);
-        this.craftPanel = addImgC(this, 0, 0, TEX.modalPanel, 560, 600);
-        this.craftTitle = makeLabel(this, 0, -232, 'Мастерская', FONT_SIZE.display, TEXT.cream).setOrigin(0.5);
-        this.craftClose = addImgC(this, 220, -228, TEX.closeButton, 44, 44);
-        setHitRect(this.craftClose, ...HIT.closeSquare);
-        this.craftClose.on('pointerdown', () => this.closeCraft());
+        this.craftWin = createPanel(this, {
+            w: 560, h: 600, title: 'Мастерская', titleY: -232, titleSize: FONT_SIZE.display,
+            close: { x: 220, y: -228, onClose: () => this.closeCraft() }
+        });
+        this.craftPanel = this.craftWin.panel;
+        this.craftTitle = this.craftWin.title;
+        this.craftClose = this.craftWin.close;
         this.craftRoot.add([this.craftPanel, this.craftTitle, this.craftClose]);
 
         // Шапка (фиксированная, не скроллится): 5 компонентов — иконка + счётчик.
@@ -895,15 +898,18 @@ export const craftScreenMethods = {
             }
             if (this.craftHeader) this.craftHeader.setPosition(0, -cph / 2 + 108);
         }
-        const cvx = L.modal.cx - cpw / 2 + 40;
-        const cvw = cpw - 80;
         // Зазор под подсказку шапки («компоненты падают с боссов…»): подсказка
         // опускается на 26*k ниже заголовка, и при s>1 «Активируемые» печатались
         // поверх неё (скриншот портрета). В портрете подсказка ДВУХСТРОЧНАЯ
         // (24px) — вторая строка добавляет свою высоту к зазору
-        const headerExtra = L.portrait ? 118 : Math.max(0, Math.round(26 * Math.min(s, 1.6)) + Math.ceil(Math.max(10, Math.round(12 * Math.min(s, 1.35))) / 2) - 10);
-        const cvy = ccy - cph / 2 + 128 + headerExtra;
-        const cvh = cph - 188 - headerExtra;
+        const headerExtra = L.portrait ? 118 : Math.max(0, Math.round(26 * Math.min(s, 1.6)) + Math.ceil(Math.max(10, Math.round(FONT_SIZE.caption * Math.min(s, 1.35))) / 2) - 10);
+        // Внутренняя область врезки (contentRect): поля 40 по бокам, шапка
+        // сверху (128 + зазор под подсказку), 60 снизу
+        const view = this.craftWin.contentRect({ left: 40, right: 40, top: 128 + headerExtra, bottom: 60 });
+        const cvx = L.modal.cx + view.x;
+        const cvw = view.w;
+        const cvy = ccy + view.y;
+        const cvh = view.h;
         this.craftCam.setViewport(cvx, cvy, cvw, cvh);
         this._craftView = { x: cvx, y: cvy, w: cvw, h: cvh };
         if (this.craftContent && (this._craftRowsW !== cvw || this._craftRowsS !== s)) {
