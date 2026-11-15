@@ -19,6 +19,7 @@ const {
     getArtifactBonus, getItemBuffMult, isItemVeinActive, getBossDamageMult,
     rollClickGain, rollBossHit, grantBossKill, addOre,
     bossSpeedMult, updateBossRecord, getBossRecord, BOSS_SPEED_TIERS, BOSS_SPEED_SLOW,
+    getPlayerMaxHp, bossAttackPower, PLAYER_BASE_HP, PLAYER_HP_PER_HELMET, UPGRADES, TIER_INCOME_MULT,
     canCraft, startCraft, canClaimCraft, claimCraft, useItem,
     updateBossFight, clearBossFight, saveGame,
     getClickDamage, getOrePerSecond, getExpectedClickGain, getEarningRate,
@@ -479,6 +480,33 @@ function saveGameToString() {
     gameState.bestBossTimes.boss_copper = 42;
     doPrestige();
     check('скорость: рекорды переживают престиж', getBossRecord('boss_copper') === 42);
+
+    // Опасность боссов: каска/HP/удар
+    check('каска: каталог — equipment, кап 25, эффект HP', (() => {
+        const h = UPGRADES.find((u) => u.id === 'helmet');
+        return !!h && h.tab === 'equipment' && h.maxLevel === 25 && /HP/i.test(h.effect);
+    })());
+    resetGame();
+    check('живучесть: база 3000 + 2000/ур. каски, x3^тир',
+        getPlayerMaxHp() === 3000 * TIER_INCOME_MULT(gameState.tier));
+    gameState.levels.helmet = 5;
+    check('живучесть: каска 5 -> +10000 к базе',
+        getPlayerMaxHp() === (3000 + 2000 * 5) * TIER_INCOME_MULT(gameState.tier));
+    const copperDef = BOSSES.find((b) => b.id === 'boss_copper');
+    check('удар босса: 0.4% от полного HP босса',
+        bossAttackPower(copperDef) === Math.ceil(bossHpFor(copperDef) * 0.004) && bossAttackPower(copperDef) === 300);
+    // сейв: playerHp в bossFight валидируется (кламп к живучести)
+    gameState.levels.helmet = 3;
+    const maxPl = getPlayerMaxHp();
+    gameState.bossFight = { bossId: 'boss_copper', hp: 50000, playerHp: maxPl + 1000, elapsedMs: 1000 };
+    const dangerSave = JSON.parse(JSON.stringify(gameState));
+    applySave(dangerSave);
+    check('сейв: playerHp клампится к живучести (F5 не даёт бессмертия)',
+        gameState.bossFight && gameState.bossFight.playerHp === maxPl);
+    gameState.bossFight = { bossId: 'boss_copper', hp: 50000, playerHp: 0, elapsedMs: 1000 };
+    applySave(JSON.parse(JSON.stringify(gameState)));
+    check('сейв: playerHp 0 поднимается до 1 (бой продолжается, не камикадзе)',
+        gameState.bossFight && gameState.bossFight.playerHp === 1);
     restoreClock();
 }
 

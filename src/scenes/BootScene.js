@@ -38,7 +38,7 @@ const IMAGES = [
     'icon_robot_arm', 'icon_lantern', 'icon_warehouse',
     'icon_hydraulic', 'icon_plasma', 'icon_disintegrator',
     'icon_quarry', 'icon_megafactory', 'icon_orbital', 'icon_quantumlab',
-    'icon_wormhole', 'icon_singularity', 'icon_dyson', 'icon_aicore',
+    'icon_wormhole', 'icon_singularity', 'icon_dyson', 'icon_aicore', 'icon_helmet',
     'icon_focuslens', 'icon_magnet',
 
     // Кнопки (чистые, подписи рендерим движком)
@@ -65,6 +65,7 @@ const IMAGES = [
 
     // Активируемые предметы
     'item_bomb', 'item_belt', 'item_coffee', 'item_ration', 'item_stim',
+    'item_rig', 'item_oil',
 
     // Артефакты (коллекция)
     'art_miner_totem', 'art_lantern_old', 'art_magnet_ring', 'art_lucky_charm', 'art_glove',

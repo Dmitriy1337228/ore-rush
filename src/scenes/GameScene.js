@@ -1,11 +1,12 @@
-import Phaser from 'phaser';
+﻿import Phaser from 'phaser';
 import {
     gameState, TIERS, rollClickGain, addOre, getOrePerSecond, getAutoClicksPerSecond,
     saveGame, loadGame, saveLastExit, readLastExit, computeOfflineReward, fmt,
     MUTATIONS, MUTATION_DURATION_MS, MUTATION_CHECK_MS, MUTATION_CHANCE, getMutationBreakBonus,
     canClaimDaily, claimDailyReward,
     BOSSES, ITEMS, BOSS_FIGHT_SECONDS, bossHpFor, rollBossHit, grantBossKill, useItem,
-    getItemPrice, buyItem, updateBossFight, clearBossFight, getRigBuffMult
+    getItemPrice, buyItem, updateBossFight, clearBossFight, getRigBuffMult,
+    getPlayerMaxHp, bossAttackPower, BOSS_ATTACK_PERIOD_MS, BOSS_ATTACK_WINDUP_MS
 } from '../state.js';
 import { YandexSDKStub } from '../sdk-stub.js';
 import { computeLayout } from '../layout.js';
@@ -488,6 +489,10 @@ export class GameScene extends Phaser.Scene {
         this.events.on('shutdown', () => {
             saveGame();
             if (this.boss) this.stopBossBgm();
+            if (this._windupTween) {
+                this._windupTween.stop();
+                this._windupTween = null;
+            }
             this.destroyBossOverlay();
             this.boss = null;
             this.registry.set('bossActive', false);
@@ -691,10 +696,11 @@ export class GameScene extends Phaser.Scene {
     // ---------- Боссы (кликер-испытание вместо блока) ----------
 
     // Бой: блок прячется (стадия сохраняется для возврата), на его месте босс с HP.
-    // Лимита времени и ретрита нет — бой до победы (retreatBoss остался только для
-    // shutdown/DevPanel). Ручные клики по спрайту и робо-рука наносят rollBossHit,
-    // пассив работает как обычно. HP и время боя персистятся в сейве (bossFight):
-    // перезагрузка страницы продолжает бой, а не отменяет его.
+    // Лимита времени и ретрита нет — бой до победы ИЛИ до вырубания шахтёра:
+    // босс бьёт каждые BOSS_ATTACK_PERIOD_MS (замах BOSS_ATTACK_WINDUP_MS —
+    // телеграф), смерть = принудительный откат в шахту без награды, босс
+    // с��расывается. Готовность к бою: каска (HP) и снаряжение (убить быстрее).
+    // HP босса/шахтёра и время персистятся в сейве (bossFight): F5 продолжает бой.
     startBossFight(bossId, restore = null) {
         if (this.boss || this.registry.get('blockLocked')) return;
         const def = BOSSES.find((b) => b.id === bossId);
@@ -702,8 +708,11 @@ export class GameScene extends Phaser.Scene {
         const maxHp = bossHpFor(def);
         const hp = restore ? Math.min(Math.max(1, Math.ceil(restore.hp)), maxHp) : maxHp;
         const elapsedMs = restore ? Math.max(0, Math.floor(restore.elapsedMs) || 0) : 0;
-        this.boss = { def, hp, maxHp, busy: false, startedAt: this.time.now - elapsedMs, endsAt: this.time.now + BOSS_FIGHT_SECONDS * 1000 };
-        gameState.bossFight = { bossId: def.id, hp: Math.ceil(hp), elapsedMs };
+        // Живучесть шахтёра: полная при входе, из сейва при продолжении (F5)
+        const maxPlayer = getPlayerMaxHp();
+        const playerHp = restore ? Math.min(Math.max(1, Math.ceil(restore.playerHp) || maxPlayer), maxPlayer) : maxPlayer;
+        this.boss = { def, hp, maxHp, busy: false, startedAt: this.time.now - elapsedMs, endsAt: this.time.now + BOSS_FIGHT_SECONDS * 1000, playerHp, maxPlayer, nextAttackAt: this.time.now + BOSS_ATTACK_PERIOD_MS, attacking: false };
+        gameState.bossFight = { bossId: def.id, hp: Math.ceil(hp), playerHp, elapsedMs };
         // Зомби-цепочки разрушения гасим так же, как buildBlock: снятие твинов и
         // таймера заживления + смена поколения блока (иначе отложенный delayedCall
         // восстановил бы busy/текстуру уже под боссом)
@@ -764,16 +773,22 @@ export class GameScene extends Phaser.Scene {
         this.bossSprite = sprite;
 
         this.bossBar = this.add.graphics();
+        // Полоса живучести шахтёра — под баром босса (цвет другой, чтобы читались
+        // обе: босс зелёно-красный, шахтёр оранжевый)
+        this.playerBar = this.add.graphics();
+        this.playerHpText = makeLabel(this, bx, by - 128, '', 11, '#ffb38a').setOrigin(0.5);
         this.bossName = makeLabel(this, bx, by - 212, this.boss.def.name, 20, '#ffd75e').setOrigin(0.5);
         this.bossHpText = makeLabel(this, bx, by - 180, '', 13, '#ffffff').setOrigin(0.5);
         this.bossTime = makeLabel(this, bx, by - 146, '0:00', 16, '#ffe9b0').setOrigin(0.5);
 
-        this.bossUi.add([sprite, this.bossBar, this.bossName, this.bossHpText, this.bossTime]);
+        this.bossUi.add([sprite, this.bossBar, this.playerBar, this.playerHpText, this.bossName, this.bossHpText, this.bossTime]);
 
         this.bossItems = [];
         const usable = ITEMS.filter((it) => it.bossUse);
+        // Шаг слотов 110: пустой слот «купить N» шире активного (100 vs 84) —
+        // при шаге 92 широкие кнопки наезжали друг на друга (скриншот игрока)
         usable.forEach((it, i) => {
-            const cx = bx + (i - (usable.length - 1) / 2) * 92;
+            const cx = bx + (i - (usable.length - 1) / 2) * 110;
             const btn = this.add.image(cx, by + 172, 'buy_button_normal').setDisplaySize(84, 44);
             btn.setInteractive(new Phaser.Geom.Rectangle(0, 0, 267, 133), Phaser.Geom.Rectangle.Contains);
             const icon = this.add.image(cx - 20, by + 172, it.id).setDisplaySize(26, 26);
@@ -828,6 +843,69 @@ export class GameScene extends Phaser.Scene {
         g.fillStyle(Phaser.Display.Color.GetColor(r, gr, b), 1);
         g.fillRect(x + 2, y + 2, Math.max(0, 336 * frac), 16);
         this.bossHpText.setText(`${fmt(Math.max(0, Math.ceil(this.boss.hp)))} / ${fmt(this.boss.maxHp)}`);
+        this.drawPlayerBar();
+    }
+
+    // Полоса живучести шахтёра: оранжевая, под баром босса; подпись HP справа
+    drawPlayerBar() {
+        if (!this.boss || !this.playerBar) return;
+        const g = this.playerBar;
+        const x = this.blockX - 170, y = (this._bossBy || this.blockY) - 166;
+        g.clear();
+        g.fillStyle(0x1a1c1f, 1);
+        g.fillRect(x, y, 340, 12);
+        const frac = Math.max(0, Math.min(1, this.boss.playerHp / this.boss.maxPlayer));
+        g.fillStyle(0xff8a4a, 1);
+        g.fillRect(x + 2, y + 2, Math.max(0, 336 * frac), 8);
+        this.playerHpText.setText(`ты: ${fmt(Math.max(0, Math.ceil(this.boss.playerHp)))} / ${fmt(this.boss.maxPlayer)} · удар босса ${fmt(bossAttackPower(this.boss.def))}`);
+    }
+
+    // Удар босса по шахтёру: смена цвета спрайта и дрожь уже отыграны замахом.
+    // Урон фиксированный (bossAttackPower), красная вспышка + тряска камеры,
+    // флоат у полосы шахтёра. HP <= 0 -> bossDown.
+    bossStrike() {
+        const b = this.boss;
+        if (!b || b.busy) return;
+        const dmg = bossAttackPower(b.def);
+        b.playerHp = Math.max(0, b.playerHp - dmg);
+        if (this._windupTween) {
+            this._windupTween.stop();
+            this._windupTween = null;
+        }
+        this.bossSprite.clearTint();
+        this.bossSprite.x = this.blockX;
+        this.boss.nextAttackAt += BOSS_ATTACK_PERIOD_MS;
+        b.attacking = false;
+        playSfx(this, 'boss_hit', 3, 1, 0.55);
+        this.cameras.main.shake(180, 0.006);
+        const flash = this.add.rectangle(this.blockX, this._bossBy || this.blockY, 1280, 720, 0xff3b3b, 0).setDepth(29);
+        this.tweens.add({ targets: flash, alpha: { from: 0.22, to: 0 }, duration: 280, onComplete: () => flash.destroy() });
+        const float = makeLabel(this, this.blockX, (this._bossBy || this.blockY) - 120, `-${fmt(dmg)}`, 24, '#ff7a6a');
+        float.setOrigin(0.5).setDepth(28);
+        this.tweens.add({ targets: float, y: float.y - 45, alpha: 0, duration: 700, ease: 'Cubic.easeOut', onComplete: () => float.destroy() });
+        this.drawPlayerBar();
+        if (b.playerHp <= 0) this.bossDown(b);
+    }
+
+    // Шахтёр вырублен: принудительный откат в шахту. Босс сбрасывается,
+    // награды нет, боевые бафы гасятся — смысл: копи руду, прокачай каску и
+    // снаряжение, возвращайся сильнее.
+    bossDown(b) {
+        if (!b) return;
+        b.busy = true;
+        clearBossFight();
+        this.destroyBossOverlay();
+        this.boss = null;
+        this.registry.set('bossActive', false);
+        this.stopBossBgm();
+        // Боевые бафы не живут вне боя (смерть — это конец боя)
+        gameState.bossBuffUntil = 0;
+        gameState.rigBuffUntil = 0;
+        gameState.oilBuffUntil = 0;
+        this.block.setVisible(true).setInteractive({ useHandCursor: true });
+        this.game.events.emit('boss-changed');
+        this.game.events.emit('player-down', { bossName: b.def.name, dmg: bossAttackPower(b.def), maxPlayer: getPlayerMaxHp() });
+        saveGame();
     }
 
     // Слоты предметов в бою, три состояния: активный баф (иконка + таймер —
@@ -867,13 +945,13 @@ export class GameScene extends Phaser.Scene {
                 const key = `b${price}|${gameState.ore >= price ? 'n' : 'g'}`;
                 if (slot._key === key) continue;
                 slot._key = key;
-                slot.btn.setDisplaySize(132, 44).setTexture(gameState.ore >= price ? 'buy_button_normal' : 'buy_button_disabled_gray').setAlpha(1);
+                slot.btn.setDisplaySize(100, 44).setTexture(gameState.ore >= price ? 'buy_button_normal' : 'buy_button_disabled_gray').setAlpha(1);
                 slot.icon.setVisible(false);
                 slot.cnt.setVisible(false);
                 slot.buyLbl.setVisible(true).setText(`купить ${fmt(price)}`);
                 let size = 11;
                 slot.buyLbl.setFontSize(size);
-                while (size > 8 && slot.buyLbl.width > 120) {
+                while (size > 8 && slot.buyLbl.width > 88) {
                     size -= 1;
                     slot.buyLbl.setFontSize(size);
                 }
@@ -955,6 +1033,11 @@ export class GameScene extends Phaser.Scene {
         const b = this.boss;
         if (!b || b.busy) return;
         b.busy = true;
+        if (this._windupTween) {
+            this._windupTween.stop();
+            this._windupTween = null;
+        }
+        this.bossSprite.clearTint();
         this.destroyBossOverlay();
         this.boss = null;
         this.registry.set('bossActive', false);
@@ -1050,9 +1133,9 @@ export class GameScene extends Phaser.Scene {
         if (this.boss && this.bossTime) {
             const secs = Math.max(0, Math.floor((this.time.now - this.boss.startedAt) / 1000));
             this.bossTime.setText(`${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`);
-            // Персист боя: HP/время в состоянии; сейв не чаще раза в 3 с
+            // Персист боя: HP босса/шахтёра и время в состоянии; сейв не чаще раза в 3 с
             // (клики по боссу частые — localStorage на каждый удар недопустим)
-            updateBossFight(this.boss.hp, this.time.now - this.boss.startedAt);
+            updateBossFight(this.boss.hp, this.time.now - this.boss.startedAt, this.boss.playerHp);
             if (this.time.now >= this._bossSaveAt) {
                 this._bossSaveAt = this.time.now + 3000;
                 saveGame();
@@ -1060,6 +1143,27 @@ export class GameScene extends Phaser.Scene {
             // Таймеры боевых слотов тикают и без кликов игрока (любой из трёх бафов)
             if (Date.now() < gameState.bossBuffUntil || Date.now() < gameState.rigBuffUntil
                 || Date.now() < gameState.oilBuffUntil) this.refreshBossItems();
+            // Цикл атак босса: замах (телеграф) -> удар по шахтёру. Смерть шахтёра =
+            // принудительный откат в шахту (bossDown) — смысл готовиться к бою.
+            const now = this.time.now;
+            const b = this.boss;
+            if (!b.busy) {
+                if (!b.attacking && now >= b.nextAttackAt - BOSS_ATTACK_WINDUP_MS) {
+                    b.attacking = true;
+                    // Телеграф: красный тинт + горизонтальная дрожь спрайта
+                    this.bossSprite.setTint(0xff5a5a);
+                    this._windupTween = this.tweens.add({
+                        targets: this.bossSprite,
+                        x: this.blockX - 6,
+                        duration: 55,
+                        yoyo: true,
+                        repeat: Math.ceil(BOSS_ATTACK_WINDUP_MS / 55) - 1
+                    });
+                }
+                if (b.attacking && now >= b.nextAttackAt) {
+                    this.bossStrike();
+                }
+            }
         }
         if (!this.mutation) return;
         const remaining = this.mutation.endsAt - this.time.now;
@@ -1091,3 +1195,5 @@ export class GameScene extends Phaser.Scene {
         this.game.events.emit('ui-refresh');
     }
 }
+
+

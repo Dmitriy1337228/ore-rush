@@ -618,9 +618,11 @@ const parseElapsed = (t) => {
         const sprite0 = await gsOf('({ x: gs.bossSprite.x, y: gs.bossSprite.y })');
         await page.mouse.click(sprite0.x, sprite0.y);
         await page.waitForTimeout(400);
-        const beforeReload = await gsOf('({ hp: gs.boss.hp, maxHp: gs.boss.maxHp, elapsed: Math.floor((gs.time.now - gs.boss.startedAt) / 1000) })');
+        const beforeReload = await gsOf('({ hp: gs.boss.hp, maxHp: gs.boss.maxHp, elapsed: Math.floor((gs.time.now - gs.boss.startedAt) / 1000), playerHp: gs.boss.playerHp, maxPlayer: gs.boss.maxPlayer })');
         check('G6: урон засчитан до перезагрузки', beforeReload.hp < beforeReload.maxHp, JSON.stringify(beforeReload));
         await state('m.saveGame()'); // форсируем персист вне троттлинга 3с
+        // playerHp читаем В МОМЕНТ сейва: удар босса между замерами снял бы 300
+        const savedPlayerHp = await state('m.gameState.bossFight.playerHp');
         await page.waitForTimeout(200);
         // F5 = перезагрузка с ТЕКУЩИМ сейвом: читаем его из localStorage и
         // открываем новую страницу с ним (addInitScript исходной страницы при
@@ -629,10 +631,12 @@ const parseElapsed = (t) => {
         await page.close();
         const p2 = await newPage(savedJson, { width: 1280, height: 720 });
         await p2.page.waitForTimeout(1000);
-        const restored = await p2.gsOf('({ alive: !!gs.boss, hp: gs.boss && gs.boss.hp, maxHp: gs.boss && gs.boss.maxHp, active: gs.registry.get("bossActive"), blockHidden: !gs.block.visible, time: gs.bossTime && gs.bossTime.text })');
-        check('G7: F5 продолжает бой (босс жив, HP восстановлен)',
-            restored.alive && restored.active && restored.blockHidden && Math.abs(restored.hp - beforeReload.hp) <= 1 && restored.maxHp === beforeReload.maxHp,
-            JSON.stringify({ restored, beforeReload }));
+        const restored = await p2.gsOf('({ alive: !!gs.boss, hp: gs.boss && gs.boss.hp, maxHp: gs.boss && gs.boss.maxHp, active: gs.registry.get("bossActive"), blockHidden: !gs.block.visible, time: gs.bossTime && gs.bossTime.text, playerHp: gs.boss && gs.boss.playerHp })');
+        check('G7: F5 продолжает бой (босс жив, HP и живучесть восстановлены)',
+            restored.alive && restored.active && restored.blockHidden && Math.abs(restored.hp - beforeReload.hp) <= 1 && restored.maxHp === beforeReload.maxHp
+            // playerHp мог пережить 1 удар босса за время загрузки страницы
+            && restored.playerHp <= savedPlayerHp && savedPlayerHp - restored.playerHp <= 600,
+            JSON.stringify({ restored, beforeReload, savedPlayerHp }));
         check('G8: счётчик времени продолжается с сохранённого', parseElapsed(restored.time) >= beforeReload.elapsed - 1, restored.time);
 
         // После продолжения боя убийство чистит персист-запись
@@ -695,6 +699,65 @@ const parseElapsed = (t) => {
             critProbe.noBuff === false && critProbe.withBuff === true, JSON.stringify(critProbe));
         await page.evaluate(() => window.__GAME.scene.getScene('GameScene').retreatBoss());
         await page.waitForTimeout(600);
+        await page.close();
+    }
+
+    // ---------- Страница 6: опасность босса — атаки/смерть/каска ----------
+    {
+        const { page, state, gsOf, ptOf } = await newPage(mkSave({ items: { item_bomb: 1 } }), { width: 1280, height: 720 });
+        const ATK = await state('({ dmg: m.bossAttackPower(m.BOSSES.find((b) => b.id === "boss_copper")), period: m.BOSS_ATTACK_PERIOD_MS, windup: m.BOSS_ATTACK_WINDUP_MS })');
+        await page.evaluate(() => window.__GAME.scene.getScene('GameScene').startBossFight('boss_copper'));
+        await page.waitForTimeout(300);
+        // Живучесть без каски: (3000 + 0) x 3^1 = 9000; удар босса = 0.4% x 75000 = 300
+        const bar = await gsOf('({ text: gs.playerHpText && gs.playerHpText.text, playerHp: gs.boss.playerHp, maxPlayer: gs.boss.maxPlayer })');
+        check('J1: полоса шахтёра полна (9000/9000, удар 300)',
+            bar.playerHp === 9000 && bar.maxPlayer === 9000 && ATK.dmg === 300 && /ты: 9000 \/ 9000/.test(bar.text || ''), JSON.stringify({ bar, dmg: ATK.dmg }));
+
+        // Замах: перед ударом спрайт краснеет (телеграф)
+        const windupWait = await gsOf(`Math.max(0, gs.boss.nextAttackAt - gs.time.now - ${ATK.windup})`);
+        await page.waitForTimeout(windupWait + 120);
+        const tint = await gsOf('gs.bossSprite.tintTopLeft');
+        check('J2: замах — телеграф красным тинтом', tint === 0xff5a5a, `tint=${tint}`);
+
+        // Первый удар: урон ровно 300 (детерминированный — без random)
+        const strikeWait = await gsOf('Math.max(0, gs.boss.nextAttackAt - gs.time.now)');
+        await page.waitForTimeout(strikeWait + 250);
+        const after1 = await gsOf('({ playerHp: gs.boss.playerHp, tint: gs.bossSprite.tintTopLeft })');
+        check('J3: удар босса снял ровно 300 HP, тинт снят',
+            after1.playerHp === 9000 - ATK.dmg && after1.tint === 0xffffff, JSON.stringify({ after1, dmg: ATK.dmg }));
+        // Второй удар через период
+        const strikeWait2 = await gsOf('Math.max(0, gs.boss.nextAttackAt - gs.time.now)');
+        await page.waitForTimeout(strikeWait2 + 250);
+        const after2 = await gsOf('gs.boss.playerHp');
+        check('J4: периодичность атак — 2.5 c между ударами', after2 === 9000 - 2 * ATK.dmg, String(after2));
+
+        // Смерть: почти ноль HP -> следующий удар вырубает -> принудительный откат
+        await state('(() => { m.gameState.bossFight.playerHp = 250; if (window.__GAME.scene.getScene("GameScene").boss) window.__GAME.scene.getScene("GameScene").boss.playerHp = 250; })()');
+        const strikeWait3 = await gsOf('Math.max(0, gs.boss.nextAttackAt - gs.time.now)');
+        await page.waitForTimeout(strikeWait3 + 400);
+        const downGame = await gsOf(`(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return {
+                modal: ui.playerDownModal.visible,
+                body: ui.playerDownBody.text,
+                bossGone: !gs.boss,
+                active: gs.registry.get('bossActive'),
+                blockBack: gs.block.visible,
+                noReward: !ui.bossRewardModal.visible
+            };
+        })()`);
+        const downState = await state('({ fightCleared: m.gameState.bossFight === null, buffsCleared: m.gameState.bossBuffUntil === 0 })');
+        check('J5: смерть = модалка вырубания, босс сброшен, награды нет',
+            downGame.modal && downGame.bossGone && !downGame.active && downGame.blockBack && downState.fightCleared && downGame.noReward && downState.buffsCleared,
+            JSON.stringify({ downGame, downState }));
+        check('J6: в модалке подсказка «Каска» и удар босса',
+            /отбросил тебя/.test(downGame.body) && /Каску/.test(downGame.body), downGame.body);
+        const downBtn = await ptOf('({ x: ui.playerDownModal.x, y: ui.playerDownModal.y + 108 })');
+        await page.mouse.click(downBtn.x, downBtn.y);
+        await page.waitForTimeout(400);
+        const closed = await ptOf('({ open: ui.playerDownModal.visible })');
+        const closedActive = await gsOf('gs.registry.get("bossActive")');
+        check('J7: «В шахту» закрывает окно', !closed.open && !closedActive, JSON.stringify({ open: closed.open, active: closedActive }));
         await page.close();
     }
 

@@ -1332,6 +1332,13 @@
                        "label":  "item_oil",
                        "file":  "assets/ui/item_oil.png",
                        "group":  "items"
+                   },
+                   {
+                       "asset_id":  "0d62dbb2-f3bf-49ca-a779-2d1313349aaf",
+                       "sha12":  "6fa59574d4af",
+                       "label":  "icon_helmet",
+                       "file":  "assets/ui/icon_helmet.png",
+                       "group":  "icons"
                    }
                ]
 }

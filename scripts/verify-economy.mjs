@@ -140,7 +140,7 @@ check('цена при нулевом доходе = UNLOCK_FLOOR', computeNextU
 {
     const init = createInitialState();
     check('tierEarned длины 12', init.tierEarned.length === 12 && init.tierEarned.every(v => v === 0));
-    check('в новом состоянии 26 улучшений', Object.keys(init.levels).length === 26, `получено ${Object.keys(init.levels).length}`);
+    check('в новом состоянии 27 улучшений', Object.keys(init.levels).length === 27, `получено ${Object.keys(init.levels).length}`);
     check('в новом состоянии якорь = 0', init.tierAnchorRate === 0);
 }
 

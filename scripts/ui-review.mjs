@@ -1,4 +1,4 @@
-// UI review runner (по воркфлоу web-design-reviewer): снимает состояние игры
+﻿// UI review runner (по воркфлоу web-design-reviewer): снимает состояние игры
 // в разных сценариях. Запуск: node scripts/ui-review.mjs — dev-сервер поднимается
 // сам и гасится после проверки (если порт уже занят, подключается к чужому).
 import { chromium } from 'playwright';
@@ -502,30 +502,34 @@ const V5_SEED = JSON.stringify({
     // Геометрия секции «Снаряжение» (пойманный скриншотом игрока наезд текстов
     // и кнопок при addNine-карточке 10px + setDisplaySize): карточка на ширину
     // вьюпорта, тексты не вылезают за кнопки, кнопки в нижнем ряду без наезда
-    const g = await page.evaluate(() => {
-        const ui = window.__GAME.scene.getScene('UIScene');
-        const r = ui.gearRows && ui.gearRows[0];
-        if (!r) return null;
-        const c = (o) => ({ x: o.x, y: o.y, w: o.displayWidth, h: o.displayHeight, right: o.x + o.displayWidth / 2, bottom: o.y + o.displayHeight / 2, top: o.y - o.displayHeight / 2, left: o.x - o.displayWidth / 2 });
-        return {
-            card: c(r.card),
-            name: { left: r.name.x, right: r.name.x + r.name.width },
-            stock: { left: r.stock.x - r.stock.width },
-            desc: { bottom: r.desc.y + r.desc.height },
-            buy: { ...c(r.buyBtn), lbl: r.buyLbl.text },
-            use: c(r.useBtn),
-            icon: c(r.icon),
-            vw: { x: ui.L.viewport.x, w: ui.L.viewport.w },
-            // HUD: статы не наезжают на «Карта», звёзды (под баром справа) — на строку бафов
-            statsRight: Math.round(ui.statsLine.x + ui.statsLine.width),
-            statsX: Math.round(ui.statsLine.x),
-            statsSize: ui.statsLine.style ? ui.statsLine.style.fontSize : null,
-            statsText: ui.statsLine.text,
-            mapBtnLeft: Math.round(ui.L.hud.mapBtn.x),
-            starsLeft: Math.round(ui.starsText.x - ui.starsText.width),
-            buffRight: Math.round(ui.buffLine.x + ui.buffLine.width)
-        };
-    })
+        const g = await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const gs = window.__GAME.scene.getScene('GameScene');
+            const r = ui.gearRows && ui.gearRows[0];
+            if (!r) return null;
+            const c = (o) => ({ x: o.x, y: o.y, w: o.displayWidth, h: o.displayHeight, right: o.x + o.displayWidth / 2, bottom: o.y + o.displayHeight / 2, top: o.y - o.displayHeight / 2, left: o.x - o.displayWidth / 2 });
+            return {
+                card: r._geom || { x: 0, y: 0, w: 0, h: 0 },
+                name: { left: r.name.x, right: r.name.x + r.name.width },
+                stock: { left: r.stock.x - r.stock.width },
+                desc: { bottom: r.desc.y + r.desc.height },
+                buy: { ...c(r.buyBtn), lbl: r.buyLbl.text },
+                use: c(r.useBtn),
+                icon: c(r.icon),
+                vw: { x: ui.L.viewport.x, w: ui.L.viewport.w },
+                // HUD: статы не наезжают на «Карта», звёзды (под баром справа) — на строку бафов
+                statsRight: Math.round(ui.statsLine.x + ui.statsLine.width),
+                statsX: Math.round(ui.statsLine.x),
+                statsSize: ui.statsLine.style ? ui.statsLine.style.fontSize : null,
+                statsText: ui.statsLine.text,
+                mapBtnLeft: Math.round(ui.L.hud.mapBtn.x),
+                starsLeft: Math.round(ui.starsText.x - ui.starsText.width),
+                buffRight: Math.round(ui.buffLine.x + ui.buffLine.width),
+                // Полоса живучести шахтёра — ОБЪЕКТ GameScene (не UIScene)
+                playerBarText: gs.playerHpText ? gs.playerHpText.text : null,
+                playerBarVis: gs.playerBar ? gs.playerBar.visible : false
+            };
+        })
     if (!g) {
         scenarioFailures.push('19_boss_fight: секция «Снаряжение» не построена');
     } else {
@@ -533,7 +537,9 @@ const V5_SEED = JSON.stringify({
             scenarioFailures.push(`19_boss_fight: статы HUD наезжают на «Карта» (${JSON.stringify({ statsRight: g.statsRight, statsX: g.statsX, statsSize: g.statsSize, statsText: g.statsText, mapBtnLeft: g.mapBtnLeft })})`);
         if (g.buffRight > 0 && g.starsLeft - g.buffRight < 12)
             scenarioFailures.push(`19_boss_fight: звёзды наезжают на строку бафов (${JSON.stringify({ starsLeft: g.starsLeft, buffRight: g.buffRight })})`);
-        if (Math.abs(g.card.w - (g.vw.w - 8)) > 2 || Math.abs(g.card.h - 160) > 2)
+        if (!g.playerBarVis || !/ты: [\d.KMB]+ \/ [\d.KMB]+/.test(g.playerBarText || ''))
+            scenarioFailures.push(`19_boss_fight: полоса живучести шахтёра не видна (${g.playerBarText})`);
+        if (Math.abs(g.card.w - (g.vw.w - 8)) > 2 || Math.abs(g.card.h - 100) > 2)
             scenarioFailures.push(`19_boss_fight: карточка снаряжения не на ширину вьюпорта (${JSON.stringify(g.card)})`);
         // Карточка центрирована во вьюпорте (сдвиг на полширины = вылезание за край)
         if (Math.abs((g.card.left + g.card.right) / 2 - (g.vw.x + g.vw.w / 2)) > 2)
@@ -667,3 +673,4 @@ if (scenarioFailures.length) {
     process.exitCode = 1;
 }
 await browser.close();
+

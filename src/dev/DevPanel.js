@@ -300,6 +300,12 @@ function buildPanel(game) {
     grid.appendChild(makeButton('Все компоненты +100', grantComponents));
     grid.appendChild(makeButton('Артефакты: все', grantAllArtifacts));
     grid.appendChild(makeButton('Верстак: сброс', resetCrafting));
+    // Каска: +5 уровней живучести (тест боссовых ударов без фарма)
+    grid.appendChild(makeButton('Каска +5', () => {
+        gameState.levels.helmet = Math.min(25, (gameState.levels.helmet || 0) + 5);
+        log(`Каска: уровень ${gameState.levels.helmet}`);
+        saveGame();
+    }));
     for (const item of [
         { id: 'item_bomb', label: 'Бомба' },
         { id: 'item_belt', label: 'Пояс' },

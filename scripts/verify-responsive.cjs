@@ -409,8 +409,8 @@ function check(name, cond, detail = '') {
                 minFont: Math.min(...texts.map((t) => parseFloat(t.style.fontSize)))
             };
         });
-        check('портрет-крафт: ряды собраны с масштабом (rowH=151)', Math.abs(c.rowsS - 1.8) <= 0.05 && c.items.length === 5
-            && c.items.every((r) => Math.abs(r.rowH - Math.round(84 * 1.8)) <= 2), `s=${c.rowsS}`);
+        check('портрет-крафт: ряды собраны с масштабом (rowH=172)', Math.abs(c.rowsS - 1.8) <= 0.05 && c.items.length === 7
+            && c.items.every((r) => Math.abs(r.rowH - Math.round(96 * 1.8)) <= 2), `s=${c.rowsS}`);
         check('портрет-крафт: кнопка покупки с ценой в каждом ряду',
             c.items.every((r) => r.buyText.startsWith('Купить ') && r.buySize >= 8 && r.actSize >= 8),
             JSON.stringify(c.items.map((r) => r.buyText)));
@@ -437,13 +437,13 @@ function check(name, cond, detail = '') {
             const L = ui.L;
             const byF = Math.max(L.block.y, 386);
             const hintBottom = gs.bossHint ? gs.bossHint.y + gs.bossHint.height / 2 : 0;
-            const card = ui.gearRows[0].card;
+            const card = ui.gearRows[0]._geom;
             return {
                 py: L.panel.py, fightPyExpected: byF + 224,
                 hintBottom,
                 gearVisible: ui.gearContent.visible, listVisible: ui.listContent.visible,
                 unlockVisible: ui.unlockBtn.visible,
-                card: { x: card.x, y: card.y, w: card.displayWidth, h: card.displayHeight },
+                card: { x: card.x, y: card.y, w: card.w, h: card.h },
                 vw: { x: L.viewport.x, y: L.viewport.y, w: L.viewport.w, h: L.viewport.h },
                 panelH: L.panel.ph
             };
@@ -456,9 +456,9 @@ function check(name, cond, detail = '') {
             f.gearVisible && !f.listVisible, '');
         check('портрет-бой: спуск скрыт', !f.unlockVisible, '');
         check('портрет-бой: карточка снаряжения внутри вьюпорта',
-            // addImg — origin (0.5): x/y карточки = центр, границы = центр ± полразмера
-            f.card.x - f.card.w / 2 >= f.vw.x - 2 && f.card.y - f.card.h / 2 >= f.vw.y - 2
-            && f.card.x + f.card.w / 2 <= f.vw.x + f.vw.w + 2 && f.card.y + f.card.h / 2 <= f.vw.y + f.vw.h + 2,
+            // _geom — уже top-left координаты карточки
+            f.card.x >= f.vw.x - 2 && f.card.y >= f.vw.y - 2
+            && f.card.x + f.card.w <= f.vw.x + f.vw.w + 2 && f.card.y + f.card.h <= f.vw.y + f.vw.h + 2,
             JSON.stringify({ card: f.card, vw: f.vw }));
         check('портрет-бой: панель выше базовой 582', f.panelH > 582, String(f.panelH));
         await page.evaluate(() => window.__GAME.scene.getScene('GameScene').retreatBoss());
@@ -481,3 +481,4 @@ function check(name, cond, detail = '') {
     await b.close();
     process.exit(failed ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
+

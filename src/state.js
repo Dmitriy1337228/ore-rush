@@ -175,7 +175,11 @@ export const UPGRADES = [
     { id: 'singularity', name: 'Гравитационный резак', icon: 'icon_singularity', tab: 'equipment', baseCost: 6e10, growth: 2.2, maxLevel: null, tier: 9, requires: { id: 'wormhole', level: 5 }, effect: '+1B руды/сек' },
     { id: 'dyson',     name: 'Сфера Дайсона',      icon: 'icon_dyson',       tab: 'equipment', baseCost: 6e11,    growth: 2.3,  maxLevel: null, tier: 10, requires: { id: 'singularity', level: 5 }, effect: '+10B руды/сек' },
     { id: 'tech',      name: 'Техника',            icon: 'gear_icon',        tab: 'equipment', baseCost: 8000,    growth: 5,    maxLevel: null, effect: 'пассив x1.25' },
-    { id: 'aicore',    name: 'ИИ-ядро',            icon: 'icon_aicore',      tab: 'equipment', baseCost: 5e5,     growth: 7,    maxLevel: null, tier: 5, requires: { id: 'tech', level: 5 }, effect: 'пассив x1.3' },
+    { id: 'aicore',    name: 'ИИ-ядро',            icon: 'icon_aicore',      tab: 'equipment', baseCost: 5e5,     growth: 7,    maxLevel: null, tier: 5, requires: { id: 'tech', level: 5 }, effect: 'пас��ив x1.3' },
+    // «Каска» — НЕ доход, а живучесть: +2000 HP в босс-бое за уровень (x3^тир).
+    // Гейт боссов: без каски босс вырубает шахтёра за ~25 с — копи руду и
+    // прокачивай защиту, чтобы дожить до победы.
+    { id: 'helmet',    name: 'Каска',              icon: 'icon_helmet',      tab: 'equipment', baseCost: 800,     growth: 2.2,  maxLevel: 25,   effect: '+2000 HP в бою' },
 
     // --- УСИЛЕНИЯ (Усиления) ---
     { id: 'dynamite',  name: 'Динамит',            icon: 'dynamite_bundle',  tab: 'enhance',   baseCost: 100,     growth: 2.2,  maxLevel: 23,   effect: '+3% крит x5 (до 74%)' },
@@ -231,7 +235,7 @@ export function createInitialState() {
         items: {},          // активируемые предметы: {itemId: количество}
         crafting: null,     // верстак (1 слот): {recipeId, endsAt} либо null
         bossesDefeated: {}, // побеждённые боссы: {bossId: true}
-        bossFight: null,    // незавершённый босс-бой: {bossId, hp, elapsedMs} — переживает F5
+        bossFight: null,    // незавершённый босс-бой: {bossId, hp, playerHp, elapsedMs} — переживает F5
         bestBossTimes: {},  // рекорды скорости: {bossId: секунды} — мета, переживает престиж (база будущих ачивок)
         miningBuffUntil: 0, // баф добычи от предметов (wall-clock ms, как dailyBuffUntil)
         miningBuffMult: 1,
@@ -492,8 +496,24 @@ export function getMutationBreakBonus(mutationId) {
 // hpMult — индивидуальная сила босса; HP растёт с тиры как x3^tier (income).
 
 export const BOSS_HP_BASE = 25000;
-export const BOSS_FIGHT_SECONDS = 60;
+export const BOSS_FIGHT_SECONDS = 60; // мёртвая константа (лимита нет), осталась от старой механики
 export const BOSS_BOUNTY_SECONDS = 90; // баунти = 90 сек полного дохода на момент убийства
+
+// Опасность босса: шахтёр имеет HP, босс бьёт каждые BOSS_ATTACK_PERIOD_MS
+// с замахом BOSS_ATTACK_WINDUP_MS (телеграф удара — красный тинт и дрожь).
+// Смерть = принудительный откат в шахту: босс сбрасывается, награды нет.
+export const BOSS_ATTACK_PERIOD_MS = 2500;
+export const BOSS_ATTACK_WINDUP_MS = 600;
+// Сила удара = 0.4% от полного HP босса: базовый шахтёр (без каски) держится
+// ~25 с, прокачанная каска растягивает живучесть линейно.
+export const bossAttackPower = (def) => Math.ceil(bossHpFor(def) * 0.004);
+
+// Живучесть шахтёра: база 3000 + 2000 за уровень каски, всё x3^тир —
+// пропорционально экономике тира, требуемый уровень каски не гуляет по тирам.
+export const PLAYER_BASE_HP = 3000;
+export const PLAYER_HP_PER_HELMET = 2000;
+export const getPlayerMaxHp = () =>
+    Math.ceil((PLAYER_BASE_HP + PLAYER_HP_PER_HELMET * (gameState.levels.helmet || 0)) * TIER_INCOME_MULT(gameState.tier));
 
 export const bossHpFor = (def) => Math.ceil(BOSS_HP_BASE * TIER_INCOME_MULT(def.tier) * def.hpMult);
 
@@ -606,10 +626,14 @@ export function rollBossHit() {
 
 // Персист незавершённого боя: HP и накопленное время пишутся в состояние, чтобы
 // перезагрузка страницы (F5) не была бесплатным отступлением — бой продолжается.
-export function updateBossFight(hp, elapsedMs) {
+export function updateBossFight(hp, elapsedMs, playerHp) {
     if (!gameState.bossFight) return;
     gameState.bossFight.hp = Math.max(0, Math.ceil(hp));
     gameState.bossFight.elapsedMs = Math.max(0, Math.floor(elapsedMs));
+    if (playerHp !== undefined) {
+        const max = getPlayerMaxHp();
+        gameState.bossFight.playerHp = Math.min(Math.max(0, Math.ceil(playerHp)), max);
+    }
 }
 
 export function clearBossFight() {
@@ -1195,14 +1219,22 @@ export function applySave(data) {
     }
     // Незавершённый босс-бой: валиден только при живом боссе каталога и
     // осмысленном HP (0 < hp <= максимум); иначе бой молча сбрасывается.
+    // playerHp клампится к текущей живучести шахтёра.
     gameState.bossFight = null;
     if (data.bossFight && typeof data.bossFight === 'object') {
         const bfId = data.bossFight.bossId;
         const bfDef = BOSSES.find((b) => b.id === bfId);
         const bfHp = Math.floor(Number(data.bossFight.hp));
+        const bfPl = Math.floor(Number(data.bossFight.playerHp));
         const bfEl = Math.max(0, Math.floor(Number(data.bossFight.elapsedMs)) || 0);
         if (bfDef && bfHp > 0 && bfHp <= bossHpFor(bfDef)) {
-            gameState.bossFight = { bossId: bfId, hp: bfHp, elapsedMs: bfEl };
+            const maxPlayer = Math.ceil((PLAYER_BASE_HP + PLAYER_HP_PER_HELMET * (Number(data.levels && data.levels.helmet) || 0)) * TIER_INCOME_MULT(Number(data.tier) || 0));
+            gameState.bossFight = {
+                bossId: bfId,
+                hp: bfHp,
+                playerHp: Math.min(Math.max(1, bfPl), maxPlayer),
+                elapsedMs: bfEl
+            };
         }
     }
     // Рекорды скорости убийства (мета для будущих достижений): ключи только из
