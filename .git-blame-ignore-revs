@@ -1,0 +1,4 @@
+# Механические коммиты стиля (Prettier + ESLint), не влияющие на поведение.
+# Настройка: git config blame.ignoreRevsFile .git-blame-ignore-revs
+da0acb98932eaf088388095f65027b4122ea844e
+44d874d8bd15b90090bac0c42d4fec7ea087d078
