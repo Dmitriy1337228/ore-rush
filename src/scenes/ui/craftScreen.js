@@ -191,9 +191,23 @@ export const craftScreenMethods = {
                 : ARTIFACTS.find((a) => a.id === recipe.result.id);
             const name = makeLabel(this, textX, Math.round(10 * s), resultDef.name, Math.max(9, Math.round(FONT_SIZE.captionLg * s)), TEXT.white).setOrigin(0, 0);
             fitFontSize(name, Math.round(FONT_SIZE.captionLg * s), textMaxW, 9);
-            const costY = Math.round(54 * s);
             const desc = makeLabel(this, textX, Math.round(32 * s), `Получишь: ${resultDef.desc}`, subSize, TEXT.good).setOrigin(0, 0);
             fitFontSize(desc, subSize, textMaxW, 9);
+            // Длинные описания («Древняя кирка») не влезают в одну строку даже на
+            // минимуме ужина (9px: 44 символа x 6px = 264 > лимита 235) и уходили
+            // ПОД кнопку крафта — OVERLAP 20px, поймано F9-репортом игрока; сценарный
+            // аудит слеп к рядам за пределами вьюпорта. Если ужин дошёл до минимума
+            // и текст всё ещё шире лимита — переносим на 2 строки с базовым кеглем
+            // и растим ТОЛЬКО эту карточку («Нужно:»/фут сдвигаются, шаг списка —
+            // по фактической высоте). Ряды, чей ужин сработал (10-11px), не меняем.
+            let extraH = 0;
+            if (desc.width > textMaxW) {
+                desc.setStyle({ wordWrap: { width: textMaxW } });
+                desc.setFontSize(subSize);
+                extraH = Math.max(0, this.craftTextH(desc) - this.craftMeasureLH(subSize));
+                card.setDisplaySize(w, rowH + extraH);
+            }
+            const costY = Math.round(54 * s) + extraH;
             const needLbl = makeLabel(this, textX, costY, 'Нужно:', Math.max(9, Math.round(FONT_SIZE.captionSm * s)), TEXT.soft).setOrigin(0, 0.5);
             const costPairs = [];
             const pairNodes = [];
@@ -223,8 +237,8 @@ export const craftScreenMethods = {
             const srcTxt = recipe.result.kind === 'artifact'
                 ? 'крафт'
                 : `дроп: ${[...new Set(Object.keys(recipe.cost).map((compId) => (BOSSES.find((b) => b.drops[compId]) || {}).name).filter(Boolean))].join(', ')}`;
-            const status = makeLabel(this, textX, Math.round(78 * s), '', footSize, TEXT.bad).setOrigin(0, 0);
-            const src = makeLabel(this, textX, Math.round(78 * s), srcTxt, footSize, TEXT.dim).setOrigin(0, 0);
+            const status = makeLabel(this, textX, Math.round(78 * s) + extraH, '', footSize, TEXT.bad).setOrigin(0, 0);
+            const src = makeLabel(this, textX, Math.round(78 * s) + extraH, srcTxt, footSize, TEXT.dim).setOrigin(0, 0);
             fitFontSize(src, footSize, footMaxW, 9);
             const label = recipe.craftMs === 0 ? 'Создать' : `Крафт ${Math.round(recipe.craftMs / 60000)} мин`;
             const { bg: btn, label: btnText } = addButton(this, btnCX, btnCY, {
@@ -256,7 +270,7 @@ export const craftScreenMethods = {
                 this.refreshUi();
             });
             this.craftRecipeRows[recipe.id] = { recipe, rc, icon, name, desc, needLbl, costPairs, status, src, btn, btnText, label, resultDef, _key: null, _footTxt: null, _btnSize: subSize, _btnMaxW: btnW - SPACE.md, _footSize: footSize, _footMaxW: footMaxW };
-            y += step;
+            y += rowH + extraH + 6; // шаг по фактической высоте (перенесённые описания растят ряд)
         }
 
         y += Math.round(14 * s);
