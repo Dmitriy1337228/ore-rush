@@ -98,8 +98,8 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 6,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 4,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -393,11 +393,10 @@
     "p360|craft": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 6,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"#\"": 5,
       "MIN-FONT|UIScene|\"Активировать\"": 4,
-      "MIN-FONT|UIScene|\"Купить #K\"": 4,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3
+      "MIN-FONT|UIScene|\"Купить #K\"": 4
     },
     "p360|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
@@ -502,11 +501,10 @@
     "p390|craft": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 9,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"#\"": 5,
       "MIN-FONT|UIScene|\"Активировать\"": 5,
-      "MIN-FONT|UIScene|\"Купить #K\"": 6,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 4
+      "MIN-FONT|UIScene|\"Купить #K\"": 6
     },
     "p390|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
@@ -593,8 +591,7 @@
     },
     "p412|craft": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 9,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 4
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
@@ -652,10 +649,6 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
-    "t768|craft": {
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 6,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 4
-    },
     "t768|map": {
       "OVERLAP|UIScene|[close_button_square]|[map_board]": 1
     },
@@ -663,5 +656,5 @@
       "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1
     }
   },
-  "updatedAt": "2026-11-16T12:07:27.892Z"
+  "updatedAt": "2026-11-16T14:30:38.200Z"
 }

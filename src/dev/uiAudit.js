@@ -94,6 +94,33 @@ function hitSize(go, axis) {
     }
 }
 
+// Минимальная сторона кастомной hit-зоны ближайшего родителя-контейнера
+// (масштабы цепочки учтены). null — такой зоны нет.
+function ancestorHitSize(go) {
+    try {
+        let p = go.parentContainer;
+        while (p) {
+            const pa = p.input;
+            if (pa && pa.enabled && pa.customHitArea && pa.hitArea && typeof pa.hitArea.width === 'number') {
+                // мировые px: локальная зона × масштаб p × масштабы выше по цепочке
+                let wx = Math.abs(p.scaleX || 1);
+                let wy = Math.abs(p.scaleY || 1);
+                let q = p.parentContainer;
+                while (q) {
+                    wx *= Math.abs(q.scaleX || 1);
+                    wy *= Math.abs(q.scaleY || 1);
+                    q = q.parentContainer;
+                }
+                return Math.min(pa.hitArea.width * wx, pa.hitArea.height * wy);
+            }
+            p = p.parentContainer;
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
+
 export function collectItems(game, cssScale = 1) {
     const W = game.scale.gameSize.width;
     const H = game.scale.gameSize.height;
@@ -166,6 +193,10 @@ export function collectItems(game, cssScale = 1) {
                 // hitArea зона = видимые границы (bounds).
                 hitW: hitSize(go, 'x'),
                 hitH: hitSize(go, 'y'),
+                // Хит-зона ближайшего родителя-контейнера с кастомным hitArea
+                // (>= порога): эргономику маленькой кнопки обеспечивает ряд
+                // (хит-колонка с диспетчем по Y) — см. TOUCH-TARGET
+                ancestorHitMin: ancestorHitSize(go),
                 alpha: opacity,
                 order: [order[0], curLayer ? 1 : 0].concat(order.slice(1)),
                 rootDepth,
@@ -337,7 +368,8 @@ export function auditItems({ items, W, H, ui }, cssScale) {
                 && o.layer === it.layer && !o.fullscreen
                 && Math.min(o.hitW ?? o.w, o.hitH ?? o.h) * cssScale >= need
                 && o.x - 1 <= it.x && o.y - 1 <= it.y && o.r + 1 >= it.r && o.b + 1 >= it.b);
-            if (effMin < need && !covered) {
+            const ancestorCovered = (it.ancestorHitMin ?? 0) * cssScale >= need;
+            if (effMin < need && !covered && !ancestorCovered) {
                 add('TOUCH-TARGET', 'warn', it.scene,
                     `${it.label}: зона нажатия ${round(hitW * cssScale)}x${round(hitH * cssScale)} CSS px (min ${need})`,
                     [box(it, it.label)], [it.label]);

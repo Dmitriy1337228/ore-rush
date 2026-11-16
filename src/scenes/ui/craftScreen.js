@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
     gameState, fmt, BOSSES, COMPONENTS, ARTIFACTS, ITEMS, CRAFT_RECIPES, useItem, canCraft, startCraft, canClaimCraft, claimCraft, getItemPrice, buyItem
 } from '../../state.js';
-import { FONT, addImg, makeLabel, fitFontSize, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer, tapSlopPx } from '../../ui/uiKit.js';
+import { FONT, addImg, makeLabel, fitFontSize, setHitRect, setHitWorldRect, addScreenDim, DIM_ALPHA, addModalContainer, tapSlopPx } from '../../ui/uiKit.js';
 import { createPanel } from '../../ui/panel.js';
 import { addButton } from '../../ui/button.js';
 import { rowRight } from '../../ui/stack.js';
@@ -229,7 +229,7 @@ export const craftScreenMethods = {
             fitFontSize(name, nameSize, textMaxW, SP.nameFitMin);
             const sub = makeLabel(this, textX, SP.itemSubY, `эффект: ${def.desc}`, subSize, TEXT.soft, SP.wrap ? SP.wrap(textMaxW) : undefined).setOrigin(0, 0);
             if (!flowMode) fitFontSize(sub, subSize, textMaxW, 9);
-            const hint = makeLabel(this, textX, SP.itemHintY, '', subSize, TEXT.gold, SP.wrap ? SP.wrap(W2) : undefined).setOrigin(0, 0);
+            const hint = makeLabel(this, textX, SP.itemHintY, '', subSize, TEXT.gold, SP.wrap ? SP.wrap(textMaxW) : undefined).setOrigin(0, 0);
             const { bg: btn, label: btnText } = addButton(this, btnCX, SP.actY0, {
                 kind: 'image', w: btnW, h: btnH, key: TEX.button,
                 text: 'Активировать', fontSize: subSize, color: TEXT.white, style: SP.btnStyle || undefined,
@@ -530,27 +530,28 @@ export const craftScreenMethods = {
         );
     },
 
-    // Ряд предмета (портрет): зона A — текст (name+sub) слева и столбик кнопок
-    // справа, зона B — подсказка на всю ширину. Высоты — по ФАКТУ (craftTextH).
+    // Ряд предмета (портрет): текст (name+sub+подсказка) слева сверху вниз,
+    // столбик кнопок справа РАСПРЕДЕЛЁН на всю высоту карточки: покупка под
+    // верхом, активация над низом (раньше столбик жался к верху и висел
+    // над пустой половиной ряда — замечание игрока). Высоты — по факту.
     layoutCraftItemRow(row) {
-        const padT = SPACE.md, padB = SPACE.md, g = SPACE.sm, bandG = SPACE.sm;
+        const padT = SPACE.md, padB = SPACE.md, g = SPACE.sm;
         const TH = (t) => this.craftTextH(t);
         let y = padT;
         const nameH = TH(row.name);
         row.name.y = y;
         row.sub.y = y + nameH + g;
-        const textA = nameH + g + TH(row.sub);
-        const bandA = Math.max(textA, 2 * row.btnH + SPACE.sm);
-        row.buyBtn.y = y + row.btnH / 2;
-        row.buyBtnText.y = row.buyBtn.y;
-        row.btn.y = y + bandA - row.btnH / 2;
-        row.btnText.y = row.btn.y;
-        y += bandA + bandG;
+        y += nameH + g + TH(row.sub) + g;
         row.hint.y = y;
         const hintH = TH(row.hint);
         if (hintH > row.hintSlot) row.hintSlot = hintH;
         y += row.hintSlot + padB;
         const H = Math.max(Math.ceil(y), row.iconSize + 2 * padT);
+        // Кнопки: покупка прижата к верху ряда, активация к низу (над паддингом)
+        row.buyBtn.y = padT + row.btnH / 2;
+        row.buyBtnText.y = row.buyBtn.y;
+        row.btn.y = H - padB - row.btnH / 2;
+        row.btnText.y = row.btn.y;
         row.card.setDisplaySize(row.w, H).setPosition(row.w / 2, H / 2);
         this.placeIcon(row.icon, row.def.id, row.iconCX, H / 2, row.iconSize);
         // Хит-колонка контейнера ряда — под новую высоту карточки
@@ -558,20 +559,17 @@ export const craftScreenMethods = {
         return H;
     },
 
-    // Ряд рецепта (портрет): шапка (имя + кнопка), «Получишь: …» на всю ширину,
-    // строка «Нужно:» с парами, фут со статусом/источником (взаимно исключены).
-    // Все высоты — по факту (craftTextH), блоки укладываются строго друг под другом.
+    // Ряд рецепта (портрет): имя -> «Получишь: …» -> «Нужно:» с парами -> фут
+    // (статус/источник) -> кнопка действия НА ВСЮ ШИРИНИУ внизу карточки
+    // (мобильный паттерн «первичное действие внизу»; кнопка в углу выглядела
+    // неприкаянной — замечание игрока). Высоты — по факту (craftTextH).
     layoutCraftRecipeRow(row) {
-        const padT = SPACE.md, padB = SPACE.md, g = SPACE.sm;
+        const padT = SPACE.md, padB = SPACE.md, g = SPACE.sm, padS = SPACE.md;
         const TH = (t) => this.craftTextH(t);
         let y = padT;
-        // Шапка: кнопка справа, имя (без переноса) по центру высоты шапки
-        const nameH = TH(row.name);
-        const headH = Math.max(row.btnH, nameH);
-        row.btn.y = y + headH / 2;
-        row.btnText.y = row.btn.y;
-        row.name.y = y + Math.round((headH - nameH) / 2);
-        y += headH + g;
+        // Имя (без переноса)
+        row.name.y = y;
+        y += TH(row.name) + g;
         // «Получишь: …» — 1–2 строки по факту
         row.desc.y = y;
         y += TH(row.desc) + g;
@@ -587,8 +585,21 @@ export const craftScreenMethods = {
         row.src.y = y;
         const footH = TH(row.status.visible ? row.status : row.src);
         if (footH > row.footSlot) row.footSlot = footH;
-        y += row.footSlot + padB;
-        const H = Math.max(Math.ceil(y), row.iconSize + 2 * padT);
+        y += row.footSlot + g;
+        // Кнопка действия — внизу на всю ширину (вставки padS с боков);
+        // хит расширен по вертикали до >= 40 CSS px (фут выше — текст)
+        const btnW = row.w - padS * 2;
+        const btnH = row.btnH;
+        const H = Math.max(Math.ceil(y + btnH + padB), row.iconSize + 2 * padT);
+        const btnY = H - padB - btnH;
+        row.btn.setDisplaySize(btnW, btnH).setPosition(row.w / 2, btnY + btnH / 2);
+        row.btnText.setPosition(row.w / 2, row.btn.y);
+        // Хит: вся полоса кнопки, вертикально расширен до 80 игровых px
+        // (>= 40 CSS px на телефоне); вверх заходит в зону фута (текст),
+        // вниз — не дальше карточки + 1px (до соседнего ряда >= 5px)
+        setHitWorldRect(row.btn, padS, row.btn.y - 40, btnW, 80);
+        // Фит подписи под новую ширину (Крафт N мин / Создать)
+        row._btnMaxW = btnW - SPACE.md;
         row.card.setDisplaySize(row.w, H).setPosition(row.w / 2, H / 2);
         this.placeIcon(row.icon, row.recipe.result.id, row.iconCX, H / 2, row.iconSize);
         return H;
