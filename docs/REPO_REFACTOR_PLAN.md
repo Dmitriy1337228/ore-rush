@@ -288,13 +288,13 @@ scripts/
 - 3.5. **Контроль количества:** `ui:tokens` проверяет **то же число файлов**, что на baseline (иначе правило потеряно); `git log --follow` для 3–5 перенесённых файлов показывает историю.
 
 **DoD этапа 3**
-- [ ] `src/scenes/` содержит только `BootScene.js`; `src/scenes/ui`, `src/scenes/game`, плоские `src/ui/{button,panel,stack,...}.js` отсутствуют.
-- [ ] Нет двух файлов с одинаковым смыслом-именем (`panel*.js`).
-- [ ] `ui:tokens` проверяет не меньше файлов, чем на baseline.
-- [ ] Полный набор D14 + `scripts:check` зелёный; dist-хэш не изменился либо расхождение объяснено; gzip в пределах ±0.5 КБ.
-- [ ] Автоматический smoke: `npm run test:ui`, `npm run ui:check`, `npm run ui:check:dom`, `node scripts/verify/verify-craft-dom.mjs` — зелёные, ошибок консоли нет.
-- [ ] Отчёт о путях по `scenes/ui/`, `scenes/game/`, `src/ui/theme.js` — 0 вне исторических документов.
-- [ ] Подпункты 3.1–3.3 — отдельные коммиты `refactor(ui|game): …` с числом перенесённых файлов и правок импортов.
+- [x] `src/scenes/` содержит только `BootScene.js`; `src/scenes/ui`, `src/scenes/game`, плоские `src/ui/{button,panel,stack,...}.js` отсутствуют.
+- [x] Нет двух файлов с одинаковым смыслом-именем: `src/ui/phaser/panel.js` переименован в `upgrades.js` (методы панели улучшений) — `shared/panel.js` остался единственным `panel.js`.
+- [x] `ui:tokens` проверяет **9** файлов `src/ui/phaser` (baseline — 7), 0 нарушений.
+- [x] Полный набор D14 + `scripts:check` зелёный; dist-хэш не изменился (`index-DUrU2wPh.js`, `craftScreen-RSpNUm4y.js`), gzip тот же.
+- [x] Автоматический smoke: `npm run test:ui` (4/4), `npm run ui:check` (0 новых), `npm run ui:check:dom` (0/0), `npm run verify:craft-dom` (40/40) — зелёные, 0 console errors.
+- [x] Отчёт о путях по `scenes/ui/`, `scenes/game/`, `src/ui/theme.js` — 0 в коде/доках; остался 1 исторический путь в `scripts/metrics/pilot-loc.mjs` (Phaser-экран удалён пилотом DOM; файл фильтруется как отсутствующий) — правится на этапе 4 вместе с DOM-путями.
+- [x] Подпункты 3.1–3.3 — отдельные коммиты `refactor(game|ui): …` с числом перенесённых файлов и правок импортов (`4f309c5` 9/9, `1b9c03e` 7/20, `bb6cc25` 10/11) + `464af88`/`b1ae85c` (пути и доки).
 
 ### Этап 4 — `src/` часть B: `ui/dom`, гард слоёв (0.5–1 день)
 - 4.1. `git mv src/dom src/ui/dom`; `craftScreen.js` → `craft.js`; `fixtures.js`, `fixtureMarkup.js`, `fixtureApp.js`, `lab.js` → `src/ui/dom/dev/`.
@@ -415,7 +415,7 @@ scripts/
 | 2026-11-17 | 0 | Baseline на отформатированном коде, инвентаризация фактов, список зашитых путей | `4e33c94`; 37 файлов `scripts/` (35+2), 73 файла `src/`, theme.js — 18 импортов, uiKit.js — 12, state.js — 37 импорт-строк; упоминаний `scripts/`: package.json 9, tests 15, .kilo 11, AGENTS 3, docs 155; D14 зелёный, dist совпал | Факты уточнены против плана (было 17/12/23) — снято на отформатированном коде |
 | 2026-11-17 | 1 | Алиасы на каждый скрипт, `scripts/README.md`, гард `scripts:check` (+`--self-test`), прогон и триаж всех скриптов | `c9cba4b`, `ea64842`; 32 алиаса; `scripts:check` 0, self-test 1; активных 31, кандидатов в архив 4 (`verify-economy`, `verify-mine-meta`, `pilot-dom-input-check`, `pilot-dpr-shots`); внешний долг: `verify:boss`, `verify:map`, `verify:responsive`, `metrics:layers` падают до реорганизации (устаревший `ui.craftRoot`/`__DOM_UI`) — `docs/REPO_REFACTOR_BASELINE.md` §5 | `audio:*` не запускались (генераторы контента); `metrics:baseline-shots` перезаписал `docs/pilot-baseline/*` — откатано через `git checkout` (M4), впредь не запускать без нужды |
 | 2026-11-17 | 2 | Архив 4 скриптов, раскладка по `gates/verify/metrics/stands/audio/data`, правки путей/алиасов/доков | `69759cb` (4 rename), `874e27a` (32 rename, 100 %), `fe07e5e` (алиасы архива), `07855ef` (пути, 30 файлов), `02bdc64` (доки, 8 файлов); отчёт о путях 0; корень `scripts/` — только `README.md` + папки; все алиасы прогнаны, результаты = триаж; D14 + `scripts:check` зелёные, dist тот же | `metrics:baseline-shots` при прогоне перезаписывает `docs/pilot-baseline/*` — дважды откатано `git checkout`, дальше запускать только с `--out` во временный каталог. Инцидент: правка UTF-8 файлов через PowerShell `Get-Content -Raw` + `WriteAllText` дважды испортила кириллицу (`pilot-loc.mjs`, `ui_review_golden.mjs`) — восстановлено из HEAD и переделано `edit`; правило: кириллицу править только `edit`/Node-скриптами |
-| | 3 | | | |
+| 2026-11-17 | 3 | `src/scenes/game` → `src/game`, `src/ui/*` (общие) → `src/ui/shared`, `src/scenes/ui` + `GameScene`/`UIScene` → `src/ui/phaser`; `panel.js` → `upgrades.js`; правки импортов кодмодом | `4f309c5` 9 файлов/9 импортов, `1b9c03e` 7/20, `bb6cc25` 10/11, `464af88` (пути + `tokens.css` только комментарий), `b1ae85c` (доки); `src/scenes/` = только `BootScene.js`; `ui:tokens` 9 файлов / 0; D14 + `scripts:check` зелёные; dist-хэш тот же; smoke 117/117, 4/4, ui:check 0, ui:check:dom 0, craft-dom 40/40 | Структура — по 4.2 плана (плоский `src/ui/phaser`), а `docs/UI_DOM_PHASE2_PLAN.md` D10 ожидает `src/ui/phaser/screens/` и `src/ui/UIScene.js` — расхождение будет снято на этапе 5 (D10 получит фактические пути). `tokens.css` перегенерирован: изменились 2 строки комментария-заголовка (источник `src/ui/shared/theme.js`) |
 | | 4 | | | |
 | | 5 | | | |
 
