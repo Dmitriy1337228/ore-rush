@@ -9,17 +9,17 @@ import {
     saveLastExit,
     canClaimDaily,
     claimDailyReward
-} from '../state.js';
-import { YandexSDKStub } from '../sdk-stub.js';
-import { computeLayout } from '../layout.js';
-import { EVENTS, REG } from '../ui/shared/theme.js';
-import { BG_SHADE_ALPHA, tierBgKey } from '../game/constants.js';
-import { backgroundMethods } from '../game/background.js';
-import { blockMethods } from '../game/block.js';
-import { audioMethods } from '../game/audio.js';
-import { bossMethods } from '../game/boss.js';
-import { mutationMethods } from '../game/mutation.js';
-import { timersMethods } from '../game/timers.js';
+} from '../../state.js';
+import { YandexSDKStub } from '../../sdk-stub.js';
+import { computeLayout } from '../../layout.js';
+import { EVENTS, REG } from '../shared/theme.js';
+import { BG_SHADE_ALPHA, tierBgKey } from '../../game/constants.js';
+import { backgroundMethods } from '../../game/background.js';
+import { blockMethods } from '../../game/block.js';
+import { audioMethods } from '../../game/audio.js';
+import { bossMethods } from '../../game/boss.js';
+import { mutationMethods } from '../../game/mutation.js';
+import { timersMethods } from '../../game/timers.js';
 
 // GameScene — игровой мир: блок, босс, мутации, фон, таймеры. Реализация разложена
 // по подсистемам (src/scenes/game/*): каждый модуль — набор методов одной зоны

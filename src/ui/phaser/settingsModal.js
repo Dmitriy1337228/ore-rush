@@ -14,10 +14,10 @@ import {
     saveGame,
     fmt
 } from '../../state.js';
-import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer, setHitWorldRect } from '../../ui/shared/uiKit.js';
-import { addButton } from '../../ui/shared/button.js';
-import { createPanel } from '../../ui/shared/panel.js';
-import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE, TOUCH_MIN } from '../../ui/shared/theme.js';
+import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer, setHitWorldRect } from '../shared/uiKit.js';
+import { addButton } from '../shared/button.js';
+import { createPanel } from '../shared/panel.js';
+import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE, TOUCH_MIN } from '../shared/theme.js';
 import { playSfx } from '../../sfx.js';
 
 export const settingsModalMethods = {

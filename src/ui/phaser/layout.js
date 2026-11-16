@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { gameState, TIERS, getNextTier } from '../../state.js';
-import { VIEWPORT } from '../../ui/shared/listGeometry.js';
-import { REG } from '../../ui/shared/theme.js';
+import { VIEWPORT } from '../shared/listGeometry.js';
+import { REG } from '../shared/theme.js';
 import { computeLayout } from '../../layout.js';
 
 export const layoutMethods = {

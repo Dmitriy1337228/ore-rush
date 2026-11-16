@@ -1,16 +1,16 @@
 import Phaser from 'phaser';
-import { fmt, getUpgradeCost, getBulkCost, getAffordableBulk } from '../state.js';
-import { computeLayout } from '../layout.js';
-import { VIEWPORT } from '../ui/shared/listGeometry.js';
-import { EVENTS, REG } from '../ui/shared/theme.js';
-import { hudMethods } from './ui/hud.js';
-import { panelMethods } from './ui/panel.js';
-import { gearMethods } from './ui/gear.js';
-import { layoutMethods } from './ui/layout.js';
-import { settingsModalMethods } from './ui/settingsModal.js';
-import { statusModalsMethods } from './ui/statusModals.js';
-import { mapScreenMethods } from './ui/mapScreen.js';
-import { tutorialMethods } from './ui/tutorial.js';
+import { fmt, getUpgradeCost, getBulkCost, getAffordableBulk } from '../../state.js';
+import { computeLayout } from '../../layout.js';
+import { VIEWPORT } from '../shared/listGeometry.js';
+import { EVENTS, REG } from '../shared/theme.js';
+import { hudMethods } from './hud.js';
+import { panelMethods } from './panel.js';
+import { gearMethods } from './gear.js';
+import { layoutMethods } from './layout.js';
+import { settingsModalMethods } from './settingsModal.js';
+import { statusModalsMethods } from './statusModals.js';
+import { mapScreenMethods } from './mapScreen.js';
+import { tutorialMethods } from './tutorial.js';
 
 // UIScene — оболочка интерфейса: владеет жизненным циклом, глобальной блокировкой
 // (updateBlockLock) и перерисовкой (refreshUi). Реализация разложена по фичам
@@ -161,7 +161,7 @@ export class UIScene extends Phaser.Scene {
 
         // Мастерская — DOM-слой (пилот закрыт, G3 = go). Контроллер грузится
         // отдельным чанком и монтируется один раз; openCraft() ждёт готовности.
-        this._domCraftReady = import('../dom/craftScreen.js')
+        this._domCraftReady = import('../../dom/craftScreen.js')
             .then(({ createDomCraft }) => {
                 this.domCraft = createDomCraft(this);
             })

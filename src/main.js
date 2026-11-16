@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene.js';
-import { GameScene } from './scenes/GameScene.js';
-import { UIScene } from './scenes/UIScene.js';
+import { GameScene } from './ui/phaser/GameScene.js';
+import { UIScene } from './ui/phaser/UIScene.js';
 import { YandexSDK } from './sdk/yandex.js';
 import { baseForOrientation } from './layout.js';
 

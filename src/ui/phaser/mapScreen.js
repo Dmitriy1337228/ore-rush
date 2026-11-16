@@ -8,10 +8,10 @@ import {
     DIM_ALPHA,
     addModalContainer,
     tapSlopPx
-} from '../../ui/shared/uiKit.js';
-import { MAP_NODE_H, MAP_HEAD, MAP_TAIL, MAP_R_TIER, MAP_R_BOSS } from '../../ui/shared/listGeometry.js';
-import { createPanel } from '../../ui/shared/panel.js';
-import { TEXT, DEPTH, REG, FONT_SIZE, SPACE } from '../../ui/shared/theme.js';
+} from '../shared/uiKit.js';
+import { MAP_NODE_H, MAP_HEAD, MAP_TAIL, MAP_R_TIER, MAP_R_BOSS } from '../shared/listGeometry.js';
+import { createPanel } from '../shared/panel.js';
+import { TEXT, DEPTH, REG, FONT_SIZE, SPACE } from '../shared/theme.js';
 
 export const mapScreenMethods = {
     buildMapScreen() {
