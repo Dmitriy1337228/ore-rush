@@ -1,4 +1,4 @@
-import { gameState } from '../../state.js';
+import { gameState } from '../state.js';
 import { BG_FADE_MS, BG_OVERSIZE, tierBgKey } from './constants.js';
 
 export const backgroundMethods = {

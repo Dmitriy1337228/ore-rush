@@ -19,12 +19,12 @@ import {
     bossAttackPower,
     BOSS_ATTACK_PERIOD_MS,
     BOSS_ATTACK_WINDUP_MS
-} from '../../state.js';
-import { computeLayout } from '../../layout.js';
-import { playSfx } from '../../sfx.js';
-import { makeLabel, setHitWorld, fitFontSize } from '../../ui/uiKit.js';
+} from '../state.js';
+import { computeLayout } from '../layout.js';
+import { playSfx } from '../sfx.js';
+import { makeLabel, setHitWorld, fitFontSize } from '../ui/uiKit.js';
 import { floatText, showHitFeedback } from './effects.js';
-import { TEXT, TEX, EVENTS, REG, TOUCH_MIN } from '../../ui/theme.js';
+import { TEXT, TEX, EVENTS, REG, TOUCH_MIN } from '../ui/theme.js';
 import { GAME_DEPTH, BOSS_ITEM_BUFF_FIELD } from './constants.js';
 import {
     BOSS_UI,

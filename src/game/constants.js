@@ -1,6 +1,6 @@
 // Константы игрового мира (GameScene): фоны, стадии блока, слои, тайминги.
 
-import { TIERS } from '../../state.js';
+import { TIERS } from '../state.js';
 
 export const BLOCK_STAGES = [1, 2, 3, 4];
 export const BLOCK_STAGE_COUNT = BLOCK_STAGES.length;

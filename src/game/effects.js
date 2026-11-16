@@ -1,8 +1,8 @@
 // Визуальные эффекты игрового мира: всплывающие подписи и обратная связь удара.
 
-import { TIERS, gameState, fmt } from '../../state.js';
-import { makeLabel } from '../../ui/uiKit.js';
-import { TEXT } from '../../ui/theme.js';
+import { TIERS, gameState, fmt } from '../state.js';
+import { makeLabel } from '../ui/uiKit.js';
+import { TEXT } from '../ui/theme.js';
 
 const HIT_BURST = { normal: { ore: 8, debris: 4 }, special: { ore: 16, debris: 8 } }; // обычный удар / крит или жила
 const FLOAT_RISE_PX = 60;
