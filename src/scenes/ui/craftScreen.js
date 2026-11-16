@@ -4,6 +4,7 @@ import {
 } from '../../state.js';
 import { FONT, addImg, makeLabel, fitFontSize, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
 import { createPanel } from '../../ui/panel.js';
+import { addButton } from '../../ui/button.js';
 import { rowRight } from '../../ui/stack.js';
 import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
@@ -142,13 +143,17 @@ export const craftScreenMethods = {
             const sub = makeLabel(this, textX, Math.round(34 * s), `эффект: ${def.desc}`, subSize, TEXT.soft).setOrigin(0, 0);
             fitFontSize(sub, subSize, textMaxW, 9);
             const hint = makeLabel(this, textX, Math.round(62 * s), '', subSize, TEXT.gold).setOrigin(0, 0);
-            const btn = this.add.image(btnCX, actCY, TEX.button).setDisplaySize(btnW, btnH);
-            setHitRect(btn, ...HIT.button);
-            const btnText = makeLabel(this, btnCX, actCY, 'Активировать', subSize, TEXT.white).setOrigin(0.5);
-            fitFontSize(btnText, subSize, btnW - SPACE.md, 8);
-            const buyBtn = this.add.image(btnCX, buyCY, TEX.button).setDisplaySize(btnW, btnH);
-            setHitRect(buyBtn, ...HIT.button);
-            const buyBtnText = makeLabel(this, btnCX, buyCY, '', subSize, TEXT.white).setOrigin(0.5);
+            const { bg: btn, label: btnText } = addButton(this, btnCX, actCY, {
+                kind: 'image', w: btnW, h: btnH, key: TEX.button,
+                text: 'Активировать', fontSize: subSize, color: TEXT.white,
+                hitW: HIT.button[0], hitH: HIT.button[1],
+                fitMaxW: btnW - SPACE.md, fitMin: 8
+            });
+            const { bg: buyBtn, label: buyBtnText } = addButton(this, btnCX, buyCY, {
+                kind: 'image', w: btnW, h: btnH, key: TEX.button,
+                fontSize: subSize, color: TEXT.white,
+                hitW: HIT.button[0], hitH: HIT.button[1]
+            });
             rc.add([card, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText]);
             this.craftContent.add(rc);
             btn.on('pointerdown', (p) => this.startCraftDrag(p));
@@ -221,11 +226,13 @@ export const craftScreenMethods = {
             const status = makeLabel(this, textX, Math.round(78 * s), '', footSize, TEXT.bad).setOrigin(0, 0);
             const src = makeLabel(this, textX, Math.round(78 * s), srcTxt, footSize, TEXT.dim).setOrigin(0, 0);
             fitFontSize(src, footSize, footMaxW, 9);
-            const btn = this.add.image(btnCX, btnCY, TEX.button).setDisplaySize(btnW, btnH);
-            setHitRect(btn, ...HIT.button);
             const label = recipe.craftMs === 0 ? 'Создать' : `Крафт ${Math.round(recipe.craftMs / 60000)} мин`;
-            const btnText = makeLabel(this, btnCX, btnCY, label, subSize, TEXT.white).setOrigin(0.5);
-            fitFontSize(btnText, subSize, btnW - SPACE.md, 8);
+            const { bg: btn, label: btnText } = addButton(this, btnCX, btnCY, {
+                kind: 'image', w: btnW, h: btnH, key: TEX.button,
+                text: label, fontSize: subSize, color: TEXT.white,
+                hitW: HIT.button[0], hitH: HIT.button[1],
+                fitMaxW: btnW - SPACE.md, fitMin: 8
+            });
             rc.add([card, icon, name, desc, needLbl, status, src, btn, btnText]);
             // Пары стоимости ПОСЛЕ карточки: раньше они добавлялись до неё и
             // перекрывались карточкой целиком («Нужно:» с пустотой — скриншот
@@ -488,13 +495,17 @@ export const craftScreenMethods = {
             fitFontSize(name, nameSize, textMaxW, 22);
             const sub = makeLabel(this, textX, 0, `эффект: ${def.desc}`, subSize, TEXT.soft, wrap(textMaxW)).setOrigin(0, 0);
             const hint = makeLabel(this, textX, 0, '', subSize, TEXT.gold, wrap(W2)).setOrigin(0, 0);
-            const btn = this.add.image(btnCX, 0, TEX.button).setDisplaySize(btnW, btnH);
-            setHitRect(btn, ...HIT.button);
-            const btnText = makeLabel(this, btnCX, 0, 'Активировать', subSize, TEXT.white, { align: 'center' }).setOrigin(0.5);
-            fitFontSize(btnText, subSize, btnW - SPACE.md, 16);
-            const buyBtn = this.add.image(btnCX, 0, TEX.button).setDisplaySize(btnW, btnH);
-            setHitRect(buyBtn, ...HIT.button);
-            const buyBtnText = makeLabel(this, btnCX, 0, '', subSize, TEXT.white, { align: 'center' }).setOrigin(0.5);
+            const { bg: btn, label: btnText } = addButton(this, btnCX, 0, {
+                kind: 'image', w: btnW, h: btnH, key: TEX.button,
+                text: 'Активировать', fontSize: subSize, color: TEXT.white, style: { align: 'center' },
+                hitW: HIT.button[0], hitH: HIT.button[1],
+                fitMaxW: btnW - SPACE.md, fitMin: 16
+            });
+            const { bg: buyBtn, label: buyBtnText } = addButton(this, btnCX, 0, {
+                kind: 'image', w: btnW, h: btnH, key: TEX.button,
+                fontSize: subSize, color: TEXT.white, style: { align: 'center' },
+                hitW: HIT.button[0], hitH: HIT.button[1]
+            });
             rc.add([card, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText]);
             this.craftContent.add(rc);
             btn.on('pointerdown', (p) => this.startCraftDrag(p));
@@ -547,11 +558,13 @@ export const craftScreenMethods = {
                 ? 'крафт'
                 : `дроп: ${[...new Set(Object.keys(recipe.cost).map((compId) => (BOSSES.find((b) => b.drops[compId]) || {}).name).filter(Boolean))].join(', ')}`;
             const src = makeLabel(this, textX, 0, srcTxt, subSize, TEXT.dim, wrap(W2)).setOrigin(0, 0);
-            const btn = this.add.image(btnCX, 0, TEX.button).setDisplaySize(btnW, btnH);
-            setHitRect(btn, ...HIT.button);
             const label = recipe.craftMs === 0 ? 'Создать' : `Крафт ${Math.round(recipe.craftMs / 60000)} мин`;
-            const btnText = makeLabel(this, btnCX, 0, label, subSize, TEXT.white, { align: 'center' }).setOrigin(0.5);
-            fitFontSize(btnText, subSize, btnW - SPACE.md, 16);
+            const { bg: btn, label: btnText } = addButton(this, btnCX, 0, {
+                kind: 'image', w: btnW, h: btnH, key: TEX.button,
+                text: label, fontSize: subSize, color: TEXT.white, style: { align: 'center' },
+                hitW: HIT.button[0], hitH: HIT.button[1],
+                fitMaxW: btnW - SPACE.md, fitMin: 16
+            });
             rc.add([card, icon, name, desc, needLbl, status, src, btn, btnText]);
             for (const n of pairNodes) rc.add(n);
             this.craftContent.add(rc);
