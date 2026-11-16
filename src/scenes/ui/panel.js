@@ -2,10 +2,10 @@ import Phaser from 'phaser';
 import {
     gameState, TIERS, UPGRADES, getUpgradeDef, getUpgradeLevel, getUpgradeCost, isMaxed, isUpgradeAvailable, canBuy, buyBulk, getAffordableBulk, getBulkCost, isUpgradeVisible, canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice, saveGame, fmt
 } from '../../state.js';
-import { addNine, addImg, addImgC, makeLabel, fitFontSize, fitOneLine, setHitRect, setHitWorld, tapSlopPx } from '../../ui/uiKit.js';
+import { addNine, addImg, addImgC, makeLabel, fitFontSize, fitOneLine, setHitRect, setHitWorld, setHitWorldRect, tapSlopPx } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
 import { VIEWPORT, ROW_H, ROW_GAP, TABS, BUY_AMOUNTS, ROW } from '../../ui/listGeometry.js';
-import { TEXT, DEPTH, TEX, HIT, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
+import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
 
 export const panelMethods = {
@@ -233,9 +233,11 @@ export const panelMethods = {
             kind: 'image', w: btnW, h: btnH, key: TEX.button,
             text: 'Купить', fontSize: g.btnSize, color: TEXT.white,
             depth: DEPTH.ui,
-            hitW: HIT.button[0], hitH: HIT.button[1],
             fitMaxW: btnW - SPACE.md, fitMin: 8
         });
+        // Хит-колонка кнопки на всю высоту ряда (>= 40 CSS px на телефоне;
+        // рамка касания не выходит за карточку ряда — соседние ряды дальше)
+        setHitWorldRect(btn, btnX - 6, 0, btnW + 12, h);
 
         const lockText = makeLabel(this, textX, g.priceY, '', g.lockSize, TEXT.bad);
         lockText.setOrigin(0, 0.5);

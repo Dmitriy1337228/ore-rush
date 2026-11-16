@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
     gameState, fmt, ITEMS, useItem, getItemPrice, buyItem, canBuyItem
 } from '../../state.js';
-import { makeLabel, fitFontSize } from '../../ui/uiKit.js';
+import { makeLabel, fitFontSize, setHitWorldRect } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
 import { VIEWPORT } from '../../ui/listGeometry.js';
 import { TEXT, DEPTH, TEX, HIT, FONT_SIZE, SPACE } from '../../ui/theme.js';
@@ -116,6 +116,10 @@ export const gearMethods = {
                 row.useBtn.setDisplaySize(btnW, btnH);
                 row.useLbl.setPosition(row.useBtn.x, row.useBtn.y);
                 row.useLbl.setFontSize(FONT_SIZE.accent);
+                // Хит-колонки кнопок на всю высоту карточки (>= 40 CSS px);
+                // колонки не пересекаются (зазор SPACE.md между кнопками)
+                setHitWorldRect(row.buyBtn, vw.x + SPACE.xs + 14 - 5, ry, btnW + 10, rh);
+                setHitWorldRect(row.useBtn, vw.x + SPACE.xs + 14 + btnW + SPACE.md - 5, ry, btnW + 10, rh);
                 ry += rh + SPACE.sm;
             }
             this.refreshGearPanel(true);
@@ -167,6 +171,9 @@ export const gearMethods = {
             row.useBtn.setDisplaySize(btnW, btnH);
             row.useLbl.setPosition(row.useBtn.x, row.useBtn.y);
             row.useLbl.setFontSize(Math.round(FONT_SIZE.caption * ts));
+            // Хит-колонки кнопок на всю высоту карточки (>= 40 CSS px)
+            setHitWorldRect(row.buyBtn, vw.x + SPACE.xs + 14 - 5, ry, btnW + 10, rh);
+            setHitWorldRect(row.useBtn, vw.x + SPACE.xs + 14 + btnW + SPACE.md - 5, ry, btnW + 10, rh);
             ry += rh + 10;
         }
         this.refreshGearPanel(true);

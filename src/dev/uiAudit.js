@@ -296,6 +296,7 @@ export function auditItems({ items, W, H, ui }, cssScale) {
         }
     }
 
+    const interactiveItems = items.filter((i) => i.interactive && !i.fullscreen);
     for (const it of items) {
         const isText = it.kind === 'Text' && it.text.trim() !== '';
         const isTarget = isText || it.interactive;
@@ -327,9 +328,16 @@ export function auditItems({ items, W, H, ui }, cssScale) {
             // границы (bounds — прокси для setInteractive() без аргументов)
             const hitW = it.hitW ?? it.w;
             const hitH = it.hitH ?? it.h;
-            const minDim = Math.min(hitW, hitH) * cssScale;
+            const effMin = Math.min(hitW, hitH) * cssScale;
             const need = mobile ? R.minTouchCss.mobile : R.minTouchCss.desktop;
-            if (minDim < need) {
+            // Кнопка, целиком вложенная в более крупную интерактивную зону
+            // (ряд с хит-колонкой >= порога), эргономику нажатия получает от
+            // неё — сама по себе маленькая кнопка нарушением не является
+            const covered = interactiveItems.some((o) => o !== it && o.scene === it.scene
+                && o.layer === it.layer && !o.fullscreen
+                && Math.min(o.hitW ?? o.w, o.hitH ?? o.h) * cssScale >= need
+                && o.x - 1 <= it.x && o.y - 1 <= it.y && o.r + 1 >= it.r && o.b + 1 >= it.b);
+            if (effMin < need && !covered) {
                 add('TOUCH-TARGET', 'warn', it.scene,
                     `${it.label}: зона нажатия ${round(hitW * cssScale)}x${round(hitH * cssScale)} CSS px (min ${need})`,
                     [box(it, it.label)], [it.label]);

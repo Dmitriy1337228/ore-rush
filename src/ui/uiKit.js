@@ -124,27 +124,46 @@ export function setHitRect(obj, w, h, centered = false) {
     return obj.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
 }
 
+// Принудительная установка hit-зоны: GameObject.setInteractive на УЖЕ
+// интерактивном объекте игнорирует новую зону (Phaser enable() «just enable
+// it and return»), а InputPlugin.setHitArea у существующего InteractiveObject
+// не перезаписывает hitArea (только флаги) — поэтому мутериуем io напрямую.
+function applyHitArea(obj, rect) {
+    if (obj.input) {
+        obj.input.hitArea = rect;
+        obj.input.hitAreaCallback = Phaser.Geom.Rectangle.Contains;
+        obj.input.customHitArea = true;
+        return obj;
+    }
+    if (obj.scene && obj.scene.input) {
+        return obj.scene.input.setHitArea(obj, rect, Phaser.Geom.Rectangle.Contains);
+    }
+    return obj.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
+}
+
 // Hit-зона w x h в МИРОВЫХ px по центру объекта — может быть больше видимых
 // границ (план раздела 4: «расширить интерактивную зону без увеличения
 // картинки»). Для displaySize-картинок setInteractive живёт в единицах кадра
 // (HIT.* — размеры исходников): мировые px делятся на scale; у scale-1
 // объектов (9-slice, контейнеры) локальные единицы = мировые.
 export function setHitWorld(obj, w, h) {
+    let rect;
     if (obj.type === 'Container') {
-        return obj.setInteractive(new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h), Phaser.Geom.Rectangle.Contains);
+        rect = new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h);
+    } else {
+        const sx = Math.max(1e-6, Math.abs(obj.scaleX || 1));
+        const sy = Math.max(1e-6, Math.abs(obj.scaleY || 1));
+        // центр видимой области в единицах локального пространства
+        const cx = (obj.displayWidth || obj.width || 0) / 2;
+        const cy = (obj.displayHeight || obj.height || 0) / 2;
+        rect = new Phaser.Geom.Rectangle(
+            (cx - w / 2) / sx,
+            (cy - h / 2) / sy,
+            w / sx,
+            h / sy
+        );
     }
-    const sx = Math.max(1e-6, Math.abs(obj.scaleX || 1));
-    const sy = Math.max(1e-6, Math.abs(obj.scaleY || 1));
-    // центр видимой области в единицах локального пространства
-    const cx = (obj.displayWidth || obj.width || 0) / 2;
-    const cy = (obj.displayHeight || obj.height || 0) / 2;
-    const rect = new Phaser.Geom.Rectangle(
-        (cx - w / 2) / sx,
-        (cy - h / 2) / sy,
-        w / sx,
-        h / sy
-    );
-    return obj.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
+    return applyHitArea(obj, rect);
 }
 
 // Допуск тапа до классификации как драг, в игровых px: ~9 CSS px дрожания
@@ -155,6 +174,23 @@ export function tapSlopPx(scene, baseW) {
     const parent = scene.scale ? scene.scale.parentSize : null;
     const fit = parent && parent.width ? Math.max(0.35, parent.width / baseW) : 1;
     return Math.max(6, Math.round(9 / fit));
+}
+
+// Hit-зона из прямоугольника (rx, ry, rw, rh) в КООРДИНАТАХ РОДИТЕЛЯ объекта
+// (мировых px): для асимметричных зон — кнопка на всю высоту ряда, колонка
+// кнопки в стеке. Учтены origin и displaySize (units кадра для картинок).
+export function setHitWorldRect(obj, rx, ry, rw, rh) {
+    const sx = Math.max(1e-6, Math.abs(obj.scaleX || 1));
+    const sy = Math.max(1e-6, Math.abs(obj.scaleY || 1));
+    const dx = obj.x - (obj.originX ?? 0.5) * (obj.displayWidth || 0);
+    const dy = obj.y - (obj.originY ?? 0.5) * (obj.displayHeight || 0);
+    const rect = new Phaser.Geom.Rectangle(
+        (rx - dx) / sx,
+        (ry - dy) / sy,
+        rw / sx,
+        rh / sy
+    );
+    return applyHitArea(obj, rect);
 }
 
 export function makeLabel(scene, x, y, text, size, color, style = {}) {

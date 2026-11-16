@@ -87,8 +87,8 @@
       "MIN-FONT|GameScene|\"урон боссу x# на # сек · у\"": 1,
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"клик: #M · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 5,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 4,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Настройки\"": 1,
       "MIN-FONT|UIScene|\"Карта\"": 1,
@@ -412,8 +412,7 @@
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 5,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|boss-reward": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
@@ -522,8 +521,7 @@
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 5,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|boss-reward": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
@@ -616,8 +614,7 @@
       "MIN-FONT|GameScene|\"Купить #B\"": 1,
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 5,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|boss-reward": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
@@ -686,10 +683,6 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
-    "t768|boss": {
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 4,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
-    },
     "t768|craft": {
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 6,
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 4
@@ -701,5 +694,5 @@
       "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1
     }
   },
-  "updatedAt": "2026-11-16T10:10:58.482Z"
+  "updatedAt": "2026-11-16T11:07:48.535Z"
 }

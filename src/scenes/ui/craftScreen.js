@@ -243,13 +243,10 @@ export const craftScreenMethods = {
             });
             rc.add([card, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText]);
             this.craftContent.add(rc);
-            btn.on('pointerdown', (p) => this.startCraftDrag(p));
-            btn.on('pointerup', () => {
-                if (this._craftDragging) return;
-                this.activateItemRow(def);
-            });
-            buyBtn.on('pointerdown', (p) => this.startCraftDrag(p));
-            buyBtn.on('pointerup', () => {
+            // Действия ряда — в замыканиях: их зовут и кнопки (тап по видимой
+            // кнопке — она выше по отрисовке), и хит-колонка контейнера ряда
+            // (тап в колонке вне кнопок; зона нажатия >= 40 CSS px на телефоне)
+            const buyAction = () => {
                 if (this._craftDragging) return;
                 if (buyItem(def.id)) {
                     playSfx(this, 'purchase');
@@ -257,9 +254,29 @@ export const craftScreenMethods = {
                     this.setItemRowError(def, (gameState.items[def.id] || 0) >= def.stackMax ? 'стак полон' : 'не хватает руды');
                 }
                 this.refreshUi();
-            });
-            const row = { def, rc, card, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText, textX, btnW, btnH, iconCX, iconSize, w, _key: null, _hintKey: null, _err: null, _errUntil: 0, _hintSize: subSize, _hintMaxW: textMaxW, _buySize: subSize, _buyMaxW: btnW - SPACE.md, hintSlot: SP.hintSlot0, _nameTarget: nameSize, _nameMaxW: textMaxW, _dirty: false };
+            };
+            const actAction = () => {
+                if (this._craftDragging) return;
+                this.activateItemRow(def);
+            };
+            btn.on('pointerdown', (p) => this.startCraftDrag(p));
+            btn.on('pointerup', actAction);
+            buyBtn.on('pointerdown', (p) => this.startCraftDrag(p));
+            buyBtn.on('pointerup', buyAction);
+            const row = { def, rc, card, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText, textX, btnX: btnCX, btnW, btnH, iconCX, iconSize, w, _key: null, _hintKey: null, _err: null, _errUntil: 0, _hintSize: subSize, _hintMaxW: textMaxW, _buySize: subSize, _buyMaxW: btnW - SPACE.md, hintSlot: SP.hintSlot0, _nameTarget: nameSize, _nameMaxW: textMaxW, _dirty: false };
             if (flowMode) row.relayout = () => this.layoutCraftItemRow(row);
+            // Хит-колонка контейнера ряда (button column, вся высота карточки):
+            // тап по Y — верхняя половина = покупка, нижняя = активация
+            const setRowHit = (bandH) => row.rc.setInteractive(
+                new Phaser.Geom.Rectangle(row.btnX - row.btnW / 2 - 6, 0, row.btnW + 12, bandH),
+                Phaser.Geom.Rectangle.Contains
+            );
+            row.rc.on('pointerdown', (p) => this.startCraftDrag(p));
+            row.rc.on('pointerup', (p, lx, ly) => {
+                const mid = (row.buyBtn.y + row.btn.y) / 2;
+                if (ly < mid) buyAction(); else actAction();
+            });
+            if (!flowMode) setRowHit(SP.rowH); else row.setRowHit = setRowHit;
             this.craftItemRows[def.id] = row;
             if (flowMode) addFlow(rc, 0, SP.gapRow, row.relayout, row);
             else y += SP.step;
@@ -536,6 +553,8 @@ export const craftScreenMethods = {
         const H = Math.max(Math.ceil(y), row.iconSize + 2 * padT);
         row.card.setDisplaySize(row.w, H).setPosition(row.w / 2, H / 2);
         this.placeIcon(row.icon, row.def.id, row.iconCX, H / 2, row.iconSize);
+        // Хит-колонка контейнера ряда — под новую высоту карточки
+        if (row.setRowHit) row.setRowHit(H);
         return H;
     },
 
