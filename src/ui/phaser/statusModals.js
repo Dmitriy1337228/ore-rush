@@ -11,10 +11,10 @@ import {
     COMPONENTS,
     ARTIFACTS
 } from '../../state.js';
-import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer } from '../shared/uiKit.js';
-import { addButton } from '../shared/button.js';
-import { createPanel } from '../shared/panel.js';
-import { stackDown } from '../shared/stack.js';
+import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer } from './uiKit.js';
+import { addButton } from './button.js';
+import { createPanel } from './panel.js';
+import { stackDown } from './stack.js';
 import { TEXT, DEPTH, TEX, REG, FONT_SIZE, SPACE } from '../shared/theme.js';
 
 const OK_BUTTON = { w: 190, h: 46 };

@@ -2,10 +2,10 @@
 // состояний, шрифт Monocraft. Бизнес-логики нет — данные из ./fixtures.js,
 // разметка — ./fixtureMarkup.js (общая с автономным стендом для телефона).
 // Включается флагом D5: ?dom=1 (или localStorage.domUi=1) в dev-сборке.
-import { ensureUiRoot } from './root.js';
-import { setHtml } from './html.js';
+import { ensureUiRoot } from '../root.js';
+import { setHtml } from '../html.js';
 import { markup } from './fixtureMarkup.js';
-import { fitIcons } from './iconFit.js';
+import { fitIcons } from '../iconFit.js';
 import './tokens.css';
 import './dom.css';
 

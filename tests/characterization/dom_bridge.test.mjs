@@ -2,7 +2,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { gameState } from '../../src/state.js';
-import { snapshot } from '../../src/dom/bridge.js';
+import { snapshot } from '../../src/ui/dom/bridge.js';
 import { MSG } from '../../src/state/craftMessages.js';
 
 const reset = () => {

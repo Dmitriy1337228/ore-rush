@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { gameState, MUTATIONS, MUTATION_DURATION_MS } from '../state.js';
 import { playSfx } from '../sfx.js';
-import { makeLabel } from '../ui/shared/uiKit.js';
+import { makeLabel } from '../ui/phaser/uiKit.js';
 import { floatText } from './effects.js';
 import { TEXT, REG, FONT_SIZE } from '../ui/shared/theme.js';
 import { blockStageKey, GAME_DEPTH } from './constants.js';

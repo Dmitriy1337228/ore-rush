@@ -1,5 +1,5 @@
 import { gameState, saveGame } from '../../state.js';
-import { makeLabel, fitFontSize, addScreenDim, DIM_ALPHA, setHitWorld } from '../shared/uiKit.js';
+import { makeLabel, fitFontSize, addScreenDim, DIM_ALPHA, setHitWorld } from './uiKit.js';
 import { TEXT, DEPTH, TEX, FONT_SIZE, SPACE } from '../shared/theme.js';
 
 export const tutorialMethods = {

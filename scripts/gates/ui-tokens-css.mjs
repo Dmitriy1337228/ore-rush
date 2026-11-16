@@ -1,9 +1,9 @@
 // CSS-гейт токенов DOM-слоя (этап 5, шаг 5.2).
 // Запрещает голые числовые литералы размеров (px/rem/em) в sizing-свойствах вне
-// src/dom/tokens.css. Исключения: 0, 100%, auto; 1px — только со стоящим рядом
+// src/ui/dom/tokens.css. Исключения: 0, 100%, auto; 1px — только со стоящим рядом
 // комментарием-причиной. Размеры DOM берутся из var(--space-*/--font-*/...).
 //
-// Запуск: node scripts/ui-tokens-css.mjs [файлы...]  (по умолчанию — src/dom/*.css)
+// Запуск: node scripts/ui-tokens-css.mjs [файлы...]  (по умолчанию — src/ui/dom/*.css)
 // Селф-тест: node scripts/ui-tokens-css.mjs --self-test (заведомо плохой CSS → код 1)
 import fs from 'node:fs';
 import path from 'node:path';
@@ -111,11 +111,11 @@ if (argv.includes('--self-test')) {
     const files = argv.filter((a) => !a.startsWith('--'));
     let list = files;
     if (!list.length) {
-        const dir = path.join(ROOT, 'src', 'dom');
+        const dir = path.join(ROOT, 'src', 'ui', 'dom');
         list = fs
             .readdirSync(dir)
             .filter((f) => f.endsWith('.css') && !SKIP.has(f))
-            .map((f) => path.join('src/dom', f));
+            .map((f) => path.join('src/ui/dom', f));
     }
 
     const problems = run(list);

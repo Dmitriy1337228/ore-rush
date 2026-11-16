@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { markup } from '../../src/dom/fixtureMarkup.js';
+import { markup } from '../../src/ui/dom/dev/fixtureMarkup.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const argv = process.argv.slice(2);
@@ -24,9 +24,9 @@ const dataUri = (name) => {
     return `data:image/png;base64,${fs.readFileSync(file).toString('base64')}`;
 };
 
-const tokens = fs.readFileSync(path.join(ROOT, 'src/dom/tokens.css'), 'utf8');
+const tokens = fs.readFileSync(path.join(ROOT, 'src/ui/dom/tokens.css'), 'utf8');
 const domCss = fs
-    .readFileSync(path.join(ROOT, 'src/dom/dom.css'), 'utf8')
+    .readFileSync(path.join(ROOT, 'src/ui/dom/dom.css'), 'utf8')
     .replace(/url\('([^']+)'\)/g, (m, p) => (p.includes('assets/ui/') ? `url('${dataUri(path.basename(p))}')` : m));
 
 const fontBase64 = fs.readFileSync(path.join(ROOT, 'assets/fonts/Monocraft.ttf')).toString('base64');
@@ -34,7 +34,7 @@ const body = String(markup()).replace(/src="assets\/ui\/([^"]+)"/g, (m, name) =>
 
 // Центровка иконок по alpha-bbox: тот же код, что в src/dom/iconFit.js (единый источник),
 // с вырезанным export — стенд не использует модули.
-const iconFitSource = fs.readFileSync(path.join(ROOT, 'src/dom/iconFit.js'), 'utf8').replace(/\bexport\s+/g, '');
+const iconFitSource = fs.readFileSync(path.join(ROOT, 'src/ui/dom/iconFit.js'), 'utf8').replace(/\bexport\s+/g, '');
 
 // Inline-скрипт стенда: размеры #ui-root, класс ориентации, тикающий таймер, закрытие.
 const script = `

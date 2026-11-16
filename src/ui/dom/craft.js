@@ -11,10 +11,10 @@ import { createPublisher } from './bridge.js';
 import { html, setHtml, renderKeyed } from './html.js';
 import { iconSlot, iconBox, button, card, panel } from './components.js';
 import { fitIcons } from './iconFit.js';
-import { MSG, buyError, activateError } from '../state/craftMessages.js';
-import { buyItem, useItem, startCraft, claimCraft } from '../state.js';
-import { playSfx } from '../sfx.js';
-import { REG, EVENTS } from '../ui/shared/theme.js';
+import { MSG, buyError, activateError } from '../../state/craftMessages.js';
+import { buyItem, useItem, startCraft, claimCraft } from '../../state.js';
+import { playSfx } from '../../sfx.js';
+import { REG, EVENTS } from '../shared/theme.js';
 import './tokens.css';
 import './dom.css';
 

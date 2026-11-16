@@ -52,7 +52,7 @@
     height: min(var(--dom-panel-h), calc(100% - 2 * var(--space-sm)));
     padding: var(--card-pad);
     border: var(--dom-border-panel) solid transparent;
-    border-image: url('../../assets/ui/modal_panel_metal.png') 60 fill / var(--dom-border-panel) stretch;
+    border-image: url('../../../assets/ui/modal_panel_metal.png') 60 fill / var(--dom-border-panel) stretch;
     image-rendering: pixelated;
 }
 
@@ -91,7 +91,7 @@
     padding: 0;
     background: transparent;
     border: var(--dom-border-btn) solid transparent;
-    border-image: url('../../assets/ui/close_button_square.png') 45 fill / var(--dom-border-btn) stretch;
+    border-image: url('../../../assets/ui/close_button_square.png') 45 fill / var(--dom-border-btn) stretch;
     image-rendering: pixelated;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
@@ -179,7 +179,7 @@
     margin-bottom: var(--dom-row-gap);
     padding: var(--space-md);
     border: var(--dom-border-card) solid transparent;
-    border-image: url('../../assets/ui/modal_panel_metal.png') 60 fill / var(--dom-border-card) stretch;
+    border-image: url('../../../assets/ui/modal_panel_metal.png') 60 fill / var(--dom-border-card) stretch;
     image-rendering: pixelated;
 }
 
@@ -190,7 +190,7 @@
     width: var(--dom-slot-size);
     height: var(--dom-slot-size);
     border: var(--dom-border-slot) solid transparent;
-    border-image: url('../../assets/ui/icon_slot_frame.png') 40 fill / var(--dom-border-slot) stretch;
+    border-image: url('../../../assets/ui/icon_slot_frame.png') 40 fill / var(--dom-border-slot) stretch;
     image-rendering: pixelated;
 }
 
@@ -285,7 +285,7 @@
     color: var(--color-white);
     background: transparent;
     border: var(--dom-border-btn) solid transparent;
-    border-image: url('../../assets/ui/buy_button_normal.png') 40 fill / var(--dom-border-btn) stretch;
+    border-image: url('../../../assets/ui/buy_button_normal.png') 40 fill / var(--dom-border-btn) stretch;
     image-rendering: pixelated;
     cursor: pointer;
     touch-action: manipulation;
@@ -293,22 +293,22 @@
 }
 
 .dom-btn:hover {
-    border-image-source: url('../../assets/ui/buy_button_hover.png');
+    border-image-source: url('../../../assets/ui/buy_button_hover.png');
 }
 
 .dom-btn:active {
-    border-image-source: url('../../assets/ui/buy_button_pressed.png');
+    border-image-source: url('../../../assets/ui/buy_button_pressed.png');
 }
 
 .dom-btn:disabled {
-    border-image-source: url('../../assets/ui/buy_button_disabled_gray.png');
+    border-image-source: url('../../../assets/ui/buy_button_disabled_gray.png');
     color: var(--color-muted);
     cursor: default;
 }
 
 /* Визуально «неактивная», но нажимаемая: тап показывает причину (как в Phaser) */
 .dom-btn.is-disabled {
-    border-image-source: url('../../assets/ui/buy_button_disabled_gray.png');
+    border-image-source: url('../../../assets/ui/buy_button_disabled_gray.png');
     color: var(--color-muted);
 }
 
@@ -327,7 +327,7 @@
     min-height: var(--dom-art-min-h);
     padding: var(--space-sm);
     border: var(--dom-border-card) solid transparent;
-    border-image: url('../../assets/ui/modal_panel_metal.png') 60 fill / var(--dom-border-card) stretch;
+    border-image: url('../../../assets/ui/modal_panel_metal.png') 60 fill / var(--dom-border-card) stretch;
     image-rendering: pixelated;
 }
 

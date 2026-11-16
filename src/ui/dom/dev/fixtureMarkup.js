@@ -2,10 +2,10 @@
 // используется и в браузере (fixtureApp.js), и Node-генератором автономного
 // файла для проверки на телефоне без сети (scripts/build-dom-lab.mjs).
 // Строители — общие компоненты (components.js), те же, что у боевого DOM-экрана.
-import { html } from './html.js';
+import { html } from '../html.js';
 import { FIXTURES } from './fixtures.js';
-import { MSG } from '../state/craftMessages.js';
-import { iconSlot, iconBox, button, card, panel } from './components.js';
+import { MSG } from '../../../state/craftMessages.js';
+import { iconSlot, iconBox, button, card, panel } from '../components.js';
 
 const componentChips = () =>
     FIXTURES.components.map(

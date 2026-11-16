@@ -1,16 +1,8 @@
 import Phaser from 'phaser';
 import { gameState, TIERS, BOSSES, getBossRecord } from '../../state.js';
-import {
-    addImgC,
-    makeLabel,
-    fitFontSize,
-    addScreenDim,
-    DIM_ALPHA,
-    addModalContainer,
-    tapSlopPx
-} from '../shared/uiKit.js';
+import { addImgC, makeLabel, fitFontSize, addScreenDim, DIM_ALPHA, addModalContainer, tapSlopPx } from './uiKit.js';
 import { MAP_NODE_H, MAP_HEAD, MAP_TAIL, MAP_R_TIER, MAP_R_BOSS } from '../shared/listGeometry.js';
-import { createPanel } from '../shared/panel.js';
+import { createPanel } from './panel.js';
 import { TEXT, DEPTH, REG, FONT_SIZE, SPACE } from '../shared/theme.js';
 
 export const mapScreenMethods = {

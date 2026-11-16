@@ -1,11 +1,11 @@
 // Фикстуры мастерской для урезанного пилота DOM (этап 1).
 // Это СТАТИЧЕСКИЕ данные, а не бизнес-логика: state.js не подключается (этап 2),
 // значения скопированы из каталогов для реалистичных текстов (S-сценарии — этап 3).
-// assetUrl: в dev и prod ассеты лежат по относительному пути assets/ui/<key>.png.
+// assetUrl (прод-хелпер) вынесен в ../assets.js — здесь только ре-экспорт для стендов.
 
-import { MSG } from '../state/craftMessages.js';
+import { MSG } from '../../../state/craftMessages.js';
 
-export const assetUrl = (key) => `assets/ui/${key}.png`;
+export { assetUrl } from '../assets.js';
 
 export const FIXTURES = {
     components: [

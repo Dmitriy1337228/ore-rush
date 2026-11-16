@@ -143,7 +143,7 @@ export function collectItems(game, cssScale = 1) {
         ? [
               { name: 'list', root: ui.listContent, cam: ui.listCam, active: () => true },
               { name: 'map', root: ui.mapContent, cam: ui.mapCam, active: () => ui._mapOpen }
-              // Мастерская — DOM-слой (src/dom), её вёрстку проверяет ui:check:dom
+              // Мастерская — DOM-слой (src/ui/dom), её вёрстку проверяет ui:check:dom
           ]
         : [];
 

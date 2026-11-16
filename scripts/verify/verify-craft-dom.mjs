@@ -413,7 +413,7 @@ const check = (name, ok, details = {}) => {
     await st('m.gameState.bossBuffUntil = 0; m.gameState.miningBuffUntil = 0; m.gameState.itemVeinUntil = 0;');
     await wait(600);
     const parity = await page.evaluate(async () => {
-        const bridge = await import(new URL('src/dom/bridge.js', document.baseURI).href);
+        const bridge = await import(new URL('src/ui/dom/bridge.js', document.baseURI).href);
         const snap = bridge.snapshot({ bossActive: false });
         const text = (el) => (el ? el.textContent.trim() : null);
         const mism = [];

@@ -9,8 +9,8 @@ import {
     getPrestigeMult,
     fmt
 } from '../../state.js';
-import { addImg, makeLabel, fitFontSize, setHitRect, setHitWorld } from '../shared/uiKit.js';
-import { addButton } from '../shared/button.js';
+import { addImg, makeLabel, fitFontSize, setHitRect, setHitWorld } from './uiKit.js';
+import { addButton } from './button.js';
 import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE, TOUCH_MIN } from '../shared/theme.js';
 import { measureIcon } from '../shared/iconMetrics.js';
 

@@ -1,10 +1,10 @@
 /*
  * СГЕНЕРИРОВАННЫЙ ФАЙЛ — не править руками.
- * Источник: src/ui/shared/theme.js + DOM_EXTRA в scripts/gen-dom-tokens.mjs.
+ * Источник: src/ui/shared/theme.js + DOM_EXTRA в scripts/gates/gen-dom-tokens.mjs.
  * Перегенерация: npm run dom:tokens. Проверка дрейфа (CI/DoD): npm run dom:tokens -- --check
  */
 :root {
-    /* Шрифт UI (Phaser: FONT в src/ui/shared/uiKit.js) */
+    /* Шрифт UI (Phaser: FONT в src/ui/phaser/uiKit.js) */
     --font-ui: "Monocraft", "Inter", "Consolas", monospace;
 
     /* Цвета текста (TEXT) */

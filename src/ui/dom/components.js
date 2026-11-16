@@ -3,7 +3,7 @@
 // снимок моста). Одни и те же строители используют фикстуры и боевой экран,
 // чтобы стили не расходились.
 import { html } from './html.js';
-import { assetUrl } from './fixtures.js';
+import { assetUrl } from './assets.js';
 
 // Слот иконки: рамка + бокс центровки (iconFit.js выравнивает арт по alpha-bbox).
 export const iconSlot = (icon) => html`

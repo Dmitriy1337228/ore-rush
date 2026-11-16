@@ -10,7 +10,7 @@
 //   (origin 0.5) от ТЕКУЩЕГО размера фона: { x, y, w, h }; caller переводит в
 //   мировые (x + modal.cx) для камер-скроллов.
 import { addImgC, setHitWorld, makeLabel } from './uiKit.js';
-import { TEXT, TEX } from './theme.js';
+import { TEXT, TEX } from '../shared/theme.js';
 
 export function createPanel(
     scene,

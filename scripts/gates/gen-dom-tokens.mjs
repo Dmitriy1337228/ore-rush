@@ -3,17 +3,17 @@
 // ниже (единицы DOM, которых в Phaser нет вовсе).
 //
 // Запуск:
-//   npm run dom:tokens           — перезаписать src/dom/tokens.css
+//   npm run dom:tokens           — перезаписать src/ui/dom/tokens.css
 //   npm run dom:tokens -- --check — только проверить дрейф (код 1, если файл устарел)
 //
-// Правило: src/dom/tokens.css руками не правится; единицы DOM — только var(--...).
+// Правило: src/ui/dom/tokens.css руками не правится; единицы DOM — только var(--...).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TEXT, SPACE, FONT_SIZE, MIN, CARD, HIT } from '../../src/ui/shared/theme.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const OUT = path.join(ROOT, 'src', 'dom', 'tokens.css');
+const OUT = path.join(ROOT, 'src', 'ui', 'dom', 'tokens.css');
 
 const kebab = (s) =>
     s
@@ -61,12 +61,12 @@ function build() {
     const lines = [];
     lines.push('/*');
     lines.push(' * СГЕНЕРИРОВАННЫЙ ФАЙЛ — не править руками.');
-    lines.push(' * Источник: src/ui/shared/theme.js + DOM_EXTRA в scripts/gen-dom-tokens.mjs.');
+    lines.push(' * Источник: src/ui/shared/theme.js + DOM_EXTRA в scripts/gates/gen-dom-tokens.mjs.');
     lines.push(' * Перегенерация: npm run dom:tokens. Проверка дрейфа (CI/DoD): npm run dom:tokens -- --check');
     lines.push(' */');
     lines.push(':root {');
 
-    lines.push('    /* Шрифт UI (Phaser: FONT в src/ui/shared/uiKit.js) */');
+    lines.push('    /* Шрифт UI (Phaser: FONT в src/ui/phaser/uiKit.js) */');
     lines.push('    --font-ui: "Monocraft", "Inter", "Consolas", monospace;');
 
     lines.push('');
@@ -128,11 +128,11 @@ if (process.argv.includes('--check')) {
     // Git на Windows может отдать CRLF — сравниваем без учёта перевода строк
     const prev = prevRaw === null ? null : prevRaw.replace(/\r\n/g, '\n');
     if (prev === css) {
-        console.log('dom:tokens — ок: src/dom/tokens.css соответствует src/ui/shared/theme.js');
+        console.log('dom:tokens — ок: src/ui/dom/tokens.css соответствует src/ui/shared/theme.js');
         process.exit(0);
     }
 
-    console.error('dom:tokens — ДРЕЙФ: src/dom/tokens.css устарел. Запустите npm run dom:tokens.');
+    console.error('dom:tokens — ДРЕЙФ: src/ui/dom/tokens.css устарел. Запустите npm run dom:tokens.');
     if (prev) {
         const a = (prev || '').split('\n');
         const b = css.split('\n');

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { gameState, fmt, ITEMS, useItem, getItemPrice, buyItem, canBuyItem } from '../../state.js';
-import { makeLabel, fitFontSize, setHitWorldRect } from '../shared/uiKit.js';
-import { addButton } from '../shared/button.js';
+import { makeLabel, fitFontSize, setHitWorldRect } from './uiKit.js';
+import { addButton } from './button.js';
 import { VIEWPORT } from '../shared/listGeometry.js';
 import { TEXT, DEPTH, TEX, HIT, FONT_SIZE, SPACE } from '../shared/theme.js';
 import { playSfx } from '../../sfx.js';

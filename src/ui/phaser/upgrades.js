@@ -31,8 +31,8 @@ import {
     setHitWorld,
     setHitWorldRect,
     tapSlopPx
-} from '../shared/uiKit.js';
-import { addButton } from '../shared/button.js';
+} from './uiKit.js';
+import { addButton } from './button.js';
 import { VIEWPORT, ROW_H, ROW_GAP, TABS, BUY_AMOUNTS, ROW } from '../shared/listGeometry.js';
 import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE } from '../shared/theme.js';
 import { playSfx } from '../../sfx.js';

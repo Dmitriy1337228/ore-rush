@@ -17,8 +17,8 @@ import {
     ARTIFACTS,
     COMPONENTS,
     BOSSES
-} from '../state.js';
-import { itemStockHint, recipeStatus } from '../state/craftMessages.js';
+} from '../../state.js';
+import { itemStockHint, recipeStatus } from '../../state/craftMessages.js';
 
 export const PUBLISH_MS = 150; // 100–250 мс по плану
 

@@ -12,18 +12,15 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 
-const BASELINE_FILES = [
-    // экран мастерской целиком (вёрстка + хендлеры + анимации + скролл)
-    'src/scenes/ui/craftScreen.js',
-    // специфичные тесты экрана (S1–S9 Phaser-версии)
-    'scripts/verify-craft.cjs'
-];
+// Phaser-экран мастерской удалён вместе с пилотом DOM (G3 = go): числовой baseline
+// зафиксирован в docs/UI_DOM_PILOT_BASELINE.md, живых файлов для подсчёта нет.
+const BASELINE_FILES = [];
 
 // DOM-версия: заполняется по мере этапов 1–5. Отсутствующие пути = 0 строк.
 const DOM_PATHS = [
-    'src/dom', // слой: root, bridge, компоненты, экран, CSS
+    'src/ui/dom', // слой: root, bridge, компоненты, экран, CSS
     'scripts/gates/gen-dom-tokens.mjs', // генератор токенов (часть слоя)
-    'src/dom/tokens.css', // сгенерированные токены
+    'src/ui/dom/tokens.css', // сгенерированные токены
     'scripts/verify/verify-craft-dom.mjs' // специфичные тесты экрана (S1–S10)
 ];
 
