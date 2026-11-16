@@ -9,6 +9,7 @@ import { addNineC, setHitRect, makeLabel, fitFontSize } from './uiKit.js';
 export function addButton(scene, x, y, {
     w, h,              // размер фона; по умолчанию также размер hit-area
     key,               // текстура фона (TEX.button / TEX.buttonDisabled)
+    kind = 'nine',     // 'nine' — 9-slice (addNineC); 'image' — пропорциональный Image
     text = '',         // подпись по центру (origin 0.5, как у прежних кнопок)
     fontSize,          // кегль подписи (токен FONT_SIZE или масштабированная база)
     color,
@@ -17,9 +18,13 @@ export function addButton(scene, x, y, {
     fitMin,            // нижний порог ужина (по умолчанию 9 из uiKit)
     hitW = w,          // hit-area — те же числа, что ставил вызывной setHitRect
     hitH = h,
-    hitCentered = false
+    hitCentered = false,
+    depth              // глубина фона (по умолчанию — как до миграции)
 } = {}) {
-    const bg = addNineC(scene, x, y, key, w, h);
+    const bg = kind === 'image'
+        ? scene.add.image(x, y, key).setDisplaySize(w, h)
+        : addNineC(scene, x, y, key, w, h);
+    if (depth !== undefined) bg.setDepth(depth);
     setHitRect(bg, hitW, hitH, hitCentered);
     const label = makeLabel(scene, x, y, text, fontSize, color, style).setOrigin(0.5);
     if (fitMaxW !== null) fitFontSize(label, fontSize, fitMaxW, fitMin);

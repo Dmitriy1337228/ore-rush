@@ -3,6 +3,7 @@ import {
     gameState, TIERS, UPGRADES, getUpgradeDef, getUpgradeLevel, getUpgradeCost, isMaxed, isUpgradeAvailable, canBuy, buyBulk, getAffordableBulk, getBulkCost, isUpgradeVisible, canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice, saveGame, fmt
 } from '../../state.js';
 import { addNine, addImg, addImgC, makeLabel, fitFontSize, fitOneLine, setHitRect } from '../../ui/uiKit.js';
+import { addButton } from '../../ui/button.js';
 import { VIEWPORT, ROW_H, ROW_GAP, TABS, BUY_AMOUNTS, ROW } from '../../ui/listGeometry.js';
 import { TEXT, DEPTH, TEX, HIT, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
@@ -225,11 +226,13 @@ export const panelMethods = {
         const levelText = makeLabel(this, w - g.rightInset, g.levelY, 'ур. 0', g.levelSize, TEXT.bright);
         levelText.setOrigin(1, 0.5);
 
-        const btn = this.add.image(btnX + btnW / 2, g.btnY + btnH / 2, TEX.button).setDisplaySize(btnW, btnH).setDepth(DEPTH.ui);
-        setHitRect(btn, ...HIT.button);
-        const btnText = makeLabel(this, btnX + btnW / 2, g.btnY + btnH / 2, 'Купить', g.btnSize, TEXT.white);
-        btnText.setOrigin(0.5);
-        fitFontSize(btnText, g.btnSize, btnW - 12, 8);
+        const { bg: btn, label: btnText } = addButton(this, btnX + btnW / 2, g.btnY + btnH / 2, {
+            kind: 'image', w: btnW, h: btnH, key: TEX.button,
+            text: 'Купить', fontSize: g.btnSize, color: TEXT.white,
+            depth: DEPTH.ui,
+            hitW: HIT.button[0], hitH: HIT.button[1],
+            fitMaxW: btnW - SPACE.md, fitMin: 8
+        });
 
         const lockText = makeLabel(this, textX, g.priceY, '', g.lockSize, TEXT.bad);
         lockText.setOrigin(0, 0.5);
