@@ -6,6 +6,8 @@
 
 ## Быстрый старт
 
+Индекс скриптов и стабильные npm-алиасы — `scripts/README.md` (гард `npm run scripts:check`).
+
 ```
 npm run ui:check:quick                 # 3 вьюпорта x 16 состояний (~1 мин)
 npm run ui:check                       # полная матрица: 9 вьюпортов x 16 состояний (~5 мин)

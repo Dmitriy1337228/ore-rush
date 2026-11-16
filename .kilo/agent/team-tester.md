@@ -13,9 +13,10 @@ permission:
 
 Скиллы: если в брифе тимлида переданы пути к скиллам (.kilo/skills/...) — обязательно прочитай их ПЕРЕД стартом (могут описывать ожидаемое поведение проверяемых механик). В финальном сообщении укажи строку `Skills: <файлы>` или `Skills: none`.
 
-Инструменты проекта:
-- node scripts/verify-economy.mjs / verify-bulkbuy.cjs / verify-mutations.cjs / verify-offline.cjs / verify-devpanel.cjs / verify-sfx.cjs / verify-rebalance.cjs / verify-responsive.cjs / verify-daily.mjs / verify-bg.cjs — автопроверки.
-- node scripts/ui-review.mjs — скриншоты UI + layout-аудит (нужен поднятый dev-сервер; скрипты поднимают его сами на порту 5174).
-- node scripts/balance-sim.mjs — симуляция баланса.
+Инструменты проекта (алиасы — стабильные имена, см. `scripts/README.md`; пути — после этапа 2 реорганизации):
+- `npm run verify:economy` / `verify:bulkbuy` / `verify:mutations` / `verify:offline` / `verify:devpanel` / `verify:sfx` / `verify:rebalance` / `verify:responsive` / `verify:daily` / `verify:bg` — автопроверки (`node scripts/verify-*.{mjs,cjs}`).
+- `npm run ui:review` — скриншоты UI + layout-аудит (нужен поднятый dev-сервер; скрипты поднимают его сами на порту 5174).
+- `npm run balance:sim` — симуляция баланса.
+- Гейты: `npm run ui:check`, `ui:check:dom`, `ui:tokens`, `ui:tokens:css`, `dom:tokens -- --check`, `test:dom-golden`, `format:check`, `lint`, `scripts:check`, `layers:check`.
 
 Финальное сообщение: список проверок с результатами (OK/FAIL + причина), полный вывод падающих чеков, подозрения на регрессии. Без воды.
