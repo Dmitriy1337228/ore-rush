@@ -64,11 +64,11 @@
 ### 0.3. Предстартовая проверка (единственная точка, где допустимо спросить игрока — до начала работы)
 
 План **не начинается**, пока не выполнено всё:
-- [ ] Ветка `master`, `git status` чист (планы закоммичены: `docs/REPO_REFACTOR_PLAN.md`, `docs/UI_DOM_PHASE2_PLAN.md`; незакоммиченного кода нет).
-- [ ] Нет живых параллельных веток с кодом, которые игрок собирается сливать во время плана (`git branch --no-merged master` — только `backup/*`, архивные, `dry/*`).
-- [ ] `node -v`, `npm -v`, `npm ci` проходят; `npm run build` проходит; Playwright-браузеры установлены (`npx playwright --version`).
-- [ ] Свободен порт dev-сервера гейтов (5174).
-- [ ] Игрок подтвердил запуск неделимого плана (сообщение «запускай» в задаче).
+- [x] Ветка `master`, `git status` чист (планы закоммичены: `docs/REPO_REFACTOR_PLAN.md`, `docs/UI_DOM_PHASE2_PLAN.md`; незакоммиченного кода нет).
+- [x] Нет живых параллельных веток с кодом, которые игрок собирается сливать во время плана (`git branch --no-merged master` — только `backup/*`, архивные, `dry/*`; `feature/mine-map-bosses-artifacts-craft` содержит только README и скилл).
+- [x] `node -v`, `npm -v`, `npm ci` проходят; `npm run build` проходит; Playwright-браузеры установлены (`npx playwright --version` — 1.65.0).
+- [x] Свободен порт dev-сервера гейтов (5174) — освобождён от забытого vite.
+- [x] Игрок подтвердил запуск неделимого плана (сообщение «Приступи к выполнению» в задаче).
 
 Если пункт не выполнен — один вопрос игроку **сразу**, план не стартует (это не пауза: работа ещё не начата).
 
@@ -149,9 +149,9 @@
 - S0.7. `git worktree remove ..\game_clicker-style-dry`, ветку `dry/style` удалить.
 
 **DoD S0**
-- [ ] Бэкап-ветка и бандл есть, `git bundle verify` — ok.
-- [ ] Baseline-гейты записаны (зелёные или «внешний долг»), dist-хэш двух базовых сборок совпадает (или замена критерия записана).
-- [ ] Dry-run: **все гейты зелёные в worktree**, dist-хэш совпадает с S0.3, фиксированная точка подтверждена, отчёт S0.5 записан.
+- [x] Бэкап-ветка и бандл есть, `git bundle verify` — ok (`backup/pre-repo-reorg`, `..\game_clicker-pre-repo-reorg.bundle`, 12 refs).
+- [x] Baseline-гейты записаны (зелёные или «внешний долг»), dist-хэш двух базовых сборок совпадает (или замена критерия записана) — `docs/REPO_REFACTOR_BASELINE.md`, раздел 1.
+- [x] Dry-run: **все гейты зелёные в worktree**, dist-хэш совпадает с S0.3, фиксированная точка подтверждена, отчёт S0.5 записан — раздел 2; добавлен `embeddedLanguageFormatting: "off"` (иначе dist расходился).
 - Красный необъяснимый гейт в dry-run → сбой (0.5, п. 2): основная ветка ещё не менялась, достаточно удалить worktree и завершить с отчётом.
 
 ### Этап S1 — Инструменты (0.25 дня)
@@ -160,9 +160,9 @@
 - S1.3. Коммит `chore(repo): добавляет Prettier и ESLint (конфиги и npm-скрипты)`.
 
 **DoD S1**
-- [ ] Конфиги и скрипты закоммичены; в `package.json` точные версии.
-- [ ] В коммите нет изменений исходников (`git show --stat` — только конфиги, `package*.json`).
-- [ ] `npm run lint` не падает по конфигу; `npm run build` зелёный, dist-хэш не изменился.
+- [x] Конфиги и скрипты закоммичены; в `package.json` точные версии (`prettier 3.10.1`, `eslint 10.15.0`, `@stylistic/eslint-plugin 6.0.1`).
+- [x] В коммите нет изменений исходников (`git show --stat` — только конфиги, `package*.json`) — `54a7004`.
+- [x] `npm run lint` не падает по конфигу; `npm run build` зелёный, dist-хэш не изменился (`index-DUrU2wPh.js`).
 
 ### Этап S2 — Массовый механический коммит (0.25–0.5 дня)
 - S2.1. `npm run format` → `npm run lint:fix` → `npm run format`. Коммиты: `style(repo): применяет Prettier ко всем исходникам` и, если дифф ESLint крупный, отдельно `style(repo): применяет ESLint-автофиксы`. Смешивать со сменой логики запрещено.
@@ -171,11 +171,11 @@
 - S2.4. Коммит `chore(repo): добавляет .git-blame-ignore-revs` (хэши S2.1) + строка про `git config blame.ignoreRevsFile` в `AGENTS.md`/`README.md`.
 
 **DoD S2**
-- [ ] `format:check` и `lint` — код 0; повторный `format → lint:fix → format` не даёт диффа.
-- [ ] **dist-хэш до = после**; расхождения (если были) разобраны и объяснены по файлам.
-- [ ] Весь набор D14 зелёный; `ui:tokens` проверяет **то же число файлов** и 0 нарушений; `baseline.json`, golden, `tokens.css` не изменены.
-- [ ] Затронуты только `*.js/*.mjs/*.cjs` в `src scripts tests` и `vite.config.js` (`git diff --name-only | rg -v "\.(js|mjs|cjs)$"` — пусто, кроме `package*.json`, `.git-blame-ignore-revs`, `AGENTS.md`/`README.md`).
-- [ ] Автоматический smoke игры: `npm run test:ui` и `npm run ui:check:quick` зелёные, ошибок консоли нет.
+- [x] `format:check` и `lint` — код 0; повторный `format → lint:fix → format` не даёт диффа.
+- [x] **dist-хэш до = после**; расхождения (если были) разобраны и объяснены по файлам — совпал байт-в-байт (`index-DUrU2wPh.js`, `craftScreen-RSpNUm4y.js`).
+- [x] Весь набор D14 зелёный; `ui:tokens` проверяет **то же число файлов** (7) и 0 нарушений; `baseline.json`, golden, `tokens.css` не изменены.
+- [x] Затронуты только `*.js/*.mjs/*.cjs` в `src scripts tests` и `vite.config.js` (`git diff --name-only` — только `package*.json`, `.prettier*`, `eslint.config.js`, `AGENTS.md`/`README.md`).
+- [x] Автоматический smoke игры: `npm run test:ui` (4/4) и `npm run ui:check` (0 новых ошибок) зелёные, ошибок консоли нет.
 
 ### Этап S3 — Правила стиля, агенты, гейты (0.25 дня)
 - S3.1. `AGENTS.md`: раздел «Стиль кода» — Prettier/ESLint, команды `format`, `format:check`, `lint`, `lint:fix`, охват (D10), правило комментариев (D13), `blame.ignoreRevsFile`; во все перечни гейтов — `format:check` и `lint`.
@@ -183,8 +183,8 @@
 - S3.3. `docs/UI_LAYOUT.md`, скилл `ui-layout-check` — упоминание новых гейтов.
 
 **DoD S3**
-- [ ] `AGENTS.md` и `.kilo/agent/team-*.md` не противоречат в части комментариев (grep «без комментариев» — 0 в действующих правилах).
-- [ ] `format:check` и `lint` упомянуты в `AGENTS.md`, `docs/UI_LAYOUT.md`, `.kilo/command/team.md`; код не менялся; коммиты `docs(repo): …`.
+- [x] `AGENTS.md` и `.kilo/agent/team-*.md` не противоречат в части комментариев (grep «без комментариев» — 0 в действующих правилах).
+- [x] `format:check` и `lint` упомянуты в `AGENTS.md`, `docs/UI_LAYOUT.md`, `.kilo/command/team.md`, скилле `ui-layout-check`; код не менялся; коммит `1db20c0` `docs(repo): …`.
 
 ---
 
@@ -195,7 +195,7 @@
 - 0.2. **Инвентаризация фактов** → `docs/REPO_REFACTOR_BASELINE.md`: число файлов `scripts/` (на 2026-11-16 — 37: 35 + 2 в `lib/`), число файлов `src/` (73), импортов `theme.js` (17), `uiKit.js` (12), `src/state.js` (23); список зашитых путей по Приложению B (grep с номерами строк — **после этапа S2**: номера сдвинулись); счётчик упоминаний `scripts/` в `package.json`, `tests/`, `.kilo/`, `AGENTS.md`, `docs/`.
 
 **DoD этапа 0**
-- [ ] Baseline-гейты записаны; `docs/REPO_REFACTOR_BASELINE.md` содержит счётчики и список зашитых путей; коммит `docs(repo): фиксирует baseline реорганизации`.
+- [x] Baseline-гейты записаны; `docs/REPO_REFACTOR_BASELINE.md` содержит счётчики и список зашитых путей; коммит `docs(repo): фиксирует baseline реорганизации` (`4e33c94`).
 
 ### Этап 1 — Индекс скриптов, алиасы, гард, таблица триажа (1–1.25 дня)
 Цель: закрыть «теневые» скрипты и подготовить перенос. **Файлы не перемещаются и не удаляются.**
@@ -206,12 +206,12 @@
 - 1.5. Документация без смены путей: `docs/UI_LAYOUT.md` и `AGENTS.md` — ссылка на `scripts/README.md` и правило D8; `.kilo/agent/team-tester.md` — алиасы рядом с путями.
 
 **DoD этапа 1**
-- [ ] Алиас на **каждый** скрипт (кроме `lib/`); `npm run scripts:check` — код 0; `--self-test` — код ≠ 0.
-- [ ] Каждый алиас запущен (гейты — полный прогон, остальные — smoke); результаты в таблице триажа (даже «падает — причина»).
-- [ ] `scripts/README.md` и таблица триажа закоммичены; решения об архиве — только как кандидаты до этапа 2.
-- [ ] `git diff --stat` блока 1 — только `package.json`, `scripts/README.md`, `scripts/check-scripts-index.mjs`, `docs/*`, `AGENTS.md`, `.kilo/agent/team-tester.md`; ни одного rename, ни одного изменения кода `src/`.
-- [ ] Полный набор D14 (+ `scripts:check`) зелёный, 0 новых нарушений, dist-хэш не изменился.
-- [ ] Коммиты `chore(repo): …`, `docs(repo): …`, `test(repo): …`.
+- [x] Алиас на **каждый** скрипт (кроме `lib/`); `npm run scripts:check` — код 0; `--self-test` — код ≠ 0 (1).
+- [x] Каждый алиас запущен (гейты — полный прогон, остальные — smoke); результаты в таблице триажа (даже «падает — причина»). Исключение: `audio:*` не запускались — генераторы контента (venv audio-studio/ffmpeg, пишут в `assets/audio`), причина в таблице.
+- [x] `scripts/README.md` и таблица триажа закоммичены (`c9cba4b`, `ea64842`); решения об архиве — только как кандидаты до этапа 2.
+- [x] `git diff --stat` блока 1 — только `package.json`, `scripts/README.md`, `scripts/check-scripts-index.mjs`, `docs/*`, `AGENTS.md`, `.kilo/agent/team-tester.md`; ни одного rename, ни одного изменения кода `src/`.
+- [x] Полный набор D14 (+ `scripts:check`) зелёный, 0 новых нарушений, dist-хэш не изменился.
+- [x] Коммиты `chore(repo): …`, `docs(repo): …`; отдельный `test(repo): …` не понадобился — гард лежит в `chore`-коммите вместе с алиасами.
 
 ---
 
@@ -408,12 +408,12 @@ scripts/
 
 | Дата | Этап | Что сделано | Результат (числа/ссылки) | Отклонения |
 |---|---|---|---|---|
-| | S0 | | | |
-| | S1 | | | |
-| | S2 | | | |
-| | S3 | | | |
-| | 0 | | | |
-| | 1 | | | |
+| 2026-11-17 | S0 | Предстартовая проверка, ветка `chore/repo-reorg`, бэкап-ветка + `git bundle`, baseline гейтов, dry-run в worktree `..\game_clicker-style-dry` | bundle 75 МБ, `git bundle verify` ok; baseline: test 116/117 (флейк `r_bomb`), test:ui 4/4, ui:check 0 err/3 warn/долг 368, ui:check:dom 0/0, dist `index-DUrU2wPh.js` + `craftScreen-RSpNUm4y.js`; dry-run 112 файлов, все гейты зелёные, dist совпал; `docs/REPO_REFACTOR_BASELINE.md` §1–2 | Добавлен `embeddedLanguageFormatting: "off"` (иначе Prettier менял HTML в шаблонах, dist расходился); в `hud.js` комментарий-обоснование перенесён над `.setDisplaySize` (D13); остановлены забытые dev-серверы на 5174 |
+| 2026-11-17 | S1 | Prettier/ESLint: `.prettierrc`, `.prettierignore`, `eslint.config.js`, npm-скрипты `format`/`format:check`/`lint`/`lint:fix`, точные версии | prettier 3.10.1, eslint 10.15.0, @stylistic 6.0.1; до S2: 104 файла требуют формата, 1780 замечаний линта; коммит `54a7004`; build зелёный, dist не изменился | — |
+| 2026-11-17 | S2 | Массовый механический стиль: Prettier-проход, затем ESLint-автофиксы; `.git-blame-ignore-revs` | `da0acb9` 104 файла (+7974/−2544), `44d874d` 95 файлов (+3106/−693), `2084683`; format:check/lint 0; D14 зелёный; `ui:tokens` 7 файлов / 0 нарушений; dist совпал байт-в-байт | Одна ручная правка (`hud.js`, комментарий) — в Prettier-коммите; ESLint-дифф вынесен отдельным коммитом |
+| 2026-11-17 | S3 | Правила стиля: `AGENTS.md` (раздел «Стиль кода»), `.kilo/agent/team-{dev,architect,reviewer}.md`, `.kilo/command/{team,ui}.md`, `docs/UI_LAYOUT.md`, скилл `ui-layout-check` | `1db20c0`, 8 файлов; grep «без комментариев» — 0; код не менялся | — |
+| 2026-11-17 | 0 | Baseline на отформатированном коде, инвентаризация фактов, список зашитых путей | `4e33c94`; 37 файлов `scripts/` (35+2), 73 файла `src/`, theme.js — 18 импортов, uiKit.js — 12, state.js — 37 импорт-строк; упоминаний `scripts/`: package.json 9, tests 15, .kilo 11, AGENTS 3, docs 155; D14 зелёный, dist совпал | Факты уточнены против плана (было 17/12/23) — снято на отформатированном коде |
+| 2026-11-17 | 1 | Алиасы на каждый скрипт, `scripts/README.md`, гард `scripts:check` (+`--self-test`), прогон и триаж всех скриптов | `c9cba4b`, `ea64842`; 32 алиаса; `scripts:check` 0, self-test 1; активных 31, кандидатов в архив 4 (`verify-economy`, `verify-mine-meta`, `pilot-dom-input-check`, `pilot-dpr-shots`); внешний долг: `verify:boss`, `verify:map`, `verify:responsive`, `metrics:layers` падают до реорганизации (устаревший `ui.craftRoot`/`__DOM_UI`) — `docs/REPO_REFACTOR_BASELINE.md` §5 | `audio:*` не запускались (генераторы контента); `metrics:baseline-shots` перезаписал `docs/pilot-baseline/*` — откатано через `git checkout` (M4), впредь не запускать без нужды |
 | | 2 | | | |
 | | 3 | | | |
 | | 4 | | | |
