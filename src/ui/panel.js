@@ -9,8 +9,8 @@
 //   contentRect(insets) — внутренняя область врезки в контейнерных координатах
 //   (origin 0.5) от ТЕКУЩЕГО размера фона: { x, y, w, h }; caller переводит в
 //   мировые (x + modal.cx) для камер-скроллов.
-import { addImgC, setHitRect, makeLabel } from './uiKit.js';
-import { TEXT, TEX, HIT } from './theme.js';
+import { addImgC, setHitWorld, makeLabel } from './uiKit.js';
+import { TEXT, TEX } from './theme.js';
 
 export function createPanel(scene, {
     w, h,
@@ -26,8 +26,9 @@ export function createPanel(scene, {
     if (close) {
         const size = close.size || 44;
         closeBtn = addImgC(scene, close.x, close.y, TEX.closeButton, size, size);
-        // Hit-area в координатах кадра текстуры (196x191) — как у всех крестиков
-        setHitRect(closeBtn, ...HIT.closeSquare);
+        // Хит 80x80 мировых px (крестик 44-64 видимых — на телефонах меньше
+        // 40 CSS px): enlargement сверх границ, соседние интерактивные далеко
+        setHitWorld(closeBtn, 80, 80);
         if (close.onClose) closeBtn.on('pointerdown', close.onClose);
     }
     return {

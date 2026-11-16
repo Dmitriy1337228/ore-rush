@@ -325,7 +325,9 @@ export const craftScreenMethods = {
             const { bg: btn, label: btnText } = addButton(this, btnCX, SP.btnY0, {
                 kind: 'image', w: btnW, h: btnH, key: TEX.button,
                 text: label, fontSize: subSize, color: TEXT.white, style: SP.btnStyle || undefined,
-                hitW: HIT.button[0], hitH: HIT.button[1],
+                // Одиночная кнопка ряда: хит на всю высоту ряда (96) — >= 40 CSS px
+                // на телефонах; соседние ряды на 6px дальше, пересечений нет
+                hitWorld: true, hitW: btnW, hitH: Math.max(btnH, 96),
                 fitMaxW: btnW - SPACE.md, fitMin: SP.btnFitMin
             });
             rc.add([card, icon, name, desc, needLbl, status, src, btn, btnText]);

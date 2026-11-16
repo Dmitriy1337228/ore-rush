@@ -34,10 +34,15 @@ export const settingsModalMethods = {
         // Звук (эффекты) и Музыка (фон): два тумблера в ряд
         const tbW = 200;
         const tbH = 44;
+        // Хит 80 по высоте (44 видимых — 22-24 CSS px на телефоне); по горизонтали
+        // не расширяем (между тумблерами зазор 10) — зона ниже уходит под
+        // интерактивный слайдер громкости, он выше по порядку отрисовки и
+        // корректно забирает пересечение
         ({ bg: this.soundBtn, label: this.soundText } = addButton(this, -105, -34, {
             w: tbW, h: tbH, key: TEX.button,
             text: 'Звук: вкл', fontSize: FONT_SIZE.body, color: TEXT.white,
-            fitMaxW: tbW - SPACE.lg * 2
+            fitMaxW: tbW - SPACE.lg * 2,
+            hitWorld: true, hitH: 80
         }));
         this.soundBtn.on('pointerdown', () => {
             gameState.soundOn = !gameState.soundOn;
@@ -50,7 +55,8 @@ export const settingsModalMethods = {
         ({ bg: this.musicBtn, label: this.musicText } = addButton(this, 105, -34, {
             w: tbW, h: tbH, key: TEX.button,
             text: 'Музыка: вкл', fontSize: FONT_SIZE.body, color: TEXT.white,
-            fitMaxW: tbW - SPACE.lg * 2
+            fitMaxW: tbW - SPACE.lg * 2,
+            hitWorld: true, hitH: 80
         }));
         this.musicBtn.on('pointerdown', () => {
             gameState.musicOn = !gameState.musicOn;

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
     gameState, TIERS, UPGRADES, getUpgradeDef, getUpgradeLevel, getUpgradeCost, isMaxed, isUpgradeAvailable, canBuy, buyBulk, getAffordableBulk, getBulkCost, isUpgradeVisible, canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice, saveGame, fmt
 } from '../../state.js';
-import { addNine, addImg, addImgC, makeLabel, fitFontSize, fitOneLine, setHitRect } from '../../ui/uiKit.js';
+import { addNine, addImg, addImgC, makeLabel, fitFontSize, fitOneLine, setHitRect, setHitWorld } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
 import { VIEWPORT, ROW_H, ROW_GAP, TABS, BUY_AMOUNTS, ROW } from '../../ui/listGeometry.js';
 import { TEXT, DEPTH, TEX, HIT, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
@@ -298,7 +298,9 @@ export const panelMethods = {
         const x = u.cx - w / 2;
         const y = u.y;
         this.unlockBtn = addNine(this, x, y, TEX.button, w, h, 15);
-        setHitRect(this.unlockBtn, w, h);
+        // Хит 80 по высоте (ландшафт 52 видимых — 26-28 CSS px на телефоне);
+        // по ширине полная кнопка, соседние интерактивные далеко
+        setHitWorld(this.unlockBtn, w, Math.max(h, 80));
         this.unlockText = makeLabel(this, u.cx, y + h / 2, '', u.textSize, TEXT.white, { align: 'center' });
         this.unlockText.setOrigin(0.5).setDepth(DEPTH.unlockText);
         this.unlockBtn.on('pointerdown', () => {
@@ -392,7 +394,7 @@ export const panelMethods = {
         // Размер и хит-зона ВСЕГДА от раскладки: портретный 300x92 не должен
         // «приезжать» в ландшафт при смене ориентации (текст уезжал за кнопку)
         this.unlockBtn.setSize(u.w, u.h);
-        setHitRect(this.unlockBtn, u.w, u.h);
+        setHitWorld(this.unlockBtn, u.w, Math.max(u.h, 80));
         this.unlockBtn.setPosition(u.cx - u.w / 2, u.y);
         this.unlockText.setPosition(u.cx, u.y + u.h / 2);
         if (L.portrait) {

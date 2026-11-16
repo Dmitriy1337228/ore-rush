@@ -107,8 +107,8 @@
     "l844|boss-reward": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"клик: #M · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -129,7 +129,7 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 7,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 6,
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 4,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
@@ -140,7 +140,6 @@
       "MIN-FONT|UIScene|\"Карта\"": 1,
       "MIN-FONT|UIScene|\"Крафт\"": 1,
       "MIN-FONT|UIScene|\"Спуск: Железо — #K меди\"": 1,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
       "MIN-FONT|UIScene|\"#\"": 5,
       "MIN-FONT|UIScene|\"компоненты падают с боссов\"": 1,
       "MIN-FONT|UIScene|\"Активируемые\"": 1,
@@ -159,8 +158,8 @@
     "l844|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -177,8 +176,8 @@
     "l844|deep": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"клик: #M · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -195,8 +194,8 @@
     "l844|fresh": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -214,7 +213,7 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
@@ -225,7 +224,6 @@
       "MIN-FONT|UIScene|\"Карта\"": 1,
       "MIN-FONT|UIScene|\"Крафт\"": 1,
       "MIN-FONT|UIScene|\"Спуск: Железо — #K меди\"": 1,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
       "MIN-FONT|UIScene|\"#. Уголь\"": 1,
       "MIN-FONT|UIScene|\"#. Медь\"": 1,
       "MIN-FONT|UIScene|\"Медный страж\"": 1
@@ -234,8 +232,8 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -253,8 +251,8 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -273,7 +271,7 @@
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 4,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -290,8 +288,8 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -308,8 +306,8 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 4,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 4,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -319,7 +317,6 @@
       "MIN-FONT|UIScene|\"Карта\"": 1,
       "MIN-FONT|UIScene|\"Крафт\"": 1,
       "MIN-FONT|UIScene|\"Спуск: Железо — #K меди\"": 1,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
       "MIN-FONT|UIScene|\"Уровень шахты: # (Медь)\nЗв\"": 1,
       "MIN-FONT|UIScene|\"Звук: вкл\"": 1,
       "MIN-FONT|UIScene|\"Музыка: вкл\"": 1,
@@ -334,7 +331,7 @@
       "MIN-FONT|UIScene|\"клик: #e# · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 5,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -343,7 +340,6 @@
       "MIN-FONT|UIScene|\"Настройки\"": 1,
       "MIN-FONT|UIScene|\"Карта\"": 1,
       "MIN-FONT|UIScene|\"Крафт\"": 1,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
       "MIN-FONT|UIScene|\"Уровень шахты: # (Алмаз)\nЗ\"": 1,
       "MIN-FONT|UIScene|\"Звук: вкл\"": 1,
       "MIN-FONT|UIScene|\"Музыка: вкл\"": 1,
@@ -358,7 +354,7 @@
       "MIN-FONT|UIScene|\"клик: #e# · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -374,8 +370,8 @@
     "l844|tutorial": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -394,7 +390,7 @@
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 4,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -424,14 +420,12 @@
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1
     },
     "p360|craft": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 6,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
       "MIN-FONT|UIScene|\"#\"": 5,
       "MIN-FONT|UIScene|\"Активировать\"": 4,
       "MIN-FONT|UIScene|\"Купить #K\"": 4,
@@ -440,60 +434,50 @@
     "p360|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|deep": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|fresh": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|map": {
       "OVERLAP|UIScene|[close_button_square]|[map_board]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|mid": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|mid-scrolled": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|offline": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|player-down": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|settings": {
       "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"Звук: вкл\"": 1,
       "MIN-FONT|UIScene|\"Музыка: вкл\"": 1,
       "MIN-FONT|UIScene|\"Громкость:\"": 1,
@@ -506,33 +490,29 @@
       "MIN-FONT|UIScene|\"+#e#/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
       "MIN-FONT|UIScene|\"Звук: вкл\"": 1,
       "MIN-FONT|UIScene|\"Музыка: вкл\"": 1,
       "MIN-FONT|UIScene|\"Громкость:\"": 1,
       "MIN-FONT|UIScene|\"#%\"": 1,
       "MIN-FONT|UIScene|\"За текущий забег: +# ★\nСбр\"": 1,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1,
       "MIN-FONT|UIScene|\"Сбросить весь прогресс\"": 1
     },
     "p360|stress": {
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "MIN-FONT|UIScene|\"+#e#/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|tutorial": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|unlock-ready": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|boss": {
       "TOUCH-TARGET|GameScene|[buy_button_normal]": 2,
@@ -550,14 +530,12 @@
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1
     },
     "p390|craft": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 9,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
       "MIN-FONT|UIScene|\"#\"": 5,
       "MIN-FONT|UIScene|\"Активировать\"": 5,
       "MIN-FONT|UIScene|\"Купить #K\"": 6,
@@ -566,85 +544,71 @@
     "p390|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|deep": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|fresh": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|map": {
       "OVERLAP|UIScene|[close_button_square]|[map_board]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|mid": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|mid-scrolled": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|offline": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|player-down": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|settings": {
       "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3
     },
     "p390|settings-stress": {
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
     },
     "p390|stress": {
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|tutorial": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|unlock-ready": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|boss": {
       "TOUCH-TARGET|GameScene|[buy_button_normal]": 2,
@@ -659,84 +623,68 @@
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1
     },
     "p412|craft": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 9,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 4
     },
     "p412|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|deep": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|fresh": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|map": {
       "OVERLAP|UIScene|[close_button_square]|[map_board]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|mid": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|mid-scrolled": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|offline": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|player-down": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|settings": {
       "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3
     },
     "p412|settings-stress": {
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[close_button_square]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
     },
     "p412|stress": {
       "MIN-FONT|UIScene|\"алмаз\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|tutorial": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|unlock-ready": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "t768|boss": {
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 4,
@@ -753,5 +701,5 @@
       "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1
     }
   },
-  "updatedAt": "2026-11-16T09:40:03.270Z"
+  "updatedAt": "2026-11-16T10:10:58.482Z"
 }

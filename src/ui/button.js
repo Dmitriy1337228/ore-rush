@@ -4,7 +4,7 @@
 // Возвращает ссылки { bg, label } — раскладки продолжают работать с ними как
 // раньше (bg.setTexture для вкл/выкл, label.setText/setFontSize/setColor),
 // порядок объектов в контейнере сохраняется вызывной стороной.
-import { addNineC, setHitRect, makeLabel, fitFontSize } from './uiKit.js';
+import { addNineC, setHitRect, setHitWorld, makeLabel, fitFontSize } from './uiKit.js';
 
 export function addButton(scene, x, y, {
     w, h,              // размер фона; по умолчанию также размер hit-area
@@ -19,13 +19,16 @@ export function addButton(scene, x, y, {
     hitW = w,          // hit-area — те же числа, что ставил вызывной setHitRect
     hitH = h,
     hitCentered = false,
+    hitWorld = false,  // hit-зона в МИРОВЫХ px по центру (setHitWorld) — для
+                       // увеличения зоны нажатия сверх видимых границ (раздел 4)
     depth              // глубина фона (по умолчанию — как до миграции)
 } = {}) {
     const bg = kind === 'image'
         ? scene.add.image(x, y, key).setDisplaySize(w, h)
         : addNineC(scene, x, y, key, w, h);
     if (depth !== undefined) bg.setDepth(depth);
-    setHitRect(bg, hitW, hitH, hitCentered);
+    if (hitWorld) setHitWorld(bg, hitW, hitH);
+    else setHitRect(bg, hitW, hitH, hitCentered);
     const label = makeLabel(scene, x, y, text, fontSize, color, style).setOrigin(0.5);
     if (fitMaxW !== null) fitFontSize(label, fontSize, fitMaxW, fitMin);
     return { bg, label };

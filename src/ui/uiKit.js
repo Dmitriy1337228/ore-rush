@@ -114,13 +114,36 @@ export function addModalContainer(scene) {
 }
 
 // Hit-area интерактивного объекта прямоугольником w x h в координатах кадра
-// текстуры (у объектов с origin 0.5 и setDisplaySize локальные координаты ввода
+// (у объектов с origin 0.5 и setDisplaySize локальные координаты ввода
 // — это кадр текстуры, а не отображаемый размер). centered — прямоугольник
 // вокруг (0,0) (контейнеры, центрированные объекты).
 export function setHitRect(obj, w, h, centered = false) {
     const rect = centered
         ? new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h)
         : new Phaser.Geom.Rectangle(0, 0, w, h);
+    return obj.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
+}
+
+// Hit-зона w x h в МИРОВЫХ px по центру объекта — может быть больше видимых
+// границ (план раздела 4: «расширить интерактивную зону без увеличения
+// картинки»). Для displaySize-картинок setInteractive живёт в единицах кадра
+// (HIT.* — размеры исходников): мировые px делятся на scale; у scale-1
+// объектов (9-slice, контейнеры) локальные единицы = мировые.
+export function setHitWorld(obj, w, h) {
+    if (obj.type === 'Container') {
+        return obj.setInteractive(new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h), Phaser.Geom.Rectangle.Contains);
+    }
+    const sx = Math.max(1e-6, Math.abs(obj.scaleX || 1));
+    const sy = Math.max(1e-6, Math.abs(obj.scaleY || 1));
+    // центр видимой области в единицах локального пространства
+    const cx = (obj.displayWidth || obj.width || 0) / 2;
+    const cy = (obj.displayHeight || obj.height || 0) / 2;
+    const rect = new Phaser.Geom.Rectangle(
+        (cx - w / 2) / sx,
+        (cy - h / 2) / sy,
+        w / sx,
+        h / sy
+    );
     return obj.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
 }
 

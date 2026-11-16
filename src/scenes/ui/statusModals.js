@@ -26,7 +26,10 @@ function createAlertShell(scene, { w, h, title, titleY, titleColor = TEXT.cream,
             const ok = addButton(scene, 0, okY, {
                 w: OK_BUTTON.w, h: OK_BUTTON.h, key: TEX.button,
                 text: okLabel, fontSize: FONT_SIZE.button, color: TEXT.white,
-                fitMaxW: OK_BUTTON.w - SPACE.lg * 2
+                fitMaxW: OK_BUTTON.w - SPACE.lg * 2,
+                // Хит 80 по высоте (46 видимых — 23 CSS px на телефоне): зона
+                // нажатия >= 40 CSS px; вокруг кнопки интерактивных нет
+                hitWorld: true, hitH: 80
             });
             ok.bg.on('pointerdown', onOk);
             modal.add([win.panel, win.title, ...extras, ok.bg, ok.label, ...after]);

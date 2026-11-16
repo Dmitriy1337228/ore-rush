@@ -72,6 +72,28 @@ function normalizeLabelText(text) {
     return String(text || '').replace(/\d+([.,]\d+)?/g, '#').slice(0, 26);
 }
 
+// Мировой размер кастомной hit-зоны по оси ('x'|'y'): hitArea живёт в локальных
+// единицах объекта (у displaySize-картинок — единицы кадра), мировые px =
+// hitArea × свой масштаб × масштабы родительских контейнеров. null — кастомной
+// зоны нет (эффективная зона = видимые границы, берётся из bounds).
+function hitSize(go, axis) {
+    try {
+        const input = go.input;
+        if (!input || !input.enabled || !input.customHitArea) return null;
+        const ha = input.hitArea;
+        if (!ha || typeof ha.width !== 'number') return null;
+        let scale = Math.abs(axis === 'x' ? (go.scaleX || 1) : (go.scaleY || 1));
+        let p = go.parentContainer;
+        while (p) {
+            scale *= Math.abs(axis === 'x' ? (p.scaleX || 1) : (p.scaleY || 1));
+            p = p.parentContainer;
+        }
+        return (axis === 'x' ? ha.width : ha.height) * scale;
+    } catch (e) {
+        return null;
+    }
+}
+
 export function collectItems(game, cssScale = 1) {
     const W = game.scale.gameSize.width;
     const H = game.scale.gameSize.height;
@@ -137,6 +159,13 @@ export function collectItems(game, cssScale = 1) {
                 label: isText ? `"${normalizeLabelText(go.text)}"` : (tex ? `[${tex}]` : go.type),
                 x, y, r, b: bt, w, h,
                 interactive: !!(go.input && go.input.enabled),
+                // Фактическая hit-зона (правило «размер нажатия»): кастомный
+                // hitArea в локальных единицах объекта (для displaySize-картинок —
+                // единицы кадра, HIT.*), мировые px = hitArea × свой масштаб ×
+                // цепочка масштабов родительских контейнеров. Без кастомного
+                // hitArea зона = видимые границы (bounds).
+                hitW: hitSize(go, 'x'),
+                hitH: hitSize(go, 'y'),
                 alpha: opacity,
                 order: [order[0], curLayer ? 1 : 0].concat(order.slice(1)),
                 rootDepth,
@@ -294,11 +323,15 @@ export function auditItems({ items, W, H, ui }, cssScale) {
         }
 
         if (it.interactive && it.kind !== 'Text') {
-            const minDim = Math.min(it.w, it.h) * cssScale;
+            // «Размер нажатия»: кастомная hit-зона, если задана, иначе видимые
+            // границы (bounds — прокси для setInteractive() без аргументов)
+            const hitW = it.hitW ?? it.w;
+            const hitH = it.hitH ?? it.h;
+            const minDim = Math.min(hitW, hitH) * cssScale;
             const need = mobile ? R.minTouchCss.mobile : R.minTouchCss.desktop;
             if (minDim < need) {
                 add('TOUCH-TARGET', 'warn', it.scene,
-                    `${it.label}: зона нажатия ${round(it.w * cssScale)}x${round(it.h * cssScale)} CSS px (min ${need})`,
+                    `${it.label}: зона нажатия ${round(hitW * cssScale)}x${round(hitH * cssScale)} CSS px (min ${need})`,
                     [box(it, it.label)], [it.label]);
             }
         }

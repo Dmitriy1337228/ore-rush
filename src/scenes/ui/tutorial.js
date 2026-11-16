@@ -1,7 +1,7 @@
 import {
     gameState, saveGame
 } from '../../state.js';
-import { makeLabel, fitFontSize, addScreenDim, DIM_ALPHA } from '../../ui/uiKit.js';
+import { makeLabel, fitFontSize, addScreenDim, DIM_ALPHA, setHitWorld } from '../../ui/uiKit.js';
 import { TEXT, DEPTH, TEX, FONT_SIZE, SPACE } from '../../ui/theme.js';
 
 export const tutorialMethods = {
@@ -22,7 +22,9 @@ export const tutorialMethods = {
         this.tutFinal = makeLabel(this, 0, 0, 'Приятной игры!', FONT_SIZE.title, TEXT.cream).setOrigin(0.5).setDepth(DEPTH.tutorial).setVisible(false);
         this.tutBtn = this.add.image(640, 400, TEX.button).setDisplaySize(200, 56).setDepth(DEPTH.tutorial).setVisible(false);
         this.tutBtnLbl = makeLabel(this, 640, 400, 'Играть', FONT_SIZE.buttonLg, TEXT.white).setOrigin(0.5).setDepth(DEPTH.tutorial).setVisible(false);
-        this.tutBtn.setInteractive({ useHandCursor: true });
+        // Хит 80 по высоте (56 видимых — 28-30 CSS px на телефоне); кнопка одиночная
+        setHitWorld(this.tutBtn, 200, 80);
+        this.tutBtn.input.cursor = 'pointer';
         this.tutBtn.on('pointerdown', () => this.finishTutorial());
         // клики по вкладкам: учебный шаг ждёт клик по нужной вкладке
         this.tabBtns[0].c.on('pointerdown', () => { this.tutTabClicked = 0; });
