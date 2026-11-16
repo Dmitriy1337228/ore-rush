@@ -20,7 +20,7 @@
 | `scripts/gates/ui-review.mjs` | Golden-обзор состояний игры (скриншоты + текстовые артефакты) | `ui:review` | гейт | да | активен |
 | `scripts/gates/ui-tokens.mjs` | Нет голых кеглей/отступов в `src/scenes/ui` | `ui:tokens` | гейт | нет | активен |
 | `scripts/gates/ui-tokens-css.mjs` | Нет голых px/rem/em вне `tokens.css` в DOM-слое | `ui:tokens:css` | гейт | нет | активен |
-| `scripts/gates/gen-dom-tokens.mjs` | Генерация `src/dom/tokens.css` из `src/ui/theme.js` (`--check` — дрейф) | `dom:tokens` | гейт | нет | активен |
+| `scripts/gates/gen-dom-tokens.mjs` | Генерация `src/ui/dom/tokens.css` из `src/ui/shared/theme.js` (`--check` — дрейф) | `dom:tokens` | гейт | нет | активен |
 | `scripts/gates/dom-golden.mjs` | Tolerant-diff эталона DOM-панели (порог 0.5 %) | `test:dom-golden` | гейт | да | активен |
 | `scripts/gates/check-scripts-index.mjs` | Гард индекса скриптов (алиасы + README + существование файлов) | `scripts:check` | гейт | нет | активен |
 | `scripts/gates/check-layers.mjs` | Гард слоёв: ui/dom не тянет Phaser, ui/phaser не тянет DOM, shared и game изолированы, dev-фикстуры вне прода | `layers:check` | гейт | нет | активен |
