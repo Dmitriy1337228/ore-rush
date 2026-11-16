@@ -22,9 +22,9 @@ import {
 } from '../state.js';
 import { computeLayout } from '../layout.js';
 import { playSfx } from '../sfx.js';
-import { makeLabel, setHitWorld, fitFontSize } from '../ui/uiKit.js';
+import { makeLabel, setHitWorld, fitFontSize } from '../ui/shared/uiKit.js';
 import { floatText, showHitFeedback } from './effects.js';
-import { TEXT, TEX, EVENTS, REG, TOUCH_MIN } from '../ui/theme.js';
+import { TEXT, TEX, EVENTS, REG, TOUCH_MIN } from '../ui/shared/theme.js';
 import { GAME_DEPTH, BOSS_ITEM_BUFF_FIELD } from './constants.js';
 import {
     BOSS_UI,

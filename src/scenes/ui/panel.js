@@ -31,10 +31,10 @@ import {
     setHitWorld,
     setHitWorldRect,
     tapSlopPx
-} from '../../ui/uiKit.js';
-import { addButton } from '../../ui/button.js';
-import { VIEWPORT, ROW_H, ROW_GAP, TABS, BUY_AMOUNTS, ROW } from '../../ui/listGeometry.js';
-import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
+} from '../../ui/shared/uiKit.js';
+import { addButton } from '../../ui/shared/button.js';
+import { VIEWPORT, ROW_H, ROW_GAP, TABS, BUY_AMOUNTS, ROW } from '../../ui/shared/listGeometry.js';
+import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/shared/theme.js';
 import { playSfx } from '../../sfx.js';
 
 export const panelMethods = {

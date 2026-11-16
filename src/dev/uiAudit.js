@@ -26,7 +26,7 @@
 // частью bbox.
 
 import { gameState } from '../state.js';
-import { MIN } from '../ui/theme.js';
+import { MIN } from '../ui/shared/theme.js';
 
 export const UI_RULES = {
     overlapTolerance: 1, // px игровой сетки

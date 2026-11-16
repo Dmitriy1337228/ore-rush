@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import { fmt, getUpgradeCost, getBulkCost, getAffordableBulk } from '../state.js';
 import { computeLayout } from '../layout.js';
-import { VIEWPORT } from '../ui/listGeometry.js';
-import { EVENTS, REG } from '../ui/theme.js';
+import { VIEWPORT } from '../ui/shared/listGeometry.js';
+import { EVENTS, REG } from '../ui/shared/theme.js';
 import { hudMethods } from './ui/hud.js';
 import { panelMethods } from './ui/panel.js';
 import { gearMethods } from './ui/gear.js';

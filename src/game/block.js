@@ -10,7 +10,7 @@ import {
 } from '../state.js';
 import { playSfx } from '../sfx.js';
 import { floatText, showHitFeedback } from './effects.js';
-import { TEXT, REG } from '../ui/theme.js';
+import { TEXT, REG } from '../ui/shared/theme.js';
 import { BLOCK_STAGES, blockStageKey, GAME_DEPTH } from './constants.js';
 
 export const blockMethods = {

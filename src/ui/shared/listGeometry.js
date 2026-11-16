@@ -1,6 +1,6 @@
 // Геометрия списка улучшений, карты и рядов — общие константы UIScene.
 
-import { computeLayout, LANDSCAPE_BASE } from '../layout.js';
+import { computeLayout, LANDSCAPE_BASE } from '../../layout.js';
 
 // Вьюпорт списка: по внутренней зоне деревянной панели (панель 364x582 (image):
 // face source x73..964, y208..1058 -> drawn x 926..1241, y 232..674). Заголовок

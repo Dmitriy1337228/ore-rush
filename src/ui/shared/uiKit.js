@@ -2,8 +2,8 @@
 // Общие для всех сцен (UIScene/GameScene) — один источник вместо копий.
 
 import Phaser from 'phaser';
-import manifest from '../../spritecook-assets.json';
-import { LANDSCAPE_BASE } from '../layout.js';
+import manifest from '../../../spritecook-assets.json';
+import { LANDSCAPE_BASE } from '../../layout.js';
 
 export const FONT = '"Monocraft", "Inter", "Consolas", monospace';
 

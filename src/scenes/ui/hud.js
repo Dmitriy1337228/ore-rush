@@ -9,10 +9,10 @@ import {
     getPrestigeMult,
     fmt
 } from '../../state.js';
-import { addImg, makeLabel, fitFontSize, setHitRect, setHitWorld } from '../../ui/uiKit.js';
-import { addButton } from '../../ui/button.js';
-import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE, TOUCH_MIN } from '../../ui/theme.js';
-import { measureIcon } from '../../ui/iconMetrics.js';
+import { addImg, makeLabel, fitFontSize, setHitRect, setHitWorld } from '../../ui/shared/uiKit.js';
+import { addButton } from '../../ui/shared/button.js';
+import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE, TOUCH_MIN } from '../../ui/shared/theme.js';
+import { measureIcon } from '../../ui/shared/iconMetrics.js';
 
 // Пол ужина строки статов в ландшафте (min fitFontSize; измерительная строка
 // минимальной ширины статов — см. refreshHud)

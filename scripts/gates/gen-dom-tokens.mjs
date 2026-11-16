@@ -10,7 +10,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TEXT, SPACE, FONT_SIZE, MIN, CARD, HIT } from '../../src/ui/theme.js';
+import { TEXT, SPACE, FONT_SIZE, MIN, CARD, HIT } from '../../src/ui/shared/theme.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = path.join(ROOT, 'src', 'dom', 'tokens.css');

@@ -15,7 +15,7 @@ import {
     MUTATION_CHANCE
 } from '../state.js';
 import { floatText } from './effects.js';
-import { TEXT, EVENTS, REG } from '../ui/theme.js';
+import { TEXT, EVENTS, REG } from '../ui/shared/theme.js';
 import {
     GAME_DEPTH,
     PASSIVE_TICK_MS,

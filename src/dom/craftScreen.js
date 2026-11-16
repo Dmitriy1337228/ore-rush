@@ -14,7 +14,7 @@ import { fitIcons } from './iconFit.js';
 import { MSG, buyError, activateError } from '../state/craftMessages.js';
 import { buyItem, useItem, startCraft, claimCraft } from '../state.js';
 import { playSfx } from '../sfx.js';
-import { REG, EVENTS } from '../ui/theme.js';
+import { REG, EVENTS } from '../ui/shared/theme.js';
 import './tokens.css';
 import './dom.css';
 

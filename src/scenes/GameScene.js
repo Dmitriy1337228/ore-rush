@@ -12,7 +12,7 @@ import {
 } from '../state.js';
 import { YandexSDKStub } from '../sdk-stub.js';
 import { computeLayout } from '../layout.js';
-import { EVENTS, REG } from '../ui/theme.js';
+import { EVENTS, REG } from '../ui/shared/theme.js';
 import { BG_SHADE_ALPHA, tierBgKey } from '../game/constants.js';
 import { backgroundMethods } from '../game/background.js';
 import { blockMethods } from '../game/block.js';
