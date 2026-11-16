@@ -11,7 +11,9 @@
         "test:ui": "node tests/characterization/ui_review_golden.mjs",
         "ui:check": "node scripts/ui-check.mjs",
         "ui:check:quick": "node scripts/ui-check.mjs --quick",
-        "ui:tokens": "node scripts/ui-tokens.mjs"
+        "ui:tokens": "node scripts/ui-tokens.mjs",
+        "dom:tokens": "node scripts/gen-dom-tokens.mjs",
+        "ui:check:dom": "node scripts/ui-check-dom.mjs"
     },
     "keywords": [],
     "author": "",
