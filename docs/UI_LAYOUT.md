@@ -89,7 +89,7 @@ Replay открывает те же вьюпорт, сохранение и эк
 
 ## Связь с другими проверками
 
-`scripts/ui-review.mjs` + `npm run test:ui` — **golden-регрессия** (фиксирует текущую картинку;
+`scripts/gates/ui-review.mjs` + `npm run test:ui` — **golden-регрессия** (фиксирует текущую картинку;
 не знает, что «правильно»). `ui:check` — **нормативная** проверка (знает правила). Нужны обе.
 Перед сдачей любой UI-правки — ещё и стиль-гейты `npm run format:check` и `npm run lint`
 (Prettier/ESLint; см. `AGENTS.md`, раздел «Стиль кода»).
@@ -114,7 +114,7 @@ npm run test:dom-golden                 # tolerant-diff эталона DOM-па�
 JSON-отчёт — `shots/ui-check-dom/report.json`; код выхода ≠ 0 при новых ошибках.
 
 Размеры DOM — только токены: `npm run dom:tokens` генерирует `src/dom/tokens.css` из
-`src/ui/theme.js` (+ `DOM_EXTRA` в `scripts/gen-dom-tokens.mjs`), проверка дрейфа —
+`src/ui/theme.js` (+ `DOM_EXTRA` в `scripts/gates/gen-dom-tokens.mjs`), проверка дрейфа —
 `npm run dom:tokens -- --check`. Ручные правки `tokens.css` запрещены.
 
 `ui:check` (Phaser) для состояния `craft-dom` делает только скриншот: display-list аудит

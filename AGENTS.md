@@ -44,7 +44,7 @@
 - Размеры — только токены: `npm run dom:tokens` генерирует `src/dom/tokens.css` из `src/ui/theme.js`; дрейф — `npm run dom:tokens -- --check`; голые `px/rem/em` вне `tokens.css` запрещены (`npm run ui:tokens:css`, 1px — только с комментарием-причиной).
 - Гейты: `npm run ui:check:dom` (7 вьюпортов × 26 рядов, PNG в `shots/ui-check/<vp>__craft-dom.png`) и `npm run test:dom-golden` (tolerant-diff, порог 0.5%). **Полный UI-прогон = `npm run ui:check` + `npm run ui:check:dom`** + `npm test`, `npm run test:ui`, `npm run format:check`, `npm run lint`.
 - Бизнес-правила и запись состояния — только в `src/state.js`; `src/dom/*` читает через `bridge.js`, тексты ошибок — `src/state/craftMessages.js` (без копий).
-- Фикстуры и стенды (`fixtures*.js`, `lab.js`, `scripts/build-dom-*.mjs`) — не прод-код; для проверки на телефоне без сети: `shots/pilot-gates/dom-craft-phone.html` / `dom-lab.html`.
+- Фикстуры и стенды (`fixtures*.js`, `lab.js`, `scripts/stands/build-dom-*.mjs`) — не прод-код; для проверки на телефоне без сети: `shots/pilot-gates/dom-craft-phone.html` / `dom-lab.html`.
 - Фаза 2 (перенос других форм на DOM) — только отдельным документом с таймбоксом; HUD/бой/босс/шахта остаются в Phaser.
 
 ## Скрипты `scripts/` (индекс и алиасы — обязательное правило)
