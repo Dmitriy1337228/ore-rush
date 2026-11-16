@@ -71,7 +71,7 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
     margin-top: var(--space-xs);
 }
 
