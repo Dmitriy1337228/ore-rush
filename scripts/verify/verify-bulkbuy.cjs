@@ -2,7 +2,7 @@
 // ничего; ужимается только лимитом уровней улучшения), МАКС — максимум доступного.
 // Проверяется и чистая экономика state.js, и UI (цикл кнопки, текстуры, цены, клики).
 const { chromium } = require('playwright');
-const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
 
 let passed = 0,
     failed = 0;

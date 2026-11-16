@@ -4,7 +4,7 @@
 // Dev-сервер поднимается сам и гасится после проверки.
 import { chromium } from 'playwright';
 import { createRequire } from 'node:module';
-const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 
 let passed = 0,
     failed = 0;
@@ -18,7 +18,7 @@ function check(name, cond, detail = '') {
 }
 
 // ---------- Фаза 1: node (чистая логика state.js) ----------
-const state = await import('../src/state.js');
+const state = await import('../../src/state.js');
 const {
     gameState,
     createInitialState,

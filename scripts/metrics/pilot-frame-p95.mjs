@@ -12,9 +12,9 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { STATES, SAVE_KEY } from './lib/ui-matrix.mjs';
+import { STATES, SAVE_KEY } from '../lib/ui-matrix.mjs';
 
-const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 
 const argv = process.argv.slice(2);
 const flag = (n) => argv.includes(`--${n}`);

@@ -18,11 +18,11 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { UI_RULES } from '../src/dev/uiAudit.js';
-import { ITEMS, CRAFT_RECIPES, ARTIFACTS } from '../src/state.js';
-import { SAVE_KEY, SEEDS } from './lib/ui-matrix.mjs';
+import { UI_RULES } from '../../src/dev/uiAudit.js';
+import { ITEMS, CRAFT_RECIPES, ARTIFACTS } from '../../src/state.js';
+import { SAVE_KEY, SEEDS } from '../lib/ui-matrix.mjs';
 
-const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 
 const argv = process.argv.slice(2);
 const opt = (name, def = null) => {

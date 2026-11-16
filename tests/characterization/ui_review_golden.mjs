@@ -1,4 +1,4 @@
-// CHARACTERIZATION-ТЕСТЫ UI: полный прогон scripts/ui-review.mjs как golden.
+// CHARACTERIZATION-ТЕСТЫ UI: полный прогон scripts/gates/ui-review.mjs как golden.
 // Запуск: node tests/characterization/ui_review_golden.mjs  (или npm run test:ui)
 // Требует Playwright-браузеры (npx playwright install chromium) и ~2-4 минуты.
 //
@@ -74,11 +74,11 @@ function normalizeStdout(s) {
 // Результат прогона живёт на уровне модуля: его читает и очистка tmp в process.on('exit')
 let result;
 
-describe('scripts/ui-review.mjs: полный golden-прогон (медленный)', { timeout: 480000 }, () => {
+describe('scripts/gates/ui-review.mjs: полный golden-прогон (медленный)', { timeout: 480000 }, () => {
     it('прогон в песочнице OUT_DIR=tmp и код выхода как в golden', async () => {
         const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ui-review-golden-'));
         result = await new Promise((resolve) => {
-            const child = spawn(process.execPath, ['scripts/ui-review.mjs'], {
+            const child = spawn(process.execPath, ['scripts/gates/ui-review.mjs'], {
                 cwd: ROOT,
                 env: { ...process.env, OUT_DIR: outDir },
                 stdio: ['ignore', 'pipe', 'pipe']

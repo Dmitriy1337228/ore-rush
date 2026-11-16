@@ -1,7 +1,7 @@
 // Проверка DevPanel: активация, ресурсы, тиры, офлайн-симуляция, полный сброс.
 // Dev-сервер поднимается сам и гасится после проверки (чужой не трогается).
 const { chromium } = require('playwright');
-const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
 const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог скриншотов (правило проекта: OUT_DIR, не мусор в корне)
 (async () => {
     const server = await ensureDevServer();

@@ -1,6 +1,6 @@
 // Проверка Робо-руки: авто-клики дают доход и разрушают блок (этап 2 + фикс заживления)
 const { chromium } = require('playwright');
-const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
 (async () => {
     const server = await ensureDevServer();
     process.on('exit', () => releaseDevServer(server));

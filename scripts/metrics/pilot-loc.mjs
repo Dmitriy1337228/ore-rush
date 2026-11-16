@@ -6,7 +6,7 @@
 // Общие модули (uiKit/theme/panel/button/stack, uiAudit, ui-matrix, golden ui-review)
 // НЕ входят: они общие для всех экранов и одинаковы для обоих стеков.
 //
-// Запуск: node scripts/pilot-loc.mjs [--json]
+// Запуск: node scripts/metrics/pilot-loc.mjs [--json]
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -22,13 +22,17 @@ const BASELINE_FILES = [
 // DOM-версия: заполняется по мере этапов 1–5. Отсутствующие пути = 0 строк.
 const DOM_PATHS = [
     'src/dom', // слой: root, bridge, компоненты, экран, CSS
-    'scripts/gen-dom-tokens.mjs', // генератор токенов (часть слоя)
+    'scripts/gates/gen-dom-tokens.mjs', // генератор токенов (часть слоя)
     'src/dom/tokens.css', // сгенерированные токены
-    'scripts/verify-craft-dom.mjs' // специфичные тесты экрана (S1–S10)
+    'scripts/verify/verify-craft-dom.mjs' // специфичные тесты экрана (S1–S10)
 ];
 
 // Инфраструктура проверок DOM-экрана (DoD этапа 5): аудит + CSS-гейт + golden-обвязка.
-const CHECK_PATHS = ['scripts/ui-check-dom.mjs', 'scripts/ui-tokens-css.mjs', 'scripts/dom-golden.mjs'];
+const CHECK_PATHS = [
+    'scripts/gates/ui-check-dom.mjs',
+    'scripts/gates/ui-tokens-css.mjs',
+    'scripts/gates/dom-golden.mjs'
+];
 
 const COMMENT = [
     /^\s*\/\//, // // js

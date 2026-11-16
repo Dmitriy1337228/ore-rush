@@ -18,9 +18,9 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { VIEWPORTS, STATES, SEEDS, SAVE_KEY, applyScreens } from './lib/ui-matrix.mjs';
+import { VIEWPORTS, STATES, SEEDS, SAVE_KEY, applyScreens } from '../lib/ui-matrix.mjs';
 
-const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 
 // ---------- Аргументы ----------
 const argv = process.argv.slice(2);

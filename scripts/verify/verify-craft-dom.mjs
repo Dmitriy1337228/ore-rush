@@ -8,10 +8,10 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { SAVE_KEY, SEEDS } from './lib/ui-matrix.mjs';
-import { MSG } from '../src/state/craftMessages.js';
+import { SAVE_KEY, SEEDS } from '../lib/ui-matrix.mjs';
+import { MSG } from '../../src/state/craftMessages.js';
 
-const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 
 const argv = process.argv.slice(2);
 const opt = (n, d = null) => {

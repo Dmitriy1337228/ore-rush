@@ -9,7 +9,7 @@
 // сохранение стадии блока, портретный оверлей.
 // Запуск: node scripts/verify-boss.cjs — dev-сервер поднимается сам (порт 5174).
 const { chromium } = require('playwright');
-const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
 
 let passed = 0,
     failed = 0;

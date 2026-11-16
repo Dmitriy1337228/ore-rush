@@ -2,7 +2,7 @@
 // по пропорциям окна), смена ориентации на лету, работоспособность UI в портрете
 // (клик по блоку, покупка, драг списка, модалка без пробития затемнения рядом).
 const { chromium } = require('playwright');
-const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
 
 let passed = 0,
     failed = 0;

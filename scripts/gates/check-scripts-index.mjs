@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SELF_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const SELF_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const SKIP_DIRS = new Set(['lib', 'archive']);
 const PATH_IN_ALIAS = /scripts\/[\w./-]+/g;
 

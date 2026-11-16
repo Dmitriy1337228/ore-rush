@@ -4,11 +4,11 @@
 const { chromium } = require('playwright');
 const fs = require('node:fs');
 const path = require('node:path');
-const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
 const SFX = [
     ...new Set(
         fs
-            .readdirSync(path.join(__dirname, '..', 'assets', 'audio'))
+            .readdirSync(path.join(__dirname, '..', '..', 'assets', 'audio'))
             .filter((f) => /\.(ogg|mp3)$/.test(f))
             .map((f) => f.replace(/\.(ogg|mp3)$/, ''))
     )

@@ -1,6 +1,6 @@
 // Проверка пересчёта цен в UI без перезагрузки сцены (ребаланс этапа 1)
 const { chromium } = require('playwright');
-const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
 (async () => {
     const server = await ensureDevServer();
     process.on('exit', () => releaseDevServer(server));

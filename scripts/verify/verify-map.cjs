@@ -6,7 +6,7 @@
 // пересечений с HUD). Запуск: node scripts/verify-map.cjs — dev-сервер
 // поднимается сам (порт 5174) и гасится, если поднят этим скриптом.
 const { chromium } = require('playwright');
-const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
 
 let passed = 0,
     failed = 0;

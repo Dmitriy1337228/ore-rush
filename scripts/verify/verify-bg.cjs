@@ -2,7 +2,7 @@
 // кроссфейд 800мс при смене тира (bgNext проявляется поверх bgCurrent), no-op при том же тире,
 // затемнение поверх фона, «Полный сброс» возвращает bg_01_coal, пиксельный чек смены фона.
 const { chromium } = require('playwright');
-const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
 
 let passed = 0,
     failed = 0;

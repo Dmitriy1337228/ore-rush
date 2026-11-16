@@ -2,7 +2,7 @@
 // + форсированный крит), взрывной (x2 кликов + бонус при разрушении), заряженный (пассив x3),
 // длительность ровно 10с (НЕ спадает при разрушении блока), истечение по таймеру, кнопки DevPanel.
 const { chromium } = require('playwright');
-const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
 
 let passed = 0,
     failed = 0;

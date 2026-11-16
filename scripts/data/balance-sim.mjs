@@ -34,7 +34,7 @@ import {
     CRIT_CHANCE_CAP,
     SECONDS_PER_HOUR,
     SECONDS_PER_MINUTE
-} from '../src/state.js';
+} from '../../src/state.js';
 
 const ARGS = process.argv.slice(2);
 const DEFAULT_CPS_MANUAL = 3.5;

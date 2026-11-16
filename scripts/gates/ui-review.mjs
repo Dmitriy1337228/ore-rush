@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 
-const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 const BASE = process.env.BASE_URL || 'http://localhost:5174';
 const OUT = path.resolve(process.env.OUT_DIR || 'shots');
 fs.mkdirSync(OUT, { recursive: true });

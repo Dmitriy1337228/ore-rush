@@ -12,10 +12,10 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { SAVE_KEY, SEEDS } from './lib/ui-matrix.mjs';
-import { decodePng, diffRatio } from '../tests/characterization/helpers/png.mjs';
+import { SAVE_KEY, SEEDS } from '../lib/ui-matrix.mjs';
+import { decodePng, diffRatio } from '../../tests/characterization/helpers/png.mjs';
 
-const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 
 const argv = process.argv.slice(2);
 const flag = (n) => argv.includes(`--${n}`);

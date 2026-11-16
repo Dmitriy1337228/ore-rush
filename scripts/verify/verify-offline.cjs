@@ -6,7 +6,7 @@
 // несработавшего hidden/beforeunload больше не даёт «72 ч» вместо минут.
 // Dev-сервер поднимается сам.
 const { chromium } = require('playwright');
-const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
+const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
 (async () => {
     const server = await ensureDevServer();
     process.on('exit', () => releaseDevServer(server));
