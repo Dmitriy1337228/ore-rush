@@ -38,7 +38,6 @@ export const layoutMethods = {
         this.applyGearLayout();
         this.applyModalsLayout(L);
         this.applyMapLayout(L, s);
-        this.applyCraftLayout(L, s);
         this.applySettingsTextLayout(L);
 
         if (this.tutDim) {

@@ -110,22 +110,10 @@ export const STATES = [
         }
     },
     {
-        id: 'craft', seed: SEEDS.mid, setup: async (p) => {
-            await hideDaily(p);
-            await withState(p, 'm => { for (const c of m.COMPONENTS) m.gameState.components[c.id] = 100; for (const i of m.ITEMS) m.gameState.items[i.id] = 2; }');
-            await ui(p, 'ui.openCraft();');
-            await wait(p, 700);
-        }
-    },
-    {
-        // DOM-версия мастерской (D5): флаг читается при create(), поэтому reload
-        id: 'craft-dom', seed: SEEDS.mid, dom: true, setup: async (p) => {
-            await p.evaluate(() => localStorage.setItem('domUi', '1'));
-            await p.reload({ waitUntil: 'load' });
-            await p.waitForFunction(() => {
-                const ui = window.__GAME && window.__GAME.scene.getScene('UIScene');
-                return !!(ui && ui.L && window.__DOM_CRAFT);
-            }, null, { timeout: 30000 });
+        // Мастерская — DOM-слой (Phaser-экран удалён). dom:true — ui:check для
+        // этого состояния только снимает PNG: вёрстку меряет ui:check:dom.
+        id: 'craft', seed: SEEDS.mid, dom: true, setup: async (p) => {
+            await p.waitForFunction(() => !!window.__DOM_CRAFT, null, { timeout: 30000 });
             await wait(p, 1200); // отложенная ежедневная награда
             await hideDaily(p).catch(() => {});
             await withState(p, 'm => { for (const c of m.COMPONENTS) m.gameState.components[c.id] = 100; for (const i of m.ITEMS) m.gameState.items[i.id] = 2; }');

@@ -17,16 +17,6 @@
       "MIN-FONT|UIScene|\"уровень шахты: # — Изумруд\"": 1,
       "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1
     },
-    "d1024|craft": {
-      "MIN-FONT|UIScene|\"компоненты падают с боссов\"": 1,
-      "MIN-FONT|UIScene|\"эффект: урон боссу x# на #\"": 1,
-      "MIN-FONT|UIScene|\"в запасе: # · только в бою\"": 1,
-      "MIN-FONT|UIScene|\"Активировать\"": 3,
-      "MIN-FONT|UIScene|\"Купить #K\"": 4,
-      "MIN-FONT|UIScene|\"эффект: добыча x# на # мин\"": 2,
-      "MIN-FONT|UIScene|\"в запасе: #\"": 2,
-      "MIN-FONT|UIScene|\"эффект: мгновенно # сек до\"": 1
-    },
     "d1024|deep": {
       "MIN-FONT|UIScene|\"клик: #M · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"уровень шахты: # — Изумруд\"": 1
@@ -36,14 +26,6 @@
     },
     "d1024|stress": {
       "MIN-FONT|UIScene|\"уровень шахты: # — Алмаз\"": 1
-    },
-    "d1280|craft": {
-      "MIN-FONT|UIScene|\"Активировать\"": 3,
-      "MIN-FONT|UIScene|\"Купить #K\"": 4
-    },
-    "d1366|craft": {
-      "MIN-FONT|UIScene|\"Активировать\"": 3,
-      "MIN-FONT|UIScene|\"Купить #K\"": 4
     },
     "l844|boss": {
       "MIN-FONT|GameScene|\"ты: #M / #M · удар босса #\"": 1,
@@ -87,34 +69,6 @@
       "MIN-FONT|UIScene|\"Тотем шахтёра\"": 1,
       "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1,
       "MIN-FONT|UIScene|\"Забрать\"": 1
-    },
-    "l844|craft": {
-      "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
-      "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "MIN-FONT|UIScene|\"x# #:#\"": 1,
-      "MIN-FONT|UIScene|\"Оборудование\"": 1,
-      "MIN-FONT|UIScene|\"Усиления\"": 1,
-      "MIN-FONT|UIScene|\"уровень шахты: # — Медь\"": 1,
-      "MIN-FONT|UIScene|\"x#\"": 1,
-      "MIN-FONT|UIScene|\"Настройки\"": 1,
-      "MIN-FONT|UIScene|\"Карта\"": 1,
-      "MIN-FONT|UIScene|\"Крафт\"": 1,
-      "MIN-FONT|UIScene|\"Спуск: Железо — #K меди\"": 1,
-      "MIN-FONT|UIScene|\"#\"": 5,
-      "MIN-FONT|UIScene|\"компоненты падают с боссов\"": 1,
-      "MIN-FONT|UIScene|\"Активируемые\"": 1,
-      "MIN-FONT|UIScene|\"Шахтёрская бомба\"": 1,
-      "MIN-FONT|UIScene|\"эффект: урон боссу x# на #\"": 1,
-      "MIN-FONT|UIScene|\"в запасе: # · только в бою\"": 1,
-      "MIN-FONT|UIScene|\"Активировать\"": 3,
-      "MIN-FONT|UIScene|\"Купить #K\"": 4,
-      "MIN-FONT|UIScene|\"Динамитный пояс\"": 1,
-      "MIN-FONT|UIScene|\"эффект: добыча x# на # мин\"": 2,
-      "MIN-FONT|UIScene|\"в запасе: #\"": 2,
-      "MIN-FONT|UIScene|\"Кофе шахтёра\"": 1,
-      "MIN-FONT|UIScene|\"Сухпаёк\"": 1,
-      "MIN-FONT|UIScene|\"эффект: мгновенно # сек до\"": 1
     },
     "l844|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
@@ -340,24 +294,16 @@
       "MIN-FONT|UIScene|\"Отлично!\"": 1
     },
     "p360|boss": {
-      "MIN-FONT|GameScene|\"x#\"": 2,
-      "MIN-FONT|GameScene|\"Купить #B\"": 1,
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
-      "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1
+      "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
+      "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1
     },
     "p360|boss-reward": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
       "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1
-    },
-    "p360|craft": {
-      "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "MIN-FONT|UIScene|\"#\"": 5,
-      "MIN-FONT|UIScene|\"Активировать\"": 4,
-      "MIN-FONT|UIScene|\"Купить #K\"": 4
     },
     "p360|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
@@ -439,13 +385,6 @@
       "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
       "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1
     },
-    "p390|craft": {
-      "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "MIN-FONT|UIScene|\"#\"": 5,
-      "MIN-FONT|UIScene|\"Активировать\"": 5,
-      "MIN-FONT|UIScene|\"Купить #K\"": 5
-    },
     "p390|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
@@ -509,9 +448,6 @@
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
       "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1
     },
-    "p412|craft": {
-      "MIN-FONT|UIScene|\"медь\"": 1
-    },
     "p412|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1
     },
@@ -553,5 +489,5 @@
       "MIN-FONT|UIScene|\"медь\"": 1
     }
   },
-  "updatedAt": "2026-11-16T15:32:44.352Z"
+  "updatedAt": "2026-11-16T20:34:36.226Z"
 }

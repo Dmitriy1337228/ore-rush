@@ -128,8 +128,8 @@ export function collectItems(game, cssScale = 1) {
     const items = [];
     const layers = ui ? [
         { name: 'list', root: ui.listContent, cam: ui.listCam, active: () => true },
-        { name: 'map', root: ui.mapContent, cam: ui.mapCam, active: () => ui._mapOpen },
-        { name: 'craft', root: ui.craftContent, cam: ui.craftCam, active: () => ui._craftOpen }
+        { name: 'map', root: ui.mapContent, cam: ui.mapCam, active: () => ui._mapOpen }
+        // Мастерская — DOM-слой (src/dom), её вёрстку проверяет ui:check:dom
     ] : [];
 
     game.scene.getScenes(true).forEach((scene, sceneIdx) => {

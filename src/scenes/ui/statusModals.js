@@ -119,7 +119,7 @@ export const statusModalsMethods = {
         // выдачи награды стрелял позже hideDaily в сценарных прогонах)
         if (this.offlineModal.visible || this.modal.visible || this.dailyModal.visible
             || this.playerDownModal.visible) return;
-        if (this.mapRoot.visible || this.craftRoot.visible || this._bossRewardOpen) return;
+        if (this.mapRoot.visible || this._craftOpen || this._bossRewardOpen) return;
         const info = this._pendingDaily;
         this._pendingDaily = null;
         const idx = (info.streak - 1) % DAILY_REWARDS.length;

@@ -34,9 +34,9 @@ description: "Use when changing or reviewing any UI layout in this game: HUD, pa
 Правила: OVERLAP, OVERFLOW, TEXT-COVERED, OFFSCREEN, MIN-FONT, ROW-NAME, PADDING, TOUCH-TARGET,
 BUTTON-GAP, MISALIGNED, EDGE (таблица в `docs/UI_LAYOUT.md`).
 
-## DOM-слой (`src/dom`, экран мастерской, `?dom=1` в dev)
+## DOM-слой (`src/dom`, экран мастерской — по умолчанию в проде и dev)
 
-С пилота DOM (G3 = go) для правок `src/dom/*` действует дополнительный цикл:
+С пилота DOM (G3 = go) мастерская живёт в `src/dom/*`, Phaser-экран удалён. Для правок действует дополнительный цикл:
 
 1. Размеры — **только токены**: `npm run dom:tokens` (генерация из `src/ui/theme.js`),
    `npm run dom:tokens -- --check` (дрейф), `npm run ui:tokens:css` (голые px/rem/em вне

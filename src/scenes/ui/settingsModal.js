@@ -222,7 +222,6 @@ export const settingsModalMethods = {
         this.offlineModal.setPosition(L.modal.cx, L.modal.cy);
         this.dailyModal.setPosition(L.modal.cx, L.modal.cy);
         this.mapDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
-        this.craftDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
         this.bossRewardDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
         this.bossRewardModal.setPosition(L.modal.cx, L.modal.cy);
         // Окно вырубания шахтёра — та же сетка модалок (иначе в портрете оно

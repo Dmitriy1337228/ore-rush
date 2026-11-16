@@ -618,53 +618,45 @@ const V5_SEED = JSON.stringify({
     await ctx.close();
 }
 
-// 21 (П6). Мастерская: шапка компонентов (+100 через dev-кнопку), три секции,
-// сетка артефактов (все приглушены с подписью источника), аудит с фильтром
+// 21 (П6). Мастерская (DOM-слой): шапка компонентов (+100 через dev-кнопку),
+// три секции, сетка артефактов (все приглушены с подписью источника).
+// Вёрстку меряет ui:check:dom; здесь — сценарий + golden-снимок страницы.
 {
     const { ctx, page } = await newPage({ seed: { 'ore-rush-save': SAVE_SEED }, name: '21_craft_open' });
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
+    await page.waitForFunction(() => !!window.__DOM_CRAFT, null, { timeout: 30000 });
     await page.waitForTimeout(300);
-    const base21 = baseSignatures((await auditLayout(page)).violations);
     await page.keyboard.press('Backquote');
     await page.click('#dev-admin-panel button:has-text("Все компоненты +100")');
     await page.keyboard.press('Backquote');
     await page.waitForTimeout(300);
     await page.mouse.click(1007, 62); // «Крафт» (центр кнопки L.hud.craftBtn)
+    await page.waitForFunction(() => window.__DOM_CRAFT.isOpen(), null, { timeout: 10000 }).catch(() => {});
     await page.waitForTimeout(400);
     const c = await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
-        const texts = [];
-        const walk = (list) => {
-            for (const go of list) {
-                if (go.type === 'Text') texts.push(go.text);
-                if (go.list) walk(go.list);
-            }
-        };
-        walk(ui.craftContent.list);
+        const text = (el) => (el ? el.textContent.trim() : '');
         return {
-            open: ui._craftOpen,
+            open: window.__DOM_CRAFT.isOpen(),
             locked: window.__GAME.registry.get('blockLocked'),
-            header: ui.craftCompRow.map((r) => r.text.text),
-            sections: ['Активируемые', 'Рецепты', 'Артефакты'].filter((s) => texts.includes(s)),
-            items: Object.keys(ui.craftItemRows).length,
-            recipes: Object.keys(ui.craftRecipeRows).length,
-            arts: Object.keys(ui.craftArtCells).length,
-            dim: Object.values(ui.craftArtCells).filter((cell) => cell.rc.alpha < 0.9).length,
-            srcs: Object.values(ui.craftArtCells).map((cell) => cell.line.text)
+            header: [...document.querySelectorAll('[data-dom-chips] .dom-chip')].map((chip) => text(chip.lastElementChild)),
+            sections: [...document.querySelectorAll('[data-dom-scroll] .dom-section')]
+                .map((h) => text(h))
+                .filter((t) => ['Активируемые', 'Рецепты', 'Артефакты'].some((s) => t.startsWith(s))),
+            items: document.querySelectorAll('[data-dom-list="items"] [data-row]').length,
+            recipes: document.querySelectorAll('[data-dom-list="recipes"] [data-row]').length,
+            arts: document.querySelectorAll('[data-dom-list="artifacts"] [data-art]').length,
+            dim: document.querySelectorAll('[data-dom-list="artifacts"] .dom-art.is-owned').length,
+            srcs: [...document.querySelectorAll('[data-dom-list="artifacts"] .dom-line')].map(text)
         };
     });
     if (!c.open || !c.locked) scenarioFailures.push(`21_craft_open: мастерская не открылась/лок не встал (${JSON.stringify(c)})`);
     if (c.header.join(',') !== '100,100,100,100,100') scenarioFailures.push(`21_craft_open: шапка не показала +100 (${c.header.join(',')})`);
     if (c.sections.length !== 3) scenarioFailures.push(`21_craft_open: секции (${c.sections.join(', ')})`);
     if (c.items !== 7 || c.recipes !== 10 || c.arts !== 9) scenarioFailures.push(`21_craft_open: ряды ${c.items}/рецепты ${c.recipes}/артефакты ${c.arts}, ожидалось 7/10/9`);
-    if (c.dim !== 9) scenarioFailures.push(`21_craft_open: приглушено ${c.dim} ячеек из 9, ожидалось 9 (артефактов нет)`);
-    if (!c.srcs.every((s) => s === 'Крафт' || /^Босс: /.test(s))) scenarioFailures.push(`21_craft_open: подписи источников некорректны (${c.srcs.join('; ')})`);
-    const auditCraft = (await auditLayout(page)).violations;
-    const newCraft = newOverlayViolations(auditCraft, base21);
-    fs.writeFileSync(path.join(OUT, 'layout_audit_craft_open.txt'), newCraft.join('\n') || 'layout audit (craft open): 0 новых нарушений');
-    console.log('craft open new violations:', newCraft.length);
-    newCraft.forEach((v) => console.log('  ' + v));
-    if (newCraft.length) scenarioFailures.push(`21_craft_open: новые нарушения вёрстки: ${newCraft.join(' | ')}`);
+    if (c.dim !== 0) scenarioFailures.push(`21_craft_open: приглушено ${c.dim} ячеек, ожидалось 0 (артефактов нет)`);
+    if (!c.srcs.every((s) => s === 'Скрафти: рецепт' || /^Босс: /.test(s))) scenarioFailures.push(`21_craft_open: подписи источников некорректны (${c.srcs.join('; ')})`);
+    fs.writeFileSync(path.join(OUT, 'layout_audit_craft_open.txt'), 'мастерская — DOM-слой: вёрстка проверяется npm run ui:check:dom');
     await shoot(page, '21_craft_open');
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeCraft());
     await ctx.close();

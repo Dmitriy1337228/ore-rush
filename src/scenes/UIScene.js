@@ -10,7 +10,6 @@ import { layoutMethods } from './ui/layout.js';
 import { settingsModalMethods } from './ui/settingsModal.js';
 import { statusModalsMethods } from './ui/statusModals.js';
 import { mapScreenMethods } from './ui/mapScreen.js';
-import { craftScreenMethods } from './ui/craftScreen.js';
 import { tutorialMethods } from './ui/tutorial.js';
 
 // UIScene — оболочка интерфейса: владеет жизненным циклом, глобальной блокировкой
@@ -61,7 +60,6 @@ export class UIScene extends Phaser.Scene {
         this.buildOfflineModal();
         this.buildDailyModal();
         this.buildMapScreen();
-        this.buildCraftScreen();
         this.buildBossRewardModal();
         this.buildPlayerDownModal();
         this.setupListCamera();
@@ -149,17 +147,30 @@ export class UIScene extends Phaser.Scene {
 
         this.refreshUi();
 
-        // Пилот DOM (D5): ?dom=1/localStorage.domUi=1 в DEV-сборке монтирует
-        // DOM-экран мастерской и переключает openCraft() на него. В проде вся
-        // ветка вырезается сборщиком; Phaser-мастерская остаётся дефолтом.
-        if (import.meta.env.DEV) {
-            import('../dom/flag.js')
-                .then(({ isDomUiEnabled }) => (isDomUiEnabled() ? import('../dom/craftScreen.js') : null))
-                .then((mod) => {
-                    if (mod) this.domCraft = mod.createDomCraft(this);
-                })
-                .catch(() => { /* стенд/флаг недоступны — остаёмся на Phaser */ });
+        // Мастерская — DOM-слой (пилот закрыт, G3 = go). Контроллер грузится
+        // отдельным чанком и монтируется один раз; openCraft() ждёт готовности.
+        this._domCraftReady = import('../dom/craftScreen.js')
+            .then(({ createDomCraft }) => { this.domCraft = createDomCraft(this); })
+            .catch((err) => { console.error('[craft:dom] не загрузился:', err); });
+    }
+
+    // Открытие мастерской: единственная точка входа (HUD-кнопка, горячие клавиши).
+    // Блокировка общая с остальными модалками; DOM-панель сама ставит _craftOpen.
+    openCraft() {
+        if (this._craftOpen) return;
+        if (this.registry.get(REG.blockLocked)) return;
+        if (this.domCraft) {
+            this.domCraft.open();
+            return;
         }
+        // Первый тап до готовности чанка: открываем, как только контроллер смонтирован
+        this._domCraftReady?.then(() => {
+            if (!this._craftOpen && !this.registry.get(REG.blockLocked)) this.domCraft?.open();
+        });
+    }
+
+    closeCraft() {
+        if (this.domCraft && this.domCraft.isOpen()) this.domCraft.close();
     }
 
     // Единственный владелец registry 'blockLocked' и видимости listContent:
@@ -210,18 +221,11 @@ export class UIScene extends Phaser.Scene {
             this.mapRoot.setVisible(this._mapOpen);
             this.mapContent.setVisible(this._mapOpen);
         }
-        if (this.craftRoot) {
-            // В DOM-режиме Phaser-мастерская не рисуется вовсе (D5)
-            const phaserCraft = this._craftOpen && !this.domCraft;
-            this.craftRoot.setVisible(phaserCraft);
-            this.craftContent.setVisible(phaserCraft);
-        }
     }
 
     refreshUi() {
         this.updateBlockLock();
         this.refreshMapNodes();
-        if (this._craftOpen && !this.domCraft) this.refreshCraftUi();
         this.refreshHud();
         this.refreshUnlockButton();
         this.refreshTabs();
@@ -250,6 +254,5 @@ Object.assign(
     settingsModalMethods,
     statusModalsMethods,
     mapScreenMethods,
-    craftScreenMethods,
     tutorialMethods
 );

@@ -402,6 +402,22 @@ const check = (name, ok, details = {}) => {
             };
         });
         const flag = name === 'daily' ? st.daily : name === 'boss-reward' ? st.bossReward : st.playerDown;
+        if (name === 'daily') {
+            // Дневная награда НЕ вытесняет мастерскую (очередь, как в Phaser):
+            // копится до закрытия; проверяем оба состояния
+            check('D3: daily ждёт закрытия DOM', st.domOpen && !st.daily, st);
+            await page.evaluate(() => window.__DOM_CRAFT.close());
+            await wait(450);
+            const after = await page.evaluate(() => {
+                const ui = window.__GAME.scene.getScene('UIScene');
+                const top = document.elementFromPoint(Math.round(innerWidth / 2), Math.round(innerHeight / 2));
+                return { domOpen: window.__DOM_CRAFT.isOpen(), daily: ui._dailyOpen, topIsDom: !!(top && top.closest('#ui-root')) };
+            });
+            check('D3: daily показана после закрытия DOM', !after.domOpen && after.daily && !after.topIsDom, after);
+            await page.evaluate(`(() => { const ui = window.__GAME.scene.getScene('UIScene'); ${closeCode} })()`);
+            await page.waitForTimeout(200);
+            continue;
+        }
         check(`D3: ${name} закрывает DOM и виден`, !st.domOpen && flag && !st.topIsDom, st);
         await page.evaluate(`(() => { const ui = window.__GAME.scene.getScene('UIScene'); ${closeCode} })()`);
         await page.waitForTimeout(200);
@@ -554,24 +570,6 @@ const check = (name, ok, details = {}) => {
     check('4.3 мастерская не ломает обучение', during.open && during.dim && during.step === started.step
         && flow.steps.join(',') === '1,2,3' && flow.done && !flow.dim && errors.length === 0,
         { started, during, flow, errors: errors.slice(0, 3) });
-    await ctx.close();
-}
-
-// ---- Без флага: прежняя Phaser-мастерская ----
-{
-    const { ctx, page, errors } = await openPage({ dom: false });
-    const st = await page.evaluate(() => {
-        const ui = window.__GAME.scene.getScene('UIScene');
-        ui.openCraft();
-        return {
-            hasDomCraft: !!ui.domCraft,
-            craftOpen: !!ui._craftOpen,
-            rootVisible: !!(ui.craftRoot && ui.craftRoot.visible),
-            domRoot: !!document.getElementById('ui-root')
-        };
-    });
-    check('D5 off: открывается Phaser-мастерская', !st.hasDomCraft && st.craftOpen && st.rootVisible && !st.domRoot, st);
-    check('нет console/pageerror (Phaser-режим)', errors.length === 0, { errors: errors.slice(0, 5) });
     await ctx.close();
 }
 

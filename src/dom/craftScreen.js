@@ -1,11 +1,11 @@
 // Боевой DOM-экран мастерской (этапы 2–3 пилота).
 // Данные — только из снимка моста (bridge.js); действия вызывают функции state.js
 // (buyItem/useItem/startCraft/claimCraft), прямых записей в gameState здесь нет.
-// Тексты ошибок — craftMessages (единый источник с Phaser-экраном).
+// Тексты ошибок — craftMessages (единственный источник).
 //
 // D3: Phaser-модалки рисуются в канвасе (под #ui-root), поэтому при любом оверлее
 // верхнего приоритета DOM-панель скрывается; награду покажет штатная очередь.
-// D5: включается флагом isDomUiEnabled(); иначе работает Phaser-экран.
+// Включён по умолчанию в проде и dev: Phaser-экран удалён после пилота.
 import { ensureUiRoot } from './root.js';
 import { createPublisher } from './bridge.js';
 import { html, setHtml, renderKeyed } from './html.js';
@@ -196,6 +196,7 @@ export function createDomCraft(scene) {
     const onAction = (act, id) => {
         if (act === 'buy') {
             if (buyItem(id)) {
+                transient.delete(`i:${id}`);
                 playSfx(scene, 'purchase');
             } else {
                 const item = itemById(id);
@@ -204,6 +205,7 @@ export function createDomCraft(scene) {
             forceRefresh();
         } else if (act === 'use') {
             if (useItem(id, bossActive())) {
+                transient.delete(`i:${id}`);
                 playSfx(scene, 'purchase');
             } else {
                 const item = itemById(id);

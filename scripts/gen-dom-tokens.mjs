@@ -106,7 +106,9 @@ function build() {
 const css = build();
 
 if (process.argv.includes('--check')) {
-    const prev = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : null;
+    const prevRaw = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : null;
+    // Git на Windows может отдать CRLF — сравниваем без учёта перевода строк
+    const prev = prevRaw === null ? null : prevRaw.replace(/\r\n/g, '\n');
     if (prev === css) {
         console.log('dom:tokens — ок: src/dom/tokens.css соответствует src/ui/theme.js');
         process.exit(0);
