@@ -31,6 +31,14 @@
 - Любая правка экрана проверяется минимум в двух вьюпортах: десктоп (1280x720) и
   мобилка (390x844) — скриншоты прикладываются к апруву вместе с аудитом.
 
+## DOM-слой UI (`src/dom/`, пилот мастерской — G3 = go)
+- Экран мастерской с флагом `?dom=1` (или `localStorage.domUi=1`, только dev) собирается в `src/dom/`; прод-бандл его не содержит (DEV-ветка).
+- Размеры — только токены: `npm run dom:tokens` генерирует `src/dom/tokens.css` из `src/ui/theme.js`; дрейф — `npm run dom:tokens -- --check`; голые `px/rem/em` вне `tokens.css` запрещены (`npm run ui:tokens:css`, 1px — только с комментарием-причиной).
+- Гейты: `npm run ui:check:dom` (7 вьюпортов × 26 рядов, PNG в `shots/ui-check/<vp>__craft-dom.png`) и `npm run test:dom-golden` (tolerant-diff, порог 0.5%). **Полный UI-прогон = `npm run ui:check` + `npm run ui:check:dom`** + `npm test`, `npm run test:ui`.
+- Бизнес-правила и запись состояния — только в `src/state.js`; `src/dom/*` читает через `bridge.js`, тексты ошибок — `src/state/craftMessages.js` (без копий).
+- Фикстуры и стенды (`fixtures*.js`, `lab.js`, `scripts/build-dom-*.mjs`) — не прод-код; для проверки на телефоне без сети: `npm run build`-независимые `shots/pilot-gates/dom-craft-phone.html` / `dom-lab.html`.
+- Фаза 2 (перенос других форм на DOM) — только отдельным документом с таймбоксом; HUD/бой/босс/шахта остаются в Phaser.
+
 ## Скиллы (.kilo/skills)
 - Перед началом задачи сверься с реестром `.kilo/skills/INDEX.md` (если файл существует).
 - Если под задачу есть прямое совпадение по триггеру — прочитай 1–2 релевантных файла из `.kilo/skills/` до начала планирования или правок.

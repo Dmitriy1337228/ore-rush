@@ -1,6 +1,6 @@
 ---
 name: ui-layout-check
-description: "Use when changing or reviewing any UI layout in this game: HUD, panels, rows, modals, map, craft, boss overlay, buttons, text sizes, adaptive/portrait layout. Runs the measurable layout audit (npm run ui:check), reads annotated screenshots and the report. Triggers on: вёрстка, layout, наезжает, перекрывается, отступы, кнопки, адаптив, портрет, ui:check."
+description: "Use when changing or reviewing any UI layout in this game: HUD, panels, rows, modals, map, craft, boss overlay, buttons, text sizes, adaptive/portrait layout, DOM-слой (src/dom). Runs the measurable layout audit (npm run ui:check / ui:check:dom), reads annotated screenshots and the report. Triggers on: вёрстка, layout, наезжает, перекрывается, отступы, кнопки, адаптив, портрет, ui:check, DOM-слой, src/dom."
 ---
 
 # UI layout check
@@ -33,3 +33,19 @@ description: "Use when changing or reviewing any UI layout in this game: HUD, pa
 `#N` — номер рамки на PNG (красная — ошибка, оранжевая — предупреждение, приглушённая — известный долг).
 Правила: OVERLAP, OVERFLOW, TEXT-COVERED, OFFSCREEN, MIN-FONT, ROW-NAME, PADDING, TOUCH-TARGET,
 BUTTON-GAP, MISALIGNED, EDGE (таблица в `docs/UI_LAYOUT.md`).
+
+## DOM-слой (`src/dom`, экран мастерской, `?dom=1` в dev)
+
+С пилота DOM (G3 = go) для правок `src/dom/*` действует дополнительный цикл:
+
+1. Размеры — **только токены**: `npm run dom:tokens` (генерация из `src/ui/theme.js`),
+   `npm run dom:tokens -- --check` (дрейф), `npm run ui:tokens:css` (голые px/rem/em вне
+   `tokens.css` запрещены; 1px — только с комментарием-причиной).
+2. `npm run ui:check:dom` — 7 вьюпортов × 26 рядов, `getBoundingClientRect`, пороги `UI_RULES`;
+   скриншоты `shots/ui-check/<vp>__craft-dom.png`, отчёт `shots/ui-check-dom/report.json`.
+3. `npm run test:dom-golden` — tolerant-diff эталона DOM-панели (порог 0.5%, константы в скрипте);
+   обновление эталона — только с явным «ок».
+4. Полный прогон UI = `npm run ui:check` **и** `npm run ui:check:dom`; плюс `npm test`, `test:ui`.
+5. Бизнес-правила — только в `src/state.js`, тексты ошибок — `src/state/craftMessages.js`;
+   `src/dom/*` не пишет в `gameState`, только читает через `bridge.js`.
+6. Фикстуры/стенды (`fixtures*.js`, `lab.js`, `build-dom-*.mjs`) — не прод-код и вне метрики LOC.
