@@ -1,0 +1,694 @@
+# План-ТЗ: реорганизация `scripts/` и `src/` (исполняемая версия)
+
+Статус: **к исполнению после апрува игроком** · Дата: 2026-11-16 · Версия 1 (по вердикту /judge от 2026-11-16)
+Основа: `docs/REPO_REFACTOR.md` (предложение, остаётся как обоснование — не править).
+Связанные: `docs/UI_DOM_PHASE2_PLAN.md` (параллельная фаза, пути которой этот план **не должен ломать**), `docs/UI_LAYOUT.md`, `AGENTS.md`.
+
+Что изменено относительно предложения (по вердикту «принять с правками»):
+
+| № | Было в предложении | Стало по вердикту |
+|---|---|---|
+| 1 | Один заход A–E ≤ 3 дней, параллельно с фазой 2 | **Два окна.** Окно 1 (сейчас): бэкап + индекс скриптов + алиасы + гард, **без перемещений кода**. Окно 2 (после закрытия фазы 2): перенос `scripts/`, затем `src/`, затем документация |
+| 2 | Триаж `verify-*` с архивацией/удалением в этапе A | В окне 1 — **только таблица по фактам прогона**, без удалений и переездов; архивирование — в окне 2 (фаза 2 опирается на «старые» `verify-*` и `pilot-*` под флагом `LEGACY_FORMS_QUERY`) |
+| 3 | Критерий триажа «обновлялся за месяц» | **Убран** (правились все 13–16.11, критерий не фильтрует); остаются «покрывает подсистему без unit-теста» и «проходит ≤ 2 мин» |
+| 4 | Этап D: `src/state.js` → `src/state/index.js` | **Исключён.** Детекторы `/src/state.js` в `ui-check-dom`/`ui-review`, D2/D4 фазы 2 и 23 импорта ради косметики |
+| 5 | `theme.js` в `ui/phaser/` | **`src/ui/shared/`**: его читают и Phaser-UI, и DOM-слой (`craftScreen.js`, генератор токенов). Правило: файл, импортируемый обеими сторонами, — в `shared/` |
+| 6 | `UIScene` в `ui/phaser/` | **`src/ui/UIScene.js`** (корень `ui/`): это хост обоих движков (монтирует DOM-формы, `openCraft()`, `__DOM_*`), правило «`ui/phaser` — только Phaser» иначе нарушается сразу |
+| 7 | `lib/ui-matrix.mjs` → `scripts/data/` | `scripts/lib/` (это библиотека гейтов, не данные) |
+| 8 | Правило «скрипт без алиаса недопустим» — декларация | Правило **проверяется скриптом** (`npm run scripts:check`), иначе умрёт |
+| 9 | Слои — на словах | Слои проверяются скриптом (`npm run layers:check`, окно 2) |
+| 10 | Таймбокс 3 дня | **Окно 1: 1–1.5 дня; окно 2: 3.5–4 дня**; отдельные жёсткие стопы; остановка после любого этапа |
+| 11 | Упущено: бэкап, права агентов, жёсткие пути | Бэкап-ветка и `git bundle` перед каждым окном (57 коммитов не запушены); правка `.kilo/agent/team-ui.md`, `team-tester.md`, `.kilo/command/ui.md`; чек-лист зашитых путей (Приложение B) |
+| 12 | Факты: «41 файл», «18/10 импортов» | Исправлено: **37 файлов** в `scripts/` (35 + 2 в `lib/`), импортов `theme.js` — 17, `uiKit.js` — 12; `ui-review.mjs` **не в `package.json`**, вызывается через `test:ui` |
+
+Дополнение от 2026-11-16 — интеграция промпта владельца «визуальный порядок + Prettier/ESLint + JSDoc» (вердикт /judge по этому материалу: порядок «стиль → окно 1 → фаза 2 → окно 2 → JSDoc»; правки промпта ниже):
+
+| № | Было в промпте | Стало |
+|---|---|---|
+| 13 | Массовый стиль/JSDoc «по всем файлам» одним проходом | **Окно S (стиль, механика)** — сейчас, **до** старта фазы 2 и окна 1: один изолированный коммит Prettier+ESLint. **Окно J (JSDoc)** — после окна 2, по папкам, необязательное |
+| 14 | `trailingComma: "es5"` | **`"none"`** — как в текущем коде (иначе тысячи правок только ради запятых); добавлены `semi`, `arrowParens`, **`endOfLine: "auto"`** (в репозитории `core.autocrlf=true`, рабочее дерево CRLF) и точная версия Prettier |
+| 15 | `prettier --write .` | Только `src scripts tests vite.config.js` и только `*.js/*.mjs/*.cjs`; `.prettierignore` и `ignores` в ESLint: `docs`, `shots`, `dist`, `assets`, `.kilo`, `*.css` (в т.ч. генерируемый `tokens.css`), `*.html`, `*.md`, `*.json` (в т.ч. `baseline.json`), golden и `*.out`, `package-lock.json` |
+| 16 | ESLint: `curly`, `function-call-argument-newline`, `padding-line-between-statements` | `curly: all` и `@stylistic/padding-line-between-statements` — оставлены; **`function-call-argument-newline` убрано** (Prettier сам решает перенос, правило дублирует его или конфликтует). Отдельный `no-undef`/`no-unused-vars` не включаются (это был бы рефакторинг, а не стиль) |
+| 17 | «Убери боковые inline-комментарии» | **Не удалять.** Гейт `ui:tokens` (`hasCommentNearby`, AGENTS) разрешает голое число только с `//` в строках вызова или строкой над ним. Боковой комментарий допустимо **перенести на строку над стейтментом**; потеря комментариев-обоснований недопустима |
+| 18 | JSDoc по всем 118 файлам, по 2–3 файла | Окно J: пилот на одной папке, дальше **по папкам** (≤ 15 файлов за заход), JSDoc — у **экспортируемых** функций и методов-миксинов; проверка «ничего не поменялось» — хэши ассетов `npm run build` (минификатор убирает комментарии) + AST-сравнение |
+| 19 | «Убедись, что собирается и запускается» | Полный набор гейтов (раздел D14) + `format:check`/`lint` + сравнение хэшей бандла до/после |
+| 20 | Страховочный коммит `chore: backup…` | Бэкап-ветка и `git bundle` (D6), если дерево грязное — остановка и вопрос; коммиты по Conventional Commits (`style(repo): …`), без смешивания со сменой логики |
+| 21 | Правила агентов «без комментариев в коде» (`.kilo/agent/team-*.md`) противоречат JSDoc | Правило переписывается в окне S (этап S3) **до** любого JSDoc-прохода и до фазы 2 |
+| 22 | Нет порядка относительно фазы 2 | Стиль идёт **первым**: ветка фазы 2 форкается от уже отформатированного `master`, baseline фазы 2 (LOC, нарушения, gzip, p95) снимается **после** окна S |
+
+---
+
+## 0. Как пользоваться документом
+
+### 0.0. Стартовая инструкция исполнителю (прочитать первой)
+
+1. Прочитай целиком этот документ, затем `AGENTS.md`, `docs/UI_LAYOUT.md`, `docs/UI_DOM_PHASE2_PLAN.md` (раздел 0 и Приложение A — чтобы понимать, какие пути фаза 2 считает неизменными), `.kilo/skills/ui-layout-check/SKILL.md`; если есть `.kilo/skills/INDEX.md` — сверься с ним.
+2. Работай в одиночном режиме (команду `/team` не поднимать).
+3. Иди строго по этапам; следующий этап — только после выполнения **всего** DoD предыдущего и записи в журнал (раздел 11).
+4. **Рефакторинг = ноль изменений поведения.** Любой этап, в котором меняется что-то кроме путей, имён, форматирования/комментариев и документации, — остановка и вопрос игроку.
+5. **Порядок окон (вердикт /judge): окно S (стиль) → окно 1 → фаза 2 DOM → окно 2 → окно J (JSDoc, необязательное).** Окно S идёт первым и целиком **до** создания ветки фазы 2 (раздел 1.1).
+6. **Точки остановки:**
+   - **S1** — после dry-run окна S (этап S0): игрок видит размер диффа и решает по конфигам.
+   - **S2** — после массового коммита (этап S2): игрок принимает форматирование.
+   - **R1** — конец окна 1 (этап 1): игрок принимает индекс скриптов, алиасы и таблицу триажа.
+   - **R2** — старт окна 2: проверка предусловий (раздел 5) и решение игрока «запускаем окно 2».
+   - **R3** — после этапа 2 (`scripts/` переехали): приёмка, затем отдельное «go» на `src/`.
+    - **R4** — конец окна 2 (этап 5): итоговая приёмка.
+    - **J1** — после пилота JSDoc на одной папке (окно J): игрок принимает стиль комментариев и решает, идти ли дальше по папкам.
+    - Формат остановки: одно сообщение — что сделано, числа, что нужно от игрока, варианты ответа.
+7. Неоднозначность, не покрытая планом, — один вопрос игроку (`question`).
+8. Отчёт этапа: что сделано, результаты команд DoD, отклонения, `Skills: <файлы>` (если применялись).
+
+### 0.1. Роли и обозначения
+
+| Обозн. | Значение |
+|---|---|
+| **Окно S** | Этапы S0–S3: стиль кода — Prettier + ESLint, один механический коммит; выполняется **первым**, до ветки фазы 2 |
+| **Окно 1** | Этапы 0–1: безопасная часть, пути кода не меняются; выполняется **после окна S и до старта фазы 2** |
+| **Окно 2** | Этапы 2–5: переносы файлов; стартует только после закрытия фазы 2 (раздел 4.2) |
+| **Окно J** | Этапы J1–J3: JSDoc и перенос боковых комментариев по папкам; необязательное, после окна 2 (раздел 8.1) |
+| **dist-хэш** | Имена файлов `dist/assets/*.js` (Vite даёт им хэш содержимого): совпадение до/после = минифицированный бандл идентичен; комментарии и пробелы на него не влияют |
+| **Гард** | Скрипты-проверки правил репозитория: `scripts:check` (окно 1), `layers:check` (окно 2) |
+| **Алиас** | Именованная npm-команда для скрипта (`verify:boss`, `metrics:p95` и т. п.) — стабильное имя, не зависящее от папки |
+| **Отчёт о путях** | Результат `rg`/grep по старым путям: ноль совпадений вне исторических документов (5.3) |
+
+### 0.2. Бюджет времени
+
+| Этап | Название | Окно | Бюджет, дни | Накопленно (окно) |
+|---|---|---|---|---|
+| S0 | Бэкап, dry-run в отдельном worktree → **S1** | S | 0.25 | 0.25 |
+| S1 | Инструменты: Prettier, ESLint, конфиги, скрипты | S | 0.25 | 0.5 |
+| S2 | Массовый механический коммит → **S2** | S | 0.25–0.5 | 0.75–1 |
+| S3 | Правила стиля, агенты, гейты, blame-ignore | S | 0.25 | 1–1.25 |
+| 0 | Бэкап и baseline (на отформатированном коде) | 1 | 0.25 | 0.25 |
+| 1 | Индекс скриптов, алиасы, гард, таблица триажа → **R1** | 1 | 1–1.25 | 1.25–1.5 |
+| 2 | `scripts/` по папкам, архив, права агентов → **R3** | 2 | 1–1.5 | 1–1.5 |
+| 3 | `src/` часть A: `game/`, `ui/shared`, `ui/phaser` | 2 | 1–1.5 | 2–3 |
+| 4 | `src/` часть B: `ui/dom`, гард слоёв | 2 | 0.5–1 | 2.5–4 |
+| 5 | Документация, правила, итог → **R4** | 2 | 0.5 | 3–4.5 |
+| J1 | Пилот JSDoc на одной папке, AST-хелпер → **J1** | J | 0.5 | 0.5 |
+| J2 | JSDoc по папкам (≤ 15 файлов за заход, каждый заход — отдельное «go») | J | 0.3–0.5 на папку | необязательно |
+| J3 | Итог окна J | J | 0.25 | — |
+
+Жёсткие стопы: **окно S — 1.5 дня, окно 1 — 2 дня, окно 2 — 5 дней, окно J — 4 дня** (и остановка после любой папки допустима). Превышение этапа более чем на 50 % — остановка, запись в журнал, решение игрока. Календарное ожидание игрока в бюджет не входит.
+
+---
+
+## 1. Решения, фиксируемые до старта (D-пункты)
+
+| ID | Вопрос | Решение | Когда пересматривается |
+|---|---|---|---|
+| D1 | Перемещения | Только `git mv` (rename detection), копирование+удаление запрещено. Один этап — несколько атомарных коммитов («переносы» отдельно от «правок путей») | — |
+| D2 | `src/state.js` | **Остаётся на месте** (баррель рядом с `src/state/`). Не переименовывается и не переносится | Отдельным решением |
+| D3 | Структура `src/` | `src/game/` (игровой цикл) · `src/ui/{UIScene.js, shared/, phaser/, dom/}` · остальное (`dev/`, `sdk/`, `state/`, `layout.js`, `sfx.js`, `main.js`, `sdk-stub.js`, `scenes/BootScene.js`) на месте. Подробно — раздел 4.1 | Этап 3 |
+| D4 | Архив | `scripts/archive/` — файлы **не удаляются**; каждому файлу — строка в `scripts/README.md` («почему», «удалить после <дата/условие>»); `archive/` исключён из гардов, npm-алиасов и grep-гейтов | Квартальная ревизия |
+| D5 | Критерии триажа `verify-*` | оставить в активных — если (а) покрывает подсистему без unit-теста и (б) проходит ≤ 2 мин. Иначе кандидат на архив. **Критерий «обновлялся за месяц» не используется** | — |
+| D6 | Обратимость | Перед каждым окном — бэкап-ветка + `git bundle` (ветка `master` содержит незапушенные коммиты). Откат этапа = `git revert` его коммитов (без перезаписи истории) | — |
+| D7 | Исторические документы | Закрытые журналы и планы (`UI_DOM_PILOT*.md`, `UI_LAYOUT_TODO.md` и т. п.) **не переписываются** по пути; соответствие «старый → новый» — в таблице `scripts/README.md` и в этом документе (Приложение C) | — |
+| D8 | Гард «скрипт без алиаса» | `npm run scripts:check`: каждый файл `scripts/**/*` (кроме `lib/`, `archive/`, `README.md`) имеет npm-алиас и строку в `scripts/README.md`. До закрытия фазы 2 новые скрипты фазы 2 регистрируются в тех же двух местах (правило добавлено в раздел 14 плана фазы 2) | — |
+| D9 | Что НЕ меняется | Поведение игры и гейтов, экономика, сейвы, `baseline.json`, golden-изображения, токены, `dist`-бандл (допуск ±0.5 КБ gzip на изменение имён модулей; для окон S и J — **dist-хэш совпадает**) | — |
+| D10 | Охват форматера | Только `src scripts tests vite.config.js`, только `*.js/*.mjs/*.cjs`. Не форматируются: `docs`, `shots`, `dist`, `assets`, `.kilo`, `*.css` (в т.ч. генерируемый `src/dom/tokens.css`), `*.html`, `*.md`, `*.json` (в т.ч. `tests/ui-check/baseline.json`), golden и `*.out`, `package-lock.json`. Защита — `.prettierignore` **и** `ignores` в ESLint | — |
+| D11 | Конфиг Prettier | `printWidth 120`, `tabWidth 4`, `useTabs false`, `semi true`, `singleQuote true`, **`trailingComma "none"`** (как в коде), `arrowParens "always"`, **`endOfLine "auto"`** (`core.autocrlf=true`: рабочее дерево CRLF, индекс LF), версии Prettier/ESLint/плагина — точные (`--save-exact`). Полный текст — Приложение D | S0 (по результатам dry-run) |
+| D12 | ESLint | Flat-конфиг `eslint.config.js`; правила **только**: `curly: all`, `@stylistic/padding-line-between-statements` (пустая строка перед `return` и после блоков `if/for/while`). `function-call-argument-newline` не включается. `no-undef`/`no-unused-vars` и прочие смысловые правила не включаются — это рефакторинг, а не стиль. Если padding-правило даёт слишком шумный дифф (цепочки однострочных `if`-ов), смягчить исключением `if → if: any` по итогам dry-run | S0 |
+| D13 | Комментарии | Комментарии-обоснования голых чисел (`ui:tokens`, AGENTS) **сохраняются**. Боковой `//` разрешено переносить на строку над стейтментом (гейт видит строку над вызовом), но не удалять, пока в нём есть смысл. JSDoc — у экспортируемых функций/методов-миксинов; внутри тел — короткие комментарии-заголовки шагов | S3 |
+| D14 | Набор гейтов | С момента окна S **каждый «полный набор гейтов» в DoD** этого плана и плана фазы 2 дополняется: `npm run format:check`, `npm run lint`. В окнах S, J для кода — дополнительно **dist-хэш до = после** | — |
+| D15 | Blame | Массовый коммит(ы) стиля вносятся в `.git-blame-ignore-revs` (отдельный коммит после мерджа); в `AGENTS.md`/`README` — `git config blame.ignoreRevsFile .git-blame-ignore-revs` | S2 |
+
+---
+
+## 1.1. Окно S — стиль кода: Prettier + ESLint (≈ 1–1.25 дня, **выполняется первым**)
+
+Зачем первым (вердикт /judge): ветка фазы 2 ещё не создана, параллельных веток с живым кодом нет — единственное «тихое окно» для массового диффа. Новый код фазы 2 (~15 файлов) сразу пишется в итоговом стиле, baseline фазы 2 (LOC, нарушения, gzip, p95) снимается после окна S и не обесценивается, переносы `git mv` окна 2 идут уже по отформатированным файлам (rename detection сохраняется). Механика окна S **не меняет смысл кода**: проверка — совпадение dist-хэша и полный набор гейтов.
+
+Ветка: `chore/code-style` от `master`; слияние в `master` — только по указанию игрока; фаза 2 форкается от `master` **после** слияния.
+
+### Этап S0 — Бэкап и dry-run (0.25 дня) → остановка S1
+- S0.1. `git status` — чисто (допустимы только документы планов). Грязное дерево с кодом — **остановка и вопрос игроку** (страховочных `chore: backup`-коммитов не делать). Закоммитить планы: `docs(repo): планы реорганизации и фазы 2 DOM по вердиктам judge`.
+- S0.2. Бэкап: `git branch backup/pre-style` и `git bundle create ..\game_clicker-pre-style.bundle --all`; `git bundle verify` — в журнал.
+- S0.3. Baseline: `npm test`, `npm run test:ui`, `npm run ui:tokens` (**записать число проверяемых файлов и нарушений**), `npm run ui:tokens:css`, `npm run dom:tokens -- --check`, `npm run ui:check`, `npm run ui:check:dom`, `npm run build` дважды подряд — **dist-хэши (имена `dist/assets/*.js`) двух сборок совпадают** (иначе сборка недетерминирована и критерий dist-хэша неприменим — запись в журнал, критерий заменяется на сравнение gzip ±0.1 КБ).
+- S0.4. **Dry-run в отдельном worktree** (рабочее дерево игрока не трогаем): `git worktree add ..\game_clicker-style-dry -b dry/style`, `npm ci`, установка инструментов и конфигов по Приложению D, прогон `npm run format` → `npm run lint:fix` → `npm run format`.
+- S0.5. Отчёт dry-run → `docs/REPO_REFACTOR_BASELINE.md` (раздел «Стиль»): число изменённых файлов и строк (`git diff --shortstat`), распределение по папкам, число автофиксов ESLint по правилам, список файлов, где Prettier ломает ручное выравнивание таблиц (кандидаты на `// prettier-ignore`: `layout.js`, `*Layout.js`, каталоги), результат гейтов в worktree: `ui:tokens` (нарушений 0 и число файлов то же), `ui:tokens:css`, `dom:tokens --check`, `npm test`, `npm run build` и **сравнение dist-хэша** с S0.3, `test:ui`, `ui:check:quick`.
+- S0.6. Проверка идемпотентности: второй полный прогон `format → lint:fix → format` не даёт диффа (фиксированная точка); `format:check` и `lint` — код 0.
+- S0.7. Удалить dry-run worktree после остановки S1 (`git worktree remove`, ветка `dry/style` — по решению игрока).
+
+**DoD S0**
+- [ ] Бэкап-ветка и бандл есть, `git bundle verify` — ok.
+- [ ] Baseline-гейты зелёные (или «внешний долг» записан); dist-хэш двух базовых сборок совпадает (или записана замена критерия).
+- [ ] Dry-run выполнен в отдельном worktree; отчёт S0.5 записан; **все гейты в worktree зелёные**, dist-хэш совпадает с baseline.
+- [ ] Фиксированная точка подтверждена (S0.6).
+- [ ] **Остановка S1 пройдена**: игрок принял размер диффа и конфиги (или поправил D11/D12: смягчить padding-правило, добавить `// prettier-ignore`, исключить файлы); решение — в журнале.
+- Если dry-run даёт красный гейт, который нельзя объяснить форматированием, — стоп, отчёт игроку (не «лечить» гейты).
+
+### Этап S1 — Инструменты (0.25 дня)
+- S1.1. `npm i -D --save-exact prettier eslint @stylistic/eslint-plugin` (версии зафиксировать); `.prettierrc`, `.prettierignore`, `eslint.config.js` — Приложение D; в `package.json`: `format`, `format:check`, `lint`, `lint:fix` (охват — D10, не `.`).
+- S1.2. Информационный прогон: `npm run format:check` и `npm run lint` — число файлов/нарушений в журнал (ожидаемо > 0 до S2).
+- S1.3. Коммит `chore(repo): добавляет Prettier и ESLint (конфиги и npm-скрипты)`.
+
+**DoD S1**
+- [ ] Конфиги и скрипты закоммичены, точные версии в `package.json`/`package-lock.json`.
+- [ ] `npm run lint` не падает по конфигу (только по правилам); игра собирается (`npm run build`), dist-хэш не изменился (код не менялся).
+- [ ] В коммите нет изменений исходников (`git show --stat` — только конфиги, `package*.json`).
+
+### Этап S2 — Массовый механический коммит (0.25–0.5 дня) → остановка S2
+- S2.1. На ветке `chore/code-style`: `npm run format` → `npm run lint:fix` → `npm run format`. Если дифф ESLint крупный — два коммита: `style(repo): применяет Prettier …` и `style(repo): применяет ESLint-автофиксы …`; смешивать со сменой логики или ручной правкой смысла **запрещено**.
+- S2.2. Ручные места: `// prettier-ignore` только там, где в S0.5 отмечено разрушение таблиц; каждое такое место — комментарий-причина.
+- S2.3. Прогон полного набора гейтов (D14) и **сравнение dist-хэша с S0.3**.
+- S2.4. Коммит `chore(repo): добавляет .git-blame-ignore-revs` (хэши S2.1) + строка про `git config blame.ignoreRevsFile` в `AGENTS.md`/`README.md`.
+
+**DoD S2**
+- [ ] `npm run format:check` и `npm run lint` — код 0; повторный `format → lint:fix → format` не даёт диффа.
+- [ ] **dist-хэш до = после** (имена `dist/assets/*.js` идентичны); если нет — каждый файл, давший расхождение, разобран и объяснён в журнале (допустимая причина — эквивалентные скобки/точки с запятой, не меняющие минифицированный вывод; недопустимая — любое неэквивалентное изменение) или изменение откачено.
+- [ ] `npm test`, `npm run test:ui`, `npm run ui:tokens` (**те же число файлов и 0 нарушений**), `npm run ui:tokens:css`, `npm run dom:tokens -- --check`, `npm run ui:check`, `npm run ui:check:dom`, `npm run test:dom-golden`, `npm run build` — зелёные, 0 новых нарушений; `baseline.json`, golden, `tokens.css` не изменены (`git diff --stat` по ним пуст).
+- [ ] Затронуты только `*.js/*.mjs/*.cjs` в `src scripts tests` и `vite.config.js` (проверка `git diff --name-only | rg -v "\.(js|mjs|cjs)$"` — пусто).
+- [ ] `.git-blame-ignore-revs` создан и содержит хэши коммитов стиля.
+- [ ] Ручной smoke игры на 1280×720 и 390×844 (шахта, мастерская, настройки, карта, бой) — без ошибок консоли.
+- [ ] **Остановка S2 пройдена**: игрок принял форматирование; слияние `chore/code-style` в `master` — по его указанию.
+
+### Этап S3 — Правила стиля, агенты, гейты (0.25 дня)
+- S3.1. `AGENTS.md`: раздел «Стиль кода» — Prettier/ESLint, команды `format`, `format:check`, `lint`, `lint:fix`, охват (D10), правило комментариев (D13), `blame.ignoreRevsFile`; в «UI-правки» и «Гейты» — `format:check` и `lint` (D14).
+- S3.2. `.kilo/agent/team-dev.md`, `team-architect.md`, `team-reviewer.md` (и другие с «без комментариев в коде»): правило переписать — «комментарии: JSDoc у экспортируемых функций; боковые комментарии не добавлять; комментарии-обоснования голых чисел обязательны (AGENTS, `ui:tokens`); код перед сдачей проходит `format:check` и `lint`». `.kilo/command/team.md` (итоговая приёмка) и `.kilo/command/ui.md` — добавить `format:check`/`lint`.
+- S3.3. `docs/UI_LAYOUT.md`, скилл `ui-layout-check`, `scripts/README.md` (если уже есть) — упоминание новых гейтов.
+- S3.4. В `docs/UI_DOM_PHASE2_PLAN.md` убедиться в правиле 11 (раздел 14) и в строке стартовых условий (этап 0): фаза 2 стартует после окна S и окна 1.
+
+**DoD S3**
+- [ ] `AGENTS.md` и `.kilo/agent/team-*.md` не противоречат друг другу в части комментариев (grep «без комментариев» — 0 совпадений в действующих правилах).
+- [ ] `format:check` и `lint` упомянуты в `AGENTS.md`, `docs/UI_LAYOUT.md`, `.kilo/command/team.md`.
+- [ ] Коммиты `docs(repo): …`; код не менялся.
+
+---
+
+## 2. Этап 0 — Бэкап и baseline (0.25 дня, окно 1; после окна S)
+
+### Шаги
+- 0.1. Предусловие: окно S закрыто (остановка S2 пройдена, `chore/code-style` слита в `master`, `npm run format:check` и `npm run lint` зелёные). `git status` — чисто (допустимо только `docs/REPO_REFACTOR.md`, `docs/REPO_REFACTOR_PLAN.md`, `docs/UI_DOM_PHASE2_PLAN.md`, если они ещё не закоммичены: `docs(repo): план реорганизации scripts/src по вердикту judge`). Ветка `chore/repo-index` от `master` (окно 1 допустимо делать в `master`, если игрок так решит; ветка — по умолчанию).
+- 0.2. **Бэкап:** `git branch backup/pre-repo-refactor` и `git bundle create ../game_clicker-pre-repo-refactor.bundle --all`; путь бандла и вывод `git bundle verify` — в журнал.
+- 0.3. **Baseline гейтов (уже на отформатированном коде):** `npm test`, `npm run test:ui`, `npm run ui:tokens`, `npm run ui:tokens:css`, `npm run dom:tokens -- --check`, `npm run ui:check`, `npm run ui:check:dom`, `npm run format:check`, `npm run lint`, `npm run build` (gzip и dist-хэш всех `dist/assets/*.js`/`*.css`). Всё зелёное либо «внешний долг» в журнал.
+- 0.4. **Инвентаризация фактов** → `docs/REPO_REFACTOR_BASELINE.md`: число файлов `scripts/` (на 2026-11-16 — 37: 35 + 2 в `lib/`), число файлов `src/` (73), число импортов `theme.js` (17), `uiKit.js` (12), `src/state.js` (23); список зашитых путей по Приложению B (результат grep с номерами строк — **после окна S**, номера строк сдвинулись); список упоминаний `scripts/` в `package.json`, `tests/`, `.kilo/`, `AGENTS.md`, `docs/` (счётчик по файлам). **Это числа для сверки на этапах 2–5.**
+
+### DoD этапа 0
+- [ ] Бэкап-ветка существует; `git bundle verify` — ok; путь бандла в журнале.
+- [ ] Baseline-гейты зелёные (вывод сохранён), gzip записан.
+- [ ] `docs/REPO_REFACTOR_BASELINE.md` закоммичен: счётчики и список зашитых путей.
+- [ ] Коммит `docs(repo): фиксирует baseline перед реорганизацией`.
+
+---
+
+## 3. Этап 1 — Индекс скриптов, алиасы, гард, таблица триажа (1–1.25 дня, окно 1) → остановка R1
+
+Цель: закрыть «теневые» скрипты и дать исполнителю окна 2 опору. **Ни один файл не перемещается, не удаляется и не меняется по содержимому.**
+
+### Шаги
+- 1.1. **Алиасы в `package.json`** (имена из Приложения A — они остаются стабильными после переноса): для каждого скрипта из `scripts/` (кроме `lib/`) — алиас. Пути в алиасах пока старые. Существующие алиасы (`ui:check`, `ui:check:quick`, `ui:tokens`, `dom:tokens`, `ui:check:dom`, `ui:tokens:css`, `test:dom-golden`) **не меняются**; добавляется `ui:review` (в `package.json` его нет — вызывается только через `test:ui`).
+- 1.2. **`scripts/README.md`**: таблица «скрипт → назначение → алиас → категория (гейт / verify / метрика / стенд / аудио / данные) → нужен браузер/dev-сервер → статус (active / архив-кандидат)».
+- 1.3. **Прогон каждого скрипта** (по одному разу, порядок — по таблице): время, код выхода, что покрывает, есть ли unit-покрытие того же (`tests/characterization/*`). Падающие скрипты — **не чинить**, записать причину. Результат — таблица триажа в `docs/REPO_REFACTOR_BASELINE.md` (раздел «Триаж») с колонками: скрипт · время · результат · покрытие · дубль unit-тестом · решение-кандидат (**keep / archive-candidate / delete-candidate**) · обоснование по D5.
+  - Предварительные гипотезы из предложения (проверить, не принимать на веру): `verify-responsive` (заменён матрицей `ui:check`), `verify-rebalance`, `verify-devpanel` — кандидаты на архив; `pilot-baseline-shots`, `pilot-dpr-shots`, `pilot-dom-input-check` — кандидаты на архив/удаление; **но** `pilot-baseline-shots.mjs` используется планом фазы 2 (этап 0.3) — до закрытия фазы 2 остаётся активным; `verify-economy`/`verify-bulkbuy` — сверить с unit-тестом `state_economy` на уникальность браузерных сценариев.
+- 1.4. **Гард** `scripts/check-scripts-index.mjs` (`npm run scripts:check`): (а) каждый файл `scripts/*` и `scripts/*/*` (кроме `lib/`, `archive/`, `README.md`) имеет npm-алиас, указывающий на него; (б) имеет строку в `scripts/README.md`; (в) каждая ссылка алиаса указывает на существующий файл. Код выхода ≠ 0 при нарушении; `--self-test` на заведомо плохом дереве (временный каталог) даёт код ≠ 0.
+- 1.5. **Правка документации без смены путей**: `docs/UI_LAYOUT.md` и `AGENTS.md` — ссылка на `scripts/README.md` и правило D8; в `.kilo/agent/team-tester.md` (список verify) — добавить алиасы рядом с путями (пути остаются).
+- 1.6. **Правило для фазы 2**: одна строка в раздел 14 `docs/UI_DOM_PHASE2_PLAN.md`: «новый скрипт — сразу алиас в `package.json` и строка в `scripts/README.md` (`npm run scripts:check`)».
+
+### DoD этапа 1
+- [ ] В `package.json` есть алиас на **каждый** скрипт `scripts/` (кроме `lib/`); `npm run scripts:check` — код 0; `--self-test` — код ≠ 0 на плохом дереве.
+- [ ] Каждый алиас запускается (smoke): для гейтов — полный прогон, для `verify-*`/`metrics:*`/`stand:*`/`audio:*` — результат записан в таблицу триажа (даже если «падает — причина»).
+- [ ] `scripts/README.md` закоммичен, таблица триажа заполнена данными прогона; решений об удалении/архивации **нет** (только кандидаты).
+- [ ] `git diff --stat master` — меняются только `package.json`, `scripts/README.md`, `scripts/check-scripts-index.mjs`, `docs/*`, `AGENTS.md`, `.kilo/agent/team-tester.md`; ни одного `R` (rename) и ни одного изменения кода `src/`.
+- [ ] `npm test`, `npm run test:ui`, `npm run ui:tokens`, `npm run ui:tokens:css`, `npm run dom:tokens -- --check`, `npm run ui:check`, `npm run ui:check:dom`, `npm run build` — зелёные, 0 новых нарушений, gzip без изменений.
+- [ ] Коммиты по Conventional Commits (`chore(repo): …`, `docs(repo): …`, `test(repo): …`).
+- [ ] **Остановка R1 пройдена**, решение игрока (принято / правки) в журнале.
+
+---
+
+## 4. Окно 2 — переносы (этапы 2–5)
+
+### 4.1. Целевая структура (с поправками вердикта)
+
+```
+src/
+  main.js, layout.js, sfx.js, sdk-stub.js        без изменений
+  state.js                                       баррель, остаётся
+  state/  sdk/  dev/                             без изменений
+  game/                                          GameScene.js + audio/background/block/boss/bossLayout/
+                                                 constants/effects/mutation/timers  (было scenes/GameScene.js, scenes/game/*)
+  scenes/BootScene.js                            остаётся
+  ui/
+    UIScene.js                                   хост обоих движков (было scenes/UIScene.js)
+    shared/                                      то, что импортируют И phaser/, И dom/ (theme.js, ... по правилу ниже)
+    phaser/
+      uiKit.js
+      widgets/                                   button.js, panelFrame.js (было ui/panel.js), stack.js,
+                                                 listGeometry.js, iconMetrics.js
+      screens/                                   hud.js, upgradesList.js (было scenes/ui/panel.js), gear.js,
+                                                 map.js (mapScreen.js), settings.js (settingsModal.js),
+                                                 statusModals.js, tutorial.js, layout.js
+    dom/                                         (было src/dom) craft.js (craftScreen.js), settingsScreen.js,
+                                                 statusModals.js …, bridge.js, components.js, html.js,
+                                                 iconFit.js, root.js, modal.js, lock.js, formsFlag.js,
+                                                 tokens.css (генерируется), dom.css
+      dev/                                       fixtures*.js, lab.js (не импортируются прод-кодом)
+
+scripts/
+  gates/     ui-check.mjs, ui-check-dom.mjs, ui-review.mjs, ui-tokens.mjs, ui-tokens-css.mjs,
+             gen-dom-tokens.mjs, dom-golden.mjs, check-scripts-index.mjs, check-layers.mjs
+  verify/    verify-*.{mjs,cjs}, прошедшие триаж
+  metrics/   pilot-frame-p95.mjs, pilot-loc.mjs, pilot-layers-check.mjs (+ решения триажа)
+  stands/    build-dom-lab.mjs, build-dom-craft-snapshot.mjs (build-dom-form-snapshot.mjs из фазы 2)
+  audio/     gen_bgm.py, gen_sfx.py, synth_sfx.py, trim_sfx.py
+  data/      balance-sim.mjs
+  lib/       dev-server.cjs, ui-matrix.mjs, dom-forms.mjs, forms-flag.mjs (если ещё жив)
+  archive/   снятые с эксплуатации (D4)
+  README.md
+```
+
+**Правило разнесения по `shared/`:** файл, импортируемый **одновременно** кодом из `ui/phaser/**` (или `UIScene`) и из `ui/dom/**` (или генератором токенов), кладётся в `ui/shared/`. Определяется grep-ом на этапе 3, список записывается в журнал. Ожидаемо: `theme.js`; возможно `iconMetrics.js`/`listGeometry.js` (проверить).
+
+**Правила слоёв (проверяет `layers:check`):**
+1. `src/ui/dom/**` не импортирует `phaser` и `src/ui/phaser/**`.
+2. `src/ui/phaser/**` не импортирует `src/ui/dom/**`.
+3. `src/ui/shared/**` не импортирует ни `phaser/`, ни `dom/`, ни `phaser` (пакет).
+4. `src/game/**` не импортирует `src/ui/dom/**`.
+5. Исключения (хосты): `src/ui/UIScene.js` и `src/main.js` могут импортировать обе стороны (динамические импорты DOM-форм).
+6. `src/dom/` и `src/scenes/ui|game/` после переноса не существуют.
+
+### 4.2. Предусловия окна 2 (проверяются на остановке R2)
+
+1. Фаза 2 закрыта: G-итог принят **и** этап 5 фазы 2 выполнен (флаг `phaserForms`/`LEGACY_FORMS_QUERY` удалён) — **либо** игрок явно заморозил/отменил фазу 2 записью в журнал.
+2. Все ветки фазы 2 слиты, `git status` чистый, `git branch --no-merged master` не содержит рабочих веток форм.
+3. `npm run scripts:check`, `npm run format:check`, `npm run lint` зелёные.
+4. Бэкап-ветка и бандл перед окном 2 обновлены (шаг 2.0).
+5. Если фаза 2 затягивается дольше ~3 недель без G-итога — игрок вправе запустить **только этапы 2 и 3 части `src/game/`** по границе, не затрагивающей `src/dom/` и `src/scenes/ui/` (запись в журнале с причиной).
+
+---
+
+## 5. Этап 2 — `scripts/` по папкам (1–1.5 дня, окно 2) → остановка R3
+
+### Шаги
+- 2.0. Обновить бэкап: `backup/pre-repo-refactor-w2` + `git bundle`; повторить baseline гейтов (как 0.3) и сверить с `docs/REPO_REFACTOR_BASELINE.md`.
+- 2.1. **Повторная инвентаризация `scripts/`** (фаза 2 добавила файлы): обновить таблицу `scripts/README.md`; доразместить новые скрипты (`dom-forms`, `verify-settings-dom`, `verify-status-dom`, `build-dom-form-snapshot`, `phase2-fixcount` и др.) по категориям.
+- 2.2. **Архивирование по таблице триажа**: утверждённые игроком на R1/R2 кандидаты → `scripts/archive/` (`git mv`), в `README.md` — «почему» и «удалить после». Удаление — только отдельным решением игрока. Скрипты, которыми пользуется план/процесс (например `pilot-frame-p95`, `pilot-loc`), остаются активными.
+- 2.3. **`git mv` по структуре 4.1** — отдельный коммит «только переносы» (в `git log --stat` одни `R`).
+- 2.4. **Правки путей — отдельный коммит(ы)**: относительные импорты и `__dirname`-глубина (`lib/dev-server.cjs`: `__dirname` на два уровня выше `lib` → пересчитать), `scripts/lib/ui-matrix.mjs` (путь в импортах гейтов), `tests/characterization/ui_review_golden.mjs` (spawn пути `ui-review`), алиасы `package.json`, `.kilo/agent/team-ui.md` (permission `node scripts/ui-check.mjs*` → `node scripts/gates/ui-check.mjs*` **и** `npm run ui:check*`), `.kilo/agent/team-tester.md`, `.kilo/command/ui.md`, `.kilo/command/team.md`, `.kilo/skills/ui-layout-check/SKILL.md`, `docs/UI_LAYOUT.md`, `AGENTS.md`, `scripts/README.md`.
+- 2.5. Отчёт о путях (grep по `scripts/<старое имя>` вне `docs/` исторических журналов): 0 совпадений; исторические документы не правятся (D7); таблица «старый → новый» — в `scripts/README.md` (раздел «Карта переезда»).
+- 2.6. Гард `scripts:check` обновить под новую структуру (папки допускаются, `archive/` и `lib/` исключены).
+
+### DoD этапа 2
+- [ ] Первый коммит этапа содержит **только** rename (`git show --stat --diff-filter=R`), второй — только правки путей/алиасов/доков.
+- [ ] Каждый алиас из `package.json` запускается: гейты — полный прогон, `verify:*`/`metrics:*`/`stand:*` — smoke (результат совпадает с таблицей триажа этапа 1).
+- [ ] Полный набор гейтов зелёный: `npm test`, `npm run test:ui`, `npm run ui:tokens`, `npm run ui:tokens:css`, `npm run dom:tokens -- --check`, `npm run ui:check`, `npm run ui:check:dom`, `npm run test:dom-golden`, `npm run scripts:check`, `npm run build`; 0 новых нарушений; `baseline.json` и golden не изменены.
+- [ ] Права агентов проверены: из `team-ui` и `team-tester` команды по новым путям разрешены (сухой прогон `npm run ui:check:quick`).
+- [ ] Отчёт о путях: ноль совпадений по старым путям вне исторических документов; журнал содержит команду и вывод.
+- [ ] В `scripts/` нет файлов в корне, кроме `README.md`; `archive/` исключён из гардов.
+- [ ] Коммиты по Conventional Commits (`refactor(repo): …`, `chore(repo): …`).
+- [ ] **Остановка R3 пройдена**: игрок принял перенос `scripts/` и дал «go» на `src/` (либо «стоп»: окно 2 закрывается на этом этапе — допустимый исход).
+
+---
+
+## 6. Этап 3 — `src/` часть A: `game/`, `ui/shared`, `ui/phaser` (1–1.5 дня)
+
+Все переносы — `git mv`; **каждый подпункт — отдельный коммит с полным гейтом**. Кодмод импортов — временный скрипт вне репозитория (в `%TEMP%\kilo`), в коммиты не попадает.
+
+### Шаги
+- 3.0. **Список зашитых путей** (Приложение B) перечитать и привести к актуальному виду grep-ом; для каждого — запланированная правка.
+- 3.1. **`src/game/`**: `git mv src/scenes/game/* src/game/`, `git mv src/scenes/GameScene.js src/game/GameScene.js`. Правка импортов (`main.js`, `UIScene`, `src/dev/*`, тесты). Коммит 3.1.
+- 3.2. **`src/ui/shared/`**: по правилу разнесения определить grep-ом, что импортируется обеими сторонами (минимум `theme.js`), перенести; правка `scripts/gates/gen-dom-tokens.mjs` (`../src/ui/theme.js`) и всех импортов `theme.js` (17 мест). После шага: `dom:tokens -- --check` без дрейфа. Коммит 3.2.
+- 3.3. **`src/ui/phaser/`**: `uiKit.js` → `ui/phaser/`; виджеты → `ui/phaser/widgets/` (`panel.js` → `panelFrame.js`, `button.js`, `stack.js`, `listGeometry.js`, `iconMetrics.js` — если не ушли в `shared/`); экраны `src/scenes/ui/*` → `ui/phaser/screens/` (`panel.js` → `upgradesList.js`, `mapScreen.js` → `map.js`, `settingsModal.js` → `settings.js`; остальные — без смены имён); `UIScene.js` → `src/ui/UIScene.js`. Правка импортов `UIScene` (9 мест) и динамического `import('../dom/craftScreen.js')`; `scripts/gates/ui-tokens.mjs` (`DIR = 'src/scenes/ui'` → `src/ui/phaser/screens` **и** добавить widgets — иначе линтер молча перестанет смотреть файлы; сверить число проверяемых файлов до/после). Коммиты 3.3a (переносы), 3.3b (импорты/константы).
+- 3.4. **Прочие жёсткие пути**: `.kilo/command/ui.md` (пути UI-компонентов), `docs/UI_LAYOUT.md`, `AGENTS.md`, скилл `ui-layout-check`, `src/dev/uiAudit.js`, `scripts/metrics/pilot-loc.mjs` (списки файлов), `scripts/stands/*` (импорты из `src/`), `tests/characterization/*` (импорты).
+- 3.5. **Контроль количества:** `ui-tokens.mjs` проверяет **то же число файлов**, что на baseline (иначе правило потеряно); `git log --follow` для 3–5 перенесённых файлов показывает историю.
+
+### DoD этапа 3
+- [ ] `src/scenes/` содержит только `BootScene.js`; `src/scenes/ui`, `src/scenes/game`, `src/ui/{button,panel,stack,...}.js` в старых местах отсутствуют.
+- [ ] Нет двух файлов с одинаковым смыслом-именем (`find src -name "panel*.js"` → только `panelFrame.js` и `upgradesList.js`-аналог).
+- [ ] `ui:tokens` проверяет не меньше файлов, чем на baseline (число в выводе совпадает или обосновано в журнале).
+- [ ] `npm run build` зелёный; gzip JS+CSS отличается от baseline не более чем на **±0.5 КБ**.
+- [ ] Полный набор гейтов зелёный: `npm test`, `npm run test:ui`, `npm run ui:tokens`, `npm run ui:tokens:css`, `npm run dom:tokens -- --check`, `npm run ui:check`, `npm run ui:check:dom`, `npm run test:dom-golden`, `npm run scripts:check` — 0 новых нарушений, `baseline.json`/golden не изменены.
+- [ ] Ручной smoke на 1280×720 и 390×844 (запуск игры, клик по шахте, открытие мастерской, настроек, карты, бой): без ошибок консоли.
+- [ ] Отчёт о путях: grep по `scenes/ui/`, `scenes/game/`, `from '../ui/`, `src/ui/theme.js` вне исторических документов — 0 совпадений.
+- [ ] Каждый подпункт 3.1–3.3 — отдельный коммит `refactor(ui|game): …`; в сообщении — число перенесённых файлов и правок импортов.
+
+---
+
+## 7. Этап 4 — `src/` часть B: `ui/dom`, гард слоёв (0.5–1 день)
+
+### Шаги
+- 4.1. `git mv src/dom src/ui/dom`; `src/ui/dom/craftScreen.js` → `craft.js`; `fixtures.js`, `fixtureMarkup.js`, `fixtureApp.js`, `lab.js` → `src/ui/dom/dev/`.
+- 4.2. Правки путей: динамический `import('../dom/…')` в `UIScene`; `dom-lab.html` (`/src/dom/lab.js` → новый путь); `vite.config.js` (если ссылается); `scripts/gates/ui-tokens-css.mjs`, `gen-dom-tokens.mjs` (выходной `tokens.css`), `scripts/stands/*`, `scripts/verify/verify-craft-dom.mjs` и прочие `verify-*-dom`, `scripts/metrics/pilot-loc.mjs`, `tests/characterization/dom_bridge.test.mjs` и другие импорты `src/dom/*`; `src/ui/dom/dev/*` не импортируются прод-кодом (проверка гардом).
+- 4.3. **Гард слоёв** `scripts/gates/check-layers.mjs` (`npm run layers:check`): разбор статических и динамических импортов `src/**/*.js` по правилам 1–6 раздела 4.1; код ≠ 0 при нарушении; `--self-test` на заведомо плохих файлах; включить в итоговый набор гейтов.
+- 4.4. Токены и golden: `npm run dom:tokens` перегенерирует `tokens.css` без изменений (дрейф-проверка); DOM-golden без диффа.
+
+### DoD этапа 4
+- [ ] `src/dom/` не существует; `dom-lab.html` и `vite.config.js` указывают на новые пути; `npm run build` зелёный, `/dom-lab.html` собирается (стенд открывается).
+- [ ] `npm run layers:check` — код 0; `--self-test` — код ≠ 0.
+- [ ] `dom:tokens -- --check`, `ui:tokens:css`, `test:dom-golden` — зелёные, `tokens.css` не изменился (кроме относительных путей в комментариях, если есть).
+- [ ] Полный набор гейтов (как этап 3) зелёный + `node scripts/verify/verify-craft-dom.mjs` (или алиас `verify:craft-dom`) — все проверки.
+- [ ] gzip JS+CSS — в пределах **±0.5 КБ** от baseline.
+- [ ] Отчёт о путях: grep по `src/dom/`, `/src/dom/`, `../dom/` вне исторических документов — 0.
+- [ ] Коммиты `refactor(ui): …`, `test(repo): …`.
+
+---
+
+## 8. Этап 5 — Документация, правила, итог (0.5 дня) → остановка R4
+
+### Шаги
+- 5.1. `AGENTS.md`: карта «куда класть» (новая форма → `src/ui/dom/`; новый HUD/оверлей → `src/ui/phaser/screens/`; общее для обоих → `src/ui/shared/`; новая механика → `src/game/` + `src/state/`; новый скрипт → папка + алиас + строка README); правила слоёв и ссылка на `layers:check`; запрет второго `ui` вне `src/ui`; правило про `src/state.js` (баррель остаётся).
+- 5.2. `docs/UI_LAYOUT.md`, `docs/UI_LAYOUT_TODO.md` (только актуальные пути в действующих разделах), `scripts/README.md` («Карта переезда»), `.kilo/skills/ui-layout-check/SKILL.md`, `.kilo/skills/INDEX.md` (если есть), `README.md` проекта (если упоминает структуру), `.kilo/command/*` и `.kilo/agent/*` (пути).
+- 5.3. Итоговые замеры: число файлов `scripts/` в корне (цель — 0, всё по папкам), число активных скриптов (цель ≈ 25 + `archive/`), число `ui`-корней в `src/` (цель — 1), число пар одноимённых модулей (цель — 0); gzip, время `npm test`, время `npm run ui:check:quick` — до/после.
+- 5.4. Итог: что получилось / что нет / что не проверено (формат — как в 6.4 пилота DOM).
+
+### DoD этапа 5
+- [ ] Итоговый набор зелёный: `npm test`, `npm run test:ui`, `npm run ui:tokens`, `npm run ui:tokens:css`, `npm run dom:tokens -- --check`, `npm run ui:check`, `npm run ui:check:dom`, `npm run test:dom-golden`, `npm run scripts:check`, `npm run layers:check`, `npm run build`.
+- [ ] Ручной smoke игры (мастерская, настройки, карта, бой) на 1280×720 и 390×844 — без ошибок консоли, записан в журнал.
+- [ ] Таблица раздела 10 заполнена числами.
+- [ ] `AGENTS.md`, `docs/UI_LAYOUT.md`, `scripts/README.md`, скилл `ui-layout-check` обновлены; grep по устаревшим путям в **действующих** документах — 0.
+- [ ] Остановка **R4**: игрок принял итог; слияние в `master` — только по указанию игрока.
+- [ ] Коммит `docs(repo): фиксирует итог реорганизации`.
+
+---
+
+## 8.1. Окно J — JSDoc и перенос боковых комментариев (необязательное, после окна 2)
+
+Часть промпта владельца (ручной проход ИИ по файлам). Самая дорогая и самая конфликтная часть работ: по оценке /judge — 40–60 ИИ-сессий при подходе «по 2–3 файла из 118», поэтому окно J **не обязательно**, идёт **последним** (после окон S, 1, 2 и фазы 2), по папкам и с остановкой после любой из них. Файлы к этому моменту уже на финальных путях, rename-история не страдает.
+
+Предусловия: окно 2 закрыто (остановка R4), `format:check`/`lint`/`ui:tokens` зелёные, правила комментариев в `AGENTS.md` и `.kilo/agent/*` согласованы (S3), ветка без параллельных функциональных работ над теми же файлами.
+
+### Правила прохода (адаптация промпта, D13)
+1. **JSDoc** (`/** … */` строго над объявлением) — у **экспортируемых** функций, классов и методов-миксинов (`*Methods`): назначение одной фразой; `@param` и `@returns` — там, где это не очевидно из имён; без пересказа тела. Для приватных хелперов — только если логика нетривиальна.
+2. **Боковые `//`-комментарии:** не удалять. Если комментарий поясняет **строку** — переносится на **строку над стейтментом** (так его видит гейт `ui:tokens`); если он **оправдывает голое число** — остаётся (сбоку или над вызовом) и считается неприкосновенным; если он дублирует очевидное — может быть удалён **только** при наличии JSDoc/заголовка, не теряющего информации. Правила про «историю багов» (скриншоты игрока, аудит) сохраняются в сжатом виде.
+3. **Внутри функций:** только короткие комментарии-заголовки логических шагов (`// 1. Создаём фон`); пустые строки между этапами; «стены кода» разбиваются.
+4. **Деструктуризация параметров** с > 4 полями — по одному полю на строке, поля сгруппированы по смыслу с короткими заголовками-комментариями; порядок полей в шаблоне допустимо менять **только** если нет дефолтов с побочными эффектами; сигнатуры, имена, экспорты, вызовы **не меняются**.
+5. **Тернарные операторы:** форматирует Prettier; ручное выделение — только для вложенных многострочных, без изменения логики.
+6. Никаких переименований, удалений кода, смены порядка вычислений.
+
+### Этап J1 — Пилот и инструмент проверки (0.5 дня) → остановка J1
+- J1.1. Хелпер `scripts/gates/ast-equal.mjs` (`npm run style:ast-equal -- <file…>`): сравнивает AST файла в `HEAD` и в рабочем дереве, игнорируя позиции и комментарии (парсер `espree`, уже идёт с ESLint); код ≠ 0 при любом структурном отличии; `--self-test`. Алиас и строка в `scripts/README.md` (D8).
+- J1.2. Пилотная папка — `src/ui/dom/` (≈ 10 файлов, свежий код, не подпадает под самые чувствительные Phaser-экраны). Партии по 2–3 файла; после **каждой партии**: `format:check`, `lint`, `ui:tokens` (**те же число файлов и 0 нарушений**), `ui:tokens:css`, `dom:tokens --check`, `npm test`, `npm run build` (**dist-хэш до = после**), `style:ast-equal` по изменённым файлам (должно быть «идентичны»).
+- J1.3. Отчёт: счётчики боковых `//` и JSDoc до/после, число партий, затраченное время/токены (оценка), примеры «до/после» 3–5 функций.
+
+**DoD J1**
+- [ ] `style:ast-equal` — «идентичны» для всех изменённых файлов; `--self-test` проходит.
+- [ ] dist-хэш до = после; `ui:tokens` — те же число файлов и 0 нарушений; `format:check`/`lint`/`npm test`/`ui:tokens:css`/`dom:tokens -- --check` зелёные.
+- [ ] Ни одного изменения вне комментариев/пробелов/порядка полей деструктуризации (проверка `git diff -w --ignore-blank-lines` и `ast-equal`).
+- [ ] Отчёт J1.3 записан; **остановка J1 пройдена**: игрок принял стиль и решил, идти ли дальше.
+
+### Этап J2 — По папкам (0.3–0.5 дня на папку)
+Порядок по возрастанию риска: `src/state/` → `src/ui/shared/` → `src/ui/phaser/widgets/` → `src/game/` → `src/ui/phaser/screens/` → `src/dev/`, `src/sdk/`. `scripts/` и `tests/` — **вне объёма** (JSDoc там не требуется). Каждая папка — отдельное «go» игрока; ≤ 15 файлов за заход; партии по 2–3 файла; проверки как в J1.2 (для UI-файлов дополнительно `npm run ui:check:quick` и `npm run test:ui`).
+
+**DoD J2 (на папку)**
+- [ ] Все проверки J1.2 зелёные после каждой партии; `ast-equal` — «идентичны».
+- [ ] Экспортируемые функции папки имеют JSDoc; боковые комментарии перенесены/сохранены по правилам; комментарии-обоснования чисел не потеряны (`ui:tokens` без изменений).
+- [ ] Коммиты `docs(repo): JSDoc и комментарии в <папка>` (по партии); в теле — число файлов и проверки.
+
+### Этап J3 — Итог окна J (0.25 дня)
+- Таблица раздела 10 (счётчики), «что получилось / что нет / что не проверено», решение игрока «окно J закрыто» либо «продолжить по списку папок».
+
+**DoD J3**
+- [ ] Счётчики до/после записаны; оставшиеся папки перечислены как «не сделано» (допустимо).
+- [ ] Коммит `docs(repo): фиксирует итог окна J`.
+
+---
+
+## 9. Критерии успеха (общие)
+
+### 9.1. Обязательные (все этапы, любое окно)
+| № | Критерий | Как проверяется |
+|---|---|---|
+| M1 | Ноль изменений поведения: гейты и golden зелёные без обновления эталонов | полный набор гейтов этапа |
+| M2 | История файлов сохранена: переносы только `git mv` | `git show --stat --diff-filter=R`; `git log --follow` на выборке |
+| M3 | Нет сломанных ссылок: ни один скрипт, алиас, документ, `.kilo`-права и тест не ссылается на несуществующий путь | отчёт о путях + `scripts:check` + запуск каждого алиаса |
+| M4 | `baseline.json`, golden-изображения, `UI_RULES`, пороги гейтов не тронуты | `git diff --stat` по этим файлам пуст |
+| M5 | Бэкап и откат: бэкап-ветка и бандл существуют, каждый этап откатывается `git revert` | журнал |
+| M6 | Бандл не вырос больше чем на ±0.5 КБ gzip (окна 1, 2) | `npm run build` |
+| M7 | Окна S и J: **dist-хэш до = после** (минифицированный бандл идентичен); расхождения разобраны по файлам | сравнение имён `dist/assets/*.js` |
+| M8 | `format:check` и `lint` зелёные после каждого этапа с кодом, `ui:tokens` проверяет **то же число файлов** и 0 нарушений | команды |
+| M9 | Комментарии-обоснования голых чисел не потеряны (`ui:tokens`, `ui:tokens:css`, `dom:tokens --check` без изменений) | команды |
+
+### 9.2. Желательные
+| № | Критерий | Порог |
+|---|---|---|
+| W1 | Корень `scripts/` пуст (всё по папкам) | да |
+| W2 | Активных скриптов ≈ 25 + `archive/` | допуск ±5 |
+| W3 | Один `ui`-корень, ноль одноимённых модулей | да |
+| W4 | Гарды (`scripts:check`, `layers:check`, `format:check`, `lint`) входят в итоговый набор и проходят `--self-test` (для своих скриптов) | да |
+| W5 | Файлов с боковыми `//`-комментариями в `src` стало меньше (после окна J), JSDoc есть у экспортируемых функций пилотных папок | счётчики до/после |
+
+Провал любого **M** на этапе → `git revert` этапа, причина в журнал, решение игрока. Провал **W** — запись с обоснованием.
+
+---
+
+## 10. Таблица сравнения (заполняется на этапах 0 и 5)
+
+| Показатель | До | После | Δ |
+|---|---|---|---|
+| Файлов в корне `scripts/` | 35 | | |
+| Активных скриптов (без `lib/`, `archive/`) | 35 | | |
+| Скриптов без npm-алиаса | | 0 | |
+| `ui`-корней в `src/` | 2 (`src/ui`, `src/scenes/ui`) + `src/dom` | 1 | |
+| Пар одноимённых модулей (`panel.js`) | 2 | 0 | |
+| Файлов, проверяемых `ui:tokens` | | | (не меньше) |
+| gzip JS+CSS, КБ | | | ±0.5 |
+| Время `npm test`, с | | | |
+| Зашитых путей по Приложению B (исправлено/всего) | | | |
+| Файлов, изменённых окном S / строк +/− | — | | |
+| Строк >120 символов в `src` (до 1078, в `src`+`scripts` 1491; Prettier не переносит комментарии и строки) | | | |
+| Боковых `//` в `src` (~205) — после окна J | | | |
+| Число файлов с JSDoc у экспортов (после окна J) | | | |
+
+---
+
+## 11. Журнал реорганизации
+
+| Дата | Этап | Что сделано | Результат (числа/ссылки) | Отклонения |
+|---|---|---|---|---|
+| | S0 | | | |
+| | S1 | | | |
+| | S2 | | | |
+| | S3 | | | |
+| | 0 | | | |
+| | 1 | | | |
+| | R2 | | | |
+| | 2 | | | |
+| | 3 | | | |
+| | 4 | | | |
+| | 5 | | | |
+| | J1 | | | |
+| | J2 | | | |
+| | J3 | | | |
+
+**Решения остановок:** S1 — … · S2 — … · R1 — … · R2 — … · R3 — … · R4 — … · J1 — …
+
+**Формат записи:** дата · этап · одной строкой что сделано · числа (вывод команд DoD, ссылки на файлы) · отклонения и причина. Календарное ожидание игрока — отдельной строкой.
+
+---
+
+## 12. Риски и меры
+
+| Риск | Вероятность/влияние | Мера |
+|---|---|---|
+| Перенос во время фазы 2 порождает конфликты и инвалидирует её план | Высокая/высокое | Окно 2 стартует только после закрытия фазы 2 (4.2); окно 1 не перемещает код |
+| Зашитые пути ломают гейты «молча» (`ui-tokens.mjs` перестаёт видеть файлы) | Средняя/высокое | Приложение B; контроль «число проверяемых файлов не уменьшилось» |
+| Права агентов (`.kilo/agent/team-ui.md`) не совпадают с новыми путями | Средняя/среднее | Правка прав в том же коммите, сухой прогон из роли |
+| Кодмод импортов пропускает динамические и строковые пути (`import('../dom/…')`, URL `/src/state.js`) | Средняя/высокое | Явный список динамических путей (Приложение B); `npm run build`, smoke; `src/state.js` не трогаем |
+| Смена глубины `__dirname` в `dev-server.cjs` и скриптах | Средняя/среднее | Отдельный шаг 2.4, smoke каждого алиаса |
+| Потеря истории файлов | Низкая/среднее | Только `git mv`, коммиты «переносы» отдельно; `git log --follow` на выборке |
+| Архивация «теневого» скрипта, который нужен | Средняя/среднее | Файлы остаются в `archive/` и в истории; удаление — отдельное решение игрока |
+| Фаза 2 затягивается, свалка растёт | Средняя/низкое | `scripts:check` и README фиксируют рост; условие 4.2 п. 5 разрешает частичное окно 2 |
+| Незапушенные коммиты (`master` впереди `origin`) | Высокая/высокое | D6: бэкап-ветка + `git bundle` до каждого окна |
+| Массовый стиль-коммит ломает гейты, читающие исходники текстом (`ui:tokens` через `hasCommentNearby`, `build-dom-lab.mjs` по `export`, `pilot-loc` по строкам) | Средняя/высокое | Dry-run в worktree (S0) со всеми гейтами; `ui:tokens` — то же число файлов и 0 нарушений; LOC-метрики фазы 2 снимаются после окна S |
+| Prettier/ESLint меняют смысл (ASI, скобки, порядок) | Низкая/высокое | dist-хэш до = после; фиксированная точка; тесты и golden; ESLint только два stylistic-правила, без `no-*` |
+| CRLF/LF: `core.autocrlf=true`, рабочее дерево CRLF | Средняя/среднее | `endOfLine: "auto"`; дифф считать через `git diff` по индексу (LF), не по рабочему дереву |
+| Шум в `git blame` | Высокая/низкое | `.git-blame-ignore-revs` (D15) |
+| Дрейф стиля: правило есть, а новый код его нарушает | Средняя/среднее | `format:check` и `lint` в наборе гейтов (D14), правило в `AGENTS.md`/`.kilo/agent/*` |
+| JSDoc-проход съедает комментарии-обоснования или ломает `ui:tokens` | Средняя/высокое | Окно J: перенос боковых — на строку над стейтментом, не удаление; `ui:tokens` и dist-хэш после каждой партии; AST-сравнение |
+| Противоречие правил агентам («без комментариев в коде» vs JSDoc) | Высокая/среднее | Переписать правило в S3 до фазы 2 и окна J |
+| Окно J растягивается на недели и конфликтует с новой разработкой | Средняя/среднее | Необязательное окно, ≤ 15 файлов за заход, остановка после любой папки, партии в тихие моменты |
+
+---
+
+## 13. Правила исполнителя (кратко)
+
+1. Один этап — один набор коммитов, Conventional Commits (`refactor|chore|docs|test(repo|ui|game|scripts): …`); «переносы» и «правки путей» — разные коммиты.
+2. Только `git mv`; без копирования, без правок содержимого файла в коммите переноса.
+3. Никаких изменений поведения; при необходимости — остановка и вопрос.
+4. Не менять `baseline.json`, golden, `UI_RULES`, пороги гейтов.
+5. Не переписывать исторические документы (D7).
+6. После каждого этапа — полный набор гейтов из DoD этапа; отчёт о путях — grep, а не «на глаз».
+7. Применённые скиллы — в отчёте: `Skills: <файлы>`.
+8. Нерешённый вопрос — один вопрос игроку, не домысливание.
+9. Стиль-коммиты (окно S, окно J) — отдельные, без смены логики; перед каждым — dist-хэш и `format:check`/`lint`; смешивание стиля и функциональных правок запрещено.
+10. Комментарии-обоснования голых чисел не удалять; боковой комментарий переносится на строку над стейтментом, а не стирается.
+
+---
+
+## 14. Что дальше (вне плана)
+
+- Удаление архивных скриптов — отдельное решение после квартальной ревизии `scripts/archive/`.
+- `src/state.js` → `src/state/index.js` — только отдельным решением и только вместе с правкой детекторов `/src/state.js` в `ui-check-dom` и `ui-review` (сейчас выгода косметическая).
+- Новые правила слоёв (запрет импорта `src/dev/*` из прод-кода) — расширением `layers:check`.
+- Хук `pre-commit` (`lint-staged`: форматирование только изменённых файлов) — отдельным решением после окна S; даёт «80 % выгоды за 5 % риска» и снимает необходимость повторных массовых проходов.
+- Расширение ESLint смысловыми правилами (`no-undef`, `no-unused-vars` и др.) — отдельный план: это находки в коде, а не стиль.
+- Форматирование `*.css`/`*.md` — не планируется (`tokens.css` генерируется, документы — журналы).
+
+---
+
+## Приложение A. Алиасы скриптов (стабильные имена, окно 1)
+
+| Алиас | Скрипт | Категория | Браузер |
+|---|---|---|---|
+| `ui:review` | `ui-review.mjs` | гейт | да |
+| `verify:craft-dom` | `verify-craft-dom.mjs` | verify | да |
+| `verify:bg` | `verify-bg.cjs` | verify | да |
+| `verify:boss` | `verify-boss.cjs` | verify | да |
+| `verify:bulkbuy` | `verify-bulkbuy.cjs` | verify | да |
+| `verify:daily` | `verify-daily.mjs` | verify | да |
+| `verify:devpanel` | `verify-devpanel.cjs` | verify | да |
+| `verify:economy` | `verify-economy.mjs` | verify | нет/да (уточнить на этапе 1) |
+| `verify:map` | `verify-map.cjs` | verify | да |
+| `verify:mine-meta` | `verify-mine-meta.mjs` | verify | уточнить |
+| `verify:mutations` | `verify-mutations.cjs` | verify | да |
+| `verify:offline` | `verify-offline.cjs` | verify | да |
+| `verify:rebalance` | `verify-rebalance.cjs` | verify | уточнить |
+| `verify:responsive` | `verify-responsive.cjs` | verify | да |
+| `verify:robotarm` | `verify-robotarm.cjs` | verify | да |
+| `verify:sfx` | `verify-sfx.cjs` | verify | да |
+| `metrics:p95` | `pilot-frame-p95.mjs` | метрика | да |
+| `metrics:loc` | `pilot-loc.mjs` | метрика | нет |
+| `metrics:layers` | `pilot-layers-check.mjs` | метрика | да |
+| `metrics:input` | `pilot-dom-input-check.mjs` | метрика | да |
+| `metrics:dpr` | `pilot-dpr-shots.mjs` | метрика | да |
+| `metrics:baseline-shots` | `pilot-baseline-shots.mjs` | метрика | да |
+| `stand:dom-lab` | `build-dom-lab.mjs` | стенд | нет |
+| `stand:craft-phone` | `build-dom-craft-snapshot.mjs` | стенд | да |
+| `balance:sim` | `balance-sim.mjs` | данные | нет |
+| `audio:bgm` / `audio:sfx` / `audio:synth` / `audio:trim` | `gen_bgm.py` / `gen_sfx.py` / `synth_sfx.py` / `trim_sfx.py` | аудио | нет (Python) |
+| `scripts:check` | `check-scripts-index.mjs` | гард (новый) | нет |
+
+Существующие алиасы без изменений: `ui:check`, `ui:check:quick`, `ui:tokens`, `dom:tokens`, `ui:check:dom`, `ui:tokens:css`, `test:dom-golden`. Скрипты фазы 2 получают алиасы при создании (`verify:settings-dom`, `verify:status-dom`, `stand:form-phone`, `metrics:fixcount`).
+
+## Приложение B. Чек-лист зашитых путей (перепроверить grep-ом на этапах 0 и 3)
+
+| Где | Что зашито | Что делать |
+|---|---|---|
+| `scripts/ui-tokens.mjs` | `DIR = 'src/scenes/ui'` | Новый путь экранов **и** виджетов; контроль числа проверяемых файлов |
+| `scripts/gen-dom-tokens.mjs` | `../src/ui/theme.js`, вывод `src/dom/tokens.css` | Новые пути `ui/shared/theme.js`, `ui/dom/tokens.css`; `--check` без дрейфа |
+| `scripts/ui-tokens-css.mjs` | `src/dom` | `src/ui/dom` |
+| `scripts/ui-check-dom.mjs`, `scripts/ui-review.mjs` | детект модуля по URL-подстроке `/src/state.js` | **Не меняется** (D2: `state.js` остаётся) — проверить, что не сломалось |
+| `scripts/ui-check-dom.mjs` | `import { … } from '../src/state.js'` | относительный путь после переезда скрипта в `gates/` |
+| `scripts/lib/dev-server.cjs` | `__dirname` на два уровня выше `lib` | пересчёт глубины |
+| `scripts/pilot-loc.mjs` | списки файлов форм и проверок | новые пути |
+| `scripts/build-dom-lab.mjs`, `build-dom-craft-snapshot.mjs`, `verify-craft-dom.mjs` | `src/dom/*` | новые пути |
+| `tests/characterization/ui_review_golden.mjs` | spawn `scripts/ui-review.mjs` | новый путь |
+| `tests/characterization/*` | импорты `src/dom/bridge.js`, `src/state.js` | новые пути |
+| `src/scenes/UIScene.js` | 9 статических импортов `./ui/*`, динамический `import('../dom/craftScreen.js')` | новые пути; динамические — отдельным списком |
+| `dom-lab.html` | `<script src="/src/dom/lab.js">` | новый путь |
+| `vite.config.js` | проверить на упоминания `src/dom`/`scripts/` | при наличии — правка |
+| `src/dev/uiAudit.js` | импорты `../ui/*` | новые пути |
+| `.kilo/agent/team-ui.md` | permission `node scripts/ui-check.mjs*` | новый путь + `npm run ui:check*` |
+| `.kilo/agent/team-tester.md` | список `node scripts/verify-*.{mjs,cjs}` | алиасы/новые пути |
+| `.kilo/command/ui.md`, `.kilo/command/team.md` | `scripts/lib/ui-matrix.mjs`, `src/scenes/ui/*`, `src/scenes/game/*`, `src/ui/*`, `scripts/ui-review.mjs` | новые пути |
+| `AGENTS.md`, `docs/UI_LAYOUT.md`, `.kilo/skills/ui-layout-check/SKILL.md` | пути гейтов и UI-файлов | обновить |
+| `package.json` | 7 путей гейтов + алиасы окна 1 | обновить на этапе 2 |
+| Исторические `docs/*` (~139 упоминаний в ~15 файлах на 2026-11-16) | пути | **не править** (D7), карта переезда — в `scripts/README.md` |
+
+## Приложение C. Карта переезда (заполняется по ходу этапов 2–4)
+
+| Было | Стало | Этап |
+|---|---|---|
+| `scripts/ui-check.mjs` и др. гейты | `scripts/gates/…` | 2 |
+| `scripts/verify-*.{mjs,cjs}` | `scripts/verify/…` | 2 |
+| `scripts/pilot-*.mjs` | `scripts/metrics/…` (или `archive/` по триажу) | 2 |
+| `scripts/build-dom-*.mjs` | `scripts/stands/…` | 2 |
+| `scripts/*.py` | `scripts/audio/…` | 2 |
+| `scripts/balance-sim.mjs` | `scripts/data/…` | 2 |
+| `scripts/lib/*` | `scripts/lib/*` (без смены) | 2 |
+| `src/scenes/GameScene.js`, `src/scenes/game/*` | `src/game/*` | 3 |
+| `src/ui/theme.js` (+ общее) | `src/ui/shared/*` | 3 |
+| `src/ui/uiKit.js` | `src/ui/phaser/uiKit.js` | 3 |
+| `src/ui/{button,panel,stack,listGeometry,iconMetrics}.js` | `src/ui/phaser/widgets/…` (`panel.js` → `panelFrame.js`) | 3 |
+| `src/scenes/ui/*` | `src/ui/phaser/screens/…` (`panel.js` → `upgradesList.js`, `mapScreen.js` → `map.js`, `settingsModal.js` → `settings.js`) | 3 |
+| `src/scenes/UIScene.js` | `src/ui/UIScene.js` | 3 |
+| `src/dom/*` | `src/ui/dom/*` (`craftScreen.js` → `craft.js`, стенды → `dev/`) | 4 |
+
+## Приложение D. Конфигурация стиля (окно S) — готовые тексты
+
+Версии пакетов фиксируются при установке (`npm i -D --save-exact prettier eslint @stylistic/eslint-plugin`); приведённые файлы — отправная точка, окончательные значения утверждаются на остановке S1 по результатам dry-run.
+
+**`.prettierrc`**
+```json
+{
+    "printWidth": 120,
+    "tabWidth": 4,
+    "useTabs": false,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "none",
+    "arrowParens": "always",
+    "bracketSpacing": true,
+    "endOfLine": "auto"
+}
+```
+Почему `trailingComma: "none"`: текущий код не использует висячие запятые; `"es5"` добавил бы запятые во все многострочные объекты и массивы (тысячи правок без пользы). Почему `endOfLine: "auto"`: в репозитории `core.autocrlf=true`, рабочее дерево — CRLF, индекс — LF; принудительный `lf` перепишет рабочее дерево и сломает `format:check` на Windows.
+
+**`.prettierignore`**
+```
+node_modules
+dist
+shots
+docs
+assets
+.kilo
+tests/characterization/golden
+tests/ui-check
+package-lock.json
+**/*.css
+**/*.html
+**/*.md
+**/*.json
+**/*.out
+**/*.py
+```
+
+**`eslint.config.js`** (flat config; только стилистические правила, без `no-*`)
+```js
+import stylistic from '@stylistic/eslint-plugin';
+
+const rules = {
+    curly: ['error', 'all'],
+    '@stylistic/padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', prev: '*', next: 'return' },
+        { blankLine: 'always', prev: ['if', 'for', 'while'], next: '*' }
+    ]
+};
+
+export default [
+    {
+        ignores: ['node_modules/**', 'dist/**', 'shots/**', 'docs/**', 'assets/**', '.kilo/**', 'tests/characterization/golden/**']
+    },
+    {
+        files: ['**/*.js', '**/*.mjs'],
+        languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },
+        plugins: { '@stylistic': stylistic },
+        rules
+    },
+    {
+        files: ['**/*.cjs'],
+        languageOptions: { ecmaVersion: 'latest', sourceType: 'commonjs' },
+        plugins: { '@stylistic': stylistic },
+        rules
+    }
+];
+```
+Заметки для dry-run (S0): (1) если `padding-line` дробит цепочки однострочных `if`-ов — добавить `{ blankLine: 'any', prev: 'if', next: 'if' }` **после** правила «после блоков»; (2) `function-call-argument-newline` из промпта не включается — решением о переносах аргументов владеет Prettier; (3) при несовпадении версий плагина и ESLint — зафиксировать совместимую пару; (4) `// prettier-ignore` — только в местах, отмеченных в отчёте S0.5.
+
+**Скрипты `package.json`**
+```json
+{
+    "format": "prettier --write \"src/**/*.js\" \"scripts/**/*.{js,mjs,cjs}\" \"tests/**/*.{js,mjs,cjs}\" vite.config.js",
+    "format:check": "prettier --check \"src/**/*.js\" \"scripts/**/*.{js,mjs,cjs}\" \"tests/**/*.{js,mjs,cjs}\" vite.config.js",
+    "lint": "eslint src scripts tests vite.config.js",
+    "lint:fix": "eslint --fix src scripts tests vite.config.js"
+}
+```
+Пути `scripts/` после окна 2 остаются теми же (глоб `scripts/**`), правка скриптов не нужна.
+
+**Проверка «ничего не поменялось» (окна S и J)**
+1. До начала: `npm run build` → запомнить `Get-ChildItem dist/assets -Name` (имена с хэшем содержимого); повторная сборка даёт те же имена (детерминизм).
+2. После этапа: `npm run build` → имена `dist/assets/*.js` совпадают.
+3. Окно J дополнительно: `npm run style:ast-equal -- <изменённые файлы>`.
