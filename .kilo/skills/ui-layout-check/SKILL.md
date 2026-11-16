@@ -15,7 +15,8 @@ description: "Use when changing or reviewing any UI layout in this game: HUD, pa
    Нужно: **0 новых ошибок** (error) и 0 новых предупреждений (warn) в затронутом экране.
 4. Открыть размеченные PNG из `shots/ui-check/` (имя из отчёта) и убедиться глазами, что рамки
    соответствуют реальной проблеме / проблем не осталось.
-5. Перед сдачей — полная матрица `npm run ui:check` и `npm run test:ui` (golden-регрессия) и `npm test`.
+5. Перед сдачей — полная матрица `npm run ui:check` и `npm run test:ui` (golden-регрессия), `npm test`,
+   `npm run format:check` и `npm run lint` (стиль-гейты; см. `AGENTS.md`, раздел «Стиль кода»).
    Если картинка изменилась осознанно — golden обновляет только человек/тимлид с явным «ок».
 
 ## Правила работы
@@ -45,7 +46,8 @@ BUTTON-GAP, MISALIGNED, EDGE (таблица в `docs/UI_LAYOUT.md`).
    скриншоты `shots/ui-check/<vp>__craft-dom.png`, отчёт `shots/ui-check-dom/report.json`.
 3. `npm run test:dom-golden` — tolerant-diff эталона DOM-панели (порог 0.5%, константы в скрипте);
    обновление эталона — только с явным «ок».
-4. Полный прогон UI = `npm run ui:check` **и** `npm run ui:check:dom`; плюс `npm test`, `test:ui`.
+4. Полный прогон UI = `npm run ui:check` **и** `npm run ui:check:dom`; плюс `npm test`, `test:ui`,
+   `npm run format:check`, `npm run lint`.
 5. Бизнес-правила — только в `src/state.js`, тексты ошибок — `src/state/craftMessages.js`;
    `src/dom/*` не пишет в `gameState`, только читает через `bridge.js`.
 6. Фикстуры/стенды (`fixtures*.js`, `lab.js`, `build-dom-*.mjs`) — не прод-код и вне метрики LOC.
