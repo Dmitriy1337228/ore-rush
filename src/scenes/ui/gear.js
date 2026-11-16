@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import {
     gameState, fmt, ITEMS, useItem, getItemPrice, buyItem, canBuyItem
 } from '../../state.js';
-import { makeLabel, fitFontSize, setHitRect } from '../../ui/uiKit.js';
+import { makeLabel, fitFontSize } from '../../ui/uiKit.js';
+import { addButton } from '../../ui/button.js';
 import { VIEWPORT } from '../../ui/listGeometry.js';
 import { TEXT, DEPTH, TEX, HIT, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
@@ -30,9 +31,12 @@ export const gearMethods = {
             stock.setOrigin(1, 0.5);
             const desc = makeLabel(this, 0, 0, def.desc, FONT_SIZE.caption, TEXT.soft, { wordWrap: { width: 200 } });
             desc.setOrigin(0, 0);
-            const buyBtn = this.add.image(0, 0, TEX.button).setDepth(DEPTH.uiAbove);
-            setHitRect(buyBtn, ...HIT.button);
-            const buyLbl = makeLabel(this, 0, 0, '', FONT_SIZE.caption, TEXT.white).setOrigin(0.5);
+            // Кнопки рядов (Button, kind image): нативный размер текстуры = кадр
+            // hit-area (267x133); раскладка двигает/ресайзит ссылки из layoutGearSection
+            const { bg: buyBtn, label: buyLbl } = addButton(this, 0, 0, {
+                kind: 'image', w: HIT.button[0], h: HIT.button[1], key: TEX.button,
+                depth: DEPTH.uiAbove, fontSize: FONT_SIZE.caption, color: TEXT.white
+            });
             buyBtn.on('pointerup', () => {
                 if (this._listDragging) return;
                 if (buyItem(def.id)) {
@@ -40,9 +44,11 @@ export const gearMethods = {
                     this.refreshGearPanel(true);
                 }
             });
-            const useBtn = this.add.image(0, 0, TEX.button).setDepth(DEPTH.uiAbove);
-            setHitRect(useBtn, ...HIT.button);
-            const useLbl = makeLabel(this, 0, 0, 'Использовать', FONT_SIZE.caption, TEXT.white).setOrigin(0.5);
+            const { bg: useBtn, label: useLbl } = addButton(this, 0, 0, {
+                kind: 'image', w: HIT.button[0], h: HIT.button[1], key: TEX.button,
+                text: 'Использовать', fontSize: FONT_SIZE.caption, color: TEXT.white,
+                depth: DEPTH.uiAbove
+            });
             useBtn.on('pointerup', () => {
                 if (this._listDragging) return;
                 if ((gameState.items[def.id] || 0) > 0 && useItem(def.id, true)) {
