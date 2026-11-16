@@ -94,64 +94,140 @@ export const craftScreenMethods = {
         this.craftHeader.add(hint);
     },
 
-    // Наполнение мастерской: три секции рядами h84 на upgrade_row_card_1 (шаг 90).
-    // Пересобирается только при смене ширины вьюпорта (портрет/ландшафт);
+    // Наполнение мастерской — единый построитель для обеих ориентаций (раздел 3):
+    // виджеты, хендлеры и регистрация рядов общие, ориентацию задаёт спецификация SP.
+    //  - Ландшафт (fixed): ряд фиксированной высоты rowH, офсеты внутри ряда
+    //    константны, длинный текст ужинается кеглем (мин 9), шаг списка постоянный.
+    //  - Портрет (flow): блоки кладутся по ИЗМЕРЕННЫМ высотам (craftTextH),
+    //    переносы включены, карточка растёт под контент (relayout + restack).
+    // Пересобирается только при смене ширины вьюпорта (портрет/ландшафт) или s;
     // текущие значения обновляет refreshCraftUi по диффу (паттерн _buffLineText).
     buildCraftContent() {
-        if (this.L.portrait) return this.buildCraftContentPortrait();
-        this._craftFlow = null; // портретная flow-раскладка не активна
         const w = this._craftView.w;
         const s = this._adaptiveScale || 1;
         const f = w / 835;
         const iconCX = Math.round(118 * f);
         const textX = Math.round(186 * f) + 34;
         const iconSize = Math.round(40 * Math.min(s, 1.6));
-        const rowH = Math.round(96 * s);
-        const step = rowH + 6;
-        // Ландшафтные размеры кнопок (портрет — buildCraftContentPortrait)
-        const btnW = Phaser.Math.Clamp(Math.round(84 * s), 64, 120);
-        const btnH = Phaser.Math.Clamp(Math.round(32 * Math.min(s, 1.5)), 32, 48);
-        const btnCX = w - 12 - btnW / 2;
-        const btnCY = Math.round(48 * s);
-        const buyCY = Math.round(rowH * 0.26);
-        const actCY = Math.round(rowH * 0.72);
-        const textMaxW = btnCX - btnW / 2 - 8 - textX;
+        const flowMode = this.L.portrait;
         const nameSize = Math.max(9, Math.round(FONT_SIZE.label * s));
         const subSize = Math.max(9, Math.round(FONT_SIZE.caption * s));
-        const cellW = Math.floor((w - 10) / 2);
+        const pairIcon = Math.round(16 * Math.min(s, 1.5));
+        const btnW = flowMode ? Phaser.Math.Clamp(Math.round(90 * s), 150, 170) : Phaser.Math.Clamp(Math.round(84 * s), 64, 120);
+        const btnH = flowMode ? Phaser.Math.Clamp(Math.round(36 * Math.min(s, 1.5)), 48, 64) : Phaser.Math.Clamp(Math.round(32 * Math.min(s, 1.5)), 32, 48);
+        const btnCX = w - 12 - btnW / 2;
+        const textMaxW = btnCX - btnW / 2 - 8 - textX;
+        const W2 = flowMode ? w - 14 - textX : 0;
+        let artIconX = iconCX;
+        let artNameX = textX;
+        let artCardW = w;
+        let artLineW = W2;
+        if (!flowMode) {
+            artIconX = Math.round(34 * Math.min(s, 1.6));
+            artNameX = artIconX + Math.round(iconSize / 2) + 12;
+            artCardW = Math.floor((w - 10) / 2);
+            artLineW = artCardW - artNameX - 14;
+        }
+        const artNameMaxW = flowMode ? textMaxW : artCardW - artNameX - 8;
+        // Спецификация ориентации (значения — бывшие константы двух веток): ужин
+        // кеглей, стартовые офсеты (flow переукладывает их relayout'ом), зазоры,
+        // grow-only слоты подсказки/фута/строки артефакта, геометрия пар стоимости.
+        const SP = flowMode ? {
+            btnFitMin: 16,
+            btnStyle: { align: 'center' },
+            nameFitMin: 22,
+            recipeNameSize: nameSize, recipeNameFitMin: 22,
+            needSize: subSize, footSize: subSize,
+            itemNameY: 12, itemSubY: 0, itemHintY: 0, itemCardH: 173, itemIconY: 86,
+            recipeNameY: 0, recipeDescY: 0, needY0: 0, footY0: 0, btnY0: 0, buyY0: 0, actY0: 0,
+            recipeCardH: 173, recipeIconY: 86,
+            artIconY0: 58, artNameY: 12, artLineY: 0,
+            artNameSize: nameSize, artNameFitMin: 22, lineSize: subSize,
+            artCols: 1,
+            headerStep: Math.round(36 * s),
+            headerSize: Math.max(11, Math.round(FONT_SIZE.stat * s)),
+            warnSize: Math.max(9, Math.round(FONT_SIZE.captionSm * s)),
+            startPad: 0, sectionGap: 0, endPad: 0, rowH: 0, step: 0,
+            gapRow: 6,
+            hintSlot0: this.craftMeasureLH(subSize),
+            footSlot0: this.craftMeasureLH(subSize),
+            lineSlot0: 2 * this.craftMeasureLH(subSize),
+            pairIconDx: pairIcon / 2, pairTextDx: pairIcon + 6, pairCellBase: pairIcon + 6,
+            pairNeedGap: SPACE.md, pairGap: SPACE.lg,
+            wrap: (width) => ({ wordWrap: { width, useAdvancedWrap: true } })
+        } : {
+            rowH: Math.round(96 * s),
+            step: Math.round(96 * s) + 6,
+            btnFitMin: 8,
+            btnStyle: null,
+            nameFitMin: 9,
+            recipeNameSize: Math.max(9, Math.round(FONT_SIZE.captionLg * s)), recipeNameFitMin: 9,
+            recipeNameY: Math.round(10 * s), recipeDescY: Math.round(32 * s),
+            needY0: Math.round(54 * s), footY0: Math.round(78 * s),
+            needSize: Math.max(9, Math.round(FONT_SIZE.captionSm * s)),
+            footSize: Math.max(9, Math.round(FONT_SIZE.captionSm * s)),
+            btnY0: Math.round(48 * s),
+            buyY0: Math.round(Math.round(96 * s) * 0.26),
+            actY0: Math.round(Math.round(96 * s) * 0.72),
+            itemNameY: Math.round(10 * s), itemSubY: Math.round(34 * s), itemHintY: Math.round(62 * s),
+            itemCardH: Math.round(96 * s), itemIconY: Math.round(48 * s),
+            recipeCardH: Math.round(96 * s), recipeIconY: Math.round(48 * s),
+            artIconY0: Math.round(Math.round(96 * s) / 2),
+            artNameY: Math.round(8 * s), artLineY: Math.round(30 * s),
+            artNameSize: Math.max(9, Math.round(FONT_SIZE.caption * s)), artNameFitMin: 9,
+            lineSize: Math.max(9, Math.round(FONT_SIZE.caption * s)),
+            artCols: 2,
+            headerStep: Math.round(36 * s),
+            headerSize: Math.max(11, Math.round(FONT_SIZE.stat * s)),
+            warnSize: Math.max(9, Math.round(FONT_SIZE.captionSm * s)),
+            startPad: Math.round(8 * s), sectionGap: Math.round(14 * s), endPad: Math.round(52 * s),
+            gapRow: 6,
+            hintSlot0: 0, footSlot0: 0, lineSlot0: 0,
+            pairIconDx: Math.round(8 * s), pairTextDx: Math.round(20 * s), pairCellBase: Math.round(20 * s),
+            pairNeedGap: Math.round(12 * s), pairGap: Math.round(12 * s),
+            wrap: null
+        };
 
         this.craftContent.removeAll(true);
         this.craftItemRows = {};
         this.craftRecipeRows = {};
         this.craftArtCells = {};
-        let y = Math.round(8 * s);
+        this._craftFlow = flowMode ? [] : null; // flow-раскладка активна только в портрете
+        const flow = this._craftFlow;
+        const addFlow = (node, h, gap, relayout, row) => flow.push({ node, h, gap, y: 0, relayout, row });
+        let y = SP.startPad; // курсор фиксированной укладки (flow позиционирует restackCraftFrom)
 
-        const header = (title) => {
-            const t = makeLabel(this, 2, y, title, Math.max(11, Math.round(FONT_SIZE.stat * s)), TEXT.cream).setOrigin(0, 0);
-            this.craftContent.add(t);
+        // Заголовок секции (+ предупреждение у «Рецептов»); в ландшафте — по курсору y
+        const addHeader = (title, warnText) => {
+            const c = this.add.container(0, flowMode ? 0 : y);
+            c.add(makeLabel(this, 2, 0, title, SP.headerSize, TEXT.cream).setOrigin(0, 0));
+            if (warnText) c.add(makeLabel(this, w - 2, 3, warnText, SP.warnSize, TEXT.bad).setOrigin(1, 0));
+            this.craftContent.add(c);
+            if (flowMode) addFlow(c, SP.headerStep, 0, null);
+            else y += SP.headerStep;
         };
 
-        header('Активируемые');
-        y += Math.round(36 * s);
+        addHeader('Активируемые');
         for (const def of ITEMS) {
-            const rc = this.add.container(0, y);
-            const card = addImg(this, 0, 0, 'upgrade_row_card_1', w, rowH);
+            const rc = this.add.container(0, flowMode ? 0 : y);
+            const card = addImg(this, 0, 0, 'upgrade_row_card_1', w, SP.itemCardH);
             const icon = this.add.image(0, 0, def.id);
-            this.placeIcon(icon, def.id, iconCX, btnCY, iconSize);
-            const name = makeLabel(this, textX, Math.round(10 * s), def.name, nameSize, TEXT.white).setOrigin(0, 0);
-            fitFontSize(name, nameSize, textMaxW, 9);
-            const sub = makeLabel(this, textX, Math.round(34 * s), `эффект: ${def.desc}`, subSize, TEXT.soft).setOrigin(0, 0);
-            fitFontSize(sub, subSize, textMaxW, 9);
-            const hint = makeLabel(this, textX, Math.round(62 * s), '', subSize, TEXT.gold).setOrigin(0, 0);
-            const { bg: btn, label: btnText } = addButton(this, btnCX, actCY, {
+            this.placeIcon(icon, def.id, iconCX, SP.itemIconY, iconSize);
+            // Имя — БЕЗ wordWrap в портрете (перенос рвал «Ядро-аккумулятор» по дефису): ужин min 22
+            const name = makeLabel(this, textX, SP.itemNameY, def.name, nameSize, TEXT.white).setOrigin(0, 0);
+            fitFontSize(name, nameSize, textMaxW, SP.nameFitMin);
+            const sub = makeLabel(this, textX, SP.itemSubY, `эффект: ${def.desc}`, subSize, TEXT.soft, SP.wrap ? SP.wrap(textMaxW) : undefined).setOrigin(0, 0);
+            if (!flowMode) fitFontSize(sub, subSize, textMaxW, 9);
+            const hint = makeLabel(this, textX, SP.itemHintY, '', subSize, TEXT.gold, SP.wrap ? SP.wrap(W2) : undefined).setOrigin(0, 0);
+            const { bg: btn, label: btnText } = addButton(this, btnCX, SP.actY0, {
                 kind: 'image', w: btnW, h: btnH, key: TEX.button,
-                text: 'Активировать', fontSize: subSize, color: TEXT.white,
+                text: 'Активировать', fontSize: subSize, color: TEXT.white, style: SP.btnStyle || undefined,
                 hitW: HIT.button[0], hitH: HIT.button[1],
-                fitMaxW: btnW - SPACE.md, fitMin: 8
+                fitMaxW: btnW - SPACE.md, fitMin: SP.btnFitMin
             });
-            const { bg: buyBtn, label: buyBtnText } = addButton(this, btnCX, buyCY, {
+            const { bg: buyBtn, label: buyBtnText } = addButton(this, btnCX, SP.buyY0, {
                 kind: 'image', w: btnW, h: btnH, key: TEX.button,
-                fontSize: subSize, color: TEXT.white,
+                fontSize: subSize, color: TEXT.white, style: SP.btnStyle || undefined,
                 hitW: HIT.button[0], hitH: HIT.button[1]
             });
             rc.add([card, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText]);
@@ -171,28 +247,28 @@ export const craftScreenMethods = {
                 }
                 this.refreshUi();
             });
-            this.craftItemRows[def.id] = { def, rc, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText, _key: null, _hintKey: null, _err: null, _errUntil: 0, _hintSize: subSize, _hintMaxW: textMaxW, _buySize: subSize, _buyMaxW: btnW - SPACE.md };
-            y += step;
+            const row = { def, rc, card, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText, textX, btnW, btnH, iconCX, iconSize, w, _key: null, _hintKey: null, _err: null, _errUntil: 0, _hintSize: subSize, _hintMaxW: textMaxW, _buySize: subSize, _buyMaxW: btnW - SPACE.md, hintSlot: SP.hintSlot0, _nameTarget: nameSize, _nameMaxW: textMaxW, _dirty: false };
+            if (flowMode) row.relayout = () => this.layoutCraftItemRow(row);
+            this.craftItemRows[def.id] = row;
+            if (flowMode) addFlow(rc, 0, SP.gapRow, row.relayout, row);
+            else y += SP.step;
         }
 
-        y += Math.round(14 * s);
-        header('Рецепты');
-        const warn = makeLabel(this, w - 2, y + 3, 'крафт нельзя отменить', Math.max(9, Math.round(FONT_SIZE.captionSm * s)), TEXT.bad).setOrigin(1, 0);
-        this.craftContent.add(warn);
-        y += Math.round(36 * s);
+        y += SP.sectionGap;
+        addHeader('Рецепты', 'крафт нельзя отменить');
         for (const recipe of CRAFT_RECIPES) {
-            const rc = this.add.container(0, y);
-            const card = addImg(this, 0, 0, 'upgrade_row_card_1', w, rowH);
+            const rc = this.add.container(0, flowMode ? 0 : y);
+            const card = addImg(this, 0, 0, 'upgrade_row_card_1', w, SP.recipeCardH);
             const resultKey = recipe.result.id;
             const icon = this.add.image(0, 0, resultKey);
-            this.placeIcon(icon, resultKey, iconCX, btnCY, iconSize);
+            this.placeIcon(icon, resultKey, iconCX, SP.recipeIconY, iconSize);
             const resultDef = recipe.result.kind === 'item'
                 ? ITEMS.find((i) => i.id === recipe.result.id)
                 : ARTIFACTS.find((a) => a.id === recipe.result.id);
-            const name = makeLabel(this, textX, Math.round(10 * s), resultDef.name, Math.max(9, Math.round(FONT_SIZE.captionLg * s)), TEXT.white).setOrigin(0, 0);
-            fitFontSize(name, Math.round(FONT_SIZE.captionLg * s), textMaxW, 9);
-            const desc = makeLabel(this, textX, Math.round(32 * s), `Получишь: ${resultDef.desc}`, subSize, TEXT.good).setOrigin(0, 0);
-            fitFontSize(desc, subSize, textMaxW, 9);
+            const name = makeLabel(this, textX, SP.recipeNameY, resultDef.name, SP.recipeNameSize, TEXT.white).setOrigin(0, 0);
+            fitFontSize(name, SP.recipeNameSize, textMaxW, SP.recipeNameFitMin);
+            const desc = makeLabel(this, textX, SP.recipeDescY, `Получишь: ${resultDef.desc}`, subSize, TEXT.good, SP.wrap ? SP.wrap(W2) : undefined).setOrigin(0, 0);
+            if (!flowMode) fitFontSize(desc, subSize, textMaxW, 9);
             // Длинные описания («Древняя кирка») не влезают в одну строку даже на
             // минимуме ужина (9px: 44 символа x 6px = 264 > лимита 235) и уходили
             // ПОД кнопку крафта — OVERLAP 20px, поймано F9-репортом игрока; сценарный
@@ -200,8 +276,9 @@ export const craftScreenMethods = {
             // и текст всё ещё шире лимита — переносим на 2 строки с базовым кеглем
             // и растим ТОЛЬКО эту карточку («Нужно:»/фут сдвигаются, шаг списка —
             // по фактической высоте). Ряды, чей ужин сработал (10-11px), не меняем.
+            // (Портрет не ужинает: перенос включён всегда, карточку растит relayout.)
             let extraH = 0;
-            if (desc.width > textMaxW) {
+            if (!flowMode && desc.width > textMaxW) {
                 desc.setStyle({ wordWrap: { width: textMaxW } });
                 desc.setFontSize(subSize);
                 extraH = Math.max(0, this.craftTextH(desc) - this.craftMeasureLH(subSize));
@@ -209,48 +286,36 @@ export const craftScreenMethods = {
                 // центра — верх вылезал над рядом, а нижняя кромка обрезала фут
                 // («крафт» выпадал из карточки, скриншот игрока). Сдвигаем центр вниз
                 // на extraH/2: верх на месте, низ = rowH + extraH.
-                card.setDisplaySize(w, rowH + extraH);
-                card.y = (rowH + extraH) / 2;
+                card.setDisplaySize(w, SP.rowH + extraH);
+                card.y = (SP.rowH + extraH) / 2;
             }
-            const costY = Math.round(54 * s) + extraH;
-            const needLbl = makeLabel(this, textX, costY, 'Нужно:', Math.max(9, Math.round(FONT_SIZE.captionSm * s)), TEXT.soft).setOrigin(0, 0.5);
+            const needCY = flowMode ? 0 : SP.needY0 + extraH;
+            const needLbl = makeLabel(this, textX, needCY, 'Нужно:', SP.needSize, TEXT.soft).setOrigin(0, 0.5);
             const costPairs = [];
             const pairNodes = [];
-            const pairIcon = Math.round(16 * Math.min(s, 1.5));
-            const pairFont = Math.max(9, Math.round(FONT_SIZE.caption * s));
-            const pairSlot = Math.round(20 * s);  // слот иконки в паре (центр на +8s)
-            const pairGap = Math.round(12 * s);
-            // Пары «иконка ×N» — горизонтальный поток (rowRight): ширины по факту
-            const flow = [{ w: needLbl.width, place: (left) => { needLbl.x = left; } }];
             for (const compId of Object.keys(recipe.cost)) {
                 const compDef = COMPONENTS.find((c) => c.id === compId);
                 const cIcon = this.add.image(0, 0, compDef.icon);
-                const cText = makeLabel(this, 0, 0, String(recipe.cost[compId]), pairFont, TEXT.gold).setOrigin(0, 0.5);
+                // placeIcon сразу: place() пары потом только setPosition (кроп/масштаб уже верны)
+                this.placeIcon(cIcon, compDef.icon, 0, 0, pairIcon);
+                const cText = makeLabel(this, 0, 0, String(recipe.cost[compId]), subSize, TEXT.gold).setOrigin(0, 0.5);
                 pairNodes.push(cIcon, cText);
-                costPairs.push({ id: compId, text: cText });
-                flow.push({
-                    w: pairSlot + cText.width,
-                    place: (left) => {
-                        this.placeIcon(cIcon, compDef.icon, left + Math.round(8 * s), costY, pairIcon);
-                        cText.setPosition(left + pairSlot, costY);
-                    }
-                });
+                costPairs.push({ id: compId, text: cText, icon: cIcon });
             }
-            rowRight(flow, { left: textX, gap: pairGap });
-            const footMaxW = btnCX - btnW / 2 - 8 - textX;
-            const footSize = Math.max(9, Math.round(FONT_SIZE.captionSm * s));
+            const footY = flowMode ? 0 : SP.footY0 + extraH;
             const srcTxt = recipe.result.kind === 'artifact'
                 ? 'крафт'
                 : `дроп: ${[...new Set(Object.keys(recipe.cost).map((compId) => (BOSSES.find((b) => b.drops[compId]) || {}).name).filter(Boolean))].join(', ')}`;
-            const status = makeLabel(this, textX, Math.round(78 * s) + extraH, '', footSize, TEXT.bad).setOrigin(0, 0);
-            const src = makeLabel(this, textX, Math.round(78 * s) + extraH, srcTxt, footSize, TEXT.dim).setOrigin(0, 0);
-            fitFontSize(src, footSize, footMaxW, 9);
+            const status = makeLabel(this, textX, footY, '', SP.footSize, TEXT.bad, SP.wrap ? SP.wrap(W2) : undefined).setOrigin(0, 0);
+            if (flowMode) status.setVisible(false);
+            const src = makeLabel(this, textX, footY, srcTxt, SP.footSize, TEXT.dim, SP.wrap ? SP.wrap(W2) : undefined).setOrigin(0, 0);
+            if (!flowMode) fitFontSize(src, SP.footSize, textMaxW, 9); // footMaxW === textMaxW
             const label = recipe.craftMs === 0 ? 'Создать' : `Крафт ${Math.round(recipe.craftMs / 60000)} мин`;
-            const { bg: btn, label: btnText } = addButton(this, btnCX, btnCY, {
+            const { bg: btn, label: btnText } = addButton(this, btnCX, SP.btnY0, {
                 kind: 'image', w: btnW, h: btnH, key: TEX.button,
-                text: label, fontSize: subSize, color: TEXT.white,
+                text: label, fontSize: subSize, color: TEXT.white, style: SP.btnStyle || undefined,
                 hitW: HIT.button[0], hitH: HIT.button[1],
-                fitMaxW: btnW - SPACE.md, fitMin: 8
+                fitMaxW: btnW - SPACE.md, fitMin: SP.btnFitMin
             });
             rc.add([card, icon, name, desc, needLbl, status, src, btn, btnText]);
             // Пары стоимости ПОСЛЕ карточки: раньше они добавлялись до неё и
@@ -274,28 +339,27 @@ export const craftScreenMethods = {
                 }
                 this.refreshUi();
             });
-            this.craftRecipeRows[recipe.id] = { recipe, rc, icon, name, desc, needLbl, costPairs, status, src, btn, btnText, label, resultDef, _key: null, _footTxt: null, _btnSize: subSize, _btnMaxW: btnW - SPACE.md, _footSize: footSize, _footMaxW: footMaxW };
-            y += rowH + extraH + 6; // шаг по фактической высоте (перенесённые описания растят ряд)
+            const row = { recipe, resultDef, rc, card, icon, name, desc, needLbl, costPairs, status, src, btn, btnText, label, pairIcon, pairIconDx: SP.pairIconDx, pairTextDx: SP.pairTextDx, pairCellBase: SP.pairCellBase, pairNeedGap: SP.pairNeedGap, pairGap: SP.pairGap, textX, btnW, btnH, iconCX, iconSize, w, _key: null, _footTxt: null, _btnSize: subSize, _btnMaxW: btnW - SPACE.md, _footSize: SP.footSize, _footMaxW: textMaxW, footSlot: SP.footSlot0, _nameTarget: SP.recipeNameSize, _nameMaxW: textMaxW, _dirty: false };
+            if (flowMode) row.relayout = () => this.layoutCraftRecipeRow(row);
+            else this.placeCraftCostPairs(row, needCY);
+            this.craftRecipeRows[recipe.id] = row;
+            if (flowMode) addFlow(rc, 0, SP.gapRow, row.relayout, row);
+            else y += SP.rowH + extraH + 6; // шаг по фактической высоте (перенесённые описания растят ряд)
         }
 
-        y += Math.round(14 * s);
-        header('Артефакты');
-        y += Math.round(36 * s);
+        y += SP.sectionGap;
+        addHeader('Артефакты');
+        const artRows = Math.ceil(ARTIFACTS.length / SP.artCols);
         ARTIFACTS.forEach((def, i) => {
-            const col = i % 2;
-            const rowIdx = Math.floor(i / 2);
-            const rc = this.add.container(col * (cellW + 10), y + rowIdx * step);
-            const card = addImg(this, 0, 0, 'upgrade_row_card_1', cellW, rowH);
-            // Иконка по ЦЕНТРУ ряда: прежние позиции были закапплены на 1.4,
-            // а rowH растёт с полным s (1.8) — иконки «уезжали» вверх (ревью)
-            const iconSize = Math.round(40 * Math.min(s, 1.6));
-            const iconX = Math.round(34 * Math.min(s, 1.6));
+            const col = i % SP.artCols;
+            const rowIdx = Math.floor(i / SP.artCols);
+            const rc = this.add.container(col * (artCardW + 10), flowMode ? 0 : y + rowIdx * SP.step);
+            const card = addImg(this, 0, 0, 'upgrade_row_card_1', artCardW, SP.artCardH);
             const icon = this.add.image(0, 0, def.id);
-            this.placeIcon(icon, def.id, iconX, Math.round(rowH / 2), iconSize);
-            const nameX = iconX + Math.round(iconSize / 2) + 12;
-            const name = makeLabel(this, nameX, Math.round(8 * s), def.name, Math.max(9, Math.round(FONT_SIZE.caption * s)), TEXT.gold).setOrigin(0, 0);
-            fitFontSize(name, Math.round(FONT_SIZE.caption * s), cellW - nameX - 8, 9);
-            const line = makeLabel(this, nameX, Math.round(30 * s), '', Math.max(9, Math.round(FONT_SIZE.caption * s)), TEXT.good, { wordWrap: { width: cellW - nameX - 14 } }).setOrigin(0, 0);
+            this.placeIcon(icon, def.id, artIconX, SP.artIconY0, iconSize);
+            const name = makeLabel(this, artNameX, SP.artNameY, def.name, SP.artNameSize, TEXT.gold).setOrigin(0, 0);
+            fitFontSize(name, SP.artNameSize, artNameMaxW, SP.artNameFitMin);
+            const line = makeLabel(this, artNameX, SP.artLineY, '', SP.lineSize, TEXT.good, SP.wrap ? SP.wrap(W2) : { wordWrap: { width: artLineW } }).setOrigin(0, 0);
             rc.add([card, icon, name, line]);
             this.craftContent.add(rc);
             setHitRect(card, ...HIT.rowCard);
@@ -310,13 +374,51 @@ export const craftScreenMethods = {
                 cellObj._hintUntil = Date.now() + 2000;
                 this.refreshUi();
             });
-            this.craftArtCells[def.id] = { def, rc, icon, name, line, _owned: null, _hintText: '', _hintUntil: 0 };
+            const cell = { def, rc, card, icon, name, line, iconCX, iconSize, w, textX, _owned: null, _hintText: '', _hintUntil: 0, lineSlot: SP.lineSlot0, _nameTarget: SP.artNameSize, _nameMaxW: artNameMaxW, _dirty: false };
+            if (flowMode) cell.relayout = () => this.layoutCraftArtCell(cell);
+            this.craftArtCells[def.id] = cell;
+            if (flowMode) addFlow(rc, 0, SP.gapRow, cell.relayout, cell);
         });
-        y += Math.ceil(ARTIFACTS.length / 2) * step;
+        if (!flowMode) y += artRows * SP.step;
 
-        this._craftContentH = y + Math.round(52 * s);
-        this._craftMaxScroll = Math.max(0, this._craftContentH - this._craftView.h);
-        this.craftCam.scrollY = Phaser.Math.Clamp(this.craftCam.scrollY, 0, this._craftMaxScroll);
+        if (flowMode) {
+            // Стартовая раскладка всех рядов и стекинг
+            for (const e of flow) if (e.relayout) e.h = e.relayout();
+            this.restackCraftFrom(0);
+            // Webfont Monocraft грузится асинхронно: первая раскладка могла
+            // посчитаться по fallback-шрифту — переложить после загрузки
+            if (!this._craftFontsHooked) {
+                this._craftFontsHooked = true;
+                // Принудительно грузим Monocraft (кириллица) и ждём готовности шрифтов
+                const loadFont = (document.fonts.load ? document.fonts.load(`22px ${FONT}`, 'Аа Ag 123') : Promise.resolve()).catch(() => {});
+                loadFont.then(() => document.fonts.ready).then(() => {
+                    if (!this.sys || !this._craftFlow) return;
+                    this._craftLHCache = {};
+                    if (this._craftMeasureText && this._craftMeasureText.style) this._craftMeasureText.style.update(true);
+                    // Перерисовать все Text рядов с пересчётом метрик (иначе height/width — от fallback)
+                    const rerender = (n) => {
+                        if (n.list) n.list.forEach(rerender);
+                        else if (n.style && typeof n.style.update === 'function') n.style.update(true);
+                    };
+                    rerender(this.craftContent);
+                    // Перефит имён (без переноса) по новой ширине шрифта
+                    const fitNames = (map) => {
+                        for (const k of Object.keys(map)) {
+                            const r = map[k];
+                            if (r && r.name && r._nameTarget) fitFontSize(r.name, r._nameTarget, r._nameMaxW, 22);
+                        }
+                    };
+                    fitNames(this.craftItemRows);
+                    fitNames(this.craftRecipeRows);
+                    fitNames(this.craftArtCells);
+                    this.relayoutAllCraft();
+                });
+            }
+        } else {
+            this._craftContentH = y + SP.endPad;
+            this._craftMaxScroll = Math.max(0, this._craftContentH - this._craftView.h);
+            this.craftCam.scrollY = Phaser.Math.Clamp(this.craftCam.scrollY, 0, this._craftMaxScroll);
+        }
     },
 
     _mmss(msLeft) {
@@ -376,6 +478,28 @@ export const craftScreenMethods = {
         this.restackCraftFrom(0);
     },
 
+    // Пары стоимости «иконка ×N» — горизонтальный поток (rowRight) после метки
+    // «Нужно:»: ширины ячеек по факту (текст), смещения и зазоры — из полей ряда
+    // (спецификация ориентации: ландшафт 8s/20s/12s, портрет pairIcon/2 и
+    // pairIcon+6, SPACE.md между меткой и парой, SPACE.lg между парами).
+    // Иконки уже placeIcon'нуты при создании — place() только позиционирует.
+    placeCraftCostPairs(row, cy) {
+        rowRight(
+            [
+                { w: row.needLbl.width, place: (left) => { row.needLbl.x = left; } },
+                ...row.costPairs.map((pair) => ({
+                    w: row.pairCellBase + pair.text.width,
+                    gapAfter: row.pairGap,
+                    place: (left) => {
+                        pair.icon.setPosition(left + row.pairIconDx, cy);
+                        pair.text.setPosition(left + row.pairTextDx, cy);
+                    }
+                }))
+            ],
+            { left: row.textX, gap: row.pairNeedGap }
+        );
+    },
+
     // Ряд предмета (портрет): зона A — текст (name+sub) слева и столбик кнопок
     // справа, зона B — подсказка на всю ширину. Высоты — по ФАКТУ (craftTextH).
     layoutCraftItemRow(row) {
@@ -420,24 +544,11 @@ export const craftScreenMethods = {
         row.desc.y = y;
         y += TH(row.desc) + g;
         // «Нужно:» + пары (иконка + число) — горизонтальный поток (rowRight):
-        // ширины по факту, зазоры SPACE.md (метка -> пара) и SPACE.lg (пара -> пара)
+        // ширины по факту, ячейка и зазоры — из полей ряда (placeCraftCostPairs)
         const needH = Math.max(28, row.pairIcon + 6, TH(row.needLbl));
         const needCY = Math.round(y + needH / 2);
         row.needLbl.y = needCY;
-        rowRight(
-            [
-                { w: row.needLbl.width, place: (left) => { row.needLbl.x = left; } },
-                ...row.costPairs.map((pair) => ({
-                    w: row.pairIcon + 6 + pair.text.width,
-                    gapAfter: SPACE.lg,
-                    place: (left) => {
-                        pair.icon.setPosition(left + row.pairIcon / 2, needCY);
-                        pair.text.setPosition(left + row.pairIcon + 6, needCY);
-                    }
-                }))
-            ],
-            { left: row.textX, gap: SPACE.md }
-        );
+        this.placeCraftCostPairs(row, needCY);
         y += needH + g;
         // Фут: статус ИЛИ источник (взаимно исключены), grow-only слот
         row.status.y = y;
@@ -465,211 +576,6 @@ export const craftScreenMethods = {
         cell.card.setDisplaySize(cell.w, H).setPosition(cell.w / 2, H / 2);
         this.placeIcon(cell.icon, cell.def.id, cell.iconCX, H / 2, cell.iconSize);
         return H;
-    },
-
-    // Портретная мастерская (спека Claude): FLOW-раскладка — блоки кладутся
-    // сверху вниз по ИЗМЕРЕННЫМ высотам текстов, высота карточки вычисляется,
-    // стекинг и высота контента пересчитываются (restackCraftFrom). Фиксированные
-    // офсеты при переносящемся тексте давали наезды и «вываливание» (скриншоты).
-    buildCraftContentPortrait() {
-        const w = this._craftView.w;
-        const s = this._adaptiveScale || 1;
-        const f = w / 835;
-        const iconCX = Math.round(118 * f);
-        const textX = Math.round(186 * f) + 34;
-        const iconSize = Math.round(40 * Math.min(s, 1.6));
-        const btnW = Phaser.Math.Clamp(Math.round(90 * s), 150, 170);
-        const btnH = Phaser.Math.Clamp(Math.round(36 * Math.min(s, 1.5)), 48, 64);
-        const btnCX = w - 12 - btnW / 2;
-        const textMaxW = btnCX - btnW / 2 - 8 - textX;
-        const W2 = w - 14 - textX;
-        const nameSize = Math.max(9, Math.round(FONT_SIZE.label * s));
-        const subSize = Math.max(9, Math.round(FONT_SIZE.caption * s));
-        const wrap = (width) => ({ wordWrap: { width, useAdvancedWrap: true } });
-
-        this.craftContent.removeAll(true);
-        this.craftItemRows = {};
-        this.craftRecipeRows = {};
-        this.craftArtCells = {};
-        this._craftFlow = [];
-        const flow = this._craftFlow;
-        const gapRow = 6;
-        const addFlow = (node, h, gap, relayout, row) => flow.push({ node, h, gap, y: 0, relayout, row });
-        const addHeader = (title, warnText) => {
-            const c = this.add.container(0, 0);
-            c.add(makeLabel(this, 2, 0, title, Math.max(11, Math.round(FONT_SIZE.stat * s)), TEXT.cream).setOrigin(0, 0));
-            if (warnText) c.add(makeLabel(this, w - 2, 3, warnText, Math.max(9, Math.round(FONT_SIZE.captionSm * s)), TEXT.bad).setOrigin(1, 0));
-            this.craftContent.add(c);
-            addFlow(c, Math.round(36 * s), 0, null);
-        };
-
-        addHeader('Активируемые');
-        for (const def of ITEMS) {
-            const rc = this.add.container(0, 0);
-            const card = addImg(this, 0, 0, 'upgrade_row_card_1', w, 173);
-            const icon = this.add.image(0, 0, def.id);
-            this.placeIcon(icon, def.id, iconCX, 86, iconSize);
-            // Имя — БЕЗ wordWrap (перенос рвал «Ядро-аккумулятор» по дефису); ужин min 22
-            const name = makeLabel(this, textX, 12, def.name, nameSize, TEXT.white).setOrigin(0, 0);
-            fitFontSize(name, nameSize, textMaxW, 22);
-            const sub = makeLabel(this, textX, 0, `эффект: ${def.desc}`, subSize, TEXT.soft, wrap(textMaxW)).setOrigin(0, 0);
-            const hint = makeLabel(this, textX, 0, '', subSize, TEXT.gold, wrap(W2)).setOrigin(0, 0);
-            const { bg: btn, label: btnText } = addButton(this, btnCX, 0, {
-                kind: 'image', w: btnW, h: btnH, key: TEX.button,
-                text: 'Активировать', fontSize: subSize, color: TEXT.white, style: { align: 'center' },
-                hitW: HIT.button[0], hitH: HIT.button[1],
-                fitMaxW: btnW - SPACE.md, fitMin: 16
-            });
-            const { bg: buyBtn, label: buyBtnText } = addButton(this, btnCX, 0, {
-                kind: 'image', w: btnW, h: btnH, key: TEX.button,
-                fontSize: subSize, color: TEXT.white, style: { align: 'center' },
-                hitW: HIT.button[0], hitH: HIT.button[1]
-            });
-            rc.add([card, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText]);
-            this.craftContent.add(rc);
-            btn.on('pointerdown', (p) => this.startCraftDrag(p));
-            btn.on('pointerup', () => {
-                if (this._craftDragging) return;
-                this.activateItemRow(def);
-            });
-            buyBtn.on('pointerdown', (p) => this.startCraftDrag(p));
-            buyBtn.on('pointerup', () => {
-                if (this._craftDragging) return;
-                if (buyItem(def.id)) {
-                    playSfx(this, 'purchase');
-                } else {
-                    this.setItemRowError(def, (gameState.items[def.id] || 0) >= def.stackMax ? 'стак полон' : 'не хватает руды');
-                }
-                this.refreshUi();
-            });
-            const row = { def, rc, card, icon, name, sub, hint, btn, btnText, buyBtn, buyBtnText, textX, btnW, btnH, iconCX, iconSize, w, _key: null, _hintKey: null, _err: null, _errUntil: 0, _buySize: subSize, _buyMaxW: btnW - SPACE.md, hintSlot: this.craftMeasureLH(subSize), _nameTarget: nameSize, _nameMaxW: textMaxW, _dirty: false };
-            row.relayout = () => this.layoutCraftItemRow(row);
-            this.craftItemRows[def.id] = row;
-            addFlow(rc, 0, gapRow, row.relayout, row);
-        }
-
-        addHeader('Рецепты', 'крафт нельзя отменить');
-        for (const recipe of CRAFT_RECIPES) {
-            const rc = this.add.container(0, 0);
-            const card = addImg(this, 0, 0, 'upgrade_row_card_1', w, 173);
-            const icon = this.add.image(0, 0, recipe.result.id);
-            this.placeIcon(icon, recipe.result.id, iconCX, 86, iconSize);
-            const resultDef = recipe.result.kind === 'item'
-                ? ITEMS.find((i) => i.id === recipe.result.id)
-                : ARTIFACTS.find((a) => a.id === recipe.result.id);
-            const name = makeLabel(this, textX, 0, resultDef.name, nameSize, TEXT.white).setOrigin(0, 0);
-            fitFontSize(name, nameSize, textMaxW, 22);
-            const desc = makeLabel(this, textX, 0, `Получишь: ${resultDef.desc}`, subSize, TEXT.good, wrap(W2)).setOrigin(0, 0);
-            const needLbl = makeLabel(this, textX, 0, 'Нужно:', subSize, TEXT.soft).setOrigin(0, 0.5);
-            const costPairs = [];
-            const pairNodes = [];
-            const pairIcon = Math.round(16 * Math.min(s, 1.5));
-            for (const compId of Object.keys(recipe.cost)) {
-                const compDef = COMPONENTS.find((c) => c.id === compId);
-                const cIcon = this.add.image(0, 0, compDef.icon);
-                this.placeIcon(cIcon, compDef.icon, 0, 0, pairIcon);
-                const cText = makeLabel(this, 0, 0, String(recipe.cost[compId]), subSize, TEXT.gold).setOrigin(0, 0.5);
-                pairNodes.push(cIcon, cText);
-                costPairs.push({ id: compId, text: cText, icon: cIcon });
-            }
-            const status = makeLabel(this, textX, 0, '', subSize, TEXT.bad, wrap(W2)).setOrigin(0, 0).setVisible(false);
-            const srcTxt = recipe.result.kind === 'artifact'
-                ? 'крафт'
-                : `дроп: ${[...new Set(Object.keys(recipe.cost).map((compId) => (BOSSES.find((b) => b.drops[compId]) || {}).name).filter(Boolean))].join(', ')}`;
-            const src = makeLabel(this, textX, 0, srcTxt, subSize, TEXT.dim, wrap(W2)).setOrigin(0, 0);
-            const label = recipe.craftMs === 0 ? 'Создать' : `Крафт ${Math.round(recipe.craftMs / 60000)} мин`;
-            const { bg: btn, label: btnText } = addButton(this, btnCX, 0, {
-                kind: 'image', w: btnW, h: btnH, key: TEX.button,
-                text: label, fontSize: subSize, color: TEXT.white, style: { align: 'center' },
-                hitW: HIT.button[0], hitH: HIT.button[1],
-                fitMaxW: btnW - SPACE.md, fitMin: 16
-            });
-            rc.add([card, icon, name, desc, needLbl, status, src, btn, btnText]);
-            for (const n of pairNodes) rc.add(n);
-            this.craftContent.add(rc);
-            btn.on('pointerdown', (p) => this.startCraftDrag(p));
-            btn.on('pointerup', () => {
-                if (this._craftDragging) return;
-                const c = gameState.crafting;
-                if (c && c.recipeId === recipe.id) {
-                    if (canClaimCraft()) {
-                        if (claimCraft()) playSfx(this, 'purchase');
-                    }
-                } else if (!c && !(recipe.result.kind === 'artifact' && gameState.artifacts.includes(recipe.result.id))) {
-                    if (startCraft(recipe.id)) {
-                        playSfx(this, 'purchase');
-                        if (recipe.craftMs === 0) claimCraft();
-                    }
-                }
-                this.refreshUi();
-            });
-            const row = { recipe, resultDef, rc, card, icon, name, desc, needLbl, costPairs, status, src, btn, btnText, label, pairIcon, textX, btnW, btnH, iconCX, iconSize, w, _key: null, _footTxt: null, _btnSize: subSize, _btnMaxW: btnW - SPACE.md, footSlot: this.craftMeasureLH(subSize), _nameTarget: nameSize, _nameMaxW: textMaxW, _dirty: false };
-            row.relayout = () => this.layoutCraftRecipeRow(row);
-            this.craftRecipeRows[recipe.id] = row;
-            addFlow(rc, 0, gapRow, row.relayout, row);
-        }
-
-        addHeader('Артефакты');
-        for (const def of ARTIFACTS) {
-            const rc = this.add.container(0, 0);
-            const card = addImg(this, 0, 0, 'upgrade_row_card_1', w, 117);
-            const icon = this.add.image(0, 0, def.id);
-            this.placeIcon(icon, def.id, iconCX, 58, iconSize);
-            const name = makeLabel(this, textX, 12, def.name, nameSize, TEXT.gold).setOrigin(0, 0);
-            fitFontSize(name, nameSize, textMaxW, 22);
-            const line = makeLabel(this, textX, 0, '', subSize, TEXT.good, wrap(W2)).setOrigin(0, 0);
-            rc.add([card, icon, name, line]);
-            this.craftContent.add(rc);
-            setHitRect(card, ...HIT.rowCard);
-            card.on('pointerdown', (p) => this.startCraftDrag(p));
-            card.on('pointerup', () => {
-                if (this._craftDragging) return;
-                if (gameState.artifacts.includes(def.id)) return;
-                const cellObj = this.craftArtCells[def.id];
-                if (!cellObj) return;
-                const boss = BOSSES.find((b) => b.id === def.source);
-                cellObj._hintText = boss ? `Получишь у босса: ${boss.name}` : 'Скрафти: рецепт';
-                cellObj._hintUntil = Date.now() + 2000;
-                this.refreshUi();
-            });
-            const cell = { def, rc, card, icon, name, line, iconCX, iconSize, w, textX, _owned: null, _hintText: '', _hintUntil: 0, lineSlot: 2 * this.craftMeasureLH(subSize), _nameTarget: nameSize, _nameMaxW: textMaxW, _dirty: false };
-            cell.relayout = () => this.layoutCraftArtCell(cell);
-            this.craftArtCells[def.id] = cell;
-            addFlow(rc, 0, gapRow, cell.relayout, cell);
-        }
-
-        // Стартовая раскладка всех рядов и стекинг
-        for (const e of flow) if (e.relayout) e.h = e.relayout();
-        this.restackCraftFrom(0);
-        // Webfont Monocraft грузится асинхронно: первая раскладка могла
-        // посчитаться по fallback-шрифту — переложить после загрузки
-        if (!this._craftFontsHooked) {
-            this._craftFontsHooked = true;
-            // Принудительно грузим Monocraft (кириллица) и ждём готовности шрифтов
-            const loadFont = (document.fonts.load ? document.fonts.load(`22px ${FONT}`, 'Аа Ag 123') : Promise.resolve()).catch(() => {});
-            loadFont.then(() => document.fonts.ready).then(() => {
-                if (!this.sys || !this._craftFlow) return;
-                this._craftLHCache = {};
-                if (this._craftMeasureText && this._craftMeasureText.style) this._craftMeasureText.style.update(true);
-                // Перерисовать все Text рядов с пересчётом метрик (иначе height/width — от fallback)
-                const rerender = (n) => {
-                    if (n.list) n.list.forEach(rerender);
-                    else if (n.style && typeof n.style.update === 'function') n.style.update(true);
-                };
-                rerender(this.craftContent);
-                // Перефит имён (без переноса) по новой ширине шрифта
-                const fitNames = (map) => {
-                    for (const k of Object.keys(map)) {
-                        const r = map[k];
-                        if (r && r.name && r._nameTarget) fitFontSize(r.name, r._nameTarget, r._nameMaxW, 22);
-                    }
-                };
-                fitNames(this.craftItemRows);
-                fitNames(this.craftRecipeRows);
-                fitNames(this.craftArtCells);
-                this.relayoutAllCraft();
-            });
-        }
     },
 
     // Активация предмета из мастерской: useItem(id,false); при отказе — красная

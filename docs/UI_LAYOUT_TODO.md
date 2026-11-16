@@ -34,8 +34,13 @@
       (0, 0.5) со своим hit 260x133). Вернуться к ним отдельно, если понадобится.)*
 
 ## 3. Одна раскладка вместо двух
-- [ ] `craftScreen`: `buildCraftContent` и `buildCraftContentPortrait` (~200 строк каждая) →
+- [x] `craftScreen`: `buildCraftContent` и `buildCraftContentPortrait` (~200 строк каждая) →
       один построитель, параметризованный спецификацией (`LAYOUT.landscape|portrait`).
+      *(Сделано 2026-11-16: единый `buildCraftContent` со спецификацией ориентации SP —
+      виджеты/хендлеры/регистрация общие, fixed-режим (ландшафт: офсеты + ужин кегля)
+      и flow-режим (портрет: высоты по факту + relayout) в одной функции; пары стоимости
+      — общая `placeCraftCostPairs(row, cy)`. `layoutCraftItemRow/RecipeRow/ArtCell`
+      остались relayout'ами flow-режима. Golden байт-в-байт.)*
 - [ ] `layout.js` (`computeLayout`): общий набор формул с коэффициентами ориентации вместо
       двух полностью расписанных веток.
 
