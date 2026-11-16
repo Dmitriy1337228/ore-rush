@@ -41,7 +41,7 @@ export const BOSS_ITEM_BUFF_FIELD = {
     item_oil: 'oilBuffUntil'
 };
 
-// Слои мира (UIScene живёт в своей шкале — см. ui/theme.js DEPTH)
+// Слои мира (UIScene живёт в своей шкале — см. ui/shared/theme.js DEPTH)
 export const GAME_DEPTH = {
     floatText: 20, // подписи урона/дохода
     floatBurst: 25, // подписи мутаций и взрыва

@@ -1,12 +1,12 @@
 // Центровка иконок по контенту (пилот DOM, этап 1, шаг 1.5).
 // Пиксель-арт PNG имеет прозрачные поля и смещённый рисунок (у item_bomb контент
 // занимает x=6..64 из 64): при object-fit: contain арт «уезжает» из слота.
-// Phaser решает это measureIcon (src/ui/iconMetrics.js): берёт КРУПНЕЙШУЮ связную
+// Phaser решает это measureIcon (src/ui/shared/iconMetrics.js): берёт КРУПНЕЙШУЮ связную
 // компоненту alpha-маски (отсекая отдельные искры/мусор), нормирует её к размеру
 // слота и центрует по её bbox. Здесь тот же алгоритм в CSS-координатах.
 // Внутри .dom-slot/.dom-chip/.dom-pair img абсолютный: см. .dom-icon в dom.css.
 
-const ALPHA_VISIBLE = 20; // как в src/ui/iconMetrics.js
+const ALPHA_VISIBLE = 20; // как в src/ui/shared/iconMetrics.js
 
 function contentBox(img) {
     const w = img.naturalWidth;

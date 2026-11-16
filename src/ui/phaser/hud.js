@@ -182,7 +182,7 @@ export const hudMethods = {
         icon.setPosition(cx, cy);
     },
 
-    // Единый визуальный размер и ЦЕНТРИРОВКА иконок по КОНТЕНТУ (см. ui/iconMetrics.js);
+    // Единый визуальный размер и ЦЕНТРИРОВКА иконок по КОНТЕНТУ (см. ui/shared/iconMetrics.js);
     // метрики кешируются на сцене по ключу текстуры.
     iconMetrics(key) {
         if (!this._iconMetrics[key]) {

@@ -22,7 +22,7 @@ import { mutationMethods } from '../../game/mutation.js';
 import { timersMethods } from '../../game/timers.js';
 
 // GameScene — игровой мир: блок, босс, мутации, фон, таймеры. Реализация разложена
-// по подсистемам (src/scenes/game/*): каждый модуль — набор методов одной зоны
+// по подсистемам (src/game/*): каждый модуль — набор методов одной зоны
 // ответственности, подмешиваемый в прототип сцены ниже.
 export class GameScene extends Phaser.Scene {
     constructor() {

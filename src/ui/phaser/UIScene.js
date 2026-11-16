@@ -4,7 +4,7 @@ import { computeLayout } from '../../layout.js';
 import { VIEWPORT } from '../shared/listGeometry.js';
 import { EVENTS, REG } from '../shared/theme.js';
 import { hudMethods } from './hud.js';
-import { panelMethods } from './panel.js';
+import { panelMethods } from './upgrades.js';
 import { gearMethods } from './gear.js';
 import { layoutMethods } from './layout.js';
 import { settingsModalMethods } from './settingsModal.js';
@@ -14,7 +14,7 @@ import { tutorialMethods } from './tutorial.js';
 
 // UIScene — оболочка интерфейса: владеет жизненным циклом, глобальной блокировкой
 // (updateBlockLock) и перерисовкой (refreshUi). Реализация разложена по фичам
-// (src/scenes/ui/*): каждый модуль — набор методов одной подсистемы, который
+// (src/ui/phaser/*): каждый модуль — набор методов одной подсистемы, который
 // подмешивается в прототип сцены ниже. Внешний контракт сцены не менялся.
 export class UIScene extends Phaser.Scene {
     constructor() {

@@ -1,5 +1,5 @@
 // Генератор CSS-токенов DOM-слоя (пилот DOM, этап 1, шаг 1.3).
-// Источник значений — src/ui/theme.js (один словарь для Phaser и DOM) + DOM_EXTRA
+// Источник значений — src/ui/shared/theme.js (один словарь для Phaser и DOM) + DOM_EXTRA
 // ниже (единицы DOM, которых в Phaser нет вовсе).
 //
 // Запуск:
@@ -61,12 +61,12 @@ function build() {
     const lines = [];
     lines.push('/*');
     lines.push(' * СГЕНЕРИРОВАННЫЙ ФАЙЛ — не править руками.');
-    lines.push(' * Источник: src/ui/theme.js + DOM_EXTRA в scripts/gen-dom-tokens.mjs.');
+    lines.push(' * Источник: src/ui/shared/theme.js + DOM_EXTRA в scripts/gen-dom-tokens.mjs.');
     lines.push(' * Перегенерация: npm run dom:tokens. Проверка дрейфа (CI/DoD): npm run dom:tokens -- --check');
     lines.push(' */');
     lines.push(':root {');
 
-    lines.push('    /* Шрифт UI (Phaser: FONT в src/ui/uiKit.js) */');
+    lines.push('    /* Шрифт UI (Phaser: FONT в src/ui/shared/uiKit.js) */');
     lines.push('    --font-ui: "Monocraft", "Inter", "Consolas", monospace;');
 
     lines.push('');
@@ -128,7 +128,7 @@ if (process.argv.includes('--check')) {
     // Git на Windows может отдать CRLF — сравниваем без учёта перевода строк
     const prev = prevRaw === null ? null : prevRaw.replace(/\r\n/g, '\n');
     if (prev === css) {
-        console.log('dom:tokens — ок: src/dom/tokens.css соответствует src/ui/theme.js');
+        console.log('dom:tokens — ок: src/dom/tokens.css соответствует src/ui/shared/theme.js');
         process.exit(0);
     }
 

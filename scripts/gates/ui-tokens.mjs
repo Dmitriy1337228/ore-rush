@@ -1,5 +1,5 @@
 // Гейт «нет новых голых чисел» (docs/UI_LAYOUT_TODO.md, раздел 1, п. 3 + системное
-// правило AGENTS.md). В src/scenes/ui (кроме файлов раскладок):
+// правило AGENTS.md). В src/ui/phaser (кроме файлов раскладок):
 //  1) кегли задаются токенами FONT_SIZE (makeLabel(..., N, ...), setFontSize(N));
 //  2) отступы/размеры в sizing-вызовах (setPosition/setDisplaySize/setSize/
 //     fillRect/fillRoundedRect/strokeRoundedRect/addImg/addImgC/addNine/addNineC/
@@ -14,7 +14,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const DIR = 'src/scenes/ui';
+const DIR = 'src/ui/phaser';
 const EXCLUDE = new Set(['layout.js']);
 // Фазовое внедрение гейта отступов/размеров: скан размеров применяется к файлам
 // из WATCHED (мигрированы на токены/спеки, см. docs/UI_LAYOUT_TODO.md раздел 3/5);
