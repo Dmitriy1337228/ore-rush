@@ -98,6 +98,37 @@ export function addImgC(scene, x, y, key, w, h) { // origin (0.5), коорди�
     return scene.add.image(x, y, key).setDisplaySize(w, h);
 }
 
+// Карточка ряда с УНИФОРМНЫМ масштабом арта (upgrade_row_card_1 835x218 с
+// «запечённым» слотом иконки). addImg растягивает арт по осям независимо: у
+// высоких рядов (мобильная мастерская, 170-310px) слот иконки вытягивался в
+// «пенал», а рамка утолщалась. Здесь арт масштабируется ОДНИМ коэффициентом
+// k = w/835, а растягивается лишь полоса из 2px внутри плоской серой заливки:
+// левая колонка (слот целиком), правая рамка и верх/низ рамки остаются
+// нетронутыми — слот растёт по высоте с чёткими краями.
+const ROW_CARD = {
+    key: 'upgrade_row_card_1',
+    left: 200,   // слот иконки лежит в x 38..192 арта + запас до плоской заливки
+    right: 30,   // рамка справа (как врезка 9-slice из манифеста)
+    flatY: 108   // строка внутри плоской заливки слота (арт 218 высотой, центр 109)
+};
+
+export function addRowCard(scene, w, h) {
+    const card = scene.add.nineslice(0, 0, ROW_CARD.key, null, 1, 1, ROW_CARD.left, ROW_CARD.right, ROW_CARD.flatY, ROW_CARD.flatY);
+    card.setOrigin(0.5);
+    fitRowCard(card, w, h);
+    return card;
+}
+
+// Подгон карточки под ряд w x h: центр — в (w/2, h/2) родителя; hit-зона
+// (если карточка интерактивна) — вся площадь в локальных единицах
+export function fitRowCard(card, w, h) {
+    const k = w / NS_SOURCE_SIZE[ROW_CARD.key].w;
+    const innerH = Math.max(h / k, ROW_CARD.flatY * 2 + 2); // меньше суммы бордов 9-slice схлопывается
+    card.setScale(k).setSize(w / k, innerH).setPosition(w / 2, h / 2);
+    if (card.input) applyHitArea(card, new Phaser.Geom.Rectangle(0, 0, w / k, innerH));
+    return card;
+}
+
 // Затемнение под модальным окном: прямоугольник базовой сетки 1280x720 по центру
 // (в портрете сетка выше, но затемнение сохраняет прежнюю геометрию — кадр перекрывает
 // видимую область модалок). alpha — плотность затемнения.
