@@ -1,23 +1,24 @@
-// Боевой DOM-экран мастерской (этап 2 пилота, шаги 2.1/2.3/2.4/2.6).
-// Каркас: врезка по токенам, чипы компонентов и три списка из снимка моста.
-// Действия (покупка/активация/крафт) появятся на этапе 3; здесь экран открывается
-// по openCraft(), держит блокировку игры и закрывается крестиком/Esc/фоном.
+// Боевой DOM-экран мастерской (этапы 2–3 пилота).
+// Данные — только из снимка моста (bridge.js); действия вызывают функции state.js
+// (buyItem/useItem/startCraft/claimCraft), прямых записей в gameState здесь нет.
+// Тексты ошибок — craftMessages (единый источник с Phaser-экраном).
 //
-// D3 (слои): Phaser-модалки рисуются в канвасе — под #ui-root. Поэтому при любом
-// Phaser-оверлее верхнего приоритета DOM-панель сразу скрывается; после закрытия
-// оверлея награда показывается штатной очередью (scene.tryShowDailyModal).
-//
-// D5: включается флагом isDomUiEnabled(); по умолчанию работает Phaser-экран.
+// D3: Phaser-модалки рисуются в канвасе (под #ui-root), поэтому при любом оверлее
+// верхнего приоритета DOM-панель скрывается; награду покажет штатная очередь.
+// D5: включается флагом isDomUiEnabled(); иначе работает Phaser-экран.
 import { ensureUiRoot } from './root.js';
 import { createPublisher } from './bridge.js';
 import { html, setHtml, renderKeyed } from './html.js';
 import { iconSlot, iconBox, button, card, panel } from './components.js';
 import { fitIcons } from './iconFit.js';
-import { MSG } from '../state/craftMessages.js';
+import { MSG, buyError, activateError } from '../state/craftMessages.js';
+import { buyItem, useItem, startCraft, claimCraft } from '../state.js';
+import { playSfx } from '../sfx.js';
 import { REG } from '../ui/theme.js';
 import './tokens.css';
 import './dom.css';
 
+const ERROR_MS = 2000; // как в Phaser (setItemRowError)
 const structure = () => html`
     <div class="dom-backdrop" data-dom-backdrop hidden></div>
     ${panel({
@@ -48,8 +49,8 @@ const itemRow = (it) => card({
             <div class="${it.hintKind === 'warn' ? 'dom-error' : 'dom-stock'}">${it.hint}</div>
         </div>
         <div class="dom-actions">
-            ${button({ label: `Купить ${it.priceText}`, disabled: it.buyBlocked })}
-            ${button({ label: 'Активировать', disabled: it.blocked })}
+            ${button({ label: `Купить ${it.priceText}`, dim: it.buyBlocked, act: 'buy', id: it.id })}
+            ${button({ label: 'Активировать', dim: it.blocked, act: 'use', id: it.id })}
         </div>`
 });
 
@@ -68,17 +69,24 @@ const recipeRow = (r) => card({
             <div class="dom-src">${r.source}</div>
             ${r.status ? html`<div class="dom-status">${r.status}</div>` : ''}
         </div>
-        ${button({ label: r.button, cls: 'dom-btn-craft', disabled: r.disabled && !r.ready })}`
+        ${button({
+            label: r.button,
+            cls: 'dom-btn-craft',
+            disabled: r.mine ? !r.ready : r.disabled,
+            act: r.mine ? 'claim' : 'craft',
+            id: r.id
+        })}`
 });
 
 const artifactCard = (a) => card({
     cls: `dom-art${a.owned ? ' is-owned' : ''}`,
     artId: a.id,
+    act: 'hint',
     children: html`
         ${iconSlot(a.icon)}
         <div class="dom-row-text">
             <div class="dom-name">${a.name}</div>
-            <div class="dom-line">${a.line}</div>
+            <div class="${a.hintActive ? 'dom-error' : 'dom-line'}">${a.hintActive ? a.hint : a.line}</div>
         </div>`
 });
 
@@ -93,19 +101,44 @@ export function createDomCraft(scene) {
     const itemsEl = root.querySelector('[data-dom-list="items"]');
     const recipesEl = root.querySelector('[data-dom-list="recipes"]');
     const artifactsEl = root.querySelector('[data-dom-list="artifacts"]');
+    const scrollEl = root.querySelector('[data-dom-scroll]');
     panelEl.hidden = true;
 
+    const transient = new Map(); // id строки -> { msg, until, kind }
+    let lastSnap = null;
+
+    const bossActive = () => !!scene.registry.get(REG.bossActive);
+
+    const itemById = (id) => (lastSnap ? lastSnap.items.find((i) => i.id === id) : null);
+    const artifactById = (id) => (lastSnap ? lastSnap.artifacts.find((a) => a.id === id) : null);
+
     const render = (snapshot) => {
+        lastSnap = snapshot;
+        const now = Date.now();
+        const active = (key) => {
+            const t = transient.get(key);
+            return t && t.until > now ? t : null;
+        };
+        const items = snapshot.items.map((item) => {
+            const err = active(`i:${item.id}`);
+            return err ? { ...item, hint: err.msg, hintKind: 'warn' } : item;
+        });
+        const artifacts = snapshot.artifacts.map((art) => {
+            const hint = active(`a:${art.id}`);
+            return hint ? { ...art, hintActive: true } : art;
+        });
         renderKeyed(chipsEl, snapshot.components, { keyOf: (c) => c.id, create: chip });
-        renderKeyed(itemsEl, snapshot.items, { keyOf: (i) => i.id, create: itemRow });
+        renderKeyed(itemsEl, items, { keyOf: (i) => i.id, create: itemRow });
         renderKeyed(recipesEl, snapshot.recipes, { keyOf: (r) => r.id, create: recipeRow });
-        renderKeyed(artifactsEl, snapshot.artifacts, { keyOf: (a) => a.id, create: artifactCard });
+        renderKeyed(artifactsEl, artifacts, { keyOf: (a) => a.id, create: artifactCard });
         fitIcons(root);
     };
 
-    const publisher = createPublisher(render, {
-        getContext: () => ({ bossActive: !!scene.registry.get(REG.bossActive) })
-    });
+    const publisher = createPublisher(render, { getContext: () => ({ bossActive: bossActive() }) });
+    const forceRefresh = () => {
+        publisher.reset();
+        publisher.tick(Date.now());
+    };
 
     const isOpen = () => !panelEl.hidden;
 
@@ -115,10 +148,9 @@ export function createDomCraft(scene) {
         panelEl.hidden = false;
         backdrop.hidden = false;
         scene._craftOpen = true;
-        publisher.reset();
-        publisher.tick(Date.now());
-        const scroll = root.querySelector('[data-dom-scroll]');
-        if (scroll) scroll.scrollTop = 0;
+        transient.clear();
+        if (scrollEl) scrollEl.scrollTop = 0;
+        forceRefresh();
         return true;
     };
 
@@ -127,6 +159,7 @@ export function createDomCraft(scene) {
         panelEl.hidden = true;
         backdrop.hidden = true;
         scene._craftOpen = false;
+        transient.clear();
         if (notify) scene.tryShowDailyModal?.();
     };
 
@@ -137,6 +170,53 @@ export function createDomCraft(scene) {
             || scene._mapOpen || scene._bossRewardOpen || scene._playerDownOpen;
         if (overlay) close({ notify: false });
     };
+
+    // Действия S1–S6: единственные точки записи — state.js; тексты — craftMessages.
+    const onAction = (act, id) => {
+        if (act === 'buy') {
+            if (buyItem(id)) {
+                playSfx(scene, 'purchase');
+            } else {
+                const item = itemById(id);
+                transient.set(`i:${id}`, { msg: buyError({ stock: item ? item.stock : 0, stackMax: item ? item.stackMax : 0 }), until: Date.now() + ERROR_MS });
+            }
+            forceRefresh();
+        } else if (act === 'use') {
+            if (useItem(id, bossActive())) {
+                playSfx(scene, 'purchase');
+            } else {
+                const item = itemById(id);
+                transient.set(`i:${id}`, {
+                    msg: activateError({ stock: item ? item.stock : 0, bossUse: item ? item.bossUse : false }),
+                    until: Date.now() + ERROR_MS
+                });
+            }
+            forceRefresh();
+        } else if (act === 'craft') {
+            if (startCraft(id)) {
+                // Мгновенный рецепт выдаётся сразу (как в Phaser: startCraft + claimCraft)
+                const recipe = lastSnap ? lastSnap.recipes.find((r) => r.id === id) : null;
+                if (recipe && recipe.instant) claimCraft();
+                playSfx(scene, 'purchase');
+            }
+            forceRefresh();
+        } else if (act === 'claim') {
+            if (claimCraft()) playSfx(scene, 'purchase');
+            forceRefresh();
+        } else if (act === 'hint') {
+            const art = artifactById(id);
+            if (art) {
+                transient.set(`a:${id}`, { hint: art.hint, until: Date.now() + ERROR_MS });
+                forceRefresh();
+            }
+        }
+    };
+
+    panelEl.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-act]');
+        if (!el || el.hasAttribute('disabled')) return;
+        onAction(el.dataset.act, el.dataset.id);
+    });
 
     closeBtn.addEventListener('click', () => close());
     backdrop.addEventListener('click', () => close());
@@ -150,7 +230,17 @@ export function createDomCraft(scene) {
         hideForOverlays,
         tick() {
             if (!isOpen()) return;
-            publisher.tick(Date.now());
+            // Истёкшие подсказки/ошибки требуют перерисовки даже без смены состояния
+            const now = Date.now();
+            let expired = false;
+            for (const [key, t] of transient) {
+                if (t.until <= now) {
+                    transient.delete(key);
+                    expired = true;
+                }
+            }
+            if (expired) forceRefresh();
+            publisher.tick(now);
         },
         destroy() {
             window.removeEventListener('keydown', onKey);

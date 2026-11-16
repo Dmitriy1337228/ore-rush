@@ -13,17 +13,22 @@ export const iconSlot = (icon) => html`
 export const iconBox = (icon, cls = '') => html`
     <span class="dom-icon ${cls}"><img src="${assetUrl(icon)}" alt=""></span>`;
 
-// Кнопка: 3 состояния в CSS (normal/hover/pressed), disabled — серая текстура.
-export const button = ({ label, disabled = false, cls = '', timer = null }) => html`
-    <button class="dom-btn ${cls}" type="button"
+// Кнопка: 3 состояния в CSS (normal/hover/pressed); dim — серая текстура без
+// блокировки нажатия (в Phaser так же: тап по «неактивной» показывает причину).
+export const button = ({ label, disabled = false, dim = false, cls = '', timer = null, act = null, id = null }) => html`
+    <button class="dom-btn ${dim ? 'is-disabled' : ''} ${cls}" type="button"
         ${disabled ? 'disabled' : ''}
-        ${timer === null ? '' : html`data-timer="${timer}"`}>${label}</button>`;
+        ${timer === null ? '' : html`data-timer="${timer}"`}
+        ${act === null ? '' : html`data-act="${act}"`}
+        ${id === null ? '' : html`data-id="${id}"`}>${label}</button>`;
 
 // Карточка: контейнер ряда/ячейки; класс задаёт тип (dom-row / dom-art).
-export const card = ({ cls = 'dom-row', rowId = null, artId = null, children }) => html`
+export const card = ({ cls = 'dom-row', rowId = null, artId = null, act = null, children }) => html`
     <article class="${cls}"
         ${rowId ? html`data-row="${rowId}"` : ''}
-        ${artId ? html`data-art="${artId}"` : ''}>${children}</article>`;
+        ${artId ? html`data-art="${artId}"` : ''}
+        ${act === null ? '' : html`data-act="${act}"`}
+        ${act === null ? '' : html`data-id="${artId || rowId || ''}"`}>${children}</article>`;
 
 // Врезка: заголовок, крестик, слот шапки (chips) и скролл-область.
 export const panel = ({ title, head = '', children }) => html`

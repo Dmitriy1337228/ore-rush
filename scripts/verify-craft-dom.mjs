@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { SAVE_KEY, SEEDS } from './lib/ui-matrix.mjs';
+import { MSG } from '../src/state/craftMessages.js';
 
 const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./lib/dev-server.cjs');
 
@@ -87,6 +88,31 @@ const check = (name, ok, details = {}) => {
         return m.gameState.ore;
     });
 
+    // Состояние доступно сценариям S1–S10; мутации — только в тесте.
+    await page.evaluate(async () => {
+        const url = performance.getEntriesByType('resource').map((r) => r.name).find((u) => u.includes('/src/state.js'));
+        window.__ST = await import(url);
+    });
+    const st = (code) => page.evaluate((c) => {
+        const m = window.__ST;
+        // eslint-disable-next-line no-eval
+        return eval(c);
+    }, code);
+    const wait = (ms = 350) => page.waitForTimeout(ms);
+    const rowText = (id) => page.locator(`[data-row="${id}"]`).innerText();
+    const clickIn = async (id, act) => {
+        await page.locator(`[data-row="${id}"] [data-act="${act}"]`).click();
+        await wait();
+    };
+    const openCraft = async () => {
+        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
+        await wait(250);
+    };
+    const closeCraft = async () => {
+        await page.evaluate(() => window.__DOM_CRAFT.close({ notify: false }));
+        await wait(150);
+    };
+
     // 1) открытие и содержимое
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
     await page.waitForTimeout(300);
@@ -150,6 +176,186 @@ const check = (name, ok, details = {}) => {
     const orePassAfter = await ore();
     const passPd = await page.evaluate(() => window.__CANVAS_PD);
     check('после закрытия клик по шахте добывает', orePassAfter > orePassBefore && passPd >= 3, { orePassBefore, orePassAfter, passPd });
+
+    // ---------- Сценарии приёмки S1–S10 (этап 3) ----------
+    await openCraft();
+
+    // S1. Покупка: нехватка руды / успех / полный стак
+    await st("m.gameState.ore = 0; m.gameState.items.item_bomb = 0;");
+    await wait();
+    await clickIn('item_bomb', 'buy');
+    let s1 = await st('({ ore: m.gameState.ore, stock: m.gameState.items.item_bomb || 0 })');
+    check('S1: нехватка руды', (await rowText('item_bomb')).includes(MSG.noOre) && s1.stock === 0 && s1.ore === 0, s1);
+
+    const price = await st("m.getItemPrice('item_bomb')");
+    await st('m.gameState.ore = 1e6; m.gameState.items.item_bomb = 0;');
+    await wait();
+    await clickIn('item_bomb', 'buy');
+    s1 = await st('({ ore: m.gameState.ore, stock: m.gameState.items.item_bomb || 0 })');
+    check('S1: покупка списывает цену', s1.stock === 1 && s1.ore === 1e6 - price, { price, ...s1 });
+
+    await st('m.gameState.items.item_bomb = 5;');
+    await wait();
+    await clickIn('item_bomb', 'buy');
+    s1 = await st('({ stock: m.gameState.items.item_bomb || 0 })');
+    check('S1: полный стак', (await rowText('item_bomb')).includes(MSG.stackFull) && s1.stock === 5, s1);
+
+    // S2. Активация: вне боя / успех / баф активен / нет предмета
+    await st('m.gameState.items.item_bomb = 2; m.gameState.bossBuffUntil = 0;');
+    await wait();
+    await clickIn('item_bomb', 'use');
+    check('S2: боевой предмет вне боя', (await rowText('item_bomb')).includes(MSG.bossOnly));
+
+    await st('m.gameState.items.item_belt = 2; m.gameState.miningBuffUntil = 0;');
+    await wait();
+    await clickIn('item_belt', 'use');
+    let s2 = await st('({ stock: m.gameState.items.item_belt, left: m.gameState.miningBuffUntil - Date.now() })');
+    check('S2: активация успешна', s2.stock === 1 && s2.left > 0, s2);
+
+    await clickIn('item_belt', 'use');
+    check('S2: баф активен', (await rowText('item_belt')).includes(MSG.buffActive));
+
+    await st('m.gameState.items.item_belt = 0; m.gameState.miningBuffUntil = 0;');
+    await wait();
+    await clickIn('item_belt', 'use');
+    check('S2: нет предмета', (await rowText('item_belt')).includes(MSG.noItem));
+
+    // S3. Мгновенный рецепт
+    await st('m.gameState.items.item_bomb = 0; m.gameState.components.scrap = 10; m.gameState.components.crystal = 100; m.gameState.components.core = 100;');
+    await wait();
+    await clickIn('r_bomb', 'craft');
+    let s3 = await st('({ scrap: m.gameState.components.scrap, bomb: m.gameState.items.item_bomb || 0 })');
+    check('S3: рецепт создан', s3.scrap === 6 && s3.bomb === 2, s3);
+
+    await st('m.gameState.components.scrap = 0;');
+    await wait();
+    const rBombDisabled = await page.locator('[data-row="r_bomb"] [data-act="craft"]').isDisabled();
+    check('S3: без компонентов кнопка неактивна', rBombDisabled);
+
+    // S4. Рецепт с таймером: запуск, занятость верстака, выдача
+    await st('m.gameState.components.crystal = 10; m.gameState.components.core = 10; m.gameState.components.essence = 10;');
+    await wait();
+    await clickIn('r_hardpick', 'craft');
+    let s4 = await st('({ id: m.gameState.crafting && m.gameState.crafting.recipeId })');
+    const hpLabel = await page.locator('[data-row="r_hardpick"] .dom-btn-craft').innerText();
+    check('S4: рецепт запущен', s4.id === 'r_hardpick' && /\d+:\d\d/.test(hpLabel), { ...s4, hpLabel });
+
+    const batteryDisabled = await page.locator('[data-row="r_battery"] [data-act="craft"]').isDisabled();
+    check('S4: верстак занят', batteryDisabled && (await rowText('r_battery')).includes(MSG.benchBusy));
+
+    await st('m.gameState.crafting.endsAt = Date.now() - 1000;');
+    await wait(500);
+    const claimLabel = await page.locator('[data-row="r_hardpick"] .dom-btn-craft').innerText();
+    const claimEnabled = !(await page.locator('[data-row="r_hardpick"] .dom-btn-craft').isDisabled());
+    check('S4: готово к выдаче', claimLabel === 'Забрать' && claimEnabled, { claimLabel });
+
+    await clickIn('r_hardpick', 'claim');
+    s4 = await st("({ crafting: m.gameState.crafting, owned: m.gameState.artifacts.includes('art_hardpick') })");
+    check('S4: артефакт забран', s4.crafting === null && s4.owned, s4);
+
+    // S5. Повторный артефактный крафт запрещён
+    const hpDisabled = await page.locator('[data-row="r_hardpick"] .dom-btn-craft').isDisabled();
+    check('S5: повторный крафт запрещён', hpDisabled && (await rowText('r_hardpick')).includes(MSG.owned));
+
+    // S6. Подсказка артефакта по тапу, исчезает через 2 с
+    await page.locator('[data-art="art_magnet_ring"]').click();
+    await wait(250);
+    check('S6: подсказка по тапу', (await page.locator('[data-art="art_magnet_ring"]').innerText()).includes('Получишь у босса'));
+    await wait(2300);
+    check('S6: подсказка исчезла', (await page.locator('[data-art="art_magnet_ring"]').innerText()).includes('Босс:'));
+
+    // S7. Ресайз/ориентация при открытой мастерской
+    await page.evaluate(() => { document.querySelector('[data-dom-scroll]').scrollTop = 200; });
+    await wait(200);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await wait(700);
+    let s7 = await page.evaluate(() => ({
+        open: window.__DOM_CRAFT.isOpen(),
+        cls: document.getElementById('ui-root').className,
+        top: document.querySelector('[data-dom-scroll]').scrollTop
+    }));
+    check('S7: портрет сохраняет скролл', s7.open && /portrait/.test(s7.cls) && s7.top > 0, s7);
+
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await wait(700);
+    s7 = await page.evaluate(() => ({
+        open: window.__DOM_CRAFT.isOpen(),
+        cls: document.getElementById('ui-root').className,
+        top: document.querySelector('[data-dom-scroll]').scrollTop
+    }));
+    check('S7: ландшафт сохраняет скролл', s7.open && /landscape/.test(s7.cls) && s7.top > 0, s7);
+
+    // S8. Закрытие во время тика: без ошибок и дублей
+    await st("m.gameState.crafting = { recipeId: 'r_battery', endsAt: Date.now() + 600000 };");
+    await wait();
+    await page.keyboard.press('Escape');
+    await wait(250);
+    const errsBefore = errors.length;
+    for (let i = 0; i < 5; i++) {
+        await openCraft();
+        await closeCraft();
+    }
+    const s8 = await page.evaluate(() => ({
+        panels: document.querySelectorAll('[data-dom-panel]').length,
+        roots: document.querySelectorAll('#ui-root').length
+    }));
+    check('S8: тик при закрытии без ошибок и дублей', s8.panels === 1 && s8.roots === 1 && errors.length === errsBefore, s8);
+
+    // S9. Бой при открытой мастерской: боевые предметы доступны, блокировка держится
+    await st('m.gameState.items.item_bomb = 3; m.gameState.bossBuffUntil = 0;');
+    await page.evaluate(() => window.__GAME.registry.set('bossActive', true));
+    await openCraft();
+    const bombDim = await page.locator('[data-row="item_bomb"] [data-act="use"]').evaluate((el) => el.classList.contains('is-disabled'));
+    await clickIn('item_bomb', 'use');
+    const s9 = await st('({ stock: m.gameState.items.item_bomb, left: m.gameState.bossBuffUntil - Date.now() })');
+    const lockedInCraft = await page.evaluate(() => !!window.__GAME.registry.get('blockLocked'));
+    check('S9: боевой предмет в бою доступен', !bombDim && s9.stock === 2 && s9.left > 0 && lockedInCraft, { ...s9, bombDim, lockedInCraft });
+    await page.evaluate(() => window.__GAME.registry.set('bossActive', false));
+
+    // S10. Паритет данных: DOM-ряды = снимок моста
+    await st('m.gameState.bossBuffUntil = 0; m.gameState.miningBuffUntil = 0; m.gameState.itemVeinUntil = 0;');
+    await wait(600);
+    const parity = await page.evaluate(async () => {
+        const bridge = await import(new URL('src/dom/bridge.js', document.baseURI).href);
+        const snap = bridge.snapshot({ bossActive: false });
+        const text = (el) => (el ? el.textContent.trim() : null);
+        const mism = [];
+        const counts = {
+            items: document.querySelectorAll('[data-dom-list="items"] [data-row]').length,
+            recipes: document.querySelectorAll('[data-dom-list="recipes"] [data-row]').length,
+            artifacts: document.querySelectorAll('[data-dom-list="artifacts"] [data-art]').length
+        };
+        if (counts.items !== snap.items.length) mism.push(`items ${counts.items}/${snap.items.length}`);
+        if (counts.recipes !== snap.recipes.length) mism.push(`recipes ${counts.recipes}/${snap.recipes.length}`);
+        if (counts.artifacts !== snap.artifacts.length) mism.push(`artifacts ${counts.artifacts}/${snap.artifacts.length}`);
+        for (const it of snap.items) {
+            const row = document.querySelector(`[data-row="${it.id}"]`);
+            if (!row) { mism.push(`нет ряда ${it.id}`); continue; }
+            if (text(row.querySelector('.dom-name')) !== it.name) mism.push(`имя ${it.id}`);
+            const hint = row.querySelector('.dom-error') || row.querySelector('.dom-stock');
+            if (text(hint) !== it.hint) mism.push(`hint ${it.id}: ${text(hint)} != ${it.hint}`);
+        }
+        for (const r of snap.recipes) {
+            const row = document.querySelector(`[data-row="${r.id}"]`);
+            if (!row) { mism.push(`нет рецепта ${r.id}`); continue; }
+            if (text(row.querySelector('.dom-name')) !== r.name) mism.push(`имя рецепта ${r.id}`);
+            const status = text(row.querySelector('.dom-status')) || '';
+            if (status !== r.status) mism.push(`статус ${r.id}: "${status}" != "${r.status}"`);
+            if (!(r.mine && !r.ready)) {
+                const lbl = text(row.querySelector('.dom-btn-craft'));
+                if (lbl !== r.button) mism.push(`кнопка ${r.id}: "${lbl}" != "${r.button}"`);
+            }
+        }
+        for (const a of snap.artifacts) {
+            const row = document.querySelector(`[data-art="${a.id}"]`);
+            if (!row) { mism.push(`нет артефакта ${a.id}`); continue; }
+            if (text(row.querySelector('.dom-name')) !== a.name) mism.push(`имя артефакта ${a.id}`);
+            if (text(row.querySelector('.dom-line') || row.querySelector('.dom-error')) !== a.line) mism.push(`строка ${a.id}`);
+        }
+        return { mism, counts };
+    });
+    check('S10: паритет DOM и данных', parity.mism.length === 0, parity);
+    await closeCraft();
 
     // 6) D3: каждый Phaser-оверлей закрывает DOM и виден сам
     const overlays = [

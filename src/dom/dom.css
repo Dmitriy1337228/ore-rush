@@ -306,6 +306,12 @@
     cursor: default;
 }
 
+/* Визуально «неактивная», но нажимаемая: тап показывает причину (как в Phaser) */
+.dom-btn.is-disabled {
+    border-image-source: url('../../assets/ui/buy_button_disabled_gray.png');
+    color: var(--color-muted);
+}
+
 /* ---------- Сетка артефактов ---------- */
 .dom-arts {
     display: grid;

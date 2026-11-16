@@ -89,7 +89,16 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps === undefined ? 1e-6 : eps);
                 itemIds: Object.keys(ui.craftItemRows),
                 recipeIds: Object.keys(ui.craftRecipeRows),
                 artIds: Object.keys(ui.craftArtCells),
-                texts: ui.craftContent.list.filter((o) => o.type === 'Text').map((o) => o.text),
+                // Тексты секций живут в контейнерах-заголовках — обходим рекурсивно
+                texts: (() => {
+                    const out = [];
+                    const walk = (o) => {
+                        if (o.list) o.list.forEach(walk);
+                        if (o.type === 'Text') out.push(o.text);
+                    };
+                    walk(ui.craftContent);
+                    return out;
+                })(),
                 view: { x: ui._craftView.x, y: ui._craftView.y, w: ui._craftView.w, h: ui._craftView.h },
                 scrollY: ui.craftCam.scrollY,
                 contentH: ui._craftContentH
@@ -195,9 +204,9 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps === undefined ? 1e-6 : eps);
             s.headerY + 12 <= s.view.y - 4, `headerBottom=${s.headerY + 12} viewTop=${s.view.y}`);
         const bombCell0 = await cellInfo('art_miner_totem');
         const hardCell0 = await cellInfo('art_hardpick');
-        check('A7: не-владелец — alpha 0.25 и строка-источник',
-            near(bombCell0.alpha, 0.25) && bombCell0.line === 'Босс: Медный страж'
-            && near(hardCell0.alpha, 0.25) && hardCell0.line === 'Крафт',
+        check('A7: не-владелец — alpha 0.5 и строка-источник',
+            near(bombCell0.alpha, 0.5) && bombCell0.line === 'Босс: Медный страж'
+            && near(hardCell0.alpha, 0.5) && hardCell0.line === 'Крафт',
             JSON.stringify({ bomb: bombCell0, hard: hardCell0 }));
 
         // B: крафт бомбы

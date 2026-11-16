@@ -28,6 +28,12 @@ const artifactLine = (def) => {
     return 'Скрафти: рецепт';
 };
 
+// Подсказка по тапу на артефакт (2 с): откуда взять.
+const artifactHint = (def) => {
+    if (def.source && def.source.startsWith('boss_')) return `Получишь у босса: ${bossName(def.source)}`;
+    return 'Скрафти: рецепт';
+};
+
 export function snapshot({ bossActive = false, now = Date.now() } = {}) {
     const components = COMPONENTS.map((c) => {
         const count = gameState.components[c.id] || 0;
@@ -87,13 +93,15 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
                 enough: (gameState.components[c] || 0) >= recipe.cost[c]
             })),
             source: `дроп: ${recipe.result.kind === 'item' ? 'компоненты боссов' : 'крафт'}`,
-            status, button, disabled, mine, ready
+            status, button, disabled, mine, ready,
+            // Мгновенный рецепт: Phaser после startCraft сразу зовёт claimCraft()
+            instant: recipe.craftMs === 0
         };
     });
 
     const artifacts = ARTIFACTS.map((def) => {
         const owned = gameState.artifacts.includes(def.id);
-        return { id: def.id, icon: def.id, name: def.name, owned, line: owned ? def.desc : artifactLine(def) };
+        return { id: def.id, icon: def.id, name: def.name, owned, line: owned ? def.desc : artifactLine(def), hint: artifactHint(def) };
     });
 
     return {
