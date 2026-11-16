@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
     gameState, TIERS, UPGRADES, getUpgradeDef, getUpgradeLevel, getUpgradeCost, isMaxed, isUpgradeAvailable, canBuy, buyBulk, getAffordableBulk, getBulkCost, isUpgradeVisible, canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice, saveGame, fmt
 } from '../../state.js';
-import { addNine, addImg, addImgC, makeLabel, fitFontSize, fitOneLine, setHitRect, setHitWorld } from '../../ui/uiKit.js';
+import { addNine, addImg, addImgC, makeLabel, fitFontSize, fitOneLine, setHitRect, setHitWorld, tapSlopPx } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
 import { VIEWPORT, ROW_H, ROW_GAP, TABS, BUY_AMOUNTS, ROW } from '../../ui/listGeometry.js';
 import { TEXT, DEPTH, TEX, HIT, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
@@ -89,11 +89,12 @@ export const panelMethods = {
             this._dragStartY = p.y;
             this._dragStartScroll = this.scrollPos;
             this._listDragging = false;
+            this._listTapSlop = tapSlopPx(this, this.L.W);
         });
         this.input.on('pointermove', (p) => {
             if (p.id !== this._dragId || !p.isDown) return;
             const delta = this._dragStartY - p.y;
-            if (!this._listDragging && Math.abs(delta) > 6) this._listDragging = true;
+            if (!this._listDragging && Math.abs(delta) > this._listTapSlop) this._listDragging = true;
             if (this._listDragging) {
                 this.scrollPos = Phaser.Math.Clamp(this._dragStartScroll + delta, 0, this.maxScroll);
                 this.updateScroll();

@@ -147,6 +147,16 @@ export function setHitWorld(obj, w, h) {
     return obj.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
 }
 
+// Допуск тапа до классификации как драг, в игровых px: ~9 CSS px дрожания
+// пальца на любом экране (на FIT 0.5 телефона это 18 игровых px — прежний
+// порог 6 (=3 CSS px) глотал половину тапов по кнопкам списков на телефоне).
+// baseW — ширина игровой сетки (L.W), scale берётся из ScaleManager.
+export function tapSlopPx(scene, baseW) {
+    const parent = scene.scale ? scene.scale.parentSize : null;
+    const fit = parent && parent.width ? Math.max(0.35, parent.width / baseW) : 1;
+    return Math.max(6, Math.round(9 / fit));
+}
+
 export function makeLabel(scene, x, y, text, size, color, style = {}) {
     // Monocraft — пиксельный шрифт без жирных начертаний: синтетический bold его «замыливает»
     const rest = { ...style };

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
     gameState, TIERS, BOSSES, getBossRecord
 } from '../../state.js';
-import { addImgC, makeLabel, fitFontSize, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
+import { addImgC, makeLabel, fitFontSize, addScreenDim, DIM_ALPHA, addModalContainer, tapSlopPx } from '../../ui/uiKit.js';
 import { MAP_NODE_H, MAP_HEAD, MAP_TAIL, MAP_R_TIER, MAP_R_BOSS } from '../../ui/listGeometry.js';
 import { createPanel } from '../../ui/panel.js';
 import { TEXT, DEPTH, REG, FONT_SIZE } from '../../ui/theme.js';
@@ -394,11 +394,12 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
             this._mapDragStartY = p.y;
             this._mapDragStartScroll = this.mapCam.scrollY;
             this._mapDragging = false;
+            this._mapTapSlop = tapSlopPx(this, this.L.W);
         };
         this.input.on('pointermove', (p) => {
             if (p.id !== this._mapDragId || !p.isDown) return;
             const delta = this._mapDragStartY - p.y;
-            if (!this._mapDragging && Math.abs(delta) > 6) this._mapDragging = true;
+            if (!this._mapDragging && Math.abs(delta) > this._mapTapSlop) this._mapDragging = true;
             if (this._mapDragging) {
                 this.mapCam.scrollY = Phaser.Math.Clamp(this._mapDragStartScroll + delta, 0, this._mapMaxScroll);
             }

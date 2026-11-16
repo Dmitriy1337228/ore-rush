@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import {
     gameState, fmt, BOSSES, COMPONENTS, ARTIFACTS, ITEMS, CRAFT_RECIPES, useItem, canCraft, startCraft, canClaimCraft, claimCraft, getItemPrice, buyItem
 } from '../../state.js';
-import { FONT, addImg, makeLabel, fitFontSize, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
+import { FONT, addImg, makeLabel, fitFontSize, setHitRect, addScreenDim, DIM_ALPHA, addModalContainer, tapSlopPx } from '../../ui/uiKit.js';
 import { createPanel } from '../../ui/panel.js';
 import { addButton } from '../../ui/button.js';
 import { rowRight } from '../../ui/stack.js';
@@ -786,6 +786,9 @@ export const craftScreenMethods = {
             return p.x >= v.x - 6 && p.x <= v.x + v.w + 6
                 && p.y >= v.y - 6 && p.y <= v.y + v.h + 6;
         };
+        // Допуск тапа: ~9 CSS px дрожания пальца в игровых px (порог 6 игровых
+        // = 3 CSS px на телефоне — половина тапов по кнопкам глоталась)
+        this._craftTapSlop = tapSlopPx(this, this.L.W);
         // Вызывается из хендлера dim (dim гасит scene-level down)
         this.startCraftDrag = (p) => {
             if (!this._craftOpen || !inCraftZone(p)) return;
@@ -797,7 +800,7 @@ export const craftScreenMethods = {
         this.input.on('pointermove', (p) => {
             if (p.id !== this._craftDragId || !p.isDown) return;
             const delta = this._craftDragStartY - p.y;
-            if (!this._craftDragging && Math.abs(delta) > 6) this._craftDragging = true;
+            if (!this._craftDragging && Math.abs(delta) > this._craftTapSlop) this._craftDragging = true;
             if (this._craftDragging) {
                 this.craftCam.scrollY = Phaser.Math.Clamp(this._craftDragStartScroll + delta, 0, this._craftMaxScroll);
             }
