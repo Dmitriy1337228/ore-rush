@@ -43,6 +43,8 @@ const VIEWPORTS = [
 ];
 
 const OUT = path.resolve(opt('out', 'shots/ui-check-dom'));
+// Размеченные PNG кладём по общему протоколу осмотра — рядом с Phaser-аудитом
+const SHOT_DIR = path.resolve('shots/ui-check');
 const BASE = process.env.BASE_URL || 'http://localhost:5174';
 const URL = `${BASE}/?dom=1`;
 const vpFilter = opt('viewports') ? opt('viewports').split(',') : null;
@@ -65,6 +67,7 @@ const RECT_TOLERANCE_CSS = 1;
 const SCROLL_STEP_SHARE = 0.75;
 
 fs.mkdirSync(OUT, { recursive: true });
+fs.mkdirSync(SHOT_DIR, { recursive: true });
 const server = await ensureDevServer();
 process.on('exit', () => releaseDevServer(server));
 const browser = await chromium.launch();
@@ -86,6 +89,7 @@ const auditFn = ({ rules, tolerance }) => {
         if (d > tolerance) {
             result.violations.push({
                 rule: 'ROOT-RECT', severity: 'error',
+                rect: [rootRect.left, rootRect.top, rootRect.width, rootRect.height],
                 msg: `#ui-root.${k} отличается от канваса на ${d.toFixed(1)} CSS px (${rootRect[k].toFixed(1)} vs ${canvasRect[k].toFixed(1)})`
             });
         }
@@ -168,6 +172,7 @@ const auditFn = ({ rules, tolerance }) => {
             if (ox > tolerance && oy > tolerance) {
                 result.violations.push({
                     rule: 'OVERLAP', severity: 'error',
+                    rect: [Math.max(ra.left, rb.left), Math.max(ra.top, rb.top), ox, oy],
                     msg: `"${a.el.className}" (${Math.round(ra.left)},${Math.round(ra.top)}) x "${b.el.className}" (${Math.round(rb.left)},${Math.round(rb.top)}) ox=${Math.round(ox)} oy=${Math.round(oy)}`
                 });
             }
@@ -178,7 +183,7 @@ const auditFn = ({ rules, tolerance }) => {
     for (const { el } of blocks) {
         const rr = r(el);
         if (rr.left < panelRect.left - tolerance || rr.right > panelRect.right + tolerance) {
-            result.violations.push({ rule: 'BOUNDS', severity: 'error', msg: `"${el.className}" выходит за врезку по горизонтали (${Math.round(rr.left)}..${Math.round(rr.right)} vs ${Math.round(panelRect.left)}..${Math.round(panelRect.right)})` });
+            result.violations.push({ rule: 'BOUNDS', severity: 'error', rect: [rr.left, rr.top, rr.width, rr.height], msg: `"${el.className}" выходит за врезку по горизонтали (${Math.round(rr.left)}..${Math.round(rr.right)} vs ${Math.round(panelRect.left)}..${Math.round(panelRect.right)})` });
         }
     }
 
@@ -188,9 +193,11 @@ const auditFn = ({ rules, tolerance }) => {
         const size = parseFloat(style.fontSize);
         if (!Number.isFinite(size) || size <= 0) continue;
         if (size < rules.minFontCss.error) {
-            result.violations.push({ rule: 'MIN-FONT', severity: 'error', msg: `"${el.className}": кегль ${size}px < ${rules.minFontCss.error}` });
+            const rr = r(el);
+            result.violations.push({ rule: 'MIN-FONT', severity: 'error', rect: [rr.left, rr.top, rr.width, rr.height], msg: `"${el.className}": кегль ${size}px < ${rules.minFontCss.error}` });
         } else if (size < rules.minFontCss.warn) {
-            result.violations.push({ rule: 'MIN-FONT', severity: 'warn', msg: `"${el.className}": кегль ${size}px < ${rules.minFontCss.warn}` });
+            const rr = r(el);
+            result.violations.push({ rule: 'MIN-FONT', severity: 'warn', rect: [rr.left, rr.top, rr.width, rr.height], msg: `"${el.className}": кегль ${size}px < ${rules.minFontCss.warn}` });
         }
     }
 
@@ -201,7 +208,7 @@ const auditFn = ({ rules, tolerance }) => {
         if (!el.getClientRects().length || !visibleEl(el)) continue;
         const rr = r(el);
         if (rr.width < touchMin - tolerance || rr.height < touchMin - tolerance) {
-            result.violations.push({ rule: 'TOUCH', severity: 'warn', msg: `"${el.className}" ${Math.round(rr.width)}x${Math.round(rr.height)} < ${touchMin} CSS px` });
+            result.violations.push({ rule: 'TOUCH', severity: 'warn', rect: [rr.left, rr.top, rr.width, rr.height], msg: `"${el.className}" ${Math.round(rr.width)}x${Math.round(rr.height)} < ${touchMin} CSS px` });
         }
     }
 
@@ -214,7 +221,7 @@ const auditFn = ({ rules, tolerance }) => {
             if (!tr.width || !tr.height) continue;
             const pad = Math.min(tr.left - hr.left, hr.right - tr.right);
             if (pad < rules.minPadding.panel - tolerance) {
-                result.violations.push({ rule: 'PADDING', severity: 'warn', msg: `"${text.className}" отступ ${pad.toFixed(1)} < ${rules.minPadding.panel} CSS px` });
+                result.violations.push({ rule: 'PADDING', severity: 'warn', rect: [tr.left, tr.top, tr.width, tr.height], msg: `"${text.className}" отступ ${pad.toFixed(1)} < ${rules.minPadding.panel} CSS px` });
             }
         }
     }
@@ -290,11 +297,6 @@ for (const vp of viewports) {
             violations.push(...res.violations.map((v) => ({ ...v, step: `#${i}@${y}` })));
             res.rows.forEach((row) => seenRows.add(row));
         }
-        if (ENABLE_SHOTS) {
-            await page.evaluate(() => { document.querySelector('[data-dom-scroll]').scrollTop = 0; });
-            await page.waitForTimeout(100);
-            await page.screenshot({ path: path.join(OUT, `${vp.id}.png`) });
-        }
     } catch (e) {
         failures = String((e && e.message) || e).split('\n')[0];
     }
@@ -311,6 +313,30 @@ for (const vp of viewports) {
             rule: 'ROWS', severity: 'error', step: 'scroll',
             msg: `проверено ${seenRows.size} из ${EXPECTED_ROWS} рядов; не попали в проверенную зону: ${missingRows.join(', ')}`
         });
+    }
+
+    // Размеченный PNG по протоколу shots/ui-check: рамки нарушений поверх экрана
+    if (ENABLE_SHOTS && !failures) {
+        const marks = unique.filter((v) => v.rect).map((v) => ({ rect: v.rect, sev: v.severity }));
+        await page.evaluate((items) => {
+            document.querySelectorAll('.ui-check-mark').forEach((n) => n.remove());
+            if (!items.length) return;
+            const layer = document.createElement('div');
+            layer.className = 'ui-check-mark';
+            layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647';
+            for (const it of items) {
+                const box = document.createElement('div');
+                const [x, y, w, h] = it.rect;
+                box.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;`
+                    + `outline:2px solid ${it.sev === 'error' ? '#ff3b30' : '#ffcc00'};outline-offset:1px;`;
+                layer.appendChild(box);
+            }
+            document.body.appendChild(layer);
+        }, marks);
+        await page.evaluate(() => { document.querySelector('[data-dom-scroll]').scrollTop = 0; });
+        await page.waitForTimeout(120);
+        await page.screenshot({ path: path.join(SHOT_DIR, `${vp.id}__craft-dom.png`) });
+        await page.evaluate(() => document.querySelectorAll('.ui-check-mark').forEach((n) => n.remove()));
     }
     const errors = unique.filter((v) => v.severity === 'error');
     const warns = unique.filter((v) => v.severity === 'warn');

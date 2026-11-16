@@ -128,6 +128,12 @@ async function runCombo(vp, state) {
         opened.errors = errors;
         await state.setup(opened.page);
         const file = path.join(OUT, `${vp.id}__${state.id}.png`);
+        // DOM-состояния: display-list аудит Phaser не применим (под панелью — затемнённый
+        // HUD, его кегли — известный долг Phaser-аудита). Вёрстку DOM меряет ui:check:dom.
+        if (state.dom) {
+            await opened.page.screenshot({ path: file });
+            return { comboKey, vp: vp.id, state: state.id, file: path.relative(process.cwd(), file), audit: { skipped: 'dom-state' }, violations: [], errors };
+        }
         const { audit, violations } = await auditAndShoot(opened.page, file, comboKey);
         return { comboKey, vp: vp.id, state: state.id, file: path.relative(process.cwd(), file), audit, violations, errors };
     } catch (e) {

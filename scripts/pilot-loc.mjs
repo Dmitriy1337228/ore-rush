@@ -24,7 +24,14 @@ const DOM_PATHS = [
     'src/dom',                       // слой: root, bridge, компоненты, экран, CSS
     'scripts/gen-dom-tokens.mjs',    // генератор токенов (часть слоя)
     'src/dom/tokens.css',            // сгенерированные токены
-    'scripts/verify-craft-dom.cjs'    // специфичные тесты экрана (S1–S10)
+    'scripts/verify-craft-dom.mjs'    // специфичные тесты экрана (S1–S10)
+];
+
+// Инфраструктура проверок DOM-экрана (DoD этапа 5): аудит + CSS-гейт + golden-обвязка.
+const CHECK_PATHS = [
+    'scripts/ui-check-dom.mjs',
+    'scripts/ui-tokens-css.mjs',
+    'scripts/dom-golden.mjs'
 ];
 
 const COMMENT = [
@@ -73,19 +80,29 @@ function measure(files) {
 }
 
 const baselineFiles = BASELINE_FILES.filter((f) => fs.existsSync(path.join(ROOT, f)));
+// Стенды/тулинг пилота не входят в «экран целиком»: это не код экрана, а разовые
+// инструменты (автономные HTML-снимки, фикстуры этапа 1).
+const SKIP_FILES = new Set(['fixtures.js', 'fixtureMarkup.js', 'fixtureApp.js', 'lab.js']);
+const SKIP_SCRIPTS = [/^scripts[\\/]build-dom-.*\.mjs$/];
 const domFiles = [];
 for (const p of DOM_PATHS) walk(p, domFiles);
 // Windows: walk() отдаёт пути с '\', явный список — с '/'; приводим к одному виду.
-const domUnique = Array.from(new Set(domFiles.map((f) => f.replace(/\\/g, '/'))));
+const domUnique = Array.from(new Set(domFiles.map((f) => f.replace(/\\/g, '/'))))
+    .filter((f) => !SKIP_FILES.has(path.basename(f)))
+    .filter((f) => !SKIP_SCRIPTS.some((re) => re.test(f)));
 
 const baseline = measure(baselineFiles);
 const dom = measure(domUnique);
+const checkFiles = [];
+for (const p of CHECK_PATHS) walk(p, checkFiles);
+const checks = measure(Array.from(new Set(checkFiles.map((f) => f.replace(/\\/g, '/')))));
 
 const json = {
     createdAt: new Date().toISOString(),
     method: 'code = непустые строки без чисто-комментарных',
     baseline: { files: baselineFiles, ...baseline },
-    dom: { files: domUnique, ...dom }
+    dom: { files: domUnique, ...dom },
+    checks: { files: checkFiles, ...checks }
 };
 
 if (process.argv.includes('--json')) {
@@ -97,7 +114,8 @@ if (process.argv.includes('--json')) {
     console.log('|---|---|---|---|');
     console.log(row('Phaser (baseline)', baseline));
     console.log(row('DOM (пилот)', dom));
-    for (const [label, m] of [['Phaser (baseline)', baseline], ['DOM (пилот)', dom]]) {
+    console.log(row('Проверки DOM (аудит+CSS-гейт+golden)', checks));
+    for (const [label, m] of [['Phaser (baseline)', baseline], ['DOM (пилот)', dom], ['Проверки DOM', checks]]) {
         if (!m.perFile.length) continue;
         console.log(`\n${label}:`);
         for (const f of m.perFile) console.log(`  ${String(f.code).padStart(5)}  ${f.file}`);

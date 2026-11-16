@@ -13,7 +13,9 @@
         "ui:check:quick": "node scripts/ui-check.mjs --quick",
         "ui:tokens": "node scripts/ui-tokens.mjs",
         "dom:tokens": "node scripts/gen-dom-tokens.mjs",
-        "ui:check:dom": "node scripts/ui-check-dom.mjs"
+        "ui:check:dom": "node scripts/ui-check-dom.mjs",
+        "ui:tokens:css": "node scripts/ui-tokens-css.mjs",
+        "test:dom-golden": "node scripts/dom-golden.mjs"
     },
     "keywords": [],
     "author": "",
