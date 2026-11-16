@@ -60,6 +60,19 @@
     display: none;
 }
 
+/* Затемнение под врезкой: клик по фону закрывает экран и блокирует игру
+   (пока экран открыт, события не доходят до канваса — DoD 2.3). */
+.dom-backdrop {
+    position: absolute;
+    inset: 0;
+    pointer-events: auto;
+    background: rgb(0 0 0 / var(--dom-dim));
+}
+
+.dom-backdrop[hidden] {
+    display: none;
+}
+
 .dom-title {
     margin: 0;
     padding: 0 var(--touch-min);
@@ -249,6 +262,11 @@
 .dom-pair .dom-icon {
     width: var(--dom-pair-icon);
     height: var(--dom-pair-icon);
+}
+
+/* Не хватает компонента — пара краснеет (как в Phaser) */
+.dom-pair.dom-missing {
+    color: var(--color-bad);
 }
 
 /* ---------- Кнопки (3 состояния) ---------- */

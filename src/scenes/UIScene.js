@@ -148,6 +148,18 @@ export class UIScene extends Phaser.Scene {
         }
 
         this.refreshUi();
+
+        // Пилот DOM (D5): ?dom=1/localStorage.domUi=1 в DEV-сборке монтирует
+        // DOM-экран мастерской и переключает openCraft() на него. В проде вся
+        // ветка вырезается сборщиком; Phaser-мастерская остаётся дефолтом.
+        if (import.meta.env.DEV) {
+            import('../dom/flag.js')
+                .then(({ isDomUiEnabled }) => (isDomUiEnabled() ? import('../dom/craftScreen.js') : null))
+                .then((mod) => {
+                    if (mod) this.domCraft = mod.createDomCraft(this);
+                })
+                .catch(() => { /* стенд/флаг недоступны — остаёмся на Phaser */ });
+        }
     }
 
     // Единственный владелец registry 'blockLocked' и видимости listContent:
@@ -199,15 +211,17 @@ export class UIScene extends Phaser.Scene {
             this.mapContent.setVisible(this._mapOpen);
         }
         if (this.craftRoot) {
-            this.craftRoot.setVisible(this._craftOpen);
-            this.craftContent.setVisible(this._craftOpen);
+            // В DOM-режиме Phaser-мастерская не рисуется вовсе (D5)
+            const phaserCraft = this._craftOpen && !this.domCraft;
+            this.craftRoot.setVisible(phaserCraft);
+            this.craftContent.setVisible(phaserCraft);
         }
     }
 
     refreshUi() {
         this.updateBlockLock();
         this.refreshMapNodes();
-        if (this._craftOpen) this.refreshCraftUi();
+        if (this._craftOpen && !this.domCraft) this.refreshCraftUi();
         this.refreshHud();
         this.refreshUnlockButton();
         this.refreshTabs();
@@ -216,6 +230,11 @@ export class UIScene extends Phaser.Scene {
     }
 
     update() {
+        // D3: Phaser-оверлей закрывает DOM-панель; снимок публикуется не чаще 150 мс
+        if (this.domCraft) {
+            this.domCraft.hideForOverlays();
+            this.domCraft.tick();
+        }
         this.stepTutorial();
         this.refreshUi();
     }

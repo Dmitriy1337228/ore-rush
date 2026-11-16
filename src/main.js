@@ -5,17 +5,6 @@ import { UIScene } from './scenes/UIScene.js';
 import { YandexSDK } from './sdk/yandex.js';
 import { baseForOrientation } from './layout.js';
 
-// Флаг переключения реализации (D5): ?dom=1 (query) или localStorage.domUi=1.
-// Значение живёт только в dev-ветке boot(); в проде DOM-слой не монтируется.
-const domUiEnabled = () => {
-    try {
-        const q = new URLSearchParams(window.location.search).get('dom');
-        return q === '1' || localStorage.getItem('domUi') === '1';
-    } catch (e) {
-        return false;
-    }
-};
-
 // Инициализация SDK Яндекса (этап 2): если скрипт SDK подключён в index.html —
 // инициализируемся до старта игры, иначе игра стартует сразу.
 // Шрифт Inter ждём до старта, чтобы Phaser Text не отрисовал фолбэк на первом кадре.
@@ -59,11 +48,8 @@ const boot = () => {
         import('./dev/DevPanel.js').then(m => m.initDevPanel(game));
         // Аудит вёрстки: window.__uiAudit(), F8 — наложение нарушений, F9 — репорт (PNG+JSON)
         import('./dev/uiAudit.js').then(m => m.installUiAuditTools(game));
-        // Пилот DOM (D5): ?dom=1 или localStorage.domUi=1 монтирует DOM-слой.
-        // На этапе 1 это фикстурная мастерская; на этапе 2 флаг переключит openCraft().
-        if (domUiEnabled()) {
-            import('./dom/fixtureApp.js').then(m => m.mountFixtureCraft(game));
-        }
+        // Пилот DOM (D5): экран мастерской монтирует UIScene по флагу (?dom=1),
+        // фикстурный стенд остаётся отдельной страницей /dom-lab.html.
     }
 };
 

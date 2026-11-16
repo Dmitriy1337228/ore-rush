@@ -44,6 +44,8 @@ const DOM_EXTRA = [
     ['--dom-art-cols', '2'],
     // Слой DOM над канвасом: Phaser-канвас в потоке без z-index, DOM — поверх
     ['--dom-z', '20'],
+    // Затемнение под открытым DOM-экраном (Phaser DIM_ALPHA.screen = 0.6)
+    ['--dom-dim', '0.6'],
     // Межстрочный интервал Monocraft (в Phaser — ONE_LINE_HEIGHT_FACTOR 1.55,
     // в CSS безразмерная единица допустима)
     ['--dom-line', '1.35'],

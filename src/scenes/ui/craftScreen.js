@@ -8,6 +8,7 @@ import { addButton } from '../../ui/button.js';
 import { rowRight } from '../../ui/stack.js';
 import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE, CARD } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
+import { MSG, buyError, activateError, itemStockHint, recipeStatus } from '../../state/craftMessages.js';
 
 export const craftScreenMethods = {
     buildCraftScreen() {
@@ -257,7 +258,7 @@ export const craftScreenMethods = {
                 if (buyItem(def.id)) {
                     playSfx(this, 'purchase');
                 } else {
-                    this.setItemRowError(def, (gameState.items[def.id] || 0) >= def.stackMax ? 'стак полон' : 'не хватает руды');
+                    this.setItemRowError(def, buyError({ stock: gameState.items[def.id] || 0, stackMax: def.stackMax }));
                 }
                 this.refreshUi();
             };
@@ -289,7 +290,7 @@ export const craftScreenMethods = {
         }
 
         y += SP.sectionGap;
-        addHeader('Рецепты', 'крафт нельзя отменить');
+        addHeader('Рецепты', MSG.cancelWarning);
         for (const recipe of CRAFT_RECIPES) {
             const rc = this.add.container(0, flowMode ? 0 : y);
             const card = flowMode ? addRowCard(this, w, SP.recipeCardH) : addImg(this, 0, 0, 'upgrade_row_card_1', w, SP.recipeCardH);
@@ -630,8 +631,7 @@ export const craftScreenMethods = {
     // строка-подсказка в ряду на 2с (R5: флоаты под модалкой нечитаемы).
     activateItemRow(def) {
         if (!useItem(def.id, false)) {
-            const stock = (gameState.items[def.id] || 0) <= 0;
-            this.setItemRowError(def, stock ? 'нет предмета' : (def.bossUse ? 'только в бою' : 'баф ещё активен'));
+            this.setItemRowError(def, activateError({ stock: gameState.items[def.id] || 0, bossUse: def.bossUse }));
         }
         this.refreshUi();
     },
@@ -677,10 +677,10 @@ export const craftScreenMethods = {
             } else if (active) {
                 hintTxt = `в запасе: ${stock} · ${eff.bossMult ? `бомба ${this._mmss(buffLeft)}` : eff.veinForce ? `жила ${this._mmss(buffLeft)}` : `x${slotMult} ${this._mmss(buffLeft)}`}`;
             } else if (stock <= 0) {
-                hintTxt = 'нет предмета';
+                hintTxt = itemStockHint({ stock, bossUse: def.bossUse });
                 hintColor = TEXT.warn;
             } else if (def.bossUse) {
-                hintTxt = `в запасе: ${stock} · только в бою`;
+                hintTxt = itemStockHint({ stock, bossUse: def.bossUse });
                 hintColor = TEXT.warn;
             }
             const hintKey = `${hintTxt}|${hintColor}`;
@@ -730,13 +730,9 @@ export const craftScreenMethods = {
             } else if (owned || busy || !canCraft(id)) {
                 texture = TEX.buttonDisabled;
                 color = TEXT.muted;
-                if (owned) statusTxt = 'уже в коллекции';
-                else if (busy) statusTxt = 'верстак занят';
-                else if (row.recipe.result.kind === 'item') {
-                    const space = row.resultDef.stackMax - (gameState.items[row.resultDef.id] || 0);
-                    const compsOk = Object.keys(row.recipe.cost).every((c) => (gameState.components[c] || 0) >= row.recipe.cost[c]);
-                    if (space < row.recipe.result.n && compsOk) statusTxt = 'стак полон';
-                }
+                const space = row.resultDef ? row.resultDef.stackMax - (gameState.items[row.resultDef.id] || 0) : 0;
+                const compsOk = Object.keys(row.recipe.cost).every((c) => (gameState.components[c] || 0) >= row.recipe.cost[c]);
+                statusTxt = recipeStatus({ mine, owned, busy, space, resultN: row.recipe.result.n, compsOk });
             }
             let costPart = '';
             for (const pair of row.costPairs) {
@@ -852,6 +848,11 @@ export const craftScreenMethods = {
     openCraft() {
         if (this._craftOpen) return;
         if (this.registry.get(REG.blockLocked)) return;
+        // D5: с флагом открывается DOM-экран (bridge.js), Phaser-каркас не трогаем
+        if (this.domCraft) {
+            this.domCraft.open();
+            return;
+        }
         this._craftOpen = true;
         this.craftDim.setVisible(true);
         this.craftRoot.setVisible(true);
@@ -860,6 +861,11 @@ export const craftScreenMethods = {
     },
 
     closeCraft() {
+        // Закрытие из DOM-режима: флаг _craftOpen и очередь награды держит DOM-контроллер
+        if (this.domCraft && this.domCraft.isOpen()) {
+            this.domCraft.close();
+            return;
+        }
         this.craftDim.setVisible(false);
         this.craftRoot.setVisible(false);
         this.craftCam.setVisible(false);

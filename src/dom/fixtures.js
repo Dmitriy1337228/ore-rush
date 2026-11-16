@@ -3,6 +3,8 @@
 // значения скопированы из каталогов для реалистичных текстов (S-сценарии — этап 3).
 // assetUrl: в dev и prod ассеты лежат по относительному пути assets/ui/<key>.png.
 
+import { MSG } from '../state/craftMessages.js';
+
 export const assetUrl = (key) => `assets/ui/${key}.png`;
 
 export const FIXTURES = {
@@ -17,7 +19,7 @@ export const FIXTURES = {
         {
             id: 'item_bomb', icon: 'item_bomb', name: 'Шахтёрская бомба',
             desc: 'урон боссу ×2 на 30 сек', stock: 2, price: '43.8К',
-            error: 'только в бою', action: 'Активировать'
+            error: MSG.bossOnly, action: 'Активировать'
         },
         {
             id: 'item_belt', icon: 'item_belt', name: 'Динамитный пояс',
@@ -32,7 +34,7 @@ export const FIXTURES = {
         {
             id: 'item_ration', icon: 'item_ration', name: 'Сухпаёк',
             desc: 'мгновенно 60 сек дохода', stock: 10, price: '21.9К',
-            error: 'стак полон', action: 'Активировать'
+            error: MSG.stackFull, action: 'Активировать'
         }
     ],
     recipes: [

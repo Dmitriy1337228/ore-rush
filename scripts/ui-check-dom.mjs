@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { UI_RULES } from '../src/dev/uiAudit.js';
-import { FIXTURES } from '../src/dom/fixtures.js';
+import { ITEMS, CRAFT_RECIPES, ARTIFACTS } from '../src/state.js';
 import { SAVE_KEY, SEEDS } from './lib/ui-matrix.mjs';
 
 const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./lib/dev-server.cjs');
@@ -48,12 +48,13 @@ const URL = `${BASE}/?dom=1`;
 const vpFilter = opt('viewports') ? opt('viewports').split(',') : null;
 const viewports = VIEWPORTS.filter((v) => (vpFilter ? vpFilter.includes(v.id) : true));
 const ENABLE_SHOTS = !flag('no-shots');
-// Сколько строк обязано быть проверено (фикстуры: items + recipes + artifacts).
-const EXPECTED_ROWS = FIXTURES.items.length + FIXTURES.recipes.length + FIXTURES.artifacts.length;
+// Сколько строк обязано быть проверено: боевой экран (7 предметов + 10 рецептов
+// + 9 артефактов) из каталогов state.js.
+const EXPECTED_ROWS = ITEMS.length + CRAFT_RECIPES.length + ARTIFACTS.length;
 const EXPECTED_ROW_IDS = [
-    ...FIXTURES.items.map((x) => x.id),
-    ...FIXTURES.recipes.map((x) => x.id),
-    ...FIXTURES.artifacts.map((x) => x.id)
+    ...ITEMS.map((x) => x.id),
+    ...CRAFT_RECIPES.map((x) => x.id),
+    ...ARTIFACTS.map((x) => x.id)
 ];
 
 // Допуск на субпиксельные округления при измерении прямоугольников.
@@ -200,9 +201,28 @@ for (const vp of viewports) {
     await page.waitForFunction(() => {
         const g = window.__GAME;
         const ui = g && g.scene.getScene('UIScene');
-        return !!(ui && ui.L && window.__DOM_UI && document.fonts.status === 'loaded');
+        return !!(ui && ui.L && window.__DOM_CRAFT && document.fonts.status === 'loaded');
     }, null, { timeout: 30000 });
-    await page.waitForTimeout(600);
+    await page.waitForTimeout(1250); // отложенная ежедневная награда (delayedCall 900 мс)
+    await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        ui._pendingDaily = null;
+        ui.registry.set('dailyInfo', null);
+        if (ui._dailyOpen) ui.hideDailyModal();
+    });
+    await page.waitForTimeout(350); // updateBlockLock снимет блокировку в следующем кадре
+    await page.evaluate(async () => {
+        const url = performance.getEntriesByType('resource').map((r) => r.name).find((u) => u.includes('/src/state.js'));
+        const m = await import(url);
+        // Как состояние craft в ui-matrix: компоненты и предметы выданы,
+        // пассив = 0 (руда не меняется во время аудита).
+        for (const id of Object.keys(m.gameState.levels)) m.gameState.levels[id] = 0;
+        for (const c of m.COMPONENTS) m.gameState.components[c.id] = 100;
+        for (const i of m.ITEMS) m.gameState.items[i.id] = 2;
+        window.__GAME.scene.getScene('UIScene').openCraft();
+    });
+    await page.waitForFunction(() => window.__DOM_CRAFT.isOpen(), null, { timeout: 10000 });
+    await page.waitForTimeout(300);
 
     const violations = [];
     const seenRows = new Set();

@@ -52,6 +52,7 @@ function contentBox(img) {
 }
 
 function fitOne(img) {
+    if (img.dataset.fit === '1') return; // idempotent: повторный рендер не переобмеряет
     const box = img.parentElement;
     const bw = box.clientWidth;
     const bh = box.clientHeight;
@@ -63,6 +64,7 @@ function fitOne(img) {
     img.style.height = `${img.naturalHeight * scale}px`;
     img.style.left = `${(bw - content.w * scale) / 2 - content.x * scale}px`;
     img.style.top = `${(bh - content.h * scale) / 2 - content.y * scale}px`;
+    img.dataset.fit = '1';
 }
 
 // Вызывать после вставки разметки: дожидается загрузки каждого img.

@@ -36,6 +36,40 @@ export function setHtml(el, safe) {
     return el;
 }
 
+// HTML-строка -> узел (первый элемент).
+export function toNode(safe) {
+    const tpl = document.createElement('template');
+    tpl.innerHTML = String(safe).trim();
+    return tpl.content.firstElementChild;
+}
+
+// Отрисовка списка: пересоздаём ТОЛЬКО ряды, чьи данные изменились (сигнатура),
+// сохраняя порядок и остальные узлы. Для экранов без локального состояния
+// (мастерская: ряд целиком зависит от снимка) это дешевле точечных сеттеров.
+export function renderKeyed(container, items, { keyOf, sigOf, create }) {
+    const existing = new Map(Array.from(container.children, (el) => [el.dataset.key, el]));
+    const keep = new Set();
+    items.forEach((item, index) => {
+        const key = keyOf(item);
+        keep.add(key);
+        const sig = sigOf ? sigOf(item) : JSON.stringify(item);
+        let el = existing.get(key);
+        if (!el || el.dataset.sig !== sig) {
+            const built = create(item);
+            const next = built instanceof Element ? built : toNode(built);
+            next.dataset.key = key;
+            next.dataset.sig = sig;
+            if (el) el.replaceWith(next);
+            el = next;
+        }
+        const at = container.children[index];
+        if (at !== el) container.insertBefore(el, at || null);
+    });
+    for (const [key, el] of existing) {
+        if (!keep.has(key)) el.remove();
+    }
+}
+
 // Диф списка по ключам: существующие элементы переиспользуются, новые создаются,
 // лишние удаляются; порядок приводится к порядку items. Обновление элемента —
 // только если сигнатура (sig) изменилась.

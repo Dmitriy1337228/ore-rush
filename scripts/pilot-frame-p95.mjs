@@ -53,9 +53,18 @@ try {
     }, null, { timeout: 30000 });
     await page.waitForTimeout(500);
     if (flag('dom')) {
-        // DOM-версия (этап 1): фикстурная панель уже смонтирована флагом ?dom=1.
-        await page.waitForFunction(() => !!window.__DOM_UI, null, { timeout: 30000 });
-        await page.evaluate(() => window.__DOM_UI.show());
+        // DOM-версия (этап 2): боевой экран монтирует UIScene по флагу ?dom=1.
+        await page.waitForFunction(() => !!window.__DOM_CRAFT, null, { timeout: 30000 });
+        await page.waitForTimeout(1250); // отложенная ежедневная награда
+        await page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            ui._pendingDaily = null;
+            ui.registry.set('dailyInfo', null);
+            if (ui._dailyOpen) ui.hideDailyModal();
+        });
+        await page.waitForTimeout(350);
+        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
+        await page.waitForFunction(() => window.__DOM_CRAFT.isOpen(), null, { timeout: 10000 });
     } else {
         await craftState.setup(page);
     }
