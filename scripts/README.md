@@ -29,9 +29,9 @@
 | `scripts/verify-craft-dom.mjs` | Приёмка DOM-мастерской: открытие/закрытие, блокировка, мост, слои | `verify:craft-dom` | verify | да | активен |
 | `scripts/verify-daily.mjs` | Ежедневные награды: цикл, серия, бафы, DevPanel, модалка | `verify:daily` | verify | да | активен |
 | `scripts/verify-devpanel.cjs` | DevPanel: активация, ресурсы, тиры, офлайн-симуляция, сброс | `verify:devpanel` | verify | да | активен |
-| `scripts/verify-economy.mjs` | Экономика (node): 12 тиров, цена спуска, гейты, миграции v2→v4 | `verify:economy` | verify | нет | кандидат в архив (этап 2) |
+| `scripts/archive/verify-economy.mjs` | Экономика (node): 12 тиров, цена спуска, гейты, миграции v2→v4 | — | архив | нет | архив: полностью покрыт unit-тестами `state_economy`/`state_persist`; удалить после квартальной ревизии, если не понадобился |
 | `scripts/verify-map.cjs` | Карта шахты: круги статусов, тропа, лок/разлок, спуск, очередь daily | `verify:map` | verify | да | активен |
-| `scripts/verify-mine-meta.mjs` | Мета (node): каталоги, сейв v5, миграции, бафы, крафт, престиж | `verify:mine-meta` | verify | нет | кандидат в архив (этап 2) |
+| `scripts/archive/verify-mine-meta.mjs` | Мета (node): каталоги, сейв v5, миграции, бафы, крафт, престиж | — | архив | нет | архив: покрыт unit-тестами `state_meta`; удалить после квартальной ревизии, если не понадобился |
 | `scripts/verify-mutations.cjs` | Мутации блока: таймер, радуга/заморозка/взрыв/заряд, DevPanel | `verify:mutations` | verify | да | активен |
 | `scripts/verify-offline.cjs` | Реальный возврат во вкладку (visibilitychange), офлайн-награда | `verify:offline` | verify | да | активен |
 | `scripts/verify-rebalance.cjs` | Пересчёт цен в UI без перезагрузки сцены | `verify:rebalance` | verify | да | активен |
@@ -41,8 +41,8 @@
 | `scripts/pilot-frame-p95.mjs` | p95 времени кадра при открытой мастерской (Phaser и DOM) | `metrics:p95` | метрика | да | активен |
 | `scripts/pilot-loc.mjs` | Метрика «экран целиком»: строки кода по явному списку файлов | `metrics:loc` | метрика | нет | активен |
 | `scripts/pilot-layers-check.mjs` | Порядок слоёв DOM и Phaser (DOM над канвасом) | `metrics:layers` | метрика | да | активен |
-| `scripts/pilot-dom-input-check.mjs` | Ввод через DOM-слой: клик в шахту, клик по панели, драг | `metrics:input` | метрика | да | кандидат в архив (этап 2) |
-| `scripts/pilot-dpr-shots.mjs` | Шрифт/рамки на DPR 1…3 (CSS px не «плывут») | `metrics:dpr` | метрика | да | кандидат в архив (этап 2) |
+| `scripts/archive/pilot-dom-input-check.mjs` | Ввод через DOM-слой: клик в шахту, клик по панели, драг | — | архив | да | архив: пилот завершён (G3 = go), блокировка под панелью покрыта `verify:craft-dom`; удалить после квартальной ревизии |
+| `scripts/archive/pilot-dpr-shots.mjs` | Шрифт/рамки на DPR 1…3 (CSS px не «плывут») | — | архив | да | архив: разовый замер пилота, ассертов нет; вернуть из истории при смене шрифтов |
 | `scripts/pilot-baseline-shots.mjs` | Чистые скриншоты мастерской на наборе вьюпортов → `docs/pilot-baseline/` | `metrics:baseline-shots` | метрика | да | активен |
 | `scripts/build-dom-lab.mjs` | Автономный стенд DOM-панели (один HTML, без сети) | `stand:dom-lab` | стенд | нет | активен |
 | `scripts/build-dom-craft-snapshot.mjs` | Автономный снимок DOM-мастерской для телефона | `stand:craft-phone` | стенд | да | активен |
