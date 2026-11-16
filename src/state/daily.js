@@ -58,7 +58,7 @@ export function claimDailyReward() {
     if (!canClaimDaily()) return null;
     const today = getDailyDay();
     const gap = today - gameState.lastDailyDay;
-    gameState.dailyStreak = (gameState.lastDailyDay > 0 && gap === 1) ? gameState.dailyStreak + 1 : 1;
+    gameState.dailyStreak = gameState.lastDailyDay > 0 && gap === 1 ? gameState.dailyStreak + 1 : 1;
     gameState.lastDailyDay = today;
     const reward = DAILY_REWARDS[(gameState.dailyStreak - 1) % DAILY_REWARDS.length];
     const extra = applyDailyReward(reward);

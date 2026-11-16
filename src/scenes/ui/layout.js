@@ -1,7 +1,5 @@
 import Phaser from 'phaser';
-import {
-    gameState, TIERS, getNextTier
-} from '../../state.js';
+import { gameState, TIERS, getNextTier } from '../../state.js';
 import { VIEWPORT } from '../../ui/listGeometry.js';
 import { REG } from '../../ui/theme.js';
 import { computeLayout } from '../../layout.js';
@@ -18,17 +16,24 @@ export const layoutMethods = {
         // Боевой вариант портрета: панель НЕ прыгает (py как вне боя); во врезке
         // без хрома, док — Карта/Крафт на всю ширину. Спуск прячется также,
         // когда нового тира нет вовсе (док: Карта/Крафт 306)
-        const dockWide = L.portrait ? (bossNow || !getNextTier()) : bossNow;
+        const dockWide = L.portrait ? bossNow || !getNextTier() : bossNow;
         if (L.portrait && dockWide) {
             L.viewport.y = L.panel.py + L.panel.recessTop + 10;
             L.viewport.h = L.panel.recessBot - L.panel.recessTop - 10 - L.dock.h - L.dock.gap;
             L.hud.mapBtn = { x: L.dock.x, y: L.dock.y, w: L.dock.bossSideW, h: L.dock.h };
-            L.hud.craftBtn = { x: L.dock.x + L.dock.bossSideW + L.dock.gap, y: L.dock.y, w: L.dock.bossSideW, h: L.dock.h };
+            L.hud.craftBtn = {
+                x: L.dock.x + L.dock.bossSideW + L.dock.gap,
+                y: L.dock.y,
+                w: L.dock.bossSideW,
+                h: L.dock.h
+            };
         }
         Object.assign(VIEWPORT, L.viewport);
         // Портретный масштаб кеглей: 390px -> 1.8, 720px -> 1.0 (FIT-даунскейл
         // съедает мелкий шрифт на телефонах — замечание игрока R7-R9)
-        this._adaptiveScale = L.portrait ? Phaser.Math.Clamp(720 / (this.scale.displaySize.width || 720), 1.0, 1.8) : 1.0;
+        this._adaptiveScale = L.portrait
+            ? Phaser.Math.Clamp(720 / (this.scale.displaySize.width || 720), 1.0, 1.8)
+            : 1.0;
         const s = this._adaptiveScale;
         const tierIcon = TIERS[gameState.tier].iconKey;
 
@@ -60,10 +65,19 @@ export const layoutMethods = {
         if (hide === this._panelHidden) return;
         this._panelHidden = hide;
         const els = [
-            this.panelImg, this.panelTitle, this.starsText, this.viewportBg,
-            this.tierLabel, this.amountC, this.hint,
-            this.mapBtn, this.mapLbl, this.craftBtn, this.craftLbl,
-            this.unlockBtn, this.unlockText
+            this.panelImg,
+            this.panelTitle,
+            this.starsText,
+            this.viewportBg,
+            this.tierLabel,
+            this.amountC,
+            this.hint,
+            this.mapBtn,
+            this.mapLbl,
+            this.craftBtn,
+            this.craftLbl,
+            this.unlockBtn,
+            this.unlockText
         ];
         for (const t of this.tabBtns) els.push(t.c);
         if (!hide) {

@@ -1,16 +1,21 @@
 import Phaser from 'phaser';
+import { gameState, TIERS, BOSSES, getBossRecord } from '../../state.js';
 import {
-    gameState, TIERS, BOSSES, getBossRecord
-} from '../../state.js';
-import { addImgC, makeLabel, fitFontSize, addScreenDim, DIM_ALPHA, addModalContainer, tapSlopPx } from '../../ui/uiKit.js';
+    addImgC,
+    makeLabel,
+    fitFontSize,
+    addScreenDim,
+    DIM_ALPHA,
+    addModalContainer,
+    tapSlopPx
+} from '../../ui/uiKit.js';
 import { MAP_NODE_H, MAP_HEAD, MAP_TAIL, MAP_R_TIER, MAP_R_BOSS } from '../../ui/listGeometry.js';
 import { createPanel } from '../../ui/panel.js';
 import { TEXT, DEPTH, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 
 export const mapScreenMethods = {
     buildMapScreen() {
-        this.mapDim = addScreenDim(this, DIM_ALPHA.screen)
-            .setDepth(DEPTH.screenDim).setVisible(false).setInteractive();
+        this.mapDim = addScreenDim(this, DIM_ALPHA.screen).setDepth(DEPTH.screenDim).setVisible(false).setInteractive();
         // Тап по карте приходит ИМЕННО сюда: stopPropagation dim'а гасит и
         // scene-level pointerdown, поэтому старт драга (и skip анимации) — здесь
         this.mapDim.on('pointerdown', (pointer, lx, ly, event) => {
@@ -20,7 +25,11 @@ export const mapScreenMethods = {
 
         this.mapRoot = addModalContainer(this).setDepth(DEPTH.screen).setVisible(false);
         this.mapWin = createPanel(this, {
-            w: 760, h: 620, title: 'Карта шахты', titleY: -246, titleSize: FONT_SIZE.display,
+            w: 760,
+            h: 620,
+            title: 'Карта шахты',
+            titleY: -246,
+            titleSize: FONT_SIZE.display,
             close: { x: 320, y: -238, onClose: () => this.closeMap() }
         });
         this.mapPanel = this.mapWin.panel;
@@ -63,8 +72,12 @@ export const mapScreenMethods = {
         this.input.on('wheel', (pointer, over, dx, dy) => {
             if (!this._mapOpen) return;
             const v = this._mapView;
-            if (pointer.x >= v.x - 10 && pointer.x <= v.x + v.w + 10
-                && pointer.y >= v.y - 10 && pointer.y <= v.y + v.h + 10) {
+            if (
+                pointer.x >= v.x - 10 &&
+                pointer.x <= v.x + v.w + 10 &&
+                pointer.y >= v.y - 10 &&
+                pointer.y <= v.y + v.h + 10
+            ) {
                 this.mapCam.scrollY = Phaser.Math.Clamp(this.mapCam.scrollY + dy * 0.5, 0, this._mapMaxScroll);
             }
         });
@@ -76,7 +89,7 @@ export const mapScreenMethods = {
     // при смене s (applyLayout), статусы (обводка/пульс) обновляет refreshMapNodes
     buildMapNodes() {
         const s = this._adaptiveScale || 1;
-        for (const node of (this.mapNodes || [])) {
+        for (const node of this.mapNodes || []) {
             if (node.pulse) {
                 node.pulse.stop();
                 node.pulse = null;
@@ -107,13 +120,28 @@ export const mapScreenMethods = {
         const icon = this.add.image(0, r, TIERS[t].iconKey);
         this.placeIcon(icon, TIERS[t].iconKey, 0, r, Math.round(30 * Math.min(s, 1.6)));
         const nameY = r * 2 + Math.round(8 * s);
-const name = makeLabel(this, 0, nameY, `${t + 1}. ${TIERS[t].name}`, FONT_SIZE.captionLg, TEXT.white).setOrigin(0.5, 0);
-fitFontSize(name, FONT_SIZE.captionLg * s, (this._mapView ? this._mapView.w : 680) - 24, 10);
-// Портрет: обводка — серое по камню на телефоне читалось плохо (ревью)
-if (this.L.portrait) name.setStroke('#14161a', 4);
+        const name = makeLabel(this, 0, nameY, `${t + 1}. ${TIERS[t].name}`, FONT_SIZE.captionLg, TEXT.white).setOrigin(
+            0.5,
+            0
+        );
+        fitFontSize(name, FONT_SIZE.captionLg * s, (this._mapView ? this._mapView.w : 680) - 24, 10);
+        // Портрет: обводка — серое по камню на телефоне читалось плохо (ревью)
+        if (this.L.portrait) name.setStroke('#14161a', 4);
         root.add([ring, ringLine, icon, name]);
         this.mapContent.add(root);
-        return { kind: 'tier', tier: t, root, ring, ringLine, icon, name, pulse: null, ringPulse: null, _state: null, _r: r };
+        return {
+            kind: 'tier',
+            tier: t,
+            root,
+            ring,
+            ringLine,
+            icon,
+            name,
+            pulse: null,
+            ringPulse: null,
+            _state: null,
+            _r: r
+        };
     },
 
     buildMapBossNode(boss, idx) {
@@ -127,14 +155,33 @@ if (this.L.portrait) name.setStroke('#14161a', 4);
         this.placeIcon(icon, boss.icon, 0, r, Math.round(40 * Math.min(s, 1.6)));
         const nameY = r * 2 + Math.round(7 * s);
         const maxW = (this._mapView ? this._mapView.w : 680) - 24;
-const name = makeLabel(this, 0, nameY, boss.name, FONT_SIZE.label, TEXT.white).setOrigin(0.5, 0);
-fitFontSize(name, FONT_SIZE.label * s, maxW, 10);
-const status = makeLabel(this, 0, nameY + Math.round(18 * s), '', FONT_SIZE.caption, TEXT.dim).setOrigin(0.5, 0);
-fitFontSize(status, FONT_SIZE.caption * s, maxW, 10);
-if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a', 4); }
+        const name = makeLabel(this, 0, nameY, boss.name, FONT_SIZE.label, TEXT.white).setOrigin(0.5, 0);
+        fitFontSize(name, FONT_SIZE.label * s, maxW, 10);
+        const status = makeLabel(this, 0, nameY + Math.round(18 * s), '', FONT_SIZE.caption, TEXT.dim).setOrigin(
+            0.5,
+            0
+        );
+        fitFontSize(status, FONT_SIZE.caption * s, maxW, 10);
+        if (this.L.portrait) {
+            name.setStroke('#14161a', 4);
+            status.setStroke('#14161a', 4);
+        }
         root.add([ring, ringLine, icon, name, status]);
         this.mapContent.add(root);
-        const node = { kind: 'boss', boss, root, ring, ringLine, icon, name, status, pulse: null, ringPulse: null, _state: null, _r: r };
+        const node = {
+            kind: 'boss',
+            boss,
+            root,
+            ring,
+            ringLine,
+            icon,
+            name,
+            status,
+            pulse: null,
+            ringPulse: null,
+            _state: null,
+            _r: r
+        };
         // Кружок перехватывает тап у dim (mapCam выше в hit-test) — драг стартуем
         // и с него, иначе жест, начатый на кружке, не скроллит
         ring.on('pointerdown', (p) => this.startMapDrag(p));
@@ -162,8 +209,7 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
         let changed = false;
         for (const node of this.mapNodes) {
             if (node.kind === 'tier') {
-                const key = gameState.tier > node.tier ? 'passed'
-                    : gameState.tier === node.tier ? 'current' : 'future';
+                const key = gameState.tier > node.tier ? 'passed' : gameState.tier === node.tier ? 'current' : 'future';
                 if (node._state === key) continue;
                 node._state = key;
                 changed = true;
@@ -174,7 +220,13 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
                 node.icon.setTint(key === 'passed' ? 0x909090 : key === 'future' ? 0x787878 : 0xffffff);
                 node.name.setColor(key === 'passed' ? TEXT.dim : key === 'future' ? TEXT.dim : TEXT.white);
                 if (key === 'current' && !node.pulse) {
-                    node.pulse = this.tweens.add({ targets: node.root, alpha: { from: 1, to: 0.55 }, duration: 500, yoyo: true, repeat: -1 });
+                    node.pulse = this.tweens.add({
+                        targets: node.root,
+                        alpha: { from: 1, to: 0.55 },
+                        duration: 500,
+                        yoyo: true,
+                        repeat: -1
+                    });
                 } else if (key !== 'current' && node.pulse) {
                     node.pulse.stop();
                     node.pulse = null;
@@ -198,13 +250,29 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
                 } else {
                     node.status.setText(`нужен: шахта ${b.tier + 1}`).setColor(TEXT.dim);
                 }
-                const ringColor = key.startsWith('defeated') ? 0x7ee787 : key.startsWith('available') ? 0xffd75e : 0x6a6a6a;
+                const ringColor = key.startsWith('defeated')
+                    ? 0x7ee787
+                    : key.startsWith('available')
+                      ? 0xffd75e
+                      : 0x6a6a6a;
                 this._drawMapRing(node, ringColor);
                 node.icon.setTint(key.startsWith('locked') ? 0x787878 : 0xffffff);
                 node.name.setColor(key.startsWith('locked') ? TEXT.dim : TEXT.white);
                 if (key.startsWith('available') && !node.pulse) {
-                    node.pulse = this.tweens.add({ targets: node.status, alpha: { from: 1, to: 0.45 }, duration: 450, yoyo: true, repeat: -1 });
-                    node.ringPulse = this.tweens.add({ targets: node.ringLine, alpha: { from: 1, to: 0.45 }, duration: 450, yoyo: true, repeat: -1 });
+                    node.pulse = this.tweens.add({
+                        targets: node.status,
+                        alpha: { from: 1, to: 0.45 },
+                        duration: 450,
+                        yoyo: true,
+                        repeat: -1
+                    });
+                    node.ringPulse = this.tweens.add({
+                        targets: node.ringLine,
+                        alpha: { from: 1, to: 0.45 },
+                        duration: 450,
+                        yoyo: true,
+                        repeat: -1
+                    });
                 } else if (!key.startsWith('available') && node.pulse) {
                     node.pulse.stop();
                     node.pulse = null;
@@ -279,11 +347,21 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
         // -10*s: центрирование кружка current-тира ставило подпись предыдущего
         // узла в 4px от верхней кромки вьюпорта — впритык, выглядит срезанной
         // (скриншот карты). Камера чуть выше центра даёт подписи воздух
-        return Phaser.Math.Clamp(this._mapNodeY(idx) - this._mapView.h / 2 - Math.round(10 * (this._adaptiveScale || 1)), 0, this._mapMaxScroll);
+        return Phaser.Math.Clamp(
+            this._mapNodeY(idx) - this._mapView.h / 2 - Math.round(10 * (this._adaptiveScale || 1)),
+            0,
+            this._mapMaxScroll
+        );
     },
 
     _placeMapMiner(idx) {
-        this.placeIcon(this.mapMiner, 'miner_portrait', this._nodeCX + Math.round(-150 * (this._adaptiveScale || 1)), this._mapNodeY(idx), 36);
+        this.placeIcon(
+            this.mapMiner,
+            'miner_portrait',
+            this._nodeCX + Math.round(-150 * (this._adaptiveScale || 1)),
+            this._mapNodeY(idx),
+            36
+        );
         this.mapMiner.setVisible(true);
     },
 
@@ -345,11 +423,19 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
         const idx = this._findNodeIndex(tierIndex);
         const node = this.mapNodes && this.mapNodes[idx];
         const k = Math.min(this._adaptiveScale || 1, 1.6);
-        const cy = node
-            ? node.root.y - Math.round(20 * k)
-            : -this._mapHalfH + 118;
-        const plate = this.add.rectangle(this._nodeCX || 340, cy, 10, Math.round(34 * k), 0x1c1620, 0.85).setStrokeStyle(1, 0x555860, 1);
-        const banner = makeLabel(this, this._nodeCX || 340, cy, `Уровень ${tierIndex + 1}: ${TIERS[tierIndex].name}!`, Math.round(FONT_SIZE.cardTitle * k), TEXT.cream, { align: 'center' }).setOrigin(0.5);
+        const cy = node ? node.root.y - Math.round(20 * k) : -this._mapHalfH + 118;
+        const plate = this.add
+            .rectangle(this._nodeCX || 340, cy, 10, Math.round(34 * k), 0x1c1620, 0.85)
+            .setStrokeStyle(1, 0x555860, 1);
+        const banner = makeLabel(
+            this,
+            this._nodeCX || 340,
+            cy,
+            `Уровень ${tierIndex + 1}: ${TIERS[tierIndex].name}!`,
+            Math.round(FONT_SIZE.cardTitle * k),
+            TEXT.cream,
+            { align: 'center' }
+        ).setOrigin(0.5);
         plate.setSize(banner.width + 36, Math.round(34 * k));
         plate.setAlpha(0);
         banner.setAlpha(0);
@@ -382,8 +468,7 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
     setupMapDrag() {
         const inMapZone = (p) => {
             const v = this._mapView;
-            return p.x >= v.x - 6 && p.x <= v.x + v.w + 6
-                && p.y >= v.y - 6 && p.y <= v.y + v.h + 6;
+            return p.x >= v.x - 6 && p.x <= v.x + v.w + 6 && p.y >= v.y - 6 && p.y <= v.y + v.h + 6;
         };
         // Вызывается из хендлеров dim и слотов боссов (dim гасит scene-level down).
         // Тап/драг по слоту во время анимации спуска тоже завершает её (skip)
@@ -407,7 +492,9 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
         const endDrag = (p) => {
             if (p && p.id !== this._mapDragId) return;
             this._mapDragId = null;
-            this.time.delayedCall(0, () => { this._mapDragging = false; });
+            this.time.delayedCall(0, () => {
+                this._mapDragging = false;
+            });
         };
         this.input.on('pointerup', endDrag);
         this.input.on('pointerupoutside', endDrag);

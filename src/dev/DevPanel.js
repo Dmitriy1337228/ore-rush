@@ -5,9 +5,23 @@
 // сборщиком вместе с этим чанком. Код панели не попадает к игрокам.
 
 import {
-    gameState, UPGRADES, TIERS, getUpgradeDef, addOre, saveGame, computeOfflineReward, resetGame,
-    forceNextTier, MUTATIONS, LAST_EXIT_KEY, LEGACY_LAST_EXIT_KEY, getDailyDay,
-    BOSSES, COMPONENTS, ARTIFACTS, ITEMS
+    gameState,
+    UPGRADES,
+    TIERS,
+    getUpgradeDef,
+    addOre,
+    saveGame,
+    computeOfflineReward,
+    resetGame,
+    forceNextTier,
+    MUTATIONS,
+    LAST_EXIT_KEY,
+    LEGACY_LAST_EXIT_KEY,
+    getDailyDay,
+    BOSSES,
+    COMPONENTS,
+    ARTIFACTS,
+    ITEMS
 } from '../state.js';
 import { MOCK_STATS_KEY } from '../sdk-stub.js';
 
@@ -221,7 +235,9 @@ function fullReset() {
         localStorage.removeItem(LAST_EXIT_KEY);
         localStorage.removeItem(LEGACY_LAST_EXIT_KEY); // фолбэк старого имени игры — тоже чистим
         localStorage.removeItem(MOCK_STATS_KEY);
-    } catch (e) { /* приватный режим — сейв уже сброшен */ }
+    } catch (e) {
+        /* приватный режим — сейв уже сброшен */
+    }
     if (ui) {
         ui.hideOfflineModal();
         ui.hideDailyModal(); // окно дневной награды тоже закрывается
@@ -301,11 +317,13 @@ function buildPanel(game) {
     grid.appendChild(makeButton('Артефакты: все', grantAllArtifacts));
     grid.appendChild(makeButton('Верстак: сброс', resetCrafting));
     // Каска: +5 уровней живучести (тест боссовых ударов без фарма)
-    grid.appendChild(makeButton('Каска +5', () => {
-        gameState.levels.helmet = Math.min(25, (gameState.levels.helmet || 0) + 5);
-        log(`Каска: уровень ${gameState.levels.helmet}`);
-        saveGame();
-    }));
+    grid.appendChild(
+        makeButton('Каска +5', () => {
+            gameState.levels.helmet = Math.min(25, (gameState.levels.helmet || 0) + 5);
+            log(`Каска: уровень ${gameState.levels.helmet}`);
+            saveGame();
+        })
+    );
     for (const item of [
         { id: 'item_bomb', label: 'Бомба' },
         { id: 'item_belt', label: 'Пояс' },

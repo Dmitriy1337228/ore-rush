@@ -30,11 +30,16 @@ try {
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
-    await page.addInitScript((s) => {
-        for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
-    }, { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' });
+    await page.addInitScript(
+        (s) => {
+            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+        },
+        { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
+    );
     await page.goto(`${BASE}/?dom=1`, { waitUntil: 'load' });
-    await page.waitForFunction(() => !!window.__DOM_UI && window.__GAME.scene.getScene('UIScene').L, null, { timeout: 30000 });
+    await page.waitForFunction(() => !!window.__DOM_UI && window.__GAME.scene.getScene('UIScene').L, null, {
+        timeout: 30000
+    });
     await page.waitForTimeout(600);
     await page.screenshot({ path: path.join(OUT, 'layers-before.png') });
 
@@ -47,7 +52,14 @@ try {
         // Объекты алертов: dim (depth 50) и панель (51)
         const alerts = ui.children.list
             .filter((o) => o.visible && o.depth >= 50)
-            .map((o) => ({ type: o.type, depth: o.depth, x: Math.round(o.x), y: Math.round(o.y), w: Math.round(o.width || 0), h: Math.round(o.height || 0) }));
+            .map((o) => ({
+                type: o.type,
+                depth: o.depth,
+                x: Math.round(o.x),
+                y: Math.round(o.y),
+                w: Math.round(o.width || 0),
+                h: Math.round(o.height || 0)
+            }));
         return { daily, alerts };
     });
     await page.waitForTimeout(400);
@@ -58,7 +70,10 @@ try {
         const panel = document.querySelector('[data-dom-panel]');
         const canvas = document.querySelector('#game canvas');
         const cs = getComputedStyle(root);
-        const r = (el) => { const b = el.getBoundingClientRect(); return { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height) }; };
+        const r = (el) => {
+            const b = el.getBoundingClientRect();
+            return { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height) };
+        };
         const cx = Math.round(window.innerWidth / 2);
         const cy = Math.round(window.innerHeight / 2);
         const top = document.elementFromPoint(cx, cy);
@@ -86,7 +101,13 @@ try {
             present: true,
             z: getComputedStyle(el).zIndex,
             rect: { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height) },
-            elementAtDevPanel: top ? (top.closest('#dev-admin-panel') ? 'devpanel' : (top.closest('#ui-root') ? 'dom' : 'other')) : 'none'
+            elementAtDevPanel: top
+                ? top.closest('#dev-admin-panel')
+                    ? 'devpanel'
+                    : top.closest('#ui-root')
+                      ? 'dom'
+                      : 'other'
+                : 'none'
         };
     });
     await page.screenshot({ path: path.join(OUT, 'layers-devpanel.png') });

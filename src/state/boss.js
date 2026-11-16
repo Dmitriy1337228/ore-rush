@@ -3,8 +3,16 @@
 import { gameState } from './gameState.js';
 import { TIER_INCOME_MULT } from './catalog/tiers.js';
 import {
-    BOSSES, BOSS_HP_BASE, BOSS_BOUNTY_SECONDS, BOSS_ATTACK_HP_FRACTION, BOSS_SPEED_TIERS, BOSS_SPEED_SLOW,
-    BOSS_RECORD_MIN_SEC, BOSS_RECORD_MAX_SEC, PLAYER_BASE_HP, PLAYER_HP_PER_HELMET
+    BOSSES,
+    BOSS_HP_BASE,
+    BOSS_BOUNTY_SECONDS,
+    BOSS_ATTACK_HP_FRACTION,
+    BOSS_SPEED_TIERS,
+    BOSS_SPEED_SLOW,
+    BOSS_RECORD_MIN_SEC,
+    BOSS_RECORD_MAX_SEC,
+    PLAYER_BASE_HP,
+    PLAYER_HP_PER_HELMET
 } from './catalog/meta.js';
 import { getBossDef } from './catalog/lookup.js';
 import { SECOND_MS } from './constants.js';

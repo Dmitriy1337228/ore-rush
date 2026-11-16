@@ -1,9 +1,7 @@
 // Ролл клика: крит, золотая жила, синергия, мутации блока и бафы.
 
 import { MUTATIONS } from './catalog/meta.js';
-import {
-    getClickDamage, getSynergyGain, getCritChance, getLuckyChance, getCritMult, getVeinMult
-} from './income.js';
+import { getClickDamage, getSynergyGain, getCritChance, getLuckyChance, getCritMult, getVeinMult } from './income.js';
 import { getDailyMult, getItemBuffMult, isDailyVeinActive, isItemVeinActive } from './buffs.js';
 
 // Один клик: базовый урон + крит x5(+линза) + золотая жила x10(+магнит) + синергия (% от пассива).

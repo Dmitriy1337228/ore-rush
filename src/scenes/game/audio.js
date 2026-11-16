@@ -1,6 +1,4 @@
-import {
-    gameState
-} from '../../state.js';
+import { gameState } from '../../state.js';
 
 export const audioMethods = {
     startBgm() {

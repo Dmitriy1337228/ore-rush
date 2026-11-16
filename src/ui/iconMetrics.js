@@ -4,7 +4,7 @@
 // setCrop, контент нормируется к ICON_NORMALIZED_SIZE и центрируется в слоте.
 
 const ICON_NORMALIZED_SIZE = 40; // базовый размер контента иконки, px
-const ALPHA_VISIBLE = 20;        // пиксели с alpha <= порога считаются прозрачными
+const ALPHA_VISIBLE = 20; // пиксели с alpha <= порога считаются прозрачными
 
 // Ручная обрезка генеративного мусора по краям текстур. У pickaxe_diamond/
 // pickaxe_iron мусор листа (куски соседних спрайтов, связанные с телом по
@@ -32,14 +32,22 @@ function largestComponent(data, W, H, trim) {
         for (let sx = 0; sx < W; sx++) {
             const idx = sy * W + sx;
             if (seen[idx] || data[idx * 4 + 3] <= ALPHA_VISIBLE) continue;
-            if (trim.left !== undefined && sx < trim.left) { seen[idx] = 1; continue; }
+            if (trim.left !== undefined && sx < trim.left) {
+                seen[idx] = 1;
+                continue;
+            }
             // BFS по прозрачности: собираем связную компоненту
             const queue = [idx];
             seen[idx] = 1;
-            let count = 0, minX = sx, maxX = sx, minY = sy, maxY = sy;
+            let count = 0,
+                minX = sx,
+                maxX = sx,
+                minY = sy,
+                maxY = sy;
             while (queue.length) {
                 const cur = queue.pop();
-                const cxx = cur % W, cyy = (cur - cxx) / W;
+                const cxx = cur % W,
+                    cyy = (cur - cxx) / W;
                 count++;
                 if (cxx < minX) minX = cxx;
                 if (cxx > maxX) maxX = cxx;
@@ -50,7 +58,7 @@ function largestComponent(data, W, H, trim) {
                     const nn = nb[n];
                     if (nn < 0 || nn >= W * H || seen[nn]) continue;
                     if (Math.abs((nn % W) - cxx) > 1) continue; // не через край строки
-                    if (trim.left !== undefined && (nn % W) < trim.left) continue; // обрезка действует и при расширении
+                    if (trim.left !== undefined && nn % W < trim.left) continue; // обрезка действует и при расширении
                     if (data[nn * 4 + 3] <= ALPHA_VISIBLE) continue;
                     seen[nn] = 1;
                     queue.push(nn);

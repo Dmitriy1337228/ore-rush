@@ -41,7 +41,7 @@ function splitCallArgs(src, openIdx) {
             if (ch === quote) quote = null;
             continue;
         }
-        if (ch === '\'' || ch === '"' || ch === '`') {
+        if (ch === "'" || ch === '"' || ch === '`') {
             quote = ch;
             cur += ch;
             continue;
@@ -137,7 +137,9 @@ function findCalls(src, name) {
     return out;
 }
 
-const files = readdirSync(DIR).filter((f) => f.endsWith('.js') && !EXCLUDE.has(f)).sort();
+const files = readdirSync(DIR)
+    .filter((f) => f.endsWith('.js') && !EXCLUDE.has(f))
+    .sort();
 const violations = [];
 for (const file of files) {
     const path = join(DIR, file);
@@ -163,14 +165,18 @@ for (const file of files) {
                 if (!/^-?\d+$/.test(arg.text)) continue;
                 if (isStructural(parseInt(arg.text, 10))) continue;
                 if (hasCommentNearby(src, idx, arg.start)) continue;
-                violations.push(`${path}:${lineAt(idx)}: ${call.replace('(', '')} ${arg.text} — токен (SPACE.*, L.*) или комментарий «что это и зачем»`);
+                violations.push(
+                    `${path}:${lineAt(idx)}: ${call.replace('(', '')} ${arg.text} — токен (SPACE.*, L.*) или комментарий «что это и зачем»`
+                );
             }
         }
     }
 }
 
 if (violations.length) {
-    console.error(`ui:tokens — голые кегли/отступы в ${DIR} (${violations.length}); токены (FONT_SIZE.*, SPACE.*, L.*) или комментарий «что это и зачем»:`);
+    console.error(
+        `ui:tokens — голые кегли/отступы в ${DIR} (${violations.length}); токены (FONT_SIZE.*, SPACE.*, L.*) или комментарий «что это и зачем»:`
+    );
     for (const v of violations) console.error(`  ${v}`);
     process.exit(1);
 }

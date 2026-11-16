@@ -21,27 +21,23 @@ const BASELINE_FILES = [
 
 // DOM-версия: заполняется по мере этапов 1–5. Отсутствующие пути = 0 строк.
 const DOM_PATHS = [
-    'src/dom',                       // слой: root, bridge, компоненты, экран, CSS
-    'scripts/gen-dom-tokens.mjs',    // генератор токенов (часть слоя)
-    'src/dom/tokens.css',            // сгенерированные токены
-    'scripts/verify-craft-dom.mjs'    // специфичные тесты экрана (S1–S10)
+    'src/dom', // слой: root, bridge, компоненты, экран, CSS
+    'scripts/gen-dom-tokens.mjs', // генератор токенов (часть слоя)
+    'src/dom/tokens.css', // сгенерированные токены
+    'scripts/verify-craft-dom.mjs' // специфичные тесты экрана (S1–S10)
 ];
 
 // Инфраструктура проверок DOM-экрана (DoD этапа 5): аудит + CSS-гейт + golden-обвязка.
-const CHECK_PATHS = [
-    'scripts/ui-check-dom.mjs',
-    'scripts/ui-tokens-css.mjs',
-    'scripts/dom-golden.mjs'
-];
+const CHECK_PATHS = ['scripts/ui-check-dom.mjs', 'scripts/ui-tokens-css.mjs', 'scripts/dom-golden.mjs'];
 
 const COMMENT = [
-    /^\s*\/\//,      // // js
-    /^\s*\/\*/,      // /* ...
-    /^\s*\*/,        // * ... (продолжение блочного комментария)
-    /^\s*<!--/,      // <!-- html
-    /^\s*\/>/,       // хвост jsx-комментария (на будущее)
-    /^\s*\}\s*$/,    // не считаем пустые закрывашки шаблонов
-    /^\s*```/        // markdown-заборы в шаблонах
+    /^\s*\/\//, // // js
+    /^\s*\/\*/, // /* ...
+    /^\s*\*/, // * ... (продолжение блочного комментария)
+    /^\s*<!--/, // <!-- html
+    /^\s*\/>/, // хвост jsx-комментария (на будущее)
+    /^\s*\}\s*$/, // не считаем пустые закрывашки шаблонов
+    /^\s*```/ // markdown-заборы в шаблонах
 ];
 
 function walk(target, acc) {
@@ -66,14 +62,26 @@ function measure(files) {
         const abs = path.join(ROOT, rel);
         if (!fs.existsSync(abs)) continue;
         const lines = fs.readFileSync(abs, 'utf8').split(/\r?\n/);
-        let t = 0, c = 0, b = 0, m = 0;
+        let t = 0,
+            c = 0,
+            b = 0,
+            m = 0;
         for (const line of lines) {
-            if (line.trim() === '') { b++; continue; }
+            if (line.trim() === '') {
+                b++;
+                continue;
+            }
             t++;
-            if (COMMENT.some((re) => re.test(line))) { m++; continue; }
+            if (COMMENT.some((re) => re.test(line))) {
+                m++;
+                continue;
+            }
             c++;
         }
-        total += t; code += c; blank += b; comments += m;
+        total += t;
+        code += c;
+        blank += b;
+        comments += m;
         perFile.push({ file: rel, total: t, code: c, blank: b, comments: m });
     }
     return { total, code, blank, comments, perFile };
@@ -115,7 +123,11 @@ if (process.argv.includes('--json')) {
     console.log(row('Phaser (baseline)', baseline));
     console.log(row('DOM (пилот)', dom));
     console.log(row('Проверки DOM (аудит+CSS-гейт+golden)', checks));
-    for (const [label, m] of [['Phaser (baseline)', baseline], ['DOM (пилот)', dom], ['Проверки DOM', checks]]) {
+    for (const [label, m] of [
+        ['Phaser (baseline)', baseline],
+        ['DOM (пилот)', dom],
+        ['Проверки DOM', checks]
+    ]) {
         if (!m.perFile.length) continue;
         console.log(`\n${label}:`);
         for (const f of m.perFile) console.log(`  ${String(f.code).padStart(5)}  ${f.file}`);

@@ -21,7 +21,8 @@ const opt = (n, d = null) => {
 const OUT = path.resolve(opt('out', 'shots/pilot-gates/dom-craft-phone.html'));
 const BASE = process.env.BASE_URL || 'http://localhost:5174';
 
-const dataUri = (name) => `data:image/png;base64,${fs.readFileSync(path.join(ROOT, 'assets/ui', name)).toString('base64')}`;
+const dataUri = (name) =>
+    `data:image/png;base64,${fs.readFileSync(path.join(ROOT, 'assets/ui', name)).toString('base64')}`;
 
 const server = await ensureDevServer();
 process.on('exit', () => releaseDevServer(server));
@@ -29,20 +30,33 @@ const browser = await chromium.launch();
 let body = '';
 let cls = '';
 try {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true });
+    const ctx = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 3,
+        hasTouch: true,
+        isMobile: true
+    });
     const page = await ctx.newPage();
-    await page.addInitScript((s) => {
-        for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
-    }, { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' });
+    await page.addInitScript(
+        (s) => {
+            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+        },
+        { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
+    );
     await page.goto(`${BASE}/?dom=1`, { waitUntil: 'load' });
-    await page.waitForFunction(() => !!window.__DOM_CRAFT && window.__GAME.scene.getScene('UIScene').L, null, { timeout: 30000 });
+    await page.waitForFunction(() => !!window.__DOM_CRAFT && window.__GAME.scene.getScene('UIScene').L, null, {
+        timeout: 30000
+    });
     await page.waitForTimeout(1250);
     await page.evaluate(async () => {
         const ui = window.__GAME.scene.getScene('UIScene');
         ui._pendingDaily = null;
         ui.registry.set('dailyInfo', null);
         if (ui._dailyOpen) ui.hideDailyModal();
-        const url = performance.getEntriesByType('resource').map((r) => r.name).find((u) => u.includes('/src/state.js'));
+        const url = performance
+            .getEntriesByType('resource')
+            .map((r) => r.name)
+            .find((u) => u.includes('/src/state.js'));
         const m = await import(url);
         for (const c of m.COMPONENTS) m.gameState.components[c.id] = 100;
         for (const i of m.ITEMS) m.gameState.items[i.id] = 2;
@@ -63,7 +77,8 @@ try {
 }
 
 const tokens = fs.readFileSync(path.join(ROOT, 'src/dom/tokens.css'), 'utf8');
-const domCss = fs.readFileSync(path.join(ROOT, 'src/dom/dom.css'), 'utf8')
+const domCss = fs
+    .readFileSync(path.join(ROOT, 'src/dom/dom.css'), 'utf8')
     .replace(/url\('([^']+)'\)/g, (m, p) => (p.includes('assets/ui/') ? `url('${dataUri(path.basename(p))}')` : m));
 const fontBase64 = fs.readFileSync(path.join(ROOT, 'assets/fonts/Monocraft.ttf')).toString('base64');
 const markup = body.replace(/src="assets\/ui\/([^"]+)"/g, (m, name) => `src="${dataUri(name)}"`);

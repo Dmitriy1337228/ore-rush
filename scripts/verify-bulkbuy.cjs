@@ -4,10 +4,12 @@
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
 
-let passed = 0, failed = 0;
+let passed = 0,
+    failed = 0;
 function check(name, cond, detail = '') {
     console.log(`${cond ? 'OK  ' : 'FAIL'} ${name}${detail ? ' (' + detail + ')' : ''}`);
-    if (cond) passed++; else failed++;
+    if (cond) passed++;
+    else failed++;
 }
 
 (async () => {
@@ -19,21 +21,41 @@ function check(name, cond, detail = '') {
     page.on('pageerror', (e) => errors.push(String(e)));
 
     // Свежий забег: кирка 5 (клик = 6), остальное 0
-    const save = JSON.stringify({ version: 2, ore: 0, tier: 0, stars: 0, clicks: 0, lifetimeMined: 0, tierEarned: [0, 0, 0, 0, 0], levels: { pickaxe: 5 } });
-    await page.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'ore-rush-save': save });
+    const save = JSON.stringify({
+        version: 2,
+        ore: 0,
+        tier: 0,
+        stars: 0,
+        clicks: 0,
+        lifetimeMined: 0,
+        tierEarned: [0, 0, 0, 0, 0],
+        levels: { pickaxe: 5 }
+    });
+    await page.addInitScript(
+        (s) => {
+            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+        },
+        { 'ore-rush-save': save }
+    );
     await page.goto('http://localhost:5174', { waitUntil: 'load' });
     await page.waitForTimeout(3000);
 
     // ВАЖНО: dev-сервер инвалидирует модули HMR-таймстампом — резолвим фактический URL
     const state = async (expr) => {
         const u = await page.evaluate(() => {
-            const hit = performance.getEntriesByType('resource').map((r) => r.name).find((n) => /\/src\/state\.js/.test(n));
+            const hit = performance
+                .getEntriesByType('resource')
+                .map((r) => r.name)
+                .find((n) => /\/src\/state\.js/.test(n));
             return hit || '/src/state.js';
         });
-        return page.evaluate(async ({ u, e }) => {
-            const m = await import(u);
-            return new Function('m', 'return (' + e + ');')(m);
-        }, { u, e: expr });
+        return page.evaluate(
+            async ({ u, e }) => {
+                const m = await import(u);
+                return new Function('m', 'return (' + e + ');')(m);
+            },
+            { u, e: expr }
+        );
     };
     const snap = async () => state(`({ ore: m.gameState.ore, lvl: m.gameState.levels.pickaxe })`);
     const setOre = (v) => state(`m.gameState.ore = ${v}, m.gameState.ore`);
@@ -110,19 +132,28 @@ function check(name, cond, detail = '') {
     await setLvl(5);
     await page.reload({ waitUntil: 'load' });
     await page.waitForTimeout(3000);
-    const ui = () => page.evaluate(() => {
-        const sc = window.__GAME.scene.getScene('UIScene');
-        const row = sc.rows.find(r => r.def.id === 'pickaxe');
-        return { amount: sc.amountLbl.text, btnTex: row.btn.texture.key, btnText: row.btnText.text, price: row.priceText.text, priceVisible: row.priceText.visible };
-    });
-    const clickAmount = () => page.evaluate(() => {
-        const sc = window.__GAME.scene.getScene('UIScene');
-        sc.amountLbl.parentContainer.emit('pointerdown');
-    });
-    const clickRowBuy = () => page.evaluate(() => {
-        const sc = window.__GAME.scene.getScene('UIScene');
-        sc.rows.find(r => r.def.id === 'pickaxe').btn.emit('pointerup');
-    });
+    const ui = () =>
+        page.evaluate(() => {
+            const sc = window.__GAME.scene.getScene('UIScene');
+            const row = sc.rows.find((r) => r.def.id === 'pickaxe');
+            return {
+                amount: sc.amountLbl.text,
+                btnTex: row.btn.texture.key,
+                btnText: row.btnText.text,
+                price: row.priceText.text,
+                priceVisible: row.priceText.visible
+            };
+        });
+    const clickAmount = () =>
+        page.evaluate(() => {
+            const sc = window.__GAME.scene.getScene('UIScene');
+            sc.amountLbl.parentContainer.emit('pointerdown');
+        });
+    const clickRowBuy = () =>
+        page.evaluate(() => {
+            const sc = window.__GAME.scene.getScene('UIScene');
+            sc.rows.find((r) => r.def.id === 'pickaxe').btn.emit('pointerup');
+        });
 
     let u = await ui();
     check('UI: старт x1', u.amount === 'x1', u.amount);
@@ -141,7 +172,7 @@ function check(name, cond, detail = '') {
 
     // x10 в UI: не хватает на пакет — кнопка серая, цена = ЦЕНА ПАКЕТА (не 1 уровня)
     await clickAmount(); // x10
-    await setOre(480);   // только 1 уровень
+    await setOre(480); // только 1 уровень
     u = await ui();
     const expectBundle = await state(`m.fmt(m.getBulkCost('pickaxe', 10).total)`);
     check('UI x10: не хватает — кнопка серая', u.btnTex === 'buy_button_disabled_gray', u.btnTex);
@@ -172,4 +203,7 @@ function check(name, cond, detail = '') {
     console.log(`\nИтого: ${passed} OK, ${failed} FAIL`);
     await b.close();
     process.exit(failed ? 1 : 0);
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => {
+    console.error(e);
+    process.exit(1);
+});

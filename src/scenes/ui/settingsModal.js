@@ -1,6 +1,18 @@
 import Phaser from 'phaser';
 import {
-    gameState, TIERS, getOfflineRate, getOfflineCapSeconds, canPrestige, getStarsGain, doPrestige, PRESTIGE_REQUIREMENT, getPrestigeMult, DIAMOND_INDEX, resetGame, saveGame, fmt
+    gameState,
+    TIERS,
+    getOfflineRate,
+    getOfflineCapSeconds,
+    canPrestige,
+    getStarsGain,
+    doPrestige,
+    PRESTIGE_REQUIREMENT,
+    getPrestigeMult,
+    DIAMOND_INDEX,
+    resetGame,
+    saveGame,
+    fmt
 } from '../../state.js';
 import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer, setHitWorldRect } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
@@ -13,7 +25,9 @@ export const settingsModalMethods = {
         const pw = 560;
         const ph = 600;
         this.modalDim = addScreenDim(this, DIM_ALPHA.screen)
-            .setDepth(DEPTH.screenDim).setVisible(false).setInteractive();
+            .setDepth(DEPTH.screenDim)
+            .setVisible(false)
+            .setInteractive();
         this.modalDim.on('pointerdown', (pointer, lx, ly, event) => event.stopPropagation());
 
         this.modal = addModalContainer(this).setDepth(DEPTH.screen).setVisible(false);
@@ -21,7 +35,11 @@ export const settingsModalMethods = {
         // Врезка панели (image): content y -261..249, x -216..216 (контейнерные координаты).
         // Крестик в правом верхнем углу: заходит за врезку в зону рамки, не задевая заклёпку
         const win = createPanel(this, {
-            w: pw, h: ph, title: 'Настройки', titleY: -232, titleSize: FONT_SIZE.display,
+            w: pw,
+            h: ph,
+            title: 'Настройки',
+            titleY: -232,
+            titleSize: FONT_SIZE.display,
             close: { x: pw / 2 - 60, y: -228, onClose: () => this.closeModal() }
         });
         const panel = win.panel;
@@ -39,10 +57,15 @@ export const settingsModalMethods = {
         // интерактивный слайдер громкости, он выше по порядку отрисовки и
         // корректно забирает пересечение
         ({ bg: this.soundBtn, label: this.soundText } = addButton(this, -105, -34, {
-            w: tbW, h: tbH, key: TEX.button,
-            text: 'Звук: вкл', fontSize: FONT_SIZE.body, color: TEXT.white,
+            w: tbW,
+            h: tbH,
+            key: TEX.button,
+            text: 'Звук: вкл',
+            fontSize: FONT_SIZE.body,
+            color: TEXT.white,
             fitMaxW: tbW - SPACE.lg * 2,
-            hitWorld: true, hitH: 80
+            hitWorld: true,
+            hitH: 80
         }));
         this.soundBtn.on('pointerdown', () => {
             gameState.soundOn = !gameState.soundOn;
@@ -53,10 +76,15 @@ export const settingsModalMethods = {
         });
 
         ({ bg: this.musicBtn, label: this.musicText } = addButton(this, 105, -34, {
-            w: tbW, h: tbH, key: TEX.button,
-            text: 'Музыка: вкл', fontSize: FONT_SIZE.body, color: TEXT.white,
+            w: tbW,
+            h: tbH,
+            key: TEX.button,
+            text: 'Музыка: вкл',
+            fontSize: FONT_SIZE.body,
+            color: TEXT.white,
             fitMaxW: tbW - SPACE.lg * 2,
-            hitWorld: true, hitH: 80
+            hitWorld: true,
+            hitH: 80
         }));
         this.musicBtn.on('pointerdown', () => {
             gameState.musicOn = !gameState.musicOn;
@@ -94,8 +122,15 @@ export const settingsModalMethods = {
         });
 
         // Престиж
-        const presTitle = makeLabel(this, 0, 48, 'Сброс шахты (Rebirth)', FONT_SIZE.accent, TEXT.cream).setOrigin(0.5, 0);
-        this.prestigeInfo = makeLabel(this, 0, 82, '', FONT_SIZE.label, TEXT.pale, { align: 'center', wordWrap: { width: pw - 120 }, lineSpacing: 6 });
+        const presTitle = makeLabel(this, 0, 48, 'Сброс шахты (Rebirth)', FONT_SIZE.accent, TEXT.cream).setOrigin(
+            0.5,
+            0
+        );
+        this.prestigeInfo = makeLabel(this, 0, 82, '', FONT_SIZE.label, TEXT.pale, {
+            align: 'center',
+            wordWrap: { width: pw - 120 },
+            lineSpacing: 6
+        });
         this.prestigeInfo.setOrigin(0.5, 0);
 
         const pbW = 300;
@@ -103,8 +138,12 @@ export const settingsModalMethods = {
         // addNineC внутри addButton ставит origin (0.5): координата кнопки = её
         // центр, подпись — в тот же центр
         ({ bg: this.prestigeBtn, label: this.prestigeText } = addButton(this, 0, 158, {
-            w: pbW, h: pbH, key: TEX.buttonDisabled,
-            text: 'Сбросить шахту', fontSize: FONT_SIZE.button, color: TEXT.white,
+            w: pbW,
+            h: pbH,
+            key: TEX.buttonDisabled,
+            text: 'Сбросить шахту',
+            fontSize: FONT_SIZE.button,
+            color: TEXT.white,
             fitMaxW: pbW - SPACE.lg * 2
         }));
         this.prestigeBtn.on('pointerdown', () => this.tryPrestige());
@@ -112,8 +151,12 @@ export const settingsModalMethods = {
         const rbW = 300;
         const rbH = 46;
         ({ bg: this.resetBtn, label: this.resetText } = addButton(this, 0, 216, {
-            w: rbW, h: rbH, key: TEX.buttonDisabled,
-            text: 'Сбросить весь прогресс', fontSize: FONT_SIZE.body, color: TEXT.white,
+            w: rbW,
+            h: rbH,
+            key: TEX.buttonDisabled,
+            text: 'Сбросить весь прогресс',
+            fontSize: FONT_SIZE.body,
+            color: TEXT.white,
             fitMaxW: rbW - SPACE.lg * 2
         }));
         this.resetBtn.on('pointerdown', () => this.tryReset());
@@ -123,7 +166,26 @@ export const settingsModalMethods = {
         setHitWorldRect(this.prestigeBtn, -pbW / 2, midY - TOUCH_MIN, pbW, TOUCH_MIN);
         setHitWorldRect(this.resetBtn, -rbW / 2, midY, rbW, TOUCH_MIN);
 
-        this.modal.add([panel, title, closeBtn, this.modalStats, this.soundBtn, this.soundText, this.musicBtn, this.musicText, this.volLabel, this.volG, this.volPct, volZone, presTitle, this.prestigeInfo, this.prestigeBtn, this.prestigeText, this.resetBtn, this.resetText]);
+        this.modal.add([
+            panel,
+            title,
+            closeBtn,
+            this.modalStats,
+            this.soundBtn,
+            this.soundText,
+            this.musicBtn,
+            this.musicText,
+            this.volLabel,
+            this.volG,
+            this.volPct,
+            volZone,
+            presTitle,
+            this.prestigeInfo,
+            this.prestigeBtn,
+            this.prestigeText,
+            this.resetBtn,
+            this.resetText
+        ]);
         this.prestigeArmed = false;
         this.resetArmed = false;
     },
@@ -191,9 +253,21 @@ export const settingsModalMethods = {
         saveGame();
         this.closeModal();
         this.game.events.emit(EVENTS.tierChanged);
-        const float = this.spawnFloat(this.L.modal.cx, this.L.modal.cy - 60, `+${gain} ★ Множитель: x${getPrestigeMult().toFixed(1)}`, 26, TEXT.gold);
+        const float = this.spawnFloat(
+            this.L.modal.cx,
+            this.L.modal.cy - 60,
+            `+${gain} ★ Множитель: x${getPrestigeMult().toFixed(1)}`,
+            26,
+            TEXT.gold
+        );
         float.setOrigin(0.5).setDepth(DEPTH.screenFloat);
-        this.tweens.add({ targets: float, y: float.y - 60, alpha: 0, duration: 1600, onComplete: () => float.destroy() });
+        this.tweens.add({
+            targets: float,
+            y: float.y - 60,
+            alpha: 0,
+            duration: 1600,
+            onComplete: () => float.destroy()
+        });
     },
 
     tryReset() {
@@ -283,13 +357,15 @@ export const settingsModalMethods = {
         const tier = TIERS[gameState.tier];
         // Модалка настроек (если открыта)
         if (this.modal.visible) {
-            this.modalStats.setText([
-                `Уровень шахты: ${gameState.tier + 1} (${tier.name})`,
-                `Звёзды: ${gameState.stars} — множитель x${getPrestigeMult().toFixed(1)}`,
-                `Кликов: ${fmt(gameState.clicks)}`,
-                `Всего добыто: ${fmt(gameState.lifetimeMined)}`,
-                `Фоновая добыча: ${Math.round(getOfflineRate() * 100)}% / ${getOfflineCapSeconds() / 3600} ч`
-            ].join('\n'));
+            this.modalStats.setText(
+                [
+                    `Уровень шахты: ${gameState.tier + 1} (${tier.name})`,
+                    `Звёзды: ${gameState.stars} — множитель x${getPrestigeMult().toFixed(1)}`,
+                    `Кликов: ${fmt(gameState.clicks)}`,
+                    `Всего добыто: ${fmt(gameState.lifetimeMined)}`,
+                    `Фоновая добыча: ${Math.round(getOfflineRate() * 100)}% / ${getOfflineCapSeconds() / 3600} ч`
+                ].join('\n')
+            );
             // Дневной баф сознательно НЕ строкой в статах: 6-я строка удлиняла блок
             // до наезда тумблеров (скриншот игрока с Pages) — таймер уже в HUD (buffLine)
 
@@ -312,7 +388,9 @@ export const settingsModalMethods = {
                 const need = this.L.portrait
                     ? `Нужно добыть ${fmt(PRESTIGE_REQUIREMENT)} алмазов за забег.`
                     : `Для rebirth нужно добыть ${fmt(PRESTIGE_REQUIREMENT)} алмазов за забег.`;
-                this.prestigeInfo.setText(`${need}\nУ вас: ${fmt(have)} (${Math.floor(have / PRESTIGE_REQUIREMENT * 100)}%).`);
+                this.prestigeInfo.setText(
+                    `${need}\nУ вас: ${fmt(have)} (${Math.floor((have / PRESTIGE_REQUIREMENT) * 100)}%).`
+                );
                 this.prestigeBtn.setTexture(TEX.buttonDisabled);
                 this.prestigeText.setColor(TEXT.muted);
             }

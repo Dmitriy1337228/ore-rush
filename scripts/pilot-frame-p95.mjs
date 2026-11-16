@@ -39,18 +39,27 @@ try {
     const page = await ctx.newPage();
     const consoleErrors = [];
     page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e}`));
-    page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(`console: ${m.text()}`); });
-    await page.addInitScript((s) => {
-        for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
-    }, { [SAVE_KEY]: JSON.stringify(craftState.seed) });
+    page.on('console', (m) => {
+        if (m.type() === 'error') consoleErrors.push(`console: ${m.text()}`);
+    });
+    await page.addInitScript(
+        (s) => {
+            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+        },
+        { [SAVE_KEY]: JSON.stringify(craftState.seed) }
+    );
     const cdp = await ctx.newCDPSession(page);
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_RATE });
     await page.goto(URL, { waitUntil: 'load' });
-    await page.waitForFunction(() => {
-        const g = window.__GAME;
-        const ui = g && g.scene.getScene('UIScene');
-        return !!(ui && ui.L && document.fonts.status === 'loaded');
-    }, null, { timeout: 30000 });
+    await page.waitForFunction(
+        () => {
+            const g = window.__GAME;
+            const ui = g && g.scene.getScene('UIScene');
+            return !!(ui && ui.L && document.fonts.status === 'loaded');
+        },
+        null,
+        { timeout: 30000 }
+    );
     await page.waitForTimeout(500);
     if (flag('dom')) {
         // DOM-версия (этап 2): боевой экран монтирует UIScene по флагу ?dom=1.
@@ -78,18 +87,24 @@ try {
 
     const rounds = [];
     for (let i = 0; i < 3; i++) {
-        rounds.push(await page.evaluate((ms) => new Promise((resolve) => {
-            const deltas = [];
-            const start = performance.now();
-            let last = start;
-            const tick = (now) => {
-                deltas.push(now - last);
-                last = now;
-                if (now - start < ms) requestAnimationFrame(tick);
-                else resolve(deltas);
-            };
-            requestAnimationFrame(tick);
-        }), SECONDS * 1000));
+        rounds.push(
+            await page.evaluate(
+                (ms) =>
+                    new Promise((resolve) => {
+                        const deltas = [];
+                        const start = performance.now();
+                        let last = start;
+                        const tick = (now) => {
+                            deltas.push(now - last);
+                            last = now;
+                            if (now - start < ms) requestAnimationFrame(tick);
+                            else resolve(deltas);
+                        };
+                        requestAnimationFrame(tick);
+                    }),
+                SECONDS * 1000
+            )
+        );
     }
 
     const stats = (d) => {

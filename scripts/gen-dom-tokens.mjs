@@ -15,7 +15,11 @@ import { TEXT, SPACE, FONT_SIZE, MIN, CARD, HIT } from '../src/ui/theme.js';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'src', 'dom', 'tokens.css');
 
-const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/_/g, '-').toLowerCase();
+const kebab = (s) =>
+    s
+        .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+        .replace(/_/g, '-')
+        .toLowerCase();
 
 // Единицы DOM (CSS px), которых нет в theme.js. Кегли/отступы/пороги — ТОЛЬКО из theme.js.
 // Здесь — геометрия DOM-слоя: то, что в Phaser задаётся раскладкой экрана (src/layout.js).
@@ -118,7 +122,12 @@ if (process.argv.includes('--check')) {
         const a = (prev || '').split('\n');
         const b = css.split('\n');
         for (let i = 0; i < Math.max(a.length, b.length); i++) {
-            if (a[i] !== b[i]) { console.error(`  первая разница, строка ${i + 1}:\n    было: ${a[i] ?? '<нет>'}\n    стало: ${b[i] ?? '<нет>'}`); break; }
+            if (a[i] !== b[i]) {
+                console.error(
+                    `  первая разница, строка ${i + 1}:\n    было: ${a[i] ?? '<нет>'}\n    стало: ${b[i] ?? '<нет>'}`
+                );
+                break;
+            }
         }
     }
     process.exit(1);

@@ -4,13 +4,28 @@
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
 
-let passed = 0, failed = 0;
+let passed = 0,
+    failed = 0;
 function check(name, cond, detail = '') {
     console.log(`${cond ? 'OK  ' : 'FAIL'} ${name}${detail ? ' (' + detail + ')' : ''}`);
-    if (cond) passed++; else failed++;
+    if (cond) passed++;
+    else failed++;
 }
 
-const BG_KEYS = ['bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver', 'bg_05_gold', 'bg_06_amethyst', 'bg_07_emerald', 'bg_08_ruby', 'bg_09_sapphire', 'bg_10_platinum', 'bg_11_uranium', 'bg_12_diamond'];
+const BG_KEYS = [
+    'bg_01_coal',
+    'bg_02_copper',
+    'bg_03_iron',
+    'bg_04_silver',
+    'bg_05_gold',
+    'bg_06_amethyst',
+    'bg_07_emerald',
+    'bg_08_ruby',
+    'bg_09_sapphire',
+    'bg_10_platinum',
+    'bg_11_uranium',
+    'bg_12_diamond'
+];
 
 (async () => {
     const server = await ensureDevServer();
@@ -21,36 +36,70 @@ const BG_KEYS = ['bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver', 'bg
     page.on('pageerror', (e) => errors.push(String(e)));
 
     // Свежий забег, тир 0 (уголь)
-    const save = JSON.stringify({ version: 2, ore: 0, tier: 0, stars: 0, clicks: 0, lifetimeMined: 0, tierEarned: [0, 0, 0, 0, 0], levels: { pickaxe: 5 } });
-    await page.addInitScript(s => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, { 'ore-rush-save': save });
+    const save = JSON.stringify({
+        version: 2,
+        ore: 0,
+        tier: 0,
+        stars: 0,
+        clicks: 0,
+        lifetimeMined: 0,
+        tierEarned: [0, 0, 0, 0, 0],
+        levels: { pickaxe: 5 }
+    });
+    await page.addInitScript(
+        (s) => {
+            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+        },
+        { 'ore-rush-save': save }
+    );
     await page.goto('http://localhost:5174', { waitUntil: 'load' });
     await page.waitForTimeout(3000);
 
     // HMR-инвалидация: резолвим фактический URL state.js из resource entries
     const state = async (expr) => {
         const u = await page.evaluate(() => {
-            const hit = performance.getEntriesByType('resource').map((r) => r.name).find((n) => /\/src\/state\.js/.test(n));
+            const hit = performance
+                .getEntriesByType('resource')
+                .map((r) => r.name)
+                .find((n) => /\/src\/state\.js/.test(n));
             return hit || '/src/state.js';
         });
-        return page.evaluate(async ({ u, e }) => {
-            const m = await import(u);
-            return new Function('m', 'return (' + e + ');')(m);
-        }, { u, e: expr });
+        return page.evaluate(
+            async ({ u, e }) => {
+                const m = await import(u);
+                return new Function('m', 'return (' + e + ');')(m);
+            },
+            { u, e: expr }
+        );
     };
 
-    const bg = () => page.evaluate(() => {
-        const gs = window.__GAME.scene.getScene('GameScene');
-        return {
-            exists: ['bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver', 'bg_05_gold', 'bg_06_amethyst', 'bg_07_emerald', 'bg_08_ruby', 'bg_09_sapphire', 'bg_10_platinum', 'bg_11_uranium', 'bg_12_diamond'].map(k => window.__GAME.textures.exists(k)),
-            curKey: gs.bgCurrent.texture.key,
-            curAlpha: gs.bgCurrent.alpha,
-            curVisible: gs.bgCurrent.visible,
-            nextKey: gs.bgNext.texture.key,
-            nextAlpha: gs.bgNext.alpha,
-            nextVisible: gs.bgNext.visible,
-            shade: gs.bgShade.fillAlpha
-        };
-    });
+    const bg = () =>
+        page.evaluate(() => {
+            const gs = window.__GAME.scene.getScene('GameScene');
+            return {
+                exists: [
+                    'bg_01_coal',
+                    'bg_02_copper',
+                    'bg_03_iron',
+                    'bg_04_silver',
+                    'bg_05_gold',
+                    'bg_06_amethyst',
+                    'bg_07_emerald',
+                    'bg_08_ruby',
+                    'bg_09_sapphire',
+                    'bg_10_platinum',
+                    'bg_11_uranium',
+                    'bg_12_diamond'
+                ].map((k) => window.__GAME.textures.exists(k)),
+                curKey: gs.bgCurrent.texture.key,
+                curAlpha: gs.bgCurrent.alpha,
+                curVisible: gs.bgCurrent.visible,
+                nextKey: gs.bgNext.texture.key,
+                nextAlpha: gs.bgNext.alpha,
+                nextVisible: gs.bgNext.visible,
+                shade: gs.bgShade.fillAlpha
+            };
+        });
 
     // --- A: загрузка и старт ---
     let r = await bg();
@@ -65,8 +114,16 @@ const BG_KEYS = ['bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver', 'bg
     await page.evaluate(() => window.__GAME.scene.getScene('GameScene').game.events.emit('tier-changed'));
     await page.waitForTimeout(250);
     r = await bg();
-    check('B1: в середине кроссфейда bgNext = bg_03 и видимый', r.nextVisible && r.nextKey === 'bg_05_gold', `${r.nextKey} alpha=${r.nextAlpha.toFixed(2)}`);
-    check('B2: bgNext ещё проявляется (0 < alpha < 1)', r.nextAlpha > 0.01 && r.nextAlpha < 0.99, String(r.nextAlpha.toFixed(2)));
+    check(
+        'B1: в середине кроссфейда bgNext = bg_03 и видимый',
+        r.nextVisible && r.nextKey === 'bg_05_gold',
+        `${r.nextKey} alpha=${r.nextAlpha.toFixed(2)}`
+    );
+    check(
+        'B2: bgNext ещё проявляется (0 < alpha < 1)',
+        r.nextAlpha > 0.01 && r.nextAlpha < 0.99,
+        String(r.nextAlpha.toFixed(2))
+    );
     check('B3: старый фон ещё снизу', r.curKey === 'bg_01_coal', r.curKey);
     await page.waitForTimeout(1100);
     r = await bg();
@@ -98,7 +155,11 @@ const BG_KEYS = ['bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver', 'bg
     const shot4 = await page.screenshot({ clip });
     let diff = 0;
     for (let i = 0; i < shot0.length; i++) if (shot0[i] !== shot4[i]) diff++;
-    check('G1: фон реально меняется на экране (пиксели клипа различаются)', diff > shot0.length * 0.1, `${diff}/${shot0.length} байт`);
+    check(
+        'G1: фон реально меняется на экране (пиксели клипа различаются)',
+        diff > shot0.length * 0.1,
+        `${diff}/${shot0.length} байт`
+    );
 
     // --- H: двойная смена тира во время кроссфейда — незавершённый фейд
     // мгновенно доводится до конца, новая смена стартует с полного альфа-состояния
@@ -112,15 +173,30 @@ const BG_KEYS = ['bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver', 'bg
     await page.evaluate(() => window.__GAME.scene.getScene('GameScene').game.events.emit('tier-changed'));
     await page.waitForTimeout(120);
     r = await bg();
-    check('H1: прерванный фейд мгновенно завершён (bg_05_gold стал текущим)', r.curKey === 'bg_05_gold' && r.curAlpha > 0.5, `${r.curKey} alpha=${r.curAlpha.toFixed(2)}`);
-    check('H2: новый кроссфейд к bg_09_sapphire идёт', r.nextVisible && r.nextKey === 'bg_09_sapphire' && r.nextAlpha > 0 && r.nextAlpha < 1, `alpha=${r.nextAlpha.toFixed(2)}`);
+    check(
+        'H1: прерванный фейд мгновенно завершён (bg_05_gold стал текущим)',
+        r.curKey === 'bg_05_gold' && r.curAlpha > 0.5,
+        `${r.curKey} alpha=${r.curAlpha.toFixed(2)}`
+    );
+    check(
+        'H2: новый кроссфейд к bg_09_sapphire идёт',
+        r.nextVisible && r.nextKey === 'bg_09_sapphire' && r.nextAlpha > 0 && r.nextAlpha < 1,
+        `alpha=${r.nextAlpha.toFixed(2)}`
+    );
     await page.waitForTimeout(1100);
     r = await bg();
-    check('H3: после двойной смены текущий = bg_09_sapphire', r.curKey === 'bg_09_sapphire' && !r.nextVisible, r.curKey);
+    check(
+        'H3: после двойной смены текущий = bg_09_sapphire',
+        r.curKey === 'bg_09_sapphire' && !r.nextVisible,
+        r.curKey
+    );
 
     check('F: page errors', errors.length === 0, errors.join('; ').slice(0, 300));
 
     await b.close();
     console.log(`\nИтого: ${passed} OK, ${failed} FAIL`);
     process.exit(failed ? 1 : 0);
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => {
+    console.error(e);
+    process.exit(1);
+});

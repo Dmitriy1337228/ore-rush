@@ -5,11 +5,14 @@ const { chromium } = require('playwright');
 const fs = require('node:fs');
 const path = require('node:path');
 const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
-const SFX = [...new Set(
-    fs.readdirSync(path.join(__dirname, '..', 'assets', 'audio'))
-        .filter((f) => /\.(ogg|mp3)$/.test(f))
-        .map((f) => f.replace(/\.(ogg|mp3)$/, ''))
-)];
+const SFX = [
+    ...new Set(
+        fs
+            .readdirSync(path.join(__dirname, '..', 'assets', 'audio'))
+            .filter((f) => /\.(ogg|mp3)$/.test(f))
+            .map((f) => f.replace(/\.(ogg|mp3)$/, ''))
+    )
+];
 (async () => {
     const server = await ensureDevServer();
     process.on('exit', () => releaseDevServer(server));
@@ -33,14 +36,24 @@ const SFX = [...new Set(
     await page.waitForTimeout(300);
 
     // 1. Все ключи из assets/audio в audio-кэше
-    const missing = await page.evaluate((keys) => keys.filter((k) => !window.__GAME.scene.getScene('GameScene').cache.audio.exists(k)), SFX);
-    console.log(`1. all ${SFX.length} keys in cache:`, missing.length === 0 ? 'OK' : `FAIL (missing: ${missing.join(', ')})`);
+    const missing = await page.evaluate(
+        (keys) => keys.filter((k) => !window.__GAME.scene.getScene('GameScene').cache.audio.exists(k)),
+        SFX
+    );
+    console.log(
+        `1. all ${SFX.length} keys in cache:`,
+        missing.length === 0 ? 'OK' : `FAIL (missing: ${missing.join(', ')})`
+    );
 
     // 2. playSfx тихо выходит на отсутствующем ключе (не бросает).
     // URL модуля берём из resource entries: dev-сервер отдаёт '/src/sfx.js?t=...'
     // (HMR-инвалидация), import без query создал бы второй экземпляр.
     await page.evaluate(async () => {
-        const url = performance.getEntriesByType('resource').map((r) => r.name).find((n) => /\/src\/sfx\.js/.test(n)) || '/src/sfx.js';
+        const url =
+            performance
+                .getEntriesByType('resource')
+                .map((r) => r.name)
+                .find((n) => /\/src\/sfx\.js/.test(n)) || '/src/sfx.js';
         const { playSfx } = await import(url);
         const gs = window.__GAME.scene.getScene('GameScene');
         playSfx(gs, 'nope'); // не должно бросить
@@ -63,7 +76,10 @@ const SFX = [...new Set(
     await page.waitForTimeout(300);
     const mut = await page.evaluate(() => {
         const s = window.__GAME.scene.getScene('GameScene').sound;
-        return s.getAllPlaying().map((x) => x.key).some((k) => k.startsWith('mutation'));
+        return s
+            .getAllPlaying()
+            .map((x) => x.key)
+            .some((k) => k.startsWith('mutation'));
     });
     console.log('4. mutation sound:', mut ? 'OK' : 'FAIL');
 
@@ -79,7 +95,10 @@ const SFX = [...new Set(
     await page.waitForTimeout(40);
     const bought = await page.evaluate(() => {
         const s = window.__GAME.scene.getScene('GameScene').sound;
-        return s.getAllPlaying().map((x) => x.key).some((k) => k.startsWith('purchase'));
+        return s
+            .getAllPlaying()
+            .map((x) => x.key)
+            .some((k) => k.startsWith('purchase'));
     });
     console.log('5. purchase sound:', bought ? 'OK' : 'FAIL');
     console.log('6. rows visible:', rows > 0 ? `OK (${rows})` : 'FAIL');
@@ -99,7 +118,12 @@ const SFX = [...new Set(
         const bgm = gs.sound.getAllPlaying().find((x) => x.key === 'bgm');
         return { on: m.musicText.text, bgmMute: bgm ? bgm.mute : null, bgmPlaying: !!bgm };
     });
-    console.log('7a. music toggle -> off:', musicOff.on === 'Музыка: выкл' && musicOff.bgmMute === true && musicOff.bgmPlaying ? 'OK' : `FAIL (${JSON.stringify(musicOff)})`);
+    console.log(
+        '7a. music toggle -> off:',
+        musicOff.on === 'Музыка: выкл' && musicOff.bgmMute === true && musicOff.bgmPlaying
+            ? 'OK'
+            : `FAIL (${JSON.stringify(musicOff)})`
+    );
     await page.mouse.click(745, 326); // обратно вкл
     await page.waitForTimeout(200);
     const musicOn = await page.evaluate(() => {
@@ -108,7 +132,10 @@ const SFX = [...new Set(
         const bgm = gs.sound.getAllPlaying().find((x) => x.key === 'bgm');
         return { on: m.musicText.text, bgmMute: bgm ? bgm.mute : null };
     });
-    console.log('7b. music toggle -> on:', musicOn.on === 'Музыка: вкл' && musicOn.bgmMute === false ? 'OK' : `FAIL (${JSON.stringify(musicOn)})`);
+    console.log(
+        '7b. music toggle -> on:',
+        musicOn.on === 'Музыка: вкл' && musicOn.bgmMute === false ? 'OK' : `FAIL (${JSON.stringify(musicOn)})`
+    );
     await page.mouse.click(535, 326); // тоггл «Звук: вкл/выкл» — эффекты, музыка НЕ трогается
     await page.waitForTimeout(200);
     const soundOff = await page.evaluate(() => {
@@ -117,13 +144,26 @@ const SFX = [...new Set(
         const bgm = gs.sound.getAllPlaying().find((x) => x.key === 'bgm');
         return { lbl: m.soundText.text, bgmMute: bgm ? bgm.mute : null };
     });
-    console.log('7c. sound toggle -> off, bgm unmuted:', soundOff.lbl === 'Звук: выкл' && soundOff.bgmMute === false ? 'OK' : `FAIL (${JSON.stringify(soundOff)})`);
+    console.log(
+        '7c. sound toggle -> off, bgm unmuted:',
+        soundOff.lbl === 'Звук: выкл' && soundOff.bgmMute === false ? 'OK' : `FAIL (${JSON.stringify(soundOff)})`
+    );
     await page.mouse.click(860, 132); // крестик
     await page.waitForTimeout(200);
-    const beforeSilent = await page.evaluate(() => window.__GAME.scene.getScene('GameScene').sound.getAllPlaying().map((x) => x.key));
+    const beforeSilent = await page.evaluate(() =>
+        window.__GAME.scene
+            .getScene('GameScene')
+            .sound.getAllPlaying()
+            .map((x) => x.key)
+    );
     await page.mouse.click(400, 400); // клик по блоку при выключенном звуке
     await page.waitForTimeout(150);
-    const silent = await page.evaluate(() => window.__GAME.scene.getScene('GameScene').sound.getAllPlaying().map((x) => x.key));
+    const silent = await page.evaluate(() =>
+        window.__GAME.scene
+            .getScene('GameScene')
+            .sound.getAllPlaying()
+            .map((x) => x.key)
+    );
     const newKeys = silent.filter((k) => !beforeSilent.includes(k));
     console.log('7d. clicks silent when sound off:', newKeys.length === 0 ? 'OK' : `FAIL (new: ${newKeys.join(', ')})`);
     await page.mouse.click(1146, 62);
@@ -137,7 +177,10 @@ const SFX = [...new Set(
         return { pct: m.volPct.text, bgmVol: bgm ? bgm.volume : null };
     });
     const volOk = vol.pct === '39%' && vol.bgmVol !== null && Math.abs(vol.bgmVol - 0.389) < 0.02;
-    console.log('7e. volume slider:', volOk ? `OK (${vol.pct}, bgm ${vol.bgmVol.toFixed(2)})` : `FAIL (${JSON.stringify(vol)})`);
+    console.log(
+        '7e. volume slider:',
+        volOk ? `OK (${vol.pct}, bgm ${vol.bgmVol.toFixed(2)})` : `FAIL (${JSON.stringify(vol)})`
+    );
     await page.mouse.click(535, 326); // звук обратно вкл
     await page.waitForTimeout(200);
     const backOn = await page.evaluate(() => window.__GAME.scene.getScene('UIScene').soundText.text);
@@ -151,7 +194,10 @@ const SFX = [...new Set(
         const bgm = s.getAllPlaying().find((x) => x.key === 'bgm');
         return bgm ? { playing: bgm.isPlaying, loop: bgm.loop, mute: bgm.mute } : null;
     });
-    console.log('9. bgm loop playing unmuted:', bgmOn && bgmOn.playing && bgmOn.loop && bgmOn.mute === false ? 'OK' : `FAIL (${JSON.stringify(bgmOn)})`);
+    console.log(
+        '9. bgm loop playing unmuted:',
+        bgmOn && bgmOn.playing && bgmOn.loop && bgmOn.mute === false ? 'OK' : `FAIL (${JSON.stringify(bgmOn)})`
+    );
 
     // 8. page errors
     console.log('8. page errors:', errors.length === 0 ? 'OK (0)' : `FAIL (${errors.join('; ')})`);
@@ -159,4 +205,7 @@ const SFX = [...new Set(
     await b.close();
     console.log(`done, failures: ${failed}`);
     process.exit(failed > 0 ? 1 : 0);
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => {
+    console.error(e);
+    process.exit(1);
+});

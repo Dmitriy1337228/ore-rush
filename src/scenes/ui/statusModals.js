@@ -1,5 +1,15 @@
 import {
-    gameState, TIERS, getUpgradeLevel, getOrePerSecond, getOfflineRate, OFFLINE_CAP_HOURS, fmt, fmtDuration, DAILY_REWARDS, COMPONENTS, ARTIFACTS
+    gameState,
+    TIERS,
+    getUpgradeLevel,
+    getOrePerSecond,
+    getOfflineRate,
+    OFFLINE_CAP_HOURS,
+    fmt,
+    fmtDuration,
+    DAILY_REWARDS,
+    COMPONENTS,
+    ARTIFACTS
 } from '../../state.js';
 import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
@@ -13,8 +23,7 @@ const OK_BUTTON = { w: 190, h: 46 };
 // заголовок и кнопка подтверждения. Содержимое окна докладывает вызывающий через
 // assemble(extras, after): extras идут между заголовком и кнопкой, after — поверх кнопки.
 function createAlertShell(scene, { w, h, title, titleY, titleColor = TEXT.cream, okLabel, okY, onOk }) {
-    const dim = addScreenDim(scene, DIM_ALPHA.alert)
-        .setDepth(DEPTH.alertDim).setVisible(false).setInteractive();
+    const dim = addScreenDim(scene, DIM_ALPHA.alert).setDepth(DEPTH.alertDim).setVisible(false).setInteractive();
     dim.on('pointerdown', (pointer, lx, ly, event) => event.stopPropagation());
     const modal = addModalContainer(scene).setDepth(DEPTH.alert).setVisible(false);
     const win = createPanel(scene, { w, h, title, titleY, titleSize: FONT_SIZE.title, titleColor });
@@ -24,12 +33,17 @@ function createAlertShell(scene, { w, h, title, titleY, titleColor = TEXT.cream,
         // кнопка создаётся после содержимого окна (порядок объектов сцены сохранён)
         assemble(extras, after = []) {
             const ok = addButton(scene, 0, okY, {
-                w: OK_BUTTON.w, h: OK_BUTTON.h, key: TEX.button,
-                text: okLabel, fontSize: FONT_SIZE.button, color: TEXT.white,
+                w: OK_BUTTON.w,
+                h: OK_BUTTON.h,
+                key: TEX.button,
+                text: okLabel,
+                fontSize: FONT_SIZE.button,
+                color: TEXT.white,
                 fitMaxW: OK_BUTTON.w - SPACE.lg * 2,
                 // Хит 80 по высоте (46 видимых — 23 CSS px на телефоне): зона
                 // нажатия >= 40 CSS px; вокруг кнопки интерактивных нет
-                hitWorld: true, hitH: 80
+                hitWorld: true,
+                hitH: 80
             });
             ok.bg.on('pointerdown', onOk);
             modal.add([win.panel, win.title, ...extras, ok.bg, ok.label, ...after]);
@@ -42,12 +56,21 @@ export const statusModalsMethods = {
         const pw = 480;
         // Врезка: content y -131..175 (контейнерные)
         const shell = createAlertShell(this, {
-            w: pw, h: 300, title: 'С возвращением!', titleY: -114, okLabel: 'Забрать', okY: 96,
+            w: pw,
+            h: 300,
+            title: 'С возвращением!',
+            titleY: -114,
+            okLabel: 'Забрать',
+            okY: 96,
             onOk: () => this.hideOfflineModal()
         });
         this.offlineDim = shell.dim;
         this.offlineModal = shell.modal;
-        this.offlineBody = makeLabel(this, 0, -15, '', FONT_SIZE.stat, TEXT.pale, { align: 'center', lineSpacing: 10, wordWrap: { width: pw - 110 } });
+        this.offlineBody = makeLabel(this, 0, -15, '', FONT_SIZE.stat, TEXT.pale, {
+            align: 'center',
+            lineSpacing: 10,
+            wordWrap: { width: pw - 110 }
+        });
         this.offlineBody.setOrigin(0.5);
         shell.assemble([this.offlineBody]);
     },
@@ -78,7 +101,12 @@ export const statusModalsMethods = {
     buildDailyModal() {
         // Врезка контента: y -180..180 (контейнерные)
         const shell = createAlertShell(this, {
-            w: 520, h: 420, title: 'Ежедневная награда', titleY: -170, okLabel: 'Отлично!', okY: 152,
+            w: 520,
+            h: 420,
+            title: 'Ежедневная награда',
+            titleY: -170,
+            okLabel: 'Отлично!',
+            okY: 152,
             onOk: () => this.hideDailyModal()
         });
         this.dailyDim = shell.dim;
@@ -89,7 +117,10 @@ export const statusModalsMethods = {
         // Верхний якорь (0.5, 0): конкретика дня добавляет 3-ю строку — текст
         // растёт ВНИЗ и не наезжает на название (перекрытие «Накопителя» поймано
         // скриншотом игрока)
-        this.dailyDesc = makeLabel(this, 0, 12, '', FONT_SIZE.body, TEXT.pale, { align: 'center', lineSpacing: 8 }).setOrigin(0.5, 0);
+        this.dailyDesc = makeLabel(this, 0, 12, '', FONT_SIZE.body, TEXT.pale, {
+            align: 'center',
+            lineSpacing: 8
+        }).setOrigin(0.5, 0);
         // Серия: 7 слотов цикла, текущий день подсвечен. Иконки нормируем
         // placeIcon'ом — текстуры ассетов разного разрешения (30..256px).
         // Шаг центров = слот 34 + зазор SPACE.xs.
@@ -117,14 +148,16 @@ export const statusModalsMethods = {
         // Очередь: окно вырубления не проверялось — награда открывалась ОДНОВРЕМЕННО
         // с ним (два модальных окна в кадре, аудит: 20+ OVERLAP на состояние; таймер
         // выдачи награды стрелял позже hideDaily в сценарных прогонах)
-        if (this.offlineModal.visible || this.modal.visible || this.dailyModal.visible
-            || this.playerDownModal.visible) return;
+        if (this.offlineModal.visible || this.modal.visible || this.dailyModal.visible || this.playerDownModal.visible)
+            return;
         if (this.mapRoot.visible || this._craftOpen || this._bossRewardOpen) return;
         const info = this._pendingDaily;
         this._pendingDaily = null;
         const idx = (info.streak - 1) % DAILY_REWARDS.length;
         const reward = DAILY_REWARDS[idx];
-        this.dailyStreakText.setText(`Серия: ${info.streak} ${info.streak === 1 ? 'день' : info.streak < 5 ? 'дня' : 'дней'}`);
+        this.dailyStreakText.setText(
+            `Серия: ${info.streak} ${info.streak === 1 ? 'день' : info.streak < 5 ? 'дня' : 'дней'}`
+        );
         this.dailyIcon.setTexture(reward.icon);
         this.placeIcon(this.dailyIcon, reward.icon, 0, -78, 64);
         let desc = reward.desc;
@@ -157,7 +190,12 @@ export const statusModalsMethods = {
 
     buildBossRewardModal() {
         const shell = createAlertShell(this, {
-            w: 480, h: 400, title: 'Босс повержен!', titleY: -158, okLabel: 'Забрать', okY: 150,
+            w: 480,
+            h: 400,
+            title: 'Босс повержен!',
+            titleY: -158,
+            okLabel: 'Забрать',
+            okY: 150,
             onOk: () => this.hideBossRewardModal()
         });
         this.bossRewardDim = shell.dim;
@@ -208,7 +246,14 @@ export const statusModalsMethods = {
             if (!def) continue;
             const icon = this.add.image(0, 0, def.icon);
             this.placeIcon(icon, def.icon, -120, 0, COMP_CELL); // позицию ставит place()
-            const label = makeLabel(this, -94, 0, `${def.name} ×${reward.comps[compId]}`, FONT_SIZE.body, TEXT.pale).setOrigin(0, 0.5);
+            const label = makeLabel(
+                this,
+                -94,
+                0,
+                `${def.name} ×${reward.comps[compId]}`,
+                FONT_SIZE.body,
+                TEXT.pale
+            ).setOrigin(0, 0.5);
             objs.push(icon, label);
             rows.push({
                 h: COMP_CELL,
@@ -263,12 +308,22 @@ export const statusModalsMethods = {
     buildPlayerDownModal() {
         const pw = 480;
         const shell = createAlertShell(this, {
-            w: pw, h: 330, title: 'Ты вырубился!', titleY: -124, titleColor: '#ff8a7a', okLabel: 'В шахту', okY: 108,
+            w: pw,
+            h: 330,
+            title: 'Ты вырубился!',
+            titleY: -124,
+            titleColor: '#ff8a7a',
+            okLabel: 'В шахту',
+            okY: 108,
             onOk: () => this.hidePlayerDownModal()
         });
         this.playerDownDim = shell.dim;
         this.playerDownModal = shell.modal;
-        this.playerDownBody = makeLabel(this, 0, -20, '', FONT_SIZE.body, TEXT.pale, { align: 'center', lineSpacing: 9, wordWrap: { width: pw - 110 } }).setOrigin(0.5);
+        this.playerDownBody = makeLabel(this, 0, -20, '', FONT_SIZE.body, TEXT.pale, {
+            align: 'center',
+            lineSpacing: 9,
+            wordWrap: { width: pw - 110 }
+        }).setOrigin(0.5);
         shell.assemble([this.playerDownBody]);
 
         const layers = [this.playerDownDim, this.playerDownModal];
@@ -281,13 +336,15 @@ export const statusModalsMethods = {
         this._playerDownOpen = true;
         if (this._mapOpen) this.closeMap();
         if (this._craftOpen) this.closeCraft();
-        this.playerDownBody.setText([
-            `${info.bossName} отбросил тебя в шахту.`,
-            '',
-            `Удар босса: ${fmt(info.dmg)} · живучесть: ${fmt(info.maxPlayer)}`,
-            'Копи руду, прокачай «Каску» (+HP) и снаряжение,',
-            'докупи бомбы — и возвращайся.'
-        ].join('\n'));
+        this.playerDownBody.setText(
+            [
+                `${info.bossName} отбросил тебя в шахту.`,
+                '',
+                `Удар босса: ${fmt(info.dmg)} · живучесть: ${fmt(info.maxPlayer)}`,
+                'Копи руду, прокачай «Каску» (+HP) и снаряжение,',
+                'докупи бомбы — и возвращайся.'
+            ].join('\n')
+        );
         this.playerDownDim.setVisible(true);
         this.playerDownModal.setVisible(true);
     },

@@ -12,12 +12,35 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SKIP = new Set(['tokens.css']); // сгенерированные токены — единственный источник чисел
 const SIZE_PROPS = new Set([
-    'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
-    'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
-    'gap', 'row-gap', 'column-gap',
-    'width', 'height', 'min-width', 'min-height', 'max-width', 'max-height',
-    'font-size', 'top', 'left', 'right', 'bottom', 'inset',
-    'border-width', 'border-radius', 'outline-width', 'letter-spacing'
+    'padding',
+    'padding-top',
+    'padding-right',
+    'padding-bottom',
+    'padding-left',
+    'margin',
+    'margin-top',
+    'margin-right',
+    'margin-bottom',
+    'margin-left',
+    'gap',
+    'row-gap',
+    'column-gap',
+    'width',
+    'height',
+    'min-width',
+    'min-height',
+    'max-width',
+    'max-height',
+    'font-size',
+    'top',
+    'left',
+    'right',
+    'bottom',
+    'inset',
+    'border-width',
+    'border-radius',
+    'outline-width',
+    'letter-spacing'
 ]);
 const LITERAL = /(?<![\w.-])-?\d*\.?\d+(px|rem|em)\b/g;
 const ZERO = /^-?0(\.0+)?(px|rem|em)?$/i;
@@ -47,7 +70,10 @@ function run(files) {
     const all = [];
     for (const rel of files) {
         const abs = path.isAbsolute(rel) ? rel : path.join(ROOT, rel);
-        if (!fs.existsSync(abs)) { all.push({ file: rel, line: 0, prop: '-', value: '-', text: 'файл не найден' }); continue; }
+        if (!fs.existsSync(abs)) {
+            all.push({ file: rel, line: 0, prop: '-', value: '-', text: 'файл не найден' });
+            continue;
+        }
         all.push(...checkFile(path.relative(ROOT, abs).replace(/\\/g, '/'), fs.readFileSync(abs, 'utf8')));
     }
     return all;
@@ -57,12 +83,12 @@ const argv = process.argv.slice(2);
 if (argv.includes('--self-test')) {
     const bad = [
         '.x {',
-        '    padding: 12px;',            // нарушение
-        '    gap: var(--space-sm);',      // ок
+        '    padding: 12px;', // нарушение
+        '    gap: var(--space-sm);', // ок
         '    border: 1px solid transparent; /* 1px — рамка токена */',
         '    width: 100%;',
         '    top: 0;',
-        '    font-size: 1.5rem;',         // нарушение (rem)
+        '    font-size: 1.5rem;', // нарушение (rem)
         '}'
     ].join('\n');
     const found = checkFile('self-test.css', bad);
@@ -74,7 +100,10 @@ if (argv.includes('--self-test')) {
     let list = files;
     if (!list.length) {
         const dir = path.join(ROOT, 'src', 'dom');
-        list = fs.readdirSync(dir).filter((f) => f.endsWith('.css') && !SKIP.has(f)).map((f) => path.join('src/dom', f));
+        list = fs
+            .readdirSync(dir)
+            .filter((f) => f.endsWith('.css') && !SKIP.has(f))
+            .map((f) => path.join('src/dom', f));
     }
     const problems = run(list);
     if (!problems.length) {
@@ -85,7 +114,9 @@ if (argv.includes('--self-test')) {
         for (const p of problems.slice(0, 40)) {
             console.error(`  ${p.file}:${p.line}  ${p.prop}: ${p.value}  →  ${p.text}`);
         }
-        console.error('Размер — через var(--space-*/--font-*/--dom-*) из tokens.css; 1px только с комментарием-причиной.');
+        console.error(
+            'Размер — через var(--space-*/--font-*/--dom-*) из tokens.css; 1px только с комментарием-причиной.'
+        );
         process.exitCode = 1;
     }
 }

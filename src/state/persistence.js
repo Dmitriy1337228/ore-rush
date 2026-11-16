@@ -1,18 +1,39 @@
 // Загрузка сейва в gameState: валидация и приведение каждого поля, сброс игры.
 
 import { gameState, createInitialState } from './gameState.js';
-import { SAVE_VERSION, DEFAULT_MUSIC_VOLUME, BUFF_MULT_SAVE_CAP, RIG_MULT_SAVE_CAP, OIL_ADD_SAVE_CAP } from './constants.js';
+import {
+    SAVE_VERSION,
+    DEFAULT_MUSIC_VOLUME,
+    BUFF_MULT_SAVE_CAP,
+    RIG_MULT_SAVE_CAP,
+    OIL_ADD_SAVE_CAP
+} from './constants.js';
 import { TIERS } from './catalog/tiers.js';
 import { UPGRADES } from './catalog/upgrades.js';
-import { BOSSES, COMPONENTS, ARTIFACTS, ITEMS, CRAFT_RECIPES, BOSS_RECORD_MIN_SEC, BOSS_RECORD_MAX_SEC } from './catalog/meta.js';
+import {
+    BOSSES,
+    COMPONENTS,
+    ARTIFACTS,
+    ITEMS,
+    CRAFT_RECIPES,
+    BOSS_RECORD_MIN_SEC,
+    BOSS_RECORD_MAX_SEC
+} from './catalog/meta.js';
 import { getBossDef } from './catalog/lookup.js';
 import { YandexSDKStub } from '../sdk-stub.js';
 import { saveGame } from './ore.js';
 import { bossHpFor, computePlayerMaxHp } from './boss.js';
 import { applyLegacyV1, migrateSaveData } from './migrations.js';
 import {
-    nonNegative, nonNegativeInt, finitePositive, intInRange, futureTimestamp,
-    multiplierOrOne, activeMultiplier, activeAddition, pickCatalogRecord
+    nonNegative,
+    nonNegativeInt,
+    finitePositive,
+    intInRange,
+    futureTimestamp,
+    multiplierOrOne,
+    activeMultiplier,
+    activeAddition,
+    pickCatalogRecord
 } from './sanitize.js';
 
 // Прогресс забега: руда, тир, звёзды, добыча по тирам.

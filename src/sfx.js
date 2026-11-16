@@ -6,7 +6,7 @@ import { gameState } from './state.js';
 
 const MIN_INTERVAL_MS = 70;
 const DEFAULT_VOLUME = 0.8;
-const PITCH_MIN = 0.94;    // разброс тона: rate x [0.94 .. 1.06)
+const PITCH_MIN = 0.94; // разброс тона: rate x [0.94 .. 1.06)
 const PITCH_SPREAD = 0.12;
 const lastPlayed = new Map();
 

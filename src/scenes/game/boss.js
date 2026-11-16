@@ -1,5 +1,24 @@
 import {
-    gameState, saveGame, fmt, SECOND_MS, BOSSES, ITEMS, BOSS_FIGHT_SECONDS, bossHpFor, rollBossHit, grantBossKill, useItem, getItemPrice, buyItem, updateBossFight, clearBossFight, getRigBuffMult, getPlayerMaxHp, bossAttackPower, BOSS_ATTACK_PERIOD_MS, BOSS_ATTACK_WINDUP_MS
+    gameState,
+    saveGame,
+    fmt,
+    SECOND_MS,
+    BOSSES,
+    ITEMS,
+    BOSS_FIGHT_SECONDS,
+    bossHpFor,
+    rollBossHit,
+    grantBossKill,
+    useItem,
+    getItemPrice,
+    buyItem,
+    updateBossFight,
+    clearBossFight,
+    getRigBuffMult,
+    getPlayerMaxHp,
+    bossAttackPower,
+    BOSS_ATTACK_PERIOD_MS,
+    BOSS_ATTACK_WINDUP_MS
 } from '../../state.js';
 import { computeLayout } from '../../layout.js';
 import { playSfx } from '../../sfx.js';
@@ -8,9 +27,21 @@ import { floatText, showHitFeedback } from './effects.js';
 import { TEXT, TEX, EVENTS, REG, TOUCH_MIN } from '../../ui/theme.js';
 import { GAME_DEPTH, BOSS_ITEM_BUFF_FIELD } from './constants.js';
 import {
-    BOSS_UI, BOSS_BAR, PLAYER_TEXT_COLOR, BOSS_HP_STROKE, BOSS_SPRITE_PULSE, bossFontSize, bossHealthColor,
-    SLOT_LABEL_PADDING, MIN_SLOT_FONT, BOSS_WINDUP_TINT, BOSS_WINDUP_SHAKE_PX, BOSS_WINDUP_SHAKE_STEP_MS,
-    BOSS_STRIKE_FLASH, BOSS_DEFEAT_MS, BOSS_SAVE_THROTTLE_MS
+    BOSS_UI,
+    BOSS_BAR,
+    PLAYER_TEXT_COLOR,
+    BOSS_HP_STROKE,
+    BOSS_SPRITE_PULSE,
+    bossFontSize,
+    bossHealthColor,
+    SLOT_LABEL_PADDING,
+    MIN_SLOT_FONT,
+    BOSS_WINDUP_TINT,
+    BOSS_WINDUP_SHAKE_PX,
+    BOSS_WINDUP_SHAKE_STEP_MS,
+    BOSS_STRIKE_FLASH,
+    BOSS_DEFEAT_MS,
+    BOSS_SAVE_THROTTLE_MS
 } from './bossLayout.js';
 
 // Сколько секунд осталось у боевого бафа предмета (0 — баф не активен)
@@ -42,8 +73,21 @@ export const bossMethods = {
         const elapsedMs = restore ? Math.max(0, Math.floor(restore.elapsedMs) || 0) : 0;
         // Живучесть шахтёра: полная при входе, из сейва при продолжении (F5)
         const maxPlayer = getPlayerMaxHp();
-        const playerHp = restore ? Math.min(Math.max(1, Math.ceil(restore.playerHp) || maxPlayer), maxPlayer) : maxPlayer;
-        this.boss = { def, hp, maxHp, busy: false, startedAt: this.time.now - elapsedMs, endsAt: this.time.now + BOSS_FIGHT_SECONDS * SECOND_MS, playerHp, maxPlayer, nextAttackAt: this.time.now + BOSS_ATTACK_PERIOD_MS, attacking: false };
+        const playerHp = restore
+            ? Math.min(Math.max(1, Math.ceil(restore.playerHp) || maxPlayer), maxPlayer)
+            : maxPlayer;
+        this.boss = {
+            def,
+            hp,
+            maxHp,
+            busy: false,
+            startedAt: this.time.now - elapsedMs,
+            endsAt: this.time.now + BOSS_FIGHT_SECONDS * SECOND_MS,
+            playerHp,
+            maxPlayer,
+            nextAttackAt: this.time.now + BOSS_ATTACK_PERIOD_MS,
+            attacking: false
+        };
         gameState.bossFight = { bossId: def.id, hp: Math.ceil(hp), playerHp, elapsedMs };
         // Зомби-цепочки разрушения гасим так же, как buildBlock: снятие твинов и
         // таймера заживления + смена поколения блока (иначе отложенный delayedCall
@@ -79,7 +123,8 @@ export const bossMethods = {
         const uiScene = this.scene.get('UIScene');
         const ps = (uiScene && uiScene._adaptiveScale) || 1;
 
-        const sprite = this.add.image(bx, by + ui.sprite.dy, this.boss.def.icon)
+        const sprite = this.add
+            .image(bx, by + ui.sprite.dy, this.boss.def.icon)
             .setDisplaySize(ui.sprite.size, ui.sprite.size);
         sprite.setInteractive({ useHandCursor: true });
         sprite.on('pointerdown', (pointer) => this.performBossHit(pointer.worldX, pointer.worldY, false));
@@ -89,13 +134,44 @@ export const bossMethods = {
         // Полоса живучести шахтёра — под баром босса (цвет другой, чтобы читались
         // обе: босс зелёно-красный, шахтёр оранжевый)
         this.playerBar = this.add.graphics();
-        this.playerHpText = makeLabel(this, bx, by + ui.playerText.dy, '', bossFontSize(ui.playerText, ps), PLAYER_TEXT_COLOR).setOrigin(0.5);
-        this.bossName = makeLabel(this, bx, by + ui.name.dy, this.boss.def.name, bossFontSize(ui.name, ps), TEXT.gold).setOrigin(0.5);
-        this.bossHpText = makeLabel(this, bx, by + ui.hpText.dy, '', bossFontSize(ui.hpText, ps), TEXT.white).setOrigin(0.5);
+        this.playerHpText = makeLabel(
+            this,
+            bx,
+            by + ui.playerText.dy,
+            '',
+            bossFontSize(ui.playerText, ps),
+            PLAYER_TEXT_COLOR
+        ).setOrigin(0.5);
+        this.bossName = makeLabel(
+            this,
+            bx,
+            by + ui.name.dy,
+            this.boss.def.name,
+            bossFontSize(ui.name, ps),
+            TEXT.gold
+        ).setOrigin(0.5);
+        this.bossHpText = makeLabel(this, bx, by + ui.hpText.dy, '', bossFontSize(ui.hpText, ps), TEXT.white).setOrigin(
+            0.5
+        );
         if (ui.hpText.stroke) this.bossHpText.setStroke(BOSS_HP_STROKE.color, BOSS_HP_STROKE.width);
-        this.bossTime = makeLabel(this, bx + ui.time.dx, by + ui.time.dy, '0:00', bossFontSize(ui.time, ps), TEXT.cream).setOrigin(ui.time.originX, 0.5);
+        this.bossTime = makeLabel(
+            this,
+            bx + ui.time.dx,
+            by + ui.time.dy,
+            '0:00',
+            bossFontSize(ui.time, ps),
+            TEXT.cream
+        ).setOrigin(ui.time.originX, 0.5);
 
-        this.bossUi.add([sprite, this.bossBar, this.playerBar, this.playerHpText, this.bossName, this.bossHpText, this.bossTime]);
+        this.bossUi.add([
+            sprite,
+            this.bossBar,
+            this.playerBar,
+            this.playerHpText,
+            this.bossName,
+            this.bossHpText,
+            this.bossTime
+        ]);
 
         this.bossItems = [];
         const usable = ITEMS.filter((it) => it.bossUse);
@@ -106,7 +182,9 @@ export const bossMethods = {
             const btn = this.add.image(cx, slotY, TEX.button).setDisplaySize(slot.activeW, slot.h);
             touchHit(btn);
             const icon = this.add.image(cx + slot.iconDx, slotY, it.id).setDisplaySize(slot.iconSize, slot.iconSize);
-            const cnt = makeLabel(this, cx + slot.cntDx, slotY, '', bossFontSize(slot.cnt, ps), TEXT.white).setOrigin(0.5);
+            const cnt = makeLabel(this, cx + slot.cntDx, slotY, '', bossFontSize(slot.cnt, ps), TEXT.white).setOrigin(
+                0.5
+            );
             const buyLbl = makeLabel(this, cx, slotY, '', bossFontSize(slot.buy, ps), TEXT.white).setOrigin(0.5);
             btn.on('pointerdown', () => {
                 if (!this.boss || this.boss.busy) return;
@@ -129,7 +207,14 @@ export const bossMethods = {
         // Подсказка эффектов под слотами: только в ландшафте — в портрете
         // описания читаются в панели «Снаряжение» (спека редизайна)
         if (ui.hint) {
-            this.bossHint = makeLabel(this, bx, by + ui.hint.dy, usable.map((it) => it.desc).join(' · '), ui.hint.size, TEXT.soft).setOrigin(0.5);
+            this.bossHint = makeLabel(
+                this,
+                bx,
+                by + ui.hint.dy,
+                usable.map((it) => it.desc).join(' · '),
+                ui.hint.size,
+                TEXT.soft
+            ).setOrigin(0.5);
             this.bossUi.add(this.bossHint);
         }
 
@@ -157,14 +242,20 @@ export const bossMethods = {
         g.fillStyle(BOSS_BAR.background, 1);
         g.fillRect(x, y, w, h);
         g.fillStyle(fillColor, 1);
-        g.fillRect(x + BOSS_BAR.border, y + BOSS_BAR.border, Math.max(0, (w - 2 * BOSS_BAR.border) * frac), h - 2 * BOSS_BAR.border);
+        g.fillRect(
+            x + BOSS_BAR.border,
+            y + BOSS_BAR.border,
+            Math.max(0, (w - 2 * BOSS_BAR.border) * frac),
+            h - 2 * BOSS_BAR.border
+        );
     },
 
     drawBossBar() {
         if (!this.boss || !this.bossBar) return;
         // Портрет (спека): бар 380x24 в стэке над слотами; ландшафт — 340x20
         const bar = this.bossUiSpec().hpBar;
-        const x = this.blockX - bar.w / 2, y = (this._bossBy || this.blockY) + bar.dy;
+        const x = this.blockX - bar.w / 2,
+            y = (this._bossBy || this.blockY) + bar.dy;
         const frac = Math.max(0, Math.min(1, this.boss.hp / this.boss.maxHp));
         this.drawBar(this.bossBar, x, y, bar.w, bar.h, frac, bossHealthColor(frac));
         this.bossHpText.setText(`${fmt(Math.max(0, Math.ceil(this.boss.hp)))} / ${fmt(this.boss.maxHp)}`);
@@ -175,10 +266,13 @@ export const bossMethods = {
     drawPlayerBar() {
         if (!this.boss || !this.playerBar) return;
         const bar = this.bossUiSpec().playerBar;
-        const x = this.blockX - bar.w / 2, y = (this._bossBy || this.blockY) + bar.dy;
+        const x = this.blockX - bar.w / 2,
+            y = (this._bossBy || this.blockY) + bar.dy;
         const frac = Math.max(0, Math.min(1, this.boss.playerHp / this.boss.maxPlayer));
         this.drawBar(this.playerBar, x, y, bar.w, bar.h, frac, BOSS_BAR.playerColor);
-        this.playerHpText.setText(`ты: ${fmt(Math.max(0, Math.ceil(this.boss.playerHp)))} / ${fmt(this.boss.maxPlayer)} · удар босса ${fmt(bossAttackPower(this.boss.def))}`);
+        this.playerHpText.setText(
+            `ты: ${fmt(Math.max(0, Math.ceil(this.boss.playerHp)))} / ${fmt(this.boss.maxPlayer)} · удар босса ${fmt(bossAttackPower(this.boss.def))}`
+        );
     },
     // Удар босса по шахтёру: смена цвета спрайта и дрожь уже отыграны замахом.
     // Урон фиксированный (bossAttackPower), красная вспышка + тряска камеры,
@@ -195,10 +289,21 @@ export const bossMethods = {
         b.attacking = false;
         playSfx(this, 'boss_hit', 3, 1, 0.55);
         this.cameras.main.shake(180, 0.006);
-        const flash = this.add.rectangle(this.blockX, this._bossBy || this.blockY, 1280, 720, BOSS_STRIKE_FLASH.color, 0).setDepth(GAME_DEPTH.bossFlash);
-        this.tweens.add({ targets: flash, alpha: { from: BOSS_STRIKE_FLASH.alpha, to: 0 }, duration: BOSS_STRIKE_FLASH.durationMs, onComplete: () => flash.destroy() });
-        floatText(this, this.blockX, (this._bossBy || this.blockY) - 120, `-${fmt(dmg)}`, 24, '#ff7a6a',
-            { depth: GAME_DEPTH.bossFloat, rise: 45, duration: 700, ease: 'Cubic.easeOut' });
+        const flash = this.add
+            .rectangle(this.blockX, this._bossBy || this.blockY, 1280, 720, BOSS_STRIKE_FLASH.color, 0)
+            .setDepth(GAME_DEPTH.bossFlash);
+        this.tweens.add({
+            targets: flash,
+            alpha: { from: BOSS_STRIKE_FLASH.alpha, to: 0 },
+            duration: BOSS_STRIKE_FLASH.durationMs,
+            onComplete: () => flash.destroy()
+        });
+        floatText(this, this.blockX, (this._bossBy || this.blockY) - 120, `-${fmt(dmg)}`, 24, '#ff7a6a', {
+            depth: GAME_DEPTH.bossFloat,
+            rise: 45,
+            duration: 700,
+            ease: 'Cubic.easeOut'
+        });
         this.drawPlayerBar();
         if (b.playerHp <= 0) this.bossDown(b);
     },
@@ -216,7 +321,11 @@ export const bossMethods = {
         gameState.rigBuffUntil = 0;
         gameState.oilBuffUntil = 0;
         this.game.events.emit(EVENTS.bossChanged);
-        this.game.events.emit(EVENTS.playerDown, { bossName: b.def.name, dmg: bossAttackPower(b.def), maxPlayer: getPlayerMaxHp() });
+        this.game.events.emit(EVENTS.playerDown, {
+            bossName: b.def.name,
+            dmg: bossAttackPower(b.def),
+            maxPlayer: getPlayerMaxHp()
+        });
         saveGame();
     },
 
@@ -241,7 +350,11 @@ export const bossMethods = {
                 const key = `a${buffLeft}`;
                 if (slot._key === key) continue;
                 slot._key = key;
-                this.showFilledSlot(slot, spec, `${Math.floor(buffLeft / 60)}:${String(buffLeft % 60).padStart(2, '0')}`);
+                this.showFilledSlot(
+                    slot,
+                    spec,
+                    `${Math.floor(buffLeft / 60)}:${String(buffLeft % 60).padStart(2, '0')}`
+                );
             } else if (stock > 0) {
                 const key = `x${stock}`;
                 if (slot._key === key) continue;
@@ -253,7 +366,10 @@ export const bossMethods = {
                 const key = `b${price}|${affordable ? 'n' : 'g'}`;
                 if (slot._key === key) continue;
                 slot._key = key;
-                slot.btn.setDisplaySize(spec.emptyW, spec.h).setTexture(affordable ? TEX.button : TEX.buttonDisabled).setAlpha(1);
+                slot.btn
+                    .setDisplaySize(spec.emptyW, spec.h)
+                    .setTexture(affordable ? TEX.button : TEX.buttonDisabled)
+                    .setAlpha(1);
                 touchHit(slot.btn);
                 slot.icon.setVisible(false);
                 slot.cnt.setVisible(false);
@@ -267,7 +383,10 @@ export const bossMethods = {
     showFilledSlot(slot, spec, caption) {
         slot.btn.setDisplaySize(spec.activeW, spec.h).setTexture(TEX.button).setAlpha(1);
         touchHit(slot.btn);
-        slot.icon.setVisible(true).setPosition(slot.btn.x + spec.iconDx, slot.btn.y).setDisplaySize(spec.iconSize, spec.iconSize);
+        slot.icon
+            .setVisible(true)
+            .setPosition(slot.btn.x + spec.iconDx, slot.btn.y)
+            .setDisplaySize(spec.iconSize, spec.iconSize);
         slot.cnt.setVisible(true).setText(caption);
         slot.buyLbl.setVisible(false);
     },
@@ -331,8 +450,11 @@ export const bossMethods = {
         this.leaveBossFight();
         saveGame();
         this.game.events.emit(EVENTS.bossChanged);
-        floatText(this, this.blockX, this.blockY - 120, 'Босс восстановился', 22, TEXT.soft,
-            { depth: GAME_DEPTH.bossFloat, rise: 50, duration: 1100 });
+        floatText(this, this.blockX, this.blockY - 120, 'Босс восстановился', 22, TEXT.soft, {
+            depth: GAME_DEPTH.bossFloat,
+            rise: 50,
+            duration: 1100
+        });
     },
 
     // Общий выход из боя (победа / вырубание / отступление): оверлей снят, блок

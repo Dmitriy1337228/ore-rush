@@ -12,9 +12,27 @@ const OUT = path.resolve(process.env.OUT_DIR || 'shots');
 fs.mkdirSync(OUT, { recursive: true });
 
 const SAVE_SEED = JSON.stringify({
-    version: 2, ore: 5000, tier: 1, stars: 12, clicks: 120, lifetimeMined: 8000,
+    version: 2,
+    ore: 5000,
+    tier: 1,
+    stars: 12,
+    clicks: 120,
+    lifetimeMined: 8000,
     tierEarned: [8000, 5000, 0, 0, 0],
-    levels: { pickaxe: 13, sledge: 0, dynamite: 2, lucky: 0, resonance: 0, miner: 5, drill: 0, excavator: 0, factory: 0, tech: 0, lantern: 0, warehouse: 0 }
+    levels: {
+        pickaxe: 13,
+        sledge: 0,
+        dynamite: 2,
+        lucky: 0,
+        resonance: 0,
+        miner: 5,
+        drill: 0,
+        excavator: 0,
+        factory: 0,
+        tech: 0,
+        lantern: 0,
+        warehouse: 0
+    }
 });
 
 const server = await ensureDevServer();
@@ -41,14 +59,23 @@ async function auditLayout(page) {
         for (const scene of game.scene.getScenes(true)) {
             const walk = (list, parentVisible) => {
                 for (const go of list) {
-                    if (go.visible === false || parentVisible === false) { if (go.list) walk(go.list, false); continue; }
-                    if (go.list) { walk(go.list, true); continue; }
+                    if (go.visible === false || parentVisible === false) {
+                        if (go.list) walk(go.list, false);
+                        continue;
+                    }
+                    if (go.list) {
+                        walk(go.list, true);
+                        continue;
+                    }
                     if (go.type === 'ParticleEmitter' || go.type === 'Graphics' || go.type === 'Rectangle') continue;
                     if (go.alpha !== undefined && go.alpha < 0.05) continue;
                     try {
                         const b = go.getBounds();
                         if (b.width <= 1 && b.height <= 1) continue;
-                        let x = b.x, y = b.y, r = b.right, bt = b.bottom;
+                        let x = b.x,
+                            y = b.y,
+                            r = b.right,
+                            bt = b.bottom;
                         // Ряды живут в мировых координатах и рисуются камерой списка:
                         // переводим в экранные координаты (viewport самой камеры)
                         // и отсеиваем невидимые строки. Тот же перевод для контента
@@ -58,41 +85,70 @@ async function auditLayout(page) {
                         if (scene.scene.key === 'UIScene' && ui && ui.listContent && inTree(ui.listContent, go)) {
                             inList = true;
                             const vy = y - listCam.scrollY + listCam.y;
-                            if (bt - listCam.scrollY + listCam.y < listCam.y - 2 || vy > listCam.y + listCam.height + 2) continue; // вне видимой полосы
-                            y = vy; bt = bt - listCam.scrollY + listCam.y;
-                            x = x - listCam.scrollX + listCam.x; r = r - listCam.scrollX + listCam.x;
+                            if (bt - listCam.scrollY + listCam.y < listCam.y - 2 || vy > listCam.y + listCam.height + 2)
+                                continue; // вне видимой полосы
+                            y = vy;
+                            bt = bt - listCam.scrollY + listCam.y;
+                            x = x - listCam.scrollX + listCam.x;
+                            r = r - listCam.scrollX + listCam.x;
                         }
-                        if (scene.scene.key === 'UIScene' && ui && ui._mapOpen && ui.mapContent && inTree(ui.mapContent, go)) {
+                        if (
+                            scene.scene.key === 'UIScene' &&
+                            ui &&
+                            ui._mapOpen &&
+                            ui.mapContent &&
+                            inTree(ui.mapContent, go)
+                        ) {
                             const cam = ui.mapCam;
                             const vy = y - cam.scrollY + cam.y;
                             if (bt - cam.scrollY + cam.y < cam.y - 2 || vy > cam.y + cam.height + 2) continue; // вне вьюпорта карты
-                            y = vy; bt = bt - cam.scrollY + cam.y;
-                            x = x - cam.scrollX + cam.x; r = r - cam.scrollX + cam.x;
+                            y = vy;
+                            bt = bt - cam.scrollY + cam.y;
+                            x = x - cam.scrollX + cam.x;
+                            r = r - cam.scrollX + cam.x;
                         }
-                        if (scene.scene.key === 'UIScene' && ui && ui._craftOpen && ui.craftContent && inTree(ui.craftContent, go)) {
+                        if (
+                            scene.scene.key === 'UIScene' &&
+                            ui &&
+                            ui._craftOpen &&
+                            ui.craftContent &&
+                            inTree(ui.craftContent, go)
+                        ) {
                             const cam = ui.craftCam;
                             const vy = y - cam.scrollY + cam.y;
                             if (bt - cam.scrollY + cam.y < cam.y - 2 || vy > cam.y + cam.height + 2) continue; // вне вьюпорта крафта
-                            y = vy; bt = bt - cam.scrollY + cam.y;
-                            x = x - cam.scrollX + cam.x; r = r - cam.scrollX + cam.x;
+                            y = vy;
+                            bt = bt - cam.scrollY + cam.y;
+                            x = x - cam.scrollX + cam.x;
+                            r = r - cam.scrollX + cam.x;
                         }
                         // Текстовый бокс выше/ниже глифов на ~3px — приближаем к глифам
-                        if (go.type === 'Text') { y += 3; bt -= 3; }
+                        if (go.type === 'Text') {
+                            y += 3;
+                            bt -= 3;
+                        }
                         items.push({
                             scene: scene.scene.key,
                             kind: go.type,
                             text: (go.text || '').slice(0, 26),
                             tex: (go.texture && go.texture.key) || '',
-                            x, y, r, bt,
+                            x,
+                            y,
+                            r,
+                            bt,
                             interactive: !!(go.input && go.enabled)
                         });
-                    } catch (e) { /* нет bounds — пропускаем */ }
+                    } catch (e) {
+                        /* нет bounds — пропускаем */
+                    }
                 }
             };
             const inTree = (container, go) => {
                 if (container === go) return true;
                 if (!container.list) return false;
-                for (const ch of container.list) { if (ch === go || inTree(ch, go)) return true; }
+                for (const ch of container.list) {
+                    if (ch === go || inTree(ch, go)) return true;
+                }
                 return false;
             };
             walk(scene.children.list, true);
@@ -101,13 +157,16 @@ async function auditLayout(page) {
         const isContained = (a, b) => a.x >= b.x - 1 && a.y >= b.y - 1 && a.r <= b.r + 1 && a.b <= b.b + 1;
         for (let i = 0; i < items.length; i++) {
             for (let j = i + 1; j < items.length; j++) {
-                const a = items[i], b = items[j];
+                const a = items[i],
+                    b = items[j];
                 if (a.scene !== b.scene) continue;
                 if (isContained(a, b) || isContained(b, a)) continue;
                 const ox = Math.min(a.r, b.r) - Math.max(a.x, b.x);
                 const oy = Math.min(a.b, b.b) - Math.max(a.y, b.y);
                 if (ox > 1 && oy > 1) {
-                    violations.push(`OVERLAP [${a.scene}] "${a.text || a.tex || a.kind}" (${Math.round(a.x)},${Math.round(a.y)}) x "${b.text || b.tex || b.kind}" (${Math.round(b.x)},${Math.round(b.y)}) ox=${Math.round(ox)} oy=${Math.round(oy)}`);
+                    violations.push(
+                        `OVERLAP [${a.scene}] "${a.text || a.tex || a.kind}" (${Math.round(a.x)},${Math.round(a.y)}) x "${b.text || b.tex || b.kind}" (${Math.round(b.x)},${Math.round(b.y)}) ox=${Math.round(ox)} oy=${Math.round(oy)}`
+                    );
                 }
             }
         }
@@ -116,8 +175,10 @@ async function auditLayout(page) {
             const cards = ui.listContent.list.filter((go) => go.texture && go.texture.key === 'upgrade_row_card_1');
             for (const card of cards) {
                 const cb = card.getBounds();
-                const csx = cb.x - listCam.scrollX + listCam.x, csy = cb.y - listCam.scrollY + listCam.y;
-                const csrx = cb.right - listCam.scrollX + listCam.x, csby = cb.bottom - listCam.scrollY + listCam.y;
+                const csx = cb.x - listCam.scrollX + listCam.x,
+                    csy = cb.y - listCam.scrollY + listCam.y;
+                const csrx = cb.right - listCam.scrollX + listCam.x,
+                    csby = cb.bottom - listCam.scrollY + listCam.y;
                 if (csby < listCam.y - 2 || csy > listCam.y + listCam.height + 2) continue; // карточка вне экрана
                 const inner = { x: csx + 5, y: csy + 5, r: csrx - 5, b: csby - 5 };
                 for (const go of ui.listContent.list) {
@@ -125,11 +186,15 @@ async function auditLayout(page) {
                     const gb = go.getBounds();
                     if (!gb || gb.width === 0) continue;
                     if (gb.bottom < cb.y || gb.y > cb.bottom) continue;
-                    const gy = gb.y - listCam.scrollY + listCam.y, gby = gb.bottom - listCam.scrollY + listCam.y;
-                    const gx = gb.x - listCam.scrollX + listCam.x, grx = gb.right - listCam.scrollX + listCam.x;
+                    const gy = gb.y - listCam.scrollY + listCam.y,
+                        gby = gb.bottom - listCam.scrollY + listCam.y;
+                    const gx = gb.x - listCam.scrollX + listCam.x,
+                        grx = gb.right - listCam.scrollX + listCam.x;
                     const adj = go.type === 'Text' ? 3 : 0;
                     if (gx < inner.x - 1 || grx > inner.r + 1 || gy + adj < inner.y - 1 || gby - adj > inner.b + 1) {
-                        violations.push(`OUTSIDE-CARD row@${Math.round(csy)}: "${go.text || go.texture?.key || go.type}" (${Math.round(gx)},${Math.round(gy)})..(${Math.round(grx)},${Math.round(gby)}) вне зоны (${Math.round(inner.x)},${Math.round(inner.y)})..(${Math.round(inner.r)},${Math.round(inner.b)})`);
+                        violations.push(
+                            `OUTSIDE-CARD row@${Math.round(csy)}: "${go.text || go.texture?.key || go.type}" (${Math.round(gx)},${Math.round(gy)})..(${Math.round(grx)},${Math.round(gby)}) вне зоны (${Math.round(inner.x)},${Math.round(inner.y)})..(${Math.round(inner.r)},${Math.round(inner.b)})`
+                        );
                     }
                 }
             }
@@ -141,7 +206,9 @@ async function auditLayout(page) {
             for (const row of ui.rows) {
                 if (!row.nameText || !row.nameText.width) continue;
                 if (row.nameText.width > row.nameMaxW + 1) {
-                    violations.push(`NAME-TOO-LONG "${row.nameText.text}" width=${Math.round(row.nameText.width)} > ${row.nameMaxW}`);
+                    violations.push(
+                        `NAME-TOO-LONG "${row.nameText.text}" width=${Math.round(row.nameText.width)} > ${row.nameMaxW}`
+                    );
                 }
             }
         }
@@ -177,7 +244,9 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null, n
     const bucket = { name: name || `page_${consoleErrors.length + 1}`, errors: [] };
     consoleErrors.push(bucket);
     page.on('pageerror', (e) => bucket.errors.push(`pageerror: ${e}`));
-    page.on('console', (m) => { if (m.type() === 'error') bucket.errors.push(`console: ${m.text()}`); });
+    page.on('console', (m) => {
+        if (m.type() === 'error') bucket.errors.push(`console: ${m.text()}`);
+    });
     if (seed) {
         await page.addInitScript((s) => {
             for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
@@ -193,10 +262,13 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null, n
 // экземпляр с дефолтным состоянием).
 async function withState(page, fnBody) {
     return page.evaluate(async (body) => {
-        const res = performance.getEntriesByType('resource').map((r) => r.name).find((u) => u.includes('/src/state.js'));
+        const res = performance
+            .getEntriesByType('resource')
+            .map((r) => r.name)
+            .find((u) => u.includes('/src/state.js'));
         const m = await import(res);
         // eslint-disable-next-line no-new-func
-        return (new Function('m', `return (${body})(m);`))(m);
+        return new Function('m', `return (${body})(m);`)(m);
     }, fnBody);
 }
 
@@ -222,11 +294,16 @@ async function withState(page, fnBody) {
     // кирки — покупка не случилась бы и с верными координатами), затем «Купить»
     // первого ряда: центр кнопки = listCam(934,270) + btn(242,48) = (1176, 318)
     const lvlBefore = await withState(page, 'm => { m.addOre(100000); return m.gameState.levels.pickaxe; }');
-    for (let i = 0; i < 3; i++) { await page.mouse.click(1176, 318); await page.waitForTimeout(140); }
+    for (let i = 0; i < 3; i++) {
+        await page.mouse.click(1176, 318);
+        await page.waitForTimeout(140);
+    }
     await page.waitForTimeout(300);
     const lvlAfter = await withState(page, 'm => m.gameState.levels.pickaxe');
     if (lvlAfter !== lvlBefore + 3) {
-        scenarioFailures.push(`03_buys: уровень кирки ${lvlBefore} -> ${lvlAfter}, ожидалось +3 (клик/покупка не работают)`);
+        scenarioFailures.push(
+            `03_buys: уровень кирки ${lvlBefore} -> ${lvlAfter}, ожидалось +3 (клик/покупка не работают)`
+        );
     }
     await shoot(page, '03_buys');
     await ctx.close();
@@ -239,7 +316,10 @@ async function withState(page, fnBody) {
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     await shoot(page, '04_list_top');
     const auditSeeded = await auditLayout(page);
-    fs.writeFileSync(path.join(OUT, 'layout_audit_seeded.txt'), auditSeeded.violations.join('\n') || 'layout audit (seeded, stars=12): 0 violations');
+    fs.writeFileSync(
+        path.join(OUT, 'layout_audit_seeded.txt'),
+        auditSeeded.violations.join('\n') || 'layout audit (seeded, stars=12): 0 violations'
+    );
     console.log('seeded violations:', auditSeeded.violations.length);
     auditSeeded.violations.forEach((v) => console.log('  ' + v));
     await page.mouse.move(1082, 430);
@@ -254,7 +334,10 @@ async function withState(page, fnBody) {
     await page.waitForTimeout(300);
     await shoot(page, '06_settings_modal');
     const auditModal = await auditLayout(page);
-    fs.writeFileSync(path.join(OUT, 'layout_audit_modal.txt'), auditModal.violations.join('\n') || 'layout audit (modal): 0 violations');
+    fs.writeFileSync(
+        path.join(OUT, 'layout_audit_modal.txt'),
+        auditModal.violations.join('\n') || 'layout audit (modal): 0 violations'
+    );
     console.log('modal violations:', auditModal.violations.length);
     auditModal.violations.forEach((v) => console.log('  ' + v));
     await page.mouse.click(860, 132); // закрыть (крестик в углу: контейнер 640,360 + (220,-228))
@@ -275,7 +358,10 @@ async function withState(page, fnBody) {
     });
     await shoot(page, '07_offline_modal');
     const auditOff = await auditLayout(page);
-    fs.writeFileSync(path.join(OUT, 'layout_audit_offline.txt'), auditOff.violations.join('\n') || 'layout audit (offline): 0 violations');
+    fs.writeFileSync(
+        path.join(OUT, 'layout_audit_offline.txt'),
+        auditOff.violations.join('\n') || 'layout audit (offline): 0 violations'
+    );
     console.log('offline violations:', auditOff.violations.length);
     auditOff.violations.forEach((v) => console.log('  ' + v));
     // Забрать
@@ -308,18 +394,47 @@ async function withState(page, fnBody) {
 // скролл к «Орбитальной станции» (ряд 11) и гейт-анонсу «Квантовой лаборатории» (ряд 12).
 {
     const deep = {
-        version: 4, ore: 5e5, tier: 6, stars: 0, clicks: 500, lifetimeMined: 5e6,
-        tierEarned: TIERS_SEED_EARNED(), tierAnchorRate: 0,
-        levels: { pickaxe: 20, sledge: 5, hydraulic: 5, plasma: 2, miner: 30, robotarm: 2, drill: 20, excavator: 15, factory: 10, quarry: 8, megafactory: 5, tech: 2, dynamite: 10, lucky: 8, resonance: 5, lantern: 2, warehouse: 1 }
+        version: 4,
+        ore: 5e5,
+        tier: 6,
+        stars: 0,
+        clicks: 500,
+        lifetimeMined: 5e6,
+        tierEarned: TIERS_SEED_EARNED(),
+        tierAnchorRate: 0,
+        levels: {
+            pickaxe: 20,
+            sledge: 5,
+            hydraulic: 5,
+            plasma: 2,
+            miner: 30,
+            robotarm: 2,
+            drill: 20,
+            excavator: 15,
+            factory: 10,
+            quarry: 8,
+            megafactory: 5,
+            tech: 2,
+            dynamite: 10,
+            lucky: 8,
+            resonance: 5,
+            lantern: 2,
+            warehouse: 1
+        }
     };
-    function TIERS_SEED_EARNED() { return Array.from({ length: 12 }, (_, i) => (i <= 6 ? 1e5 : 0)); }
+    function TIERS_SEED_EARNED() {
+        return Array.from({ length: 12 }, (_, i) => (i <= 6 ? 1e5 : 0));
+    }
     const { ctx, page } = await newPage({ seed: { 'ore-rush-save': JSON.stringify(deep) }, name: '09_deep' });
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     await page.mouse.move(1082, 430);
     await page.mouse.wheel(0, 2200); // scrollY ~1100: «Орбитальная» и «Квантовая» целиком в окне 262..664
     await page.waitForTimeout(400);
     const auditDeep = await auditLayout(page);
-    fs.writeFileSync(path.join(OUT, 'layout_audit_deep.txt'), auditDeep.violations.join('\n') || 'layout audit (deep rows, tier 6): 0 violations');
+    fs.writeFileSync(
+        path.join(OUT, 'layout_audit_deep.txt'),
+        auditDeep.violations.join('\n') || 'layout audit (deep rows, tier 6): 0 violations'
+    );
     console.log('deep violations:', auditDeep.violations.length);
     auditDeep.violations.forEach((v) => console.log('  ' + v));
     // Строка тира с длинным названием руды («Аметист») не должна заходить под
@@ -331,7 +446,9 @@ async function withState(page, fnBody) {
         return { text: ui.tierLabel.text, right: ui.tierLabel.x + ui.tierLabel.width, btnLeft };
     });
     if (tier.right > tier.btnLeft) {
-        scenarioFailures.push(`09_deep: строка тира "${tier.text}" заходит под кнопку мультипокупки (right ${Math.round(tier.right)} > btnLeft ${Math.round(tier.btnLeft)})`);
+        scenarioFailures.push(
+            `09_deep: строка тира "${tier.text}" заходит под кнопку мультипокупки (right ${Math.round(tier.right)} > btnLeft ${Math.round(tier.btnLeft)})`
+        );
     }
     await shoot(page, '10_deep_rows');
     await ctx.close();
@@ -353,8 +470,12 @@ async function withState(page, fnBody) {
         return { gap: toggleTop - statsBottom, lines: ui.modalStats.text.split('\n').length, buff: ui.buffLine.text };
     });
     console.log(`settings/daily: gap ${Math.round(check.gap)}px, stat lines ${check.lines}, hud buff "${check.buff}"`);
-    if (check.lines !== 5) scenarioFailures.push(`12_settings_daily: строк статов ${check.lines}, ожидалось 5 (баф не должен удлинять блок)`);
-    if (check.gap < 8) scenarioFailures.push(`12_settings_daily: тумблеры наезжают на статы (зазор ${Math.round(check.gap)}px)`);
+    if (check.lines !== 5)
+        scenarioFailures.push(
+            `12_settings_daily: строк статов ${check.lines}, ожидалось 5 (баф не должен удлинять блок)`
+        );
+    if (check.gap < 8)
+        scenarioFailures.push(`12_settings_daily: тумблеры наезжают на статы (зазор ${Math.round(check.gap)}px)`);
     if (!check.buff) scenarioFailures.push('12_settings_daily: HUD-таймер бафа пуст на свежем сейве');
     await shoot(page, '12_settings_daily');
     await ctx.close();
@@ -365,7 +486,10 @@ async function withState(page, fnBody) {
     const { ctx, page } = await newPage({ viewport: { width: 390, height: 844 }, name: '10_portrait' });
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
     const auditP = await auditLayout(page);
-    fs.writeFileSync(path.join(OUT, 'layout_audit_portrait.txt'), auditP.violations.join('\n') || 'layout audit (portrait 390x844): 0 violations');
+    fs.writeFileSync(
+        path.join(OUT, 'layout_audit_portrait.txt'),
+        auditP.violations.join('\n') || 'layout audit (portrait 390x844): 0 violations'
+    );
     console.log('portrait violations:', auditP.violations.length);
     auditP.violations.forEach((v) => console.log('  ' + v));
     await shoot(page, '11_portrait');
@@ -373,7 +497,10 @@ async function withState(page, fnBody) {
     await page.waitForTimeout(300);
     await shoot(page, '12_portrait_modal');
     const auditPM = await auditLayout(page);
-    fs.writeFileSync(path.join(OUT, 'layout_audit_portrait_modal.txt'), auditPM.violations.join('\n') || 'layout audit (portrait modal): 0 violations');
+    fs.writeFileSync(
+        path.join(OUT, 'layout_audit_portrait_modal.txt'),
+        auditPM.violations.join('\n') || 'layout audit (portrait modal): 0 violations'
+    );
     console.log('portrait modal violations:', auditPM.violations.length);
     auditPM.violations.forEach((v) => console.log('  ' + v));
     await ctx.close();
@@ -405,16 +532,19 @@ async function withState(page, fnBody) {
     if (m.nodes !== 18 || m.tiers !== 12 || m.bosses !== 6) {
         scenarioFailures.push(`17_map_open: узлов ${m.nodes} (тиры ${m.tiers}, боссы ${m.bosses}), ожидалось 18/12/6`);
     }
-        // Баннер уровня: fx прибытия рисует его в mapContent (камера карты)
-        const banner = await page.evaluate(() => {
-            const ui = window.__GAME.scene.getScene('UIScene');
-            ui._arriveFx(0);
-            return ui.mapContent.list.some((o) => o.type === 'Text' && /^Уровень 1: /.test(o.text));
-        });
-        if (!banner) scenarioFailures.push('17_map_open: баннер «Уровень 1: …» не найден в mapContent');
+    // Баннер уровня: fx прибытия рисует его в mapContent (камера карты)
+    const banner = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        ui._arriveFx(0);
+        return ui.mapContent.list.some((o) => o.type === 'Text' && /^Уровень 1: /.test(o.text));
+    });
+    if (!banner) scenarioFailures.push('17_map_open: баннер «Уровень 1: …» не найден в mapContent');
     const auditMap = (await auditLayout(page)).violations;
     const newMap = newOverlayViolations(auditMap, base17);
-    fs.writeFileSync(path.join(OUT, 'layout_audit_map_open.txt'), newMap.join('\n') || 'layout audit (map open): 0 новых нарушений');
+    fs.writeFileSync(
+        path.join(OUT, 'layout_audit_map_open.txt'),
+        newMap.join('\n') || 'layout audit (map open): 0 новых нарушений'
+    );
     console.log('map open new violations:', newMap.length);
     newMap.forEach((v) => console.log('  ' + v));
     if (newMap.length) scenarioFailures.push(`17_map_open: новые нарушения вёрстки: ${newMap.join(' | ')}`);
@@ -428,11 +558,32 @@ async function withState(page, fnBody) {
 // Сид v5 с явным тиром: SAVE_SEED тут не годится — миграция v2->v5 сдвигает
 // тир (1 -> 2), и цена спуска уходит за выданную руду (клик не срабатывает).
 const V5_SEED = JSON.stringify({
-    version: 5, ore: 5000, tier: 1, stars: 0, clicks: 50, lifetimeMined: 5e5,
+    version: 5,
+    ore: 5000,
+    tier: 1,
+    stars: 0,
+    clicks: 50,
+    lifetimeMined: 5e5,
     tierEarned: [5e5, 5000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    tierAnchorRate: 50, tutorialDone: true,
-    bossesDefeated: {}, components: {}, artifacts: [], items: {}, crafting: null,
-    levels: { pickaxe: 12, miner: 10, dynamite: 0, lucky: 0, resonance: 0, focuslens: 0, magnet: 0, robotarm: 0, drill: 0, tech: 0 }
+    tierAnchorRate: 50,
+    tutorialDone: true,
+    bossesDefeated: {},
+    components: {},
+    artifacts: [],
+    items: {},
+    crafting: null,
+    levels: {
+        pickaxe: 12,
+        miner: 10,
+        dynamite: 0,
+        lucky: 0,
+        resonance: 0,
+        focuslens: 0,
+        magnet: 0,
+        robotarm: 0,
+        drill: 0,
+        tech: 0
+    }
 });
 {
     const { ctx, page } = await newPage({ seed: { 'ore-rush-save': V5_SEED }, name: '18_map_anim_skip' });
@@ -442,7 +593,10 @@ const V5_SEED = JSON.stringify({
     await page.waitForTimeout(200);
     const unlockPt = await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
-        return { x: ui.unlockBtn.x + ui.unlockBtn.displayWidth / 2, y: ui.unlockBtn.y + ui.unlockBtn.displayHeight / 2 };
+        return {
+            x: ui.unlockBtn.x + ui.unlockBtn.displayWidth / 2,
+            y: ui.unlockBtn.y + ui.unlockBtn.displayHeight / 2
+        };
     });
     await page.mouse.click(unlockPt.x, unlockPt.y);
     await page.waitForTimeout(300); // анимация 1400 мс — skip раньше её конца
@@ -450,10 +604,13 @@ const V5_SEED = JSON.stringify({
         const ui = window.__GAME.scene.getScene('UIScene');
         return { open: ui._mapOpen, anim: !!ui._mapAnim };
     });
-    if (!animOn.open || !animOn.anim) scenarioFailures.push(`18_map_anim_skip: анимация спуска не запустилась (${JSON.stringify(animOn)})`);
+    if (!animOn.open || !animOn.anim)
+        scenarioFailures.push(`18_map_anim_skip: анимация спуска не запустилась (${JSON.stringify(animOn)})`);
     await page.mouse.click(150, 400); // тап по dim вне панели — skip
     await page.waitForTimeout(150);
-    const skipped = await withState(page, `m => {
+    const skipped = await withState(
+        page,
+        `m => {
         const ui = window.__GAME.scene.getScene('UIScene');
         return {
             tier: m.gameState.tier,
@@ -461,9 +618,11 @@ const V5_SEED = JSON.stringify({
             scroll: ui.mapCam.scrollY,
             target: ui._mapScrollTarget(ui._findNodeIndex(m.gameState.tier))
         };
-    }`);
+    }`
+    );
     if (skipped.anim) scenarioFailures.push('18_map_anim_skip: тап по dim не остановил анимацию');
-    if (skipped.scroll !== skipped.target) scenarioFailures.push(`18_map_anim_skip: scrollY ${skipped.scroll} != цель ${skipped.target}`);
+    if (skipped.scroll !== skipped.target)
+        scenarioFailures.push(`18_map_anim_skip: scrollY ${skipped.scroll} != цель ${skipped.target}`);
     if (skipped.tier !== 2) scenarioFailures.push(`18_map_anim_skip: тир после спуска ${skipped.tier}, ожидался 2`);
     await shoot(page, '18_map_anim_skip');
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeMap());
@@ -472,7 +631,8 @@ const V5_SEED = JSON.stringify({
         open: window.__GAME.scene.getScene('UIScene')._mapOpen,
         locked: window.__GAME.registry.get('blockLocked')
     }));
-    if (afterClose.open || afterClose.locked) scenarioFailures.push(`18_map_anim_skip: мгновенный closeMap не снял лок (${JSON.stringify(afterClose)})`);
+    if (afterClose.open || afterClose.locked)
+        scenarioFailures.push(`18_map_anim_skip: мгновенный closeMap не снял лок (${JSON.stringify(afterClose)})`);
     await shoot(page, '18b_map_closed_instant');
     await ctx.close();
 }
@@ -502,66 +662,92 @@ const V5_SEED = JSON.stringify({
             slots: gs.bossItems ? gs.bossItems.map((s) => ({ id: s.id, cnt: s.cnt.text })) : null
         };
     });
-    if (!f.id || !f.active || f.locked !== false || !f.bar) scenarioFailures.push(`19_boss_fight: бой не активен (${JSON.stringify(f)})`);
+    if (!f.id || !f.active || f.locked !== false || !f.bar)
+        scenarioFailures.push(`19_boss_fight: бой не активен (${JSON.stringify(f)})`);
     if (f.hp !== f.maxHp) scenarioFailures.push(`19_boss_fight: HP при старте ${f.hp}/${f.maxHp}`);
-    if (!f.slots || !f.slots.some((s) => s.id === 'item_bomb')) scenarioFailures.push(`19_boss_fight: слот бомбы не найден (${JSON.stringify(f.slots)})`);
+    if (!f.slots || !f.slots.some((s) => s.id === 'item_bomb'))
+        scenarioFailures.push(`19_boss_fight: слот бомбы не найден (${JSON.stringify(f.slots)})`);
     // Геометрия секции «Снаряжение» (пойманный скриншотом игрока наезд текстов
     // и кнопок при addNine-карточке 10px + setDisplaySize): карточка на ширину
     // вьюпорта, тексты не вылезают за кнопки, кнопки в нижнем ряду без наезда
-        const g = await page.evaluate(() => {
-            const ui = window.__GAME.scene.getScene('UIScene');
-            const gs = window.__GAME.scene.getScene('GameScene');
-            const r = ui.gearRows && ui.gearRows[0];
-            if (!r) return null;
-            const c = (o) => ({ x: o.x, y: o.y, w: o.displayWidth, h: o.displayHeight, right: o.x + o.displayWidth / 2, bottom: o.y + o.displayHeight / 2, top: o.y - o.displayHeight / 2, left: o.x - o.displayWidth / 2 });
-            return {
-                card: r._geom || { x: 0, y: 0, w: 0, h: 0 },
-                rowH: ui.L.gear.rowH,
-                name: { left: r.name.x, right: r.name.x + r.name.width },
-                stock: { left: r.stock.x - r.stock.width },
-                desc: { bottom: r.desc.y + r.desc.height },
-                buy: { ...c(r.buyBtn), lbl: r.buyLbl.text },
-                use: c(r.useBtn),
-                icon: c(r.icon),
-                vw: { x: ui.L.viewport.x, w: ui.L.viewport.w },
-                // HUD: статы не наезжают на «Карта», звёзды (под баром справа) — на строку бафов
-                statsRight: Math.round(ui.statsLine.x + ui.statsLine.width),
-                statsX: Math.round(ui.statsLine.x),
-                statsSize: ui.statsLine.style ? ui.statsLine.style.fontSize : null,
-                statsText: ui.statsLine.text,
-                mapBtnLeft: Math.round(ui.L.hud.mapBtn.x),
-                starsLeft: Math.round(ui.starsText.x - ui.starsText.width),
-                buffRight: Math.round(ui.buffLine.x + ui.buffLine.width),
-                // Полоса живучести шахтёра — ОБЪЕКТ GameScene (не UIScene)
-                playerBarText: gs.playerHpText ? gs.playerHpText.text : null,
-                playerBarVis: gs.playerBar ? gs.playerBar.visible : false
-            };
-        })
+    const g = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        const gs = window.__GAME.scene.getScene('GameScene');
+        const r = ui.gearRows && ui.gearRows[0];
+        if (!r) return null;
+        const c = (o) => ({
+            x: o.x,
+            y: o.y,
+            w: o.displayWidth,
+            h: o.displayHeight,
+            right: o.x + o.displayWidth / 2,
+            bottom: o.y + o.displayHeight / 2,
+            top: o.y - o.displayHeight / 2,
+            left: o.x - o.displayWidth / 2
+        });
+        return {
+            card: r._geom || { x: 0, y: 0, w: 0, h: 0 },
+            rowH: ui.L.gear.rowH,
+            name: { left: r.name.x, right: r.name.x + r.name.width },
+            stock: { left: r.stock.x - r.stock.width },
+            desc: { bottom: r.desc.y + r.desc.height },
+            buy: { ...c(r.buyBtn), lbl: r.buyLbl.text },
+            use: c(r.useBtn),
+            icon: c(r.icon),
+            vw: { x: ui.L.viewport.x, w: ui.L.viewport.w },
+            // HUD: статы не наезжают на «Карта», звёзды (под баром справа) — на строку бафов
+            statsRight: Math.round(ui.statsLine.x + ui.statsLine.width),
+            statsX: Math.round(ui.statsLine.x),
+            statsSize: ui.statsLine.style ? ui.statsLine.style.fontSize : null,
+            statsText: ui.statsLine.text,
+            mapBtnLeft: Math.round(ui.L.hud.mapBtn.x),
+            starsLeft: Math.round(ui.starsText.x - ui.starsText.width),
+            buffRight: Math.round(ui.buffLine.x + ui.buffLine.width),
+            // Полоса живучести шахтёра — ОБЪЕКТ GameScene (не UIScene)
+            playerBarText: gs.playerHpText ? gs.playerHpText.text : null,
+            playerBarVis: gs.playerBar ? gs.playerBar.visible : false
+        };
+    });
     if (!g) {
         scenarioFailures.push('19_boss_fight: секция «Снаряжение» не построена');
     } else {
         if (g.statsRight > g.mapBtnLeft - 8)
-            scenarioFailures.push(`19_boss_fight: статы HUD наезжают на «Карта» (${JSON.stringify({ statsRight: g.statsRight, statsX: g.statsX, statsSize: g.statsSize, statsText: g.statsText, mapBtnLeft: g.mapBtnLeft })})`);
+            scenarioFailures.push(
+                `19_boss_fight: статы HUD наезжают на «Карта» (${JSON.stringify({ statsRight: g.statsRight, statsX: g.statsX, statsSize: g.statsSize, statsText: g.statsText, mapBtnLeft: g.mapBtnLeft })})`
+            );
         if (g.buffRight > 0 && g.starsLeft - g.buffRight < 12)
-            scenarioFailures.push(`19_boss_fight: звёзды наезжают на строку бафов (${JSON.stringify({ starsLeft: g.starsLeft, buffRight: g.buffRight })})`);
+            scenarioFailures.push(
+                `19_boss_fight: звёзды наезжают на строку бафов (${JSON.stringify({ starsLeft: g.starsLeft, buffRight: g.buffRight })})`
+            );
         if (!g.playerBarVis || !/ты: [\d.KMB]+ \/ [\d.KMB]+/.test(g.playerBarText || ''))
             scenarioFailures.push(`19_boss_fight: полоса живучести шахтёра не видна (${g.playerBarText})`);
         // Высота карточки — из спеки раскладки (L.gear.rowH); ширина — врезка минус
         // боковые врезки (cardInset * 2 = 8)
         if (Math.abs(g.card.w - (g.vw.w - 8)) > 2 || Math.abs(g.card.h - g.rowH) > 2)
-            scenarioFailures.push(`19_boss_fight: карточка снаряжения не на ширину вьюпорта (${JSON.stringify(g.card)})`);
+            scenarioFailures.push(
+                `19_boss_fight: карточка снаряжения не на ширину вьюпорта (${JSON.stringify(g.card)})`
+            );
         // Карточка центрирована во вьюпорте (сдвиг на полширины = вылезание за край)
         if (Math.abs((g.card.left + g.card.right) / 2 - (g.vw.x + g.vw.w / 2)) > 2)
             scenarioFailures.push(`19_boss_fight: карточка смещена относительно вьюпорта (${JSON.stringify(g.card)})`);
         if (g.name.right > g.card.right - 8 || g.stock.right > g.card.right - 8)
-            scenarioFailures.push(`19_boss_fight: имя/запас вылезают за карточку (${JSON.stringify({ nameRight: g.name.right, stockRight: g.card ? g.card.right - (g.card.right - g.stock.right) : 0, cardRight: Math.round(g.card.right) })})`);
+            scenarioFailures.push(
+                `19_boss_fight: имя/запас вылезают за карточку (${JSON.stringify({ nameRight: g.name.right, stockRight: g.card ? g.card.right - (g.card.right - g.stock.right) : 0, cardRight: Math.round(g.card.right) })})`
+            );
         if (g.desc.bottom > g.buy.top - 4)
-            scenarioFailures.push(`19_boss_fight: описание наезжает на кнопки (${JSON.stringify({ descBottom: Math.round(g.desc.bottom), buyTop: Math.round(g.buy.top) })})`);
+            scenarioFailures.push(
+                `19_boss_fight: описание наезжает на кнопки (${JSON.stringify({ descBottom: Math.round(g.desc.bottom), buyTop: Math.round(g.buy.top) })})`
+            );
         if (g.buy.right > g.use.left - 2 || g.use.right > g.card.right - 8 || g.buy.left < g.card.left + 8)
-            scenarioFailures.push(`19_boss_fight: кнопки снаряжения наезжают/вылезают (${JSON.stringify({ buyRight: Math.round(g.buy.right), useLeft: Math.round(g.use.left), cardRight: Math.round(g.card.right) })})`);
+            scenarioFailures.push(
+                `19_boss_fight: кнопки снаряжения наезжают/вылезают (${JSON.stringify({ buyRight: Math.round(g.buy.right), useLeft: Math.round(g.use.left), cardRight: Math.round(g.card.right) })})`
+            );
         if (g.icon.right > g.name.left - 6 || g.icon.left < g.card.left + 4)
-            scenarioFailures.push(`19_boss_fight: иконка вне ниши карточки (${JSON.stringify({ icon: g.icon, cardLeft: Math.round(g.card.left) })})`);
-        if (!/^Купить · /.test(g.buy.lbl)) scenarioFailures.push(`19_boss_fight: подпись кнопки покупки без цены (${g.buy.lbl})`);
+            scenarioFailures.push(
+                `19_boss_fight: иконка вне ниши карточки (${JSON.stringify({ icon: g.icon, cardLeft: Math.round(g.card.left) })})`
+            );
+        if (!/^Купить · /.test(g.buy.lbl))
+            scenarioFailures.push(`19_boss_fight: подпись кнопки покупки без цены (${g.buy.lbl})`);
     }
     await shoot(page, '19_boss_fight');
     await page.mouse.click(400, 400); // спрайт босса в центре блока
@@ -575,7 +761,8 @@ const V5_SEED = JSON.stringify({
         locked: window.__GAME.registry.get('blockLocked'),
         block: window.__GAME.scene.getScene('GameScene').block.visible
     }));
-    if (off.active || off.locked || !off.block) scenarioFailures.push(`19_boss_fight: ретрит не вернул бой/блок/лок (${JSON.stringify(off)})`);
+    if (off.active || off.locked || !off.block)
+        scenarioFailures.push(`19_boss_fight: ретрит не вернул бой/блок/лок (${JSON.stringify(off)})`);
     await ctx.close();
 }
 
@@ -601,20 +788,27 @@ const V5_SEED = JSON.stringify({
             locked: window.__GAME.registry.get('blockLocked')
         };
     });
-    if (!r.open || !r.visible || !r.locked) scenarioFailures.push(`20_boss_reward: модалка не показана (${JSON.stringify(r)})`);
+    if (!r.open || !r.visible || !r.locked)
+        scenarioFailures.push(`20_boss_reward: модалка не показана (${JSON.stringify(r)})`);
     if (!/^Баунти: \+/.test(r.bounty)) scenarioFailures.push(`20_boss_reward: строка баунти «${r.bounty}»`);
-    if (!r.texts.some((t) => /^Ржавый лом ×\d+$/.test(t))) scenarioFailures.push(`20_boss_reward: дроп компонента не найден (${r.texts.join('; ')})`);
-    if (!r.texts.includes('Тотем шахтёра')) scenarioFailures.push(`20_boss_reward: артефакт в награде не найден (${r.texts.join('; ')})`);
+    if (!r.texts.some((t) => /^Ржавый лом ×\d+$/.test(t)))
+        scenarioFailures.push(`20_boss_reward: дроп компонента не найден (${r.texts.join('; ')})`);
+    if (!r.texts.includes('Тотем шахтёра'))
+        scenarioFailures.push(`20_boss_reward: артефакт в награде не найден (${r.texts.join('; ')})`);
     await shoot(page, '20_boss_reward');
     await page.mouse.click(640, 510); // «Забрать»
     await page.waitForTimeout(300);
-    const done = await withState(page, `m => ({
+    const done = await withState(
+        page,
+        `m => ({
         has: m.gameState.artifacts.includes('art_miner_totem'),
         open: window.__GAME.scene.getScene('UIScene')._bossRewardOpen,
         locked: window.__GAME.registry.get('blockLocked')
-    })`);
+    })`
+    );
     if (!done.has) scenarioFailures.push('20_boss_reward: артефакт не попал в коллекцию');
-    if (done.open || done.locked) scenarioFailures.push(`20_boss_reward: «Забрать» не закрыло окно/лок (${JSON.stringify(done)})`);
+    if (done.open || done.locked)
+        scenarioFailures.push(`20_boss_reward: «Забрать» не закрыло окно/лок (${JSON.stringify(done)})`);
     await ctx.close();
 }
 
@@ -639,7 +833,9 @@ const V5_SEED = JSON.stringify({
         return {
             open: window.__DOM_CRAFT.isOpen(),
             locked: window.__GAME.registry.get('blockLocked'),
-            header: [...document.querySelectorAll('[data-dom-chips] .dom-chip')].map((chip) => text(chip.lastElementChild)),
+            header: [...document.querySelectorAll('[data-dom-chips] .dom-chip')].map((chip) =>
+                text(chip.lastElementChild)
+            ),
             sections: [...document.querySelectorAll('[data-dom-scroll] .dom-section')]
                 .map((h) => text(h))
                 .filter((t) => ['Активируемые', 'Рецепты', 'Артефакты'].some((s) => t.startsWith(s))),
@@ -650,13 +846,22 @@ const V5_SEED = JSON.stringify({
             srcs: [...document.querySelectorAll('[data-dom-list="artifacts"] .dom-line')].map(text)
         };
     });
-    if (!c.open || !c.locked) scenarioFailures.push(`21_craft_open: мастерская не открылась/лок не встал (${JSON.stringify(c)})`);
-    if (c.header.join(',') !== '100,100,100,100,100') scenarioFailures.push(`21_craft_open: шапка не показала +100 (${c.header.join(',')})`);
+    if (!c.open || !c.locked)
+        scenarioFailures.push(`21_craft_open: мастерская не открылась/лок не встал (${JSON.stringify(c)})`);
+    if (c.header.join(',') !== '100,100,100,100,100')
+        scenarioFailures.push(`21_craft_open: шапка не показала +100 (${c.header.join(',')})`);
     if (c.sections.length !== 3) scenarioFailures.push(`21_craft_open: секции (${c.sections.join(', ')})`);
-    if (c.items !== 7 || c.recipes !== 10 || c.arts !== 9) scenarioFailures.push(`21_craft_open: ряды ${c.items}/рецепты ${c.recipes}/артефакты ${c.arts}, ожидалось 7/10/9`);
+    if (c.items !== 7 || c.recipes !== 10 || c.arts !== 9)
+        scenarioFailures.push(
+            `21_craft_open: ряды ${c.items}/рецепты ${c.recipes}/артефакты ${c.arts}, ожидалось 7/10/9`
+        );
     if (c.dim !== 0) scenarioFailures.push(`21_craft_open: приглушено ${c.dim} ячеек, ожидалось 0 (артефактов нет)`);
-    if (!c.srcs.every((s) => s === 'Скрафти: рецепт' || /^Босс: /.test(s))) scenarioFailures.push(`21_craft_open: подписи источников некорректны (${c.srcs.join('; ')})`);
-    fs.writeFileSync(path.join(OUT, 'layout_audit_craft_open.txt'), 'мастерская — DOM-слой: вёрстка проверяется npm run ui:check:dom');
+    if (!c.srcs.every((s) => s === 'Скрафти: рецепт' || /^Босс: /.test(s)))
+        scenarioFailures.push(`21_craft_open: подписи источников некорректны (${c.srcs.join('; ')})`);
+    fs.writeFileSync(
+        path.join(OUT, 'layout_audit_craft_open.txt'),
+        'мастерская — DOM-слой: вёрстка проверяется npm run ui:check:dom'
+    );
     await shoot(page, '21_craft_open');
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeCraft());
     await ctx.close();
@@ -674,4 +879,3 @@ if (scenarioFailures.length) {
     process.exitCode = 1;
 }
 await browser.close();
-

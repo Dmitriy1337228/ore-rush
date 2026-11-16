@@ -1,6 +1,4 @@
-import {
-    gameState, saveGame
-} from '../../state.js';
+import { gameState, saveGame } from '../../state.js';
 import { makeLabel, fitFontSize, addScreenDim, DIM_ALPHA, setHitWorld } from '../../ui/uiKit.js';
 import { TEXT, DEPTH, TEX, FONT_SIZE, SPACE } from '../../ui/theme.js';
 
@@ -17,21 +15,49 @@ export const tutorialMethods = {
         this.tutDim = addScreenDim(this, DIM_ALPHA.tutorial).setDepth(DEPTH.tutorialDim);
         this.tutRing = this.add.graphics().setDepth(DEPTH.tutorial);
         this.tutArrow = this.add.graphics().setDepth(DEPTH.tutorial);
-        this.tutBubble = this.add.rectangle(0, 0, 1, 1, 0x1c1620, 0.92).setDepth(DEPTH.tutorial).setStrokeStyle(2, 0xffd75e, 1);
-        this.tutText = makeLabel(this, 0, 0, '', FONT_SIZE.body, TEXT.cream, { align: 'center' }).setOrigin(0.5).setDepth(DEPTH.tutorial);
-        this.tutFinal = makeLabel(this, 0, 0, 'Приятной игры!', FONT_SIZE.title, TEXT.cream).setOrigin(0.5).setDepth(DEPTH.tutorial).setVisible(false);
-        this.tutBtn = this.add.image(640, 400, TEX.button).setDisplaySize(200, 56).setDepth(DEPTH.tutorial).setVisible(false);
-        this.tutBtnLbl = makeLabel(this, 640, 400, 'Играть', FONT_SIZE.buttonLg, TEXT.white).setOrigin(0.5).setDepth(DEPTH.tutorial).setVisible(false);
+        this.tutBubble = this.add
+            .rectangle(0, 0, 1, 1, 0x1c1620, 0.92)
+            .setDepth(DEPTH.tutorial)
+            .setStrokeStyle(2, 0xffd75e, 1);
+        this.tutText = makeLabel(this, 0, 0, '', FONT_SIZE.body, TEXT.cream, { align: 'center' })
+            .setOrigin(0.5)
+            .setDepth(DEPTH.tutorial);
+        this.tutFinal = makeLabel(this, 0, 0, 'Приятной игры!', FONT_SIZE.title, TEXT.cream)
+            .setOrigin(0.5)
+            .setDepth(DEPTH.tutorial)
+            .setVisible(false);
+        this.tutBtn = this.add
+            .image(640, 400, TEX.button)
+            .setDisplaySize(200, 56)
+            .setDepth(DEPTH.tutorial)
+            .setVisible(false);
+        this.tutBtnLbl = makeLabel(this, 640, 400, 'Играть', FONT_SIZE.buttonLg, TEXT.white)
+            .setOrigin(0.5)
+            .setDepth(DEPTH.tutorial)
+            .setVisible(false);
         // Хит 80 по высоте (56 видимых — 28-30 CSS px на телефоне); кнопка одиночная
         setHitWorld(this.tutBtn, 200, 80);
         this.tutBtn.input.cursor = 'pointer';
         this.tutBtn.on('pointerdown', () => this.finishTutorial());
         // клики по вкладкам: учебный шаг ждёт клик по нужной вкладке
-        this.tabBtns[0].c.on('pointerdown', () => { this.tutTabClicked = 0; });
-        this.tabBtns[1].c.on('pointerdown', () => { this.tutTabClicked = 1; });
+        this.tabBtns[0].c.on('pointerdown', () => {
+            this.tutTabClicked = 0;
+        });
+        this.tabBtns[1].c.on('pointerdown', () => {
+            this.tutTabClicked = 1;
+        });
         // список рендерит вторая камера — учебные объекты исключаем из неё
         // (и из скролл-камер карты/крафта — они создаются позже ignore-списков)
-        const tutLayers = [this.tutDim, this.tutRing, this.tutArrow, this.tutBubble, this.tutText, this.tutFinal, this.tutBtn, this.tutBtnLbl];
+        const tutLayers = [
+            this.tutDim,
+            this.tutRing,
+            this.tutArrow,
+            this.tutBubble,
+            this.tutText,
+            this.tutFinal,
+            this.tutBtn,
+            this.tutBtnLbl
+        ];
         this.listCam.ignore(tutLayers);
         if (this.mapCam) this.mapCam.ignore(tutLayers);
         if (this.craftCam) this.craftCam.ignore(tutLayers);
@@ -42,8 +68,21 @@ export const tutorialMethods = {
         this.tutCam = this.cameras.add(0, 0, this.L.W, this.L.H, false, 'tutCam');
         this.tutCam.ignore(this.children.list.filter((o) => !tutLayers.includes(o)));
         this.cameras.main.ignore(tutLayers);
-        this.tutPulse = this.tweens.add({ targets: this.tutRing, alpha: { from: 1, to: 0.4 }, duration: 700, yoyo: true, repeat: -1 });
-        this.tutBob = this.tweens.add({ targets: this.tutArrow, y: { from: 0, to: 10 }, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        this.tutPulse = this.tweens.add({
+            targets: this.tutRing,
+            alpha: { from: 1, to: 0.4 },
+            duration: 700,
+            yoyo: true,
+            repeat: -1
+        });
+        this.tutBob = this.tweens.add({
+            targets: this.tutArrow,
+            y: { from: 0, to: 10 },
+            duration: 650,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
         this.layoutTutorial();
     },
 
@@ -67,7 +106,8 @@ export const tutorialMethods = {
         };
         if (this.tutorialStep === 0) {
             // блок: подсветка + стрелка сверху + подпись
-            const bx = gs.blockX, by = gs.blockY;
+            const bx = gs.blockX,
+                by = gs.blockY;
             ring(bx - 160, by - 160, 320, 320);
             if (L.portrait) {
                 // Портрет: пузырь в зазор между HUD (низ barY+barH=122) и блоком
@@ -85,7 +125,9 @@ export const tutorialMethods = {
                 this.tutArrow.fillTriangle(bx - 14, by - 156, bx + 14, by - 156, bx, by - 146);
             } else {
                 tutText('Кликай по кубику — добывай руду!');
-                this.tutBubble.setPosition(bx, by - 280).setSize(this.tutText.width + SPACE.lg * 2, this.tutText.height + SPACE.lg);
+                this.tutBubble
+                    .setPosition(bx, by - 280)
+                    .setSize(this.tutText.width + SPACE.lg * 2, this.tutText.height + SPACE.lg);
                 this.tutText.setPosition(bx, by - 280);
                 this.tutArrow.fillStyle(0xffd75e, 1);
                 this.tutArrow.fillTriangle(bx - 14, by - 235, bx + 14, by - 235, bx, by - 195);
@@ -93,8 +135,10 @@ export const tutorialMethods = {
         } else if (this.tutorialStep === 1 || this.tutorialStep === 2) {
             // вкладки: кольцо по живой позиции/размеру контейнера вкладки
             const t = this.tabBtns[this.tutorialStep - 1];
-            const cx = t.c.x, cy = t.c.y;
-            const tw = t.bg.displayWidth, th = t.bg.displayHeight;
+            const cx = t.c.x,
+                cy = t.c.y;
+            const tw = t.bg.displayWidth,
+                th = t.bg.displayHeight;
             ring(cx - tw / 2 - 5, cy - th / 2 - 6, tw + 10, th + 12);
             if (L.tutorial.tabBubble === 'left') {
                 // Ландшафт: подпись слева от вкладки, стрелка вправо
@@ -115,9 +159,10 @@ export const tutorialMethods = {
                 // штатный модальный хинт на время шага), стрелка вниз от вкладки.
                 // Кегль и размер — от масштаба: фикс 15px на телефоне давал
                 // ~8px на экране (FIT ~0.54), подпись была нечитаема
-                const txt = this.tutorialStep === 1
-                    ? 'Покупай оборудование\nздесь — оно усиливает\nкаждый клик'
-                    : 'А здесь — усиления:\nкриты и жилы';
+                const txt =
+                    this.tutorialStep === 1
+                        ? 'Покупай оборудование\nздесь — оно усиливает\nкаждый клик'
+                        : 'А здесь — усиления:\nкриты и жилы';
                 tutText(txt);
                 const bw = Math.min(this.tutText.width + SPACE.lg * 2, 2 * (cx - 5), 2 * (L.W - 5 - cx));
                 // Текст ужинается под бабл: без этого длинная строка вылезала
@@ -170,8 +215,16 @@ export const tutorialMethods = {
         saveGame();
         if (this.tutPulse) this.tutPulse.stop();
         if (this.tutBob) this.tutBob.stop();
-        [this.tutDim, this.tutRing, this.tutArrow, this.tutBubble, this.tutText, this.tutFinal, this.tutBtn, this.tutBtnLbl]
-            .forEach((o) => o.destroy());
+        [
+            this.tutDim,
+            this.tutRing,
+            this.tutArrow,
+            this.tutBubble,
+            this.tutText,
+            this.tutFinal,
+            this.tutBtn,
+            this.tutBtnLbl
+        ].forEach((o) => o.destroy());
         this.tutDim = null;
         if (this.tutCam) {
             this.cameras.remove(this.tutCam);

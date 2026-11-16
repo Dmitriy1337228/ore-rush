@@ -8,8 +8,15 @@
 // обновляет узлы по ключам, а не каждый кадр.
 
 import {
-    gameState, fmt, getItemPrice, canCraft,
-    ITEMS, CRAFT_RECIPES, ARTIFACTS, COMPONENTS, BOSSES
+    gameState,
+    fmt,
+    getItemPrice,
+    canCraft,
+    ITEMS,
+    CRAFT_RECIPES,
+    ARTIFACTS,
+    COMPONENTS,
+    BOSSES
 } from '../state.js';
 import { itemStockHint, recipeStatus } from '../state/craftMessages.js';
 
@@ -46,9 +53,15 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
         const eff = def.effect || {};
         let buffLeft = 0;
         let buffMult = 1;
-        if (eff.bossMult) { buffLeft = gameState.bossBuffUntil - now; buffMult = gameState.bossBuffMult; }
-        else if (eff.miningMult) { buffLeft = gameState.miningBuffUntil - now; buffMult = gameState.miningBuffMult; }
-        else if (eff.veinForce) { buffLeft = gameState.itemVeinUntil - now; }
+        if (eff.bossMult) {
+            buffLeft = gameState.bossBuffUntil - now;
+            buffMult = gameState.bossBuffMult;
+        } else if (eff.miningMult) {
+            buffLeft = gameState.miningBuffUntil - now;
+            buffMult = gameState.miningBuffMult;
+        } else if (eff.veinForce) {
+            buffLeft = gameState.itemVeinUntil - now;
+        }
         const active = buffLeft > 0;
         const blocked = stock <= 0 || (def.bossUse && !bossActive) || (active && buffLeft > 30000);
         let hint = itemStockHint({ stock, bossUse: def.bossUse });
@@ -59,10 +72,20 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
             hintKind = 'gold';
         }
         return {
-            id: def.id, icon: def.id, name: def.name, desc: def.desc,
-            stock, stackMax: def.stackMax, price, priceText: fmt(price), bossUse: !!def.bossUse,
-            active, blocked, buyBlocked: gameState.ore < price || stock >= def.stackMax,
-            hint, hintKind
+            id: def.id,
+            icon: def.id,
+            name: def.name,
+            desc: def.desc,
+            stock,
+            stackMax: def.stackMax,
+            price,
+            priceText: fmt(price),
+            bossUse: !!def.bossUse,
+            active,
+            blocked,
+            buyBlocked: gameState.ore < price || stock >= def.stackMax,
+            hint,
+            hintKind
         };
     });
 
@@ -71,9 +94,10 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
     const recipes = CRAFT_RECIPES.map((recipe) => {
         const mine = busy && gameState.crafting.recipeId === recipe.id;
         const ready = mine && now >= gameState.crafting.endsAt;
-        const def = recipe.result.kind === 'item'
-            ? ITEMS.find((i) => i.id === recipe.result.id)
-            : ARTIFACTS.find((a) => a.id === recipe.result.id);
+        const def =
+            recipe.result.kind === 'item'
+                ? ITEMS.find((i) => i.id === recipe.result.id)
+                : ARTIFACTS.find((a) => a.id === recipe.result.id);
         const owned = recipe.result.kind === 'artifact' && gameState.artifacts.includes(recipe.result.id);
         const space = def && def.stackMax !== undefined ? def.stackMax - (gameState.items[def.id] || 0) : 0;
         const compsOk = Object.keys(recipe.cost).every((c) => (gameState.components[c] || 0) >= recipe.cost[c]);
@@ -84,8 +108,13 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
         else if (recipe.craftMs === 0) button = 'Создать';
         else button = `Крафт ${mins(recipe.craftMs)} мин`;
         return {
-            id: recipe.id, icon: recipe.result.id, name: def ? def.name : recipe.id,
-            resultText: recipe.result.kind === 'item' ? `Получишь: ${recipe.result.n} шт.` : `Получишь: ${def ? def.name : 'артефакт'}`,
+            id: recipe.id,
+            icon: recipe.result.id,
+            name: def ? def.name : recipe.id,
+            resultText:
+                recipe.result.kind === 'item'
+                    ? `Получишь: ${recipe.result.n} шт.`
+                    : `Получишь: ${def ? def.name : 'артефакт'}`,
             need: Object.keys(recipe.cost).map((c) => ({
                 id: c,
                 icon: `comp_${c}`,
@@ -93,7 +122,11 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
                 enough: (gameState.components[c] || 0) >= recipe.cost[c]
             })),
             source: `дроп: ${recipe.result.kind === 'item' ? 'компоненты боссов' : 'крафт'}`,
-            status, button, disabled, mine, ready,
+            status,
+            button,
+            disabled,
+            mine,
+            ready,
             // Мгновенный рецепт: Phaser после startCraft сразу зовёт claimCraft()
             instant: recipe.craftMs === 0
         };
@@ -101,7 +134,14 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
 
     const artifacts = ARTIFACTS.map((def) => {
         const owned = gameState.artifacts.includes(def.id);
-        return { id: def.id, icon: def.id, name: def.name, owned, line: owned ? def.desc : artifactLine(def), hint: artifactHint(def) };
+        return {
+            id: def.id,
+            icon: def.id,
+            name: def.name,
+            owned,
+            line: owned ? def.desc : artifactLine(def),
+            hint: artifactHint(def)
+        };
     });
 
     return {
@@ -112,7 +152,14 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
         items,
         recipes,
         artifacts,
-        crafting: busy ? { recipeId: gameState.crafting.recipeId, leftMs: Math.max(0, craftLeft), ready: now >= gameState.crafting.endsAt, text: mmss(Math.max(0, craftLeft)) } : null
+        crafting: busy
+            ? {
+                  recipeId: gameState.crafting.recipeId,
+                  leftMs: Math.max(0, craftLeft),
+                  ready: now >= gameState.crafting.endsAt,
+                  text: mmss(Math.max(0, craftLeft))
+              }
+            : null
     };
 }
 
@@ -131,6 +178,9 @@ export function createPublisher(emit, { intervalMs = PUBLISH_MS, getContext } = 
             emit(snap);
             return true;
         },
-        reset() { last = null; lastAt = 0; }
+        reset() {
+            last = null;
+            lastAt = 0;
+        }
     };
 }

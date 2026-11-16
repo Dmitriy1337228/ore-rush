@@ -3,9 +3,9 @@
 import { SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from './constants.js';
 
 const SUFFIXES = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
-const SHORT_FORM_LIMIT = 10000;   // до этого порога число печатается целым без суффикса
-const DECIMALS_FREE_FROM = 100;   // от 100 дробная часть суффиксного числа не нужна
-const THOUSAND_EXPONENT = 3;      // суффиксы сменяются каждые 10^3
+const SHORT_FORM_LIMIT = 10000; // до этого порога число печатается целым без суффикса
+const DECIMALS_FREE_FROM = 100; // от 100 дробная часть суффиксного числа не нужна
+const THOUSAND_EXPONENT = 3; // суффиксы сменяются каждые 10^3
 
 export function fmt(n) {
     if (!isFinite(n)) return '∞';

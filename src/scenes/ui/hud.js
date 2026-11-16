@@ -1,6 +1,13 @@
 import Phaser from 'phaser';
 import {
-    gameState, TIERS, getClickDamage, getOrePerSecond, getSynergyGain, getCritChance, getPrestigeMult, fmt
+    gameState,
+    TIERS,
+    getClickDamage,
+    getOrePerSecond,
+    getSynergyGain,
+    getCritChance,
+    getPrestigeMult,
+    fmt
 } from '../../state.js';
 import { addImg, makeLabel, fitFontSize, setHitRect, setHitWorld } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
@@ -56,8 +63,14 @@ export const hudMethods = {
         // Шестерёнка + подпись: зазор 10px между иконкой и текстом. Иконка
         // нормируется setDisplaySize (текстуры разного разрешения), подпись —
         // с левым якорем: раньше она упиралась в шестерёнку вплотную (скрин игрока)
-        this.settingsGear = this.add.image(btnX + h.gearDx, h.centerY, 'gear_icon').setDisplaySize(26, 26).setDepth(DEPTH.uiAbove); // 26 — диаметр шестерёнки в кнопке
-        this.settingsLbl = makeLabel(this, btnX + h.labelDx, h.centerY, 'Настройки', FONT_SIZE.stat, TEXT.white).setOrigin(0, 0.5).setDepth(DEPTH.uiAbove);
+        this.settingsGear = this.add
+            .image(btnX + h.gearDx, h.centerY, 'gear_icon')
+            // 26 — диаметр шестерёнки в кнопке
+            .setDisplaySize(26, 26)
+            .setDepth(DEPTH.uiAbove);
+        this.settingsLbl = makeLabel(this, btnX + h.labelDx, h.centerY, 'Настройки', FONT_SIZE.stat, TEXT.white)
+            .setOrigin(0, 0.5)
+            .setDepth(DEPTH.uiAbove);
         this.settingsBtn.on('pointerdown', () => {
             this.openModal();
         });
@@ -67,21 +80,45 @@ export const hudMethods = {
         // Кнопки «Карта» и «Крафт» слева от «Настройки» (позиции из L.hud в
         // applyLayout). Button (kind image): addImg центрирует — центры
         // (mapBtn/craftBtn.x + w/2, y + h/2); hit — кадр текстуры, как раньше.
-        ({ bg: this.mapBtn, label: this.mapLbl } = addButton(this, h.mapBtn.x + h.mapBtn.w / 2, h.mapBtn.y + h.mapBtn.h / 2, {
-            kind: 'image', w: h.mapBtn.w, h: h.mapBtn.h, key: TEX.button, depth: 11,
-            text: 'Карта', fontSize: FONT_SIZE.label, color: TEXT.white,
-            hitW: HIT.button[0], hitH: HIT.button[1]
-        }));
+        ({ bg: this.mapBtn, label: this.mapLbl } = addButton(
+            this,
+            h.mapBtn.x + h.mapBtn.w / 2,
+            h.mapBtn.y + h.mapBtn.h / 2,
+            {
+                kind: 'image',
+                w: h.mapBtn.w,
+                h: h.mapBtn.h,
+                key: TEX.button,
+                depth: 11,
+                text: 'Карта',
+                fontSize: FONT_SIZE.label,
+                color: TEXT.white,
+                hitW: HIT.button[0],
+                hitH: HIT.button[1]
+            }
+        ));
         this.mapLbl.setDepth(DEPTH.uiAbove);
         this.mapBtn.on('pointerdown', () => this.openMap());
         this.mapBtn.on('pointerover', () => this.mapBtn.setAlpha(0.9));
         this.mapBtn.on('pointerout', () => this.mapBtn.setAlpha(1));
 
-        ({ bg: this.craftBtn, label: this.craftLbl } = addButton(this, h.craftBtn.x + h.craftBtn.w / 2, h.craftBtn.y + h.craftBtn.h / 2, {
-            kind: 'image', w: h.craftBtn.w, h: h.craftBtn.h, key: TEX.button, depth: 11,
-            text: 'Крафт', fontSize: FONT_SIZE.label, color: TEXT.white,
-            hitW: HIT.button[0], hitH: HIT.button[1]
-        }));
+        ({ bg: this.craftBtn, label: this.craftLbl } = addButton(
+            this,
+            h.craftBtn.x + h.craftBtn.w / 2,
+            h.craftBtn.y + h.craftBtn.h / 2,
+            {
+                kind: 'image',
+                w: h.craftBtn.w,
+                h: h.craftBtn.h,
+                key: TEX.button,
+                depth: 11,
+                text: 'Крафт',
+                fontSize: FONT_SIZE.label,
+                color: TEXT.white,
+                hitW: HIT.button[0],
+                hitH: HIT.button[1]
+            }
+        ));
         this.craftLbl.setDepth(DEPTH.uiAbove);
         this.craftBtn.on('pointerdown', () => this.openCraft());
         this.craftBtn.on('pointerover', () => this.craftBtn.setAlpha(0.9));
@@ -102,11 +139,13 @@ export const hudMethods = {
             const sec = Math.max(0, Math.ceil((until - Date.now()) / 1000));
             return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
         };
-        if (Date.now() < gameState.dailyBuffUntil) parts.push(`x${gameState.dailyBuffMult} ${left(gameState.dailyBuffUntil)}`);
+        if (Date.now() < gameState.dailyBuffUntil)
+            parts.push(`x${gameState.dailyBuffMult} ${left(gameState.dailyBuffUntil)}`);
         if (Date.now() < gameState.dailyVeinUntil) parts.push(`жила ${left(gameState.dailyVeinUntil)}`);
         if (Date.now() < gameState.dailyCritUntil) parts.push(`крит ${left(gameState.dailyCritUntil)}`);
         // Бафы предметов (мастерская): множитель добычи, бомба (бой), стимулятор жилы
-        if (Date.now() < gameState.miningBuffUntil) parts.push(`x${gameState.miningBuffMult} ${left(gameState.miningBuffUntil)}`);
+        if (Date.now() < gameState.miningBuffUntil)
+            parts.push(`x${gameState.miningBuffMult} ${left(gameState.miningBuffUntil)}`);
         if (Date.now() < gameState.bossBuffUntil) parts.push(`бомба ${left(gameState.bossBuffUntil)}`);
         if (Date.now() < gameState.itemVeinUntil) parts.push(`жила ${left(gameState.itemVeinUntil)}`);
         const text = parts.join(' · ');
@@ -157,7 +196,13 @@ export const hudMethods = {
             // Ставка: правый край (origin 1,1), x и иконка ставятся в refreshUi
             this.gpsText.setFontSize(gpsSize);
             this.gpsText.setOrigin(1, 1).setPosition(h.counterX, h.row1Y - fix(gpsSize));
-            this.placeIcon(this.gpsIcon, tierIcon, h.counterX, h.row1Y - fix(gpsSize) - Math.round(gpsSize * 0.6), h.gpsIconSize);
+            this.placeIcon(
+                this.gpsIcon,
+                tierIcon,
+                h.counterX,
+                h.row1Y - fix(gpsSize) - Math.round(gpsSize * 0.6),
+                h.gpsIconSize
+            );
             // Статы: строка 2, общий левый край со счётчиком
             this._hudStatsSize = Phaser.Math.Clamp(Math.round(FONT_SIZE.label * s), 16, 18);
             this.statsLine.setFontSize(this._hudStatsSize);
@@ -237,7 +282,8 @@ export const hudMethods = {
         const h = this.L.hud;
 
         this.coalText.setText(fmt(gameState.ore));
-        if (this.oreIcon.texture.key !== tier.iconKey) this.placeIcon(this.oreIcon, tier.iconKey, h.iconX, h.centerY, h.iconSize);
+        if (this.oreIcon.texture.key !== tier.iconKey)
+            this.placeIcon(this.oreIcon, tier.iconKey, h.iconX, h.centerY, h.iconSize);
         this.oreName.setText(tier.name.toLowerCase());
         this.oreName.x = h.counterX + this.coalText.width + (this.L.portrait ? h.nameGap : 10);
         // Ставка = фактическая фоновая добыча (пассив × множитель мутации)
@@ -267,7 +313,8 @@ export const hudMethods = {
             this.gpsText.x = limitR;
             const gIconX = limitR - this.gpsText.width - h.gpsIconGap - h.gpsIconSize / 2;
             const gIconY = Math.round(this.gpsText.y - this.gpsText.height / 2);
-            if (this.gpsIcon.texture.key !== tier.iconKey) this.placeIcon(this.gpsIcon, tier.iconKey, gIconX, gIconY, h.gpsIconSize);
+            if (this.gpsIcon.texture.key !== tier.iconKey)
+                this.placeIcon(this.gpsIcon, tier.iconKey, gIconX, gIconY, h.gpsIconSize);
             else this.gpsIcon.setPosition(gIconX, gIconY);
             // Статы (строка 2): левый край = counterX, предел — limitR
             const statsTxt = `клик ${clickTxt} · крит ${critPct}%`;
@@ -285,7 +332,8 @@ export const hudMethods = {
             // ужина (10px) — короткая «+N/сек»; иначе статы наезжали на кнопку
             // «Карта» при больших числах (аудит stress/settings-stress)
             const gx = Math.max(h.gpsIconX, this.oreName.x + this.oreName.width + 14);
-            if (this.gpsIcon.texture.key !== tier.iconKey) this.placeIcon(this.gpsIcon, tier.iconKey, gx, h.centerY, h.gpsIconSize);
+            if (this.gpsIcon.texture.key !== tier.iconKey)
+                this.placeIcon(this.gpsIcon, tier.iconKey, gx, h.centerY, h.gpsIconSize);
             else this.gpsIcon.x = gx;
             const limitR = h.mapBtn.x - SPACE.sm;
             const statsTxt = `клик: ${clickTxt} · крит: ${critPct}%`;

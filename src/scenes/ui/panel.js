@@ -1,8 +1,37 @@
 import Phaser from 'phaser';
 import {
-    gameState, TIERS, UPGRADES, getUpgradeDef, getUpgradeLevel, getUpgradeCost, isMaxed, isUpgradeAvailable, canBuy, buyBulk, getAffordableBulk, getBulkCost, isUpgradeVisible, canUnlockTier, getNextTier, unlockTier, getNextUnlockPrice, saveGame, fmt
+    gameState,
+    TIERS,
+    UPGRADES,
+    getUpgradeDef,
+    getUpgradeLevel,
+    getUpgradeCost,
+    isMaxed,
+    isUpgradeAvailable,
+    canBuy,
+    buyBulk,
+    getAffordableBulk,
+    getBulkCost,
+    isUpgradeVisible,
+    canUnlockTier,
+    getNextTier,
+    unlockTier,
+    getNextUnlockPrice,
+    saveGame,
+    fmt
 } from '../../state.js';
-import { addNine, addImg, addImgC, makeLabel, fitFontSize, fitOneLine, setHitRect, setHitWorld, setHitWorldRect, tapSlopPx } from '../../ui/uiKit.js';
+import {
+    addNine,
+    addImg,
+    addImgC,
+    makeLabel,
+    fitFontSize,
+    fitOneLine,
+    setHitRect,
+    setHitWorld,
+    setHitWorldRect,
+    tapSlopPx
+} from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
 import { VIEWPORT, ROW_H, ROW_GAP, TABS, BUY_AMOUNTS, ROW } from '../../ui/listGeometry.js';
 import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
@@ -17,11 +46,15 @@ export const panelMethods = {
 
         this.panelImg = addImg(this, p.px, p.py, 'upgrades_panel_wood', p.pw, p.ph, 10);
         // Планка с заклёпками (143..200): заголовок по её центру
-        this.panelTitle = makeLabel(this, p.px + p.pw / 2, p.py + p.titleDy, 'Улучшения', p.titleSize, TEXT.cream).setOrigin(0.5).setDepth(DEPTH.ui);
+        this.panelTitle = makeLabel(this, p.px + p.pw / 2, p.py + p.titleDy, 'Улучшения', p.titleSize, TEXT.cream)
+            .setOrigin(0.5)
+            .setDepth(DEPTH.ui);
 
         // Вкладки: одна ширина со списком, две по p.tabW + зазор SPACE.sm
         const tabCY = p.py + p.tabsCY;
-        this.tabBtns = TABS.map((tab, i) => this.buildTabButton(v.x + i * (p.tabW + SPACE.sm), tabCY - p.tabH / 2, tab));
+        this.tabBtns = TABS.map((tab, i) =>
+            this.buildTabButton(v.x + i * (p.tabW + SPACE.sm), tabCY - p.tabH / 2, tab)
+        );
 
         // Строка тира + переключатель мультипокупки (в границах списка)
         this.tierLabel = makeLabel(this, v.x + p.tierInset, p.py + p.tierCY, '', p.tierLabelSize, '#c8b78e');
@@ -32,7 +65,16 @@ export const panelMethods = {
 
         // Фон вьюпорта (для драга). Клиппинг списка — через отдельную камеру с viewport
         // (GeometryMask в Phaser 4 работает только в Canvas; в WebGL игнорируется).
-        this.viewportBg = this.add.rectangle(VIEWPORT.x + VIEWPORT.w / 2, VIEWPORT.y + VIEWPORT.h / 2, VIEWPORT.w, VIEWPORT.h, 0x000000, 0.001).setDepth(DEPTH.ui);
+        this.viewportBg = this.add
+            .rectangle(
+                VIEWPORT.x + VIEWPORT.w / 2,
+                VIEWPORT.y + VIEWPORT.h / 2,
+                VIEWPORT.w,
+                VIEWPORT.h,
+                0x000000,
+                0.001
+            )
+            .setDepth(DEPTH.ui);
 
         // Контейнер в мировых координатах (0,0): ряды локальны относительно вьюпорта,
         // а экранный сдвиг делает сама камера (viewport + scroll), см. setupListCamera
@@ -81,8 +123,10 @@ export const panelMethods = {
     // _listDragging — жест, начатый на кнопке, скроллит, а не покупает.
     setupListDrag() {
         const inViewport = (p) =>
-            p.x >= VIEWPORT.x - 6 && p.x <= VIEWPORT.x + VIEWPORT.w + 6 &&
-            p.y >= VIEWPORT.y - 6 && p.y <= VIEWPORT.y + VIEWPORT.h + 6;
+            p.x >= VIEWPORT.x - 6 &&
+            p.x <= VIEWPORT.x + VIEWPORT.w + 6 &&
+            p.y >= VIEWPORT.y - 6 &&
+            p.y <= VIEWPORT.y + VIEWPORT.h + 6;
         this.input.on('pointerdown', (p) => {
             if (this.registry.get(REG.blockLocked) || !inViewport(p)) return;
             this._dragId = p.id;
@@ -105,7 +149,9 @@ export const panelMethods = {
             this._dragId = null;
             // флаг сбрасываем в следующем кадре: pointerup на кнопке срабатывает
             // раньше scene pointerup — покупка после лёгкого сдвига (<6px) валидна
-            this.time.delayedCall(0, () => { this._listDragging = false; });
+            this.time.delayedCall(0, () => {
+                this._listDragging = false;
+            });
         };
         this.input.on('pointerup', endDrag);
         this.input.on('pointerupoutside', endDrag);
@@ -148,24 +194,47 @@ export const panelMethods = {
             const descSize = Math.round(14 * Math.min(s, 1.5));
             const descY = Math.max(34, Math.round(10 + nameSize * 1.2 + 3));
             const geom = {
-                h: 132, iconCY: 66, iconSize: Phaser.Math.Clamp(Math.round(48 * s), 56, 64),
-                nameY: 12, nameSizes,
-                descY, descSize,
+                h: 132,
+                iconCY: 66,
+                iconSize: Phaser.Math.Clamp(Math.round(48 * s), 56, 64),
+                nameY: 12,
+                nameSizes,
+                descY,
+                descSize,
                 priceY: 102,
-                priceSize: Math.round(15 * Math.min(s, 1.3)), priceIconSize: Math.round(18 * Math.min(s, 1.3)),
-                levelY: 14, levelSize: Math.round(14 * Math.min(s, 1.3)), rightInset: 18,
-                btnY: 26, btnW: 148, btnH: 88, btnSize: Math.round(15 * Math.min(s, 1.33)),
+                priceSize: Math.round(15 * Math.min(s, 1.3)),
+                priceIconSize: Math.round(18 * Math.min(s, 1.3)),
+                levelY: 14,
+                levelSize: Math.round(14 * Math.min(s, 1.3)),
+                rightInset: 18,
+                btnY: 26,
+                btnW: 148,
+                btnH: 88,
+                btnSize: Math.round(15 * Math.min(s, 1.33)),
                 lockSize: Math.round(13 * Math.min(s, 1.3))
             };
             this._rowGeomCache = geom;
             return geom;
         }
         const geom = {
-            h: ROW_H, iconCY: ROW.iconY, iconSize: 40,
-            nameY: ROW.nameY, nameSizes: [15, 14, 13, 12, 11, 10],
-            descY: ROW.descY, descSize: ROW.descSize,
-            priceY: ROW.priceY, priceSize: 13, priceIconSize: 16, levelSize: 12, levelY: ROW.priceY, rightInset: 12,
-            btnY: ROW.btnY, btnW: ROW.btnW, btnH: ROW.btnH, btnSize: 14, lockSize: 11
+            h: ROW_H,
+            iconCY: ROW.iconY,
+            iconSize: 40,
+            nameY: ROW.nameY,
+            nameSizes: [15, 14, 13, 12, 11, 10],
+            descY: ROW.descY,
+            descSize: ROW.descSize,
+            priceY: ROW.priceY,
+            priceSize: 13,
+            priceIconSize: 16,
+            levelSize: 12,
+            levelY: ROW.priceY,
+            rightInset: 12,
+            btnY: ROW.btnY,
+            btnW: ROW.btnW,
+            btnH: ROW.btnH,
+            btnSize: 14,
+            lockSize: 11
         };
         this._rowGeomCache = geom;
         return geom;
@@ -201,7 +270,7 @@ export const panelMethods = {
         const card = addImg(this, 0, 0, 'upgrade_row_card_1', w, h, 11);
         // Слот уже ВСТРОЕН в текстуру карточки (тёмная ниша слева) — отдельная рамка
         // не нужна: раньше она дублировала нишу и давала «сдвиг»/двойную рамку слева.
-        const iconKey = def.id === 'pickaxe' ? 'pickaxe_wooden' : (def.icon || 'gear_icon');
+        const iconKey = def.id === 'pickaxe' ? 'pickaxe_wooden' : def.icon || 'gear_icon';
         const iconCY = g.iconCY;
         const icon = this.add.image(0, 0, iconKey).setDepth(DEPTH.uiIcon);
         this.placeIcon(icon, iconKey, iconCX, iconCY, g.iconSize);
@@ -215,7 +284,9 @@ export const panelMethods = {
             nameText.setFontSize(size);
             if (nameText.width <= nameMaxW) break;
         }
-        const descText = makeLabel(this, textX, g.descY, def.effect, g.descSize, '#cfcfcf', { wordWrap: { width: descWrap } });
+        const descText = makeLabel(this, textX, g.descY, def.effect, g.descSize, '#cfcfcf', {
+            wordWrap: { width: descWrap }
+        });
         descText.setOrigin(0, 0);
         if (this.L.portrait) fitOneLine(descText, g.descSize, 11);
         const priceIcon = this.add.image(0, 0, 'coal_nugget');
@@ -230,10 +301,16 @@ export const panelMethods = {
         levelText.setOrigin(1, 0.5);
 
         const { bg: btn, label: btnText } = addButton(this, btnX + btnW / 2, g.btnY + btnH / 2, {
-            kind: 'image', w: btnW, h: btnH, key: TEX.button,
-            text: 'Купить', fontSize: g.btnSize, color: TEXT.white,
+            kind: 'image',
+            w: btnW,
+            h: btnH,
+            key: TEX.button,
+            text: 'Купить',
+            fontSize: g.btnSize,
+            color: TEXT.white,
             depth: DEPTH.ui,
-            fitMaxW: btnW - SPACE.md, fitMin: 8
+            fitMaxW: btnW - SPACE.md,
+            fitMin: 8
         });
         // Хит-колонка кнопки на всю высоту ряда (>= 40 CSS px на телефоне;
         // рамка касания не выходит за карточку ряда — соседние ряды дальше)
@@ -244,7 +321,26 @@ export const panelMethods = {
 
         rc.add([card, icon, nameText, descText, priceIcon, priceText, levelText, btn, btnText, lockText]);
 
-        const row = { def, rc, icon, iconScale, iconCX, iconCY, nameText, descText, priceText, priceIcon, priceCX, priceCY, levelText, btn, btnText, lockText, nameMaxW, textX };
+        const row = {
+            def,
+            rc,
+            icon,
+            iconScale,
+            iconCX,
+            iconCY,
+            nameText,
+            descText,
+            priceText,
+            priceIcon,
+            priceCX,
+            priceCY,
+            levelText,
+            btn,
+            btnText,
+            lockText,
+            nameMaxW,
+            textX
+        };
 
         // Покупка на pointerup (а не pointerdown): драг списка, начатый на кнопке,
         // не должен покупать; тап = down+up на кнопке.
@@ -252,13 +348,22 @@ export const panelMethods = {
             if (this._listDragging) return;
             if (buyBulk(def.id, this.buyAmount)) {
                 playSfx(this, 'purchase');
-                this.tweens.add({ targets: icon, scale: { from: iconScale, to: iconScale * 1.25 }, duration: 90, yoyo: true });
+                this.tweens.add({
+                    targets: icon,
+                    scale: { from: iconScale, to: iconScale * 1.25 },
+                    duration: 90,
+                    yoyo: true
+                });
                 saveGame();
                 this.refreshUi();
             }
         });
-        btn.on('pointerover', () => { if (canBuy(def.id)) btn.setTexture(TEX.buttonHover); });
-        btn.on('pointerout', () => { if (canBuy(def.id)) btn.setTexture(TEX.button); });
+        btn.on('pointerover', () => {
+            if (canBuy(def.id)) btn.setTexture(TEX.buttonHover);
+        });
+        btn.on('pointerout', () => {
+            if (canBuy(def.id)) btn.setTexture(TEX.button);
+        });
 
         return row;
     },
@@ -315,14 +420,23 @@ export const panelMethods = {
             const u = this.L.unlock;
             const float = this.spawnFloat(u.cx, u.y - 44, `Уровень шахты: ${next.name}!`, 28, next.floatColor);
             float.setOrigin(0.5).setDepth(DEPTH.floatText);
-            this.tweens.add({ targets: float, y: float.y - 60, alpha: 0, duration: 1400, ease: 'Cubic.easeOut', onComplete: () => float.destroy() });
+            this.tweens.add({
+                targets: float,
+                y: float.y - 60,
+                alpha: 0,
+                duration: 1400,
+                ease: 'Cubic.easeOut',
+                onComplete: () => float.destroy()
+            });
             saveGame();
             this.game.events.emit(EVENTS.tierChanged);
             this.refreshUi();
             this.openMap({ animate: true });
         });
 
-        this.hint = makeLabel(this, this.L.unlock.cx, this.L.unlock.hintY, '', this.L.unlock.hintSize, TEXT.soft, { align: 'center' });
+        this.hint = makeLabel(this, this.L.unlock.cx, this.L.unlock.hintY, '', this.L.unlock.hintSize, TEXT.soft, {
+            align: 'center'
+        });
         this.hint.setOrigin(0.5, 0.5);
         this.tweens.add({ targets: this.hint, alpha: { from: 1, to: 0.6 }, duration: 900, yoyo: true, repeat: -1 });
     },
@@ -432,20 +546,32 @@ export const panelMethods = {
         if (next) {
             this.unlockBtn.setVisible(!hideUnlock && !this._panelHidden);
             this.unlockText.setVisible(!hideUnlock && !this._panelHidden);
-            this.unlockText.setText(this.L.portrait
-                ? `Спуск: ${next.name}\n${fmt(getNextUnlockPrice())} ${tier.gen || tier.name.toLowerCase()}`
-                : `Спуск: ${next.name} — ${fmt(getNextUnlockPrice())} ${tier.gen || tier.name.toLowerCase()}`);
+            this.unlockText.setText(
+                this.L.portrait
+                    ? `Спуск: ${next.name}\n${fmt(getNextUnlockPrice())} ${tier.gen || tier.name.toLowerCase()}`
+                    : `Спуск: ${next.name} — ${fmt(getNextUnlockPrice())} ${tier.gen || tier.name.toLowerCase()}`
+            );
             const bossLocked = !!this.registry.get(REG.bossActive);
             if (canUnlockTier() && !bossLocked) {
                 this.unlockBtn.setTexture(TEX.button);
                 this.unlockText.setColor(TEXT.white);
                 if (!this.unlockPulse) {
-                    this.unlockPulse = this.tweens.add({ targets: this.unlockBtn, alpha: { from: 1, to: 0.75 }, duration: 500, yoyo: true, repeat: -1 });
+                    this.unlockPulse = this.tweens.add({
+                        targets: this.unlockBtn,
+                        alpha: { from: 1, to: 0.75 },
+                        duration: 500,
+                        yoyo: true,
+                        repeat: -1
+                    });
                 }
             } else {
                 this.unlockBtn.setTexture(TEX.buttonDisabled);
                 this.unlockText.setColor(TEXT.soft);
-                if (this.unlockPulse) { this.unlockPulse.stop(); this.unlockPulse = null; this.unlockBtn.setAlpha(1); }
+                if (this.unlockPulse) {
+                    this.unlockPulse.stop();
+                    this.unlockPulse = null;
+                    this.unlockBtn.setAlpha(1);
+                }
             }
             // Пока спуск не доступен — показываем ETA: цена-снапшот постоянна,
             // каждая покупка сокращает время на глазах.
@@ -516,9 +642,10 @@ export const panelMethods = {
                 row.btnText.setText('—').setColor(TEXT.muted);
                 // Гейт глубины приоритетнее: пока шахта мелкая, цепочку всё равно не докрутить.
                 // Нумерация как в ярлыке «уровень шахты: N — Руда» (с единицы: уголь = 1).
-                const lockTxt = def.tier !== undefined && gameState.tier < def.tier
-                    ? `нужно: шахта ${def.tier + 1}`
-                    : `нужно: ${getUpgradeDef(def.requires.id).name} ${def.requires.level}`;
+                const lockTxt =
+                    def.tier !== undefined && gameState.tier < def.tier
+                        ? `нужно: шахта ${def.tier + 1}`
+                        : `нужно: ${getUpgradeDef(def.requires.id).name} ${def.requires.level}`;
                 row.lockText.setText(lockTxt);
                 // «ур. 0» справа наезжала на длинное «нужно: …» (скриншот игрока) —
                 // у заблокированного улучшения уровень неинформативен, прячем бейдж
@@ -550,9 +677,8 @@ export const panelMethods = {
                 this.placeIcon(row.priceIcon, tier.iconKey, row.priceCX, row.priceCY, this.rowGeom().priceIconSize);
                 row.priceIcon.setVisible(true);
                 row.priceText.setVisible(true);
-                const priceStr = r.n > 0
-                    ? (r.n > 1 ? `${fmt(r.total)} x${r.n}` : fmt(r.total))
-                    : fmt(getUpgradeCost(def.id));
+                const priceStr =
+                    r.n > 0 ? (r.n > 1 ? `${fmt(r.total)} x${r.n}` : fmt(r.total)) : fmt(getUpgradeCost(def.id));
                 row.priceText.setText(priceStr).setColor(TEXT.gold);
             } else {
                 // Строгий пакет x{amount}: либо весь пакет целиком, либо ничего

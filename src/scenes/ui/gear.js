@@ -1,7 +1,5 @@
 import Phaser from 'phaser';
-import {
-    gameState, fmt, ITEMS, useItem, getItemPrice, buyItem, canBuyItem
-} from '../../state.js';
+import { gameState, fmt, ITEMS, useItem, getItemPrice, buyItem, canBuyItem } from '../../state.js';
 import { makeLabel, fitFontSize, setHitWorldRect } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
 import { VIEWPORT } from '../../ui/listGeometry.js';
@@ -34,8 +32,13 @@ export const gearMethods = {
             // Кнопки рядов (Button, kind image): нативный размер текстуры = кадр
             // hit-area (267x133); раскладка двигает/ресайзит ссылки из layoutGearSection
             const { bg: buyBtn, label: buyLbl } = addButton(this, 0, 0, {
-                kind: 'image', w: HIT.button[0], h: HIT.button[1], key: TEX.button,
-                depth: DEPTH.uiAbove, fontSize: FONT_SIZE.caption, color: TEXT.white
+                kind: 'image',
+                w: HIT.button[0],
+                h: HIT.button[1],
+                key: TEX.button,
+                depth: DEPTH.uiAbove,
+                fontSize: FONT_SIZE.caption,
+                color: TEXT.white
             });
             buyBtn.on('pointerup', () => {
                 if (this._listDragging) return;
@@ -45,8 +48,13 @@ export const gearMethods = {
                 }
             });
             const { bg: useBtn, label: useLbl } = addButton(this, 0, 0, {
-                kind: 'image', w: HIT.button[0], h: HIT.button[1], key: TEX.button,
-                text: 'Использовать', fontSize: FONT_SIZE.caption, color: TEXT.white,
+                kind: 'image',
+                w: HIT.button[0],
+                h: HIT.button[1],
+                key: TEX.button,
+                text: 'Использовать',
+                fontSize: FONT_SIZE.caption,
+                color: TEXT.white,
                 depth: DEPTH.uiAbove
             });
             useBtn.on('pointerup', () => {
@@ -115,14 +123,23 @@ export const gearMethods = {
                 row.buyBtn.setDisplaySize(btnW, btnH);
                 row.buyLbl.setPosition(row.buyBtn.x, row.buyBtn.y);
                 row.buyLbl.setFontSize(FONT_SIZE.accent);
-                row.useBtn.setPosition(vw.x + SPACE.xs + g.sideInset + btnW + SPACE.md + btnW / 2, ry + btnTop + btnH / 2);
+                row.useBtn.setPosition(
+                    vw.x + SPACE.xs + g.sideInset + btnW + SPACE.md + btnW / 2,
+                    ry + btnTop + btnH / 2
+                );
                 row.useBtn.setDisplaySize(btnW, btnH);
                 row.useLbl.setPosition(row.useBtn.x, row.useBtn.y);
                 row.useLbl.setFontSize(FONT_SIZE.accent);
                 // Хит-колонки кнопок на всю высоту карточки (>= 40 CSS px);
                 // колонки не пересекаются (зазор SPACE.md между кнопками)
                 setHitWorldRect(row.buyBtn, vw.x + SPACE.xs + g.sideInset - g.hitPad, ry, btnW + g.hitPad * 2, rh);
-                setHitWorldRect(row.useBtn, vw.x + SPACE.xs + g.sideInset + btnW + SPACE.md - g.hitPad, ry, btnW + g.hitPad * 2, rh);
+                setHitWorldRect(
+                    row.useBtn,
+                    vw.x + SPACE.xs + g.sideInset + btnW + SPACE.md - g.hitPad,
+                    ry,
+                    btnW + g.hitPad * 2,
+                    rh
+                );
                 ry += rh + SPACE.sm;
             }
             this.refreshGearPanel(true);
@@ -180,7 +197,13 @@ export const gearMethods = {
             row.useLbl.setFontSize(FONT_SIZE.caption);
             // Хит-колонки кнопок на всю высоту карточки (>= 40 CSS px)
             setHitWorldRect(row.buyBtn, vw.x + SPACE.xs + g.sideInset - g.hitPad, ry, btnW + g.hitPad * 2, rh);
-            setHitWorldRect(row.useBtn, vw.x + SPACE.xs + g.sideInset + btnW + SPACE.md - g.hitPad, ry, btnW + g.hitPad * 2, rh);
+            setHitWorldRect(
+                row.useBtn,
+                vw.x + SPACE.xs + g.sideInset + btnW + SPACE.md - g.hitPad,
+                ry,
+                btnW + g.hitPad * 2,
+                rh
+            );
             ry += rh + g.rowGap;
         }
         this.refreshGearPanel(true);

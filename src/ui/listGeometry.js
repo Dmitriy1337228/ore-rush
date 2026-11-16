@@ -15,7 +15,7 @@ export const ROW_GAP = 6;
 
 export const TABS = [
     { id: 'equipment', label: 'Оборудование' },
-    { id: 'enhance',   label: 'Усиления' }
+    { id: 'enhance', label: 'Усиления' }
 ];
 export const BUY_AMOUNTS = [1, 10, 100, 'max'];
 
@@ -33,8 +33,8 @@ export const MAP_R_BOSS = 34;
 
 // Отступы ряда (карточка 296x96: face source x44..817, y16..202 -> drawn x16..290, y7..89)
 export const ROW = {
-    iconY: 50,          // центр встроенной ниши карточки по Y (source y44..181 -> drawn 19.4..79.7)
-    descSize: 11,       // 11px: вместимость ~12+ символов на строку при вариативности метрик шрифта
+    iconY: 50, // центр встроенной ниши карточки по Y (source y44..181 -> drawn 19.4..79.7)
+    descSize: 11, // 11px: вместимость ~12+ символов на строку при вариативности метрик шрифта
     btnW: 84,
     btnH: 40,
     // Вертикальный стек ряда (y от верха карточки, зазоры заданы явно):

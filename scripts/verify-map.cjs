@@ -8,10 +8,12 @@
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
 
-let passed = 0, failed = 0;
+let passed = 0,
+    failed = 0;
 function check(name, cond, detail = '') {
     console.log(`${cond ? 'OK  ' : 'FAIL'} ${name}${detail ? ' (' + detail + ')' : ''}`);
-    if (cond) passed++; else failed++;
+    if (cond) passed++;
+    else failed++;
 }
 
 // Сигнатура нарушения: цифры (координаты/размеры) выпадают — сравниваем классы
@@ -32,52 +34,78 @@ async function auditLayout(page) {
             const inTree = (container, go) => {
                 if (container === go) return true;
                 if (!container.list) return false;
-                for (const ch of container.list) { if (ch === go || inTree(ch, go)) return true; }
+                for (const ch of container.list) {
+                    if (ch === go || inTree(ch, go)) return true;
+                }
                 return false;
             };
             const walk = (list, parentVisible) => {
                 for (const go of list) {
-                    if (go.visible === false || parentVisible === false) { if (go.list) walk(go.list, false); continue; }
-                    if (go.list) { walk(go.list, true); continue; }
+                    if (go.visible === false || parentVisible === false) {
+                        if (go.list) walk(go.list, false);
+                        continue;
+                    }
+                    if (go.list) {
+                        walk(go.list, true);
+                        continue;
+                    }
                     if (go.type === 'ParticleEmitter' || go.type === 'Graphics' || go.type === 'Rectangle') continue;
                     if (go.alpha !== undefined && go.alpha < 0.05) continue;
                     try {
                         const b = go.getBounds();
                         if (b.width <= 1 && b.height <= 1) continue;
-                        let x = b.x, y = b.y, r = b.right, bt = b.bottom;
+                        let x = b.x,
+                            y = b.y,
+                            r = b.right,
+                            bt = b.bottom;
                         let inList = false;
                         // Контент скролл-камер переводим в экранные координаты
                         // (ряды списка — listCam, столбец карты — mapCam)
                         if (scene.scene.key === 'UIScene' && ui && ui.listContent && inTree(ui.listContent, go)) {
                             inList = true;
                             const vy = y - listCam.scrollY + listCam.y;
-                            if (bt - listCam.scrollY + listCam.y < listCam.y - 2 || vy > listCam.y + listCam.height + 2) continue;
-                            y = vy; bt = bt - listCam.scrollY + listCam.y;
-                            x = x - listCam.scrollX + listCam.x; r = r - listCam.scrollX + listCam.x;
+                            if (bt - listCam.scrollY + listCam.y < listCam.y - 2 || vy > listCam.y + listCam.height + 2)
+                                continue;
+                            y = vy;
+                            bt = bt - listCam.scrollY + listCam.y;
+                            x = x - listCam.scrollX + listCam.x;
+                            r = r - listCam.scrollX + listCam.x;
                         }
                         if (scene.scene.key === 'UIScene' && ui && ui.mapContent && inTree(ui.mapContent, go)) {
                             const cam = ui.mapCam;
                             const vy = y - cam.scrollY + cam.y;
                             if (bt - cam.scrollY + cam.y < cam.y - 2 || vy > cam.y + cam.height + 2) continue;
-                            y = vy; bt = bt - cam.scrollY + cam.y;
-                            x = x - cam.scrollX + cam.x; r = r - cam.scrollX + cam.x;
+                            y = vy;
+                            bt = bt - cam.scrollY + cam.y;
+                            x = x - cam.scrollX + cam.x;
+                            r = r - cam.scrollX + cam.x;
                         }
                         if (scene.scene.key === 'UIScene' && ui && ui.craftContent && inTree(ui.craftContent, go)) {
                             const cam = ui.craftCam;
                             const vy = y - cam.scrollY + cam.y;
                             if (bt - cam.scrollY + cam.y < cam.y - 2 || vy > cam.y + cam.height + 2) continue;
-                            y = vy; bt = bt - cam.scrollY + cam.y;
-                            x = x - cam.scrollX + cam.x; r = r - cam.scrollX + cam.x;
+                            y = vy;
+                            bt = bt - cam.scrollY + cam.y;
+                            x = x - cam.scrollX + cam.x;
+                            r = r - cam.scrollX + cam.x;
                         }
-                        if (go.type === 'Text') { y += 3; bt -= 3; }
+                        if (go.type === 'Text') {
+                            y += 3;
+                            bt -= 3;
+                        }
                         items.push({
                             scene: scene.scene.key,
                             kind: go.type,
                             text: (go.text || '').slice(0, 26),
                             tex: (go.texture && go.texture.key) || '',
-                            x, y, r, bt
+                            x,
+                            y,
+                            r,
+                            bt
                         });
-                    } catch (e) { /* нет bounds — пропускаем */ }
+                    } catch (e) {
+                        /* нет bounds — пропускаем */
+                    }
                 }
             };
             walk(scene.children.list, true);
@@ -86,13 +114,16 @@ async function auditLayout(page) {
         const isContained = (a, b) => a.x >= b.x - 1 && a.y >= b.y - 1 && a.r <= b.r + 1 && a.b <= b.b + 1;
         for (let i = 0; i < items.length; i++) {
             for (let j = i + 1; j < items.length; j++) {
-                const a = items[i], b = items[j];
+                const a = items[i],
+                    b = items[j];
                 if (a.scene !== b.scene) continue;
                 if (isContained(a, b) || isContained(b, a)) continue;
                 const ox = Math.min(a.r, b.r) - Math.max(a.x, b.x);
                 const oy = Math.min(a.b, b.b) - Math.max(a.y, b.y);
                 if (ox > 1 && oy > 1) {
-                    violations.push(`OVERLAP [${a.scene}] "${a.text || a.tex || a.kind}" x "${b.text || b.tex || b.kind}" ox=${Math.round(ox)} oy=${Math.round(oy)}`);
+                    violations.push(
+                        `OVERLAP [${a.scene}] "${a.text || a.tex || a.kind}" x "${b.text || b.tex || b.kind}" ox=${Math.round(ox)} oy=${Math.round(oy)}`
+                    );
                 }
             }
         }
@@ -109,10 +140,13 @@ async function auditLayout(page) {
                     const gb = go.getBounds();
                     if (!gb || gb.width === 0) continue;
                     if (gb.bottom < cb.y || gb.y > cb.bottom) continue;
-                    const gy = gb.y - listCam.scrollY + listCam.y, gby = gb.bottom - listCam.scrollY + listCam.y;
+                    const gy = gb.y - listCam.scrollY + listCam.y,
+                        gby = gb.bottom - listCam.scrollY + listCam.y;
                     const adj = go.type === 'Text' ? 3 : 0;
                     if (gy + adj < inner.y - 1 || gby - adj > inner.b + 1) {
-                        violations.push(`OUTSIDE-CARD row@${Math.round(csy)}: "${go.text || go.texture?.key || go.type}"`);
+                        violations.push(
+                            `OUTSIDE-CARD row@${Math.round(csy)}: "${go.text || go.texture?.key || go.type}"`
+                        );
                     }
                 }
             }
@@ -122,16 +156,28 @@ async function auditLayout(page) {
 }
 
 const FRESH_SAVE = JSON.stringify({
-    version: 5, ore: 0, tier: 0, stars: 0, clicks: 0, lifetimeMined: 0,
-    tierEarned: Array(12).fill(0), tutorialDone: true,
+    version: 5,
+    ore: 0,
+    tier: 0,
+    stars: 0,
+    clicks: 0,
+    lifetimeMined: 0,
+    tierEarned: Array(12).fill(0),
+    tutorialDone: true,
     levels: { pickaxe: 5 }
 });
 // Тир 3 (серебро), Медный страж побеждён: тира 0..2 пройдены, тир 3 текущий,
 // boss_silver доступен, boss_amethyst/ruby/platinum/diamond закрыты гейтом тира.
 const DEEP_SAVE = JSON.stringify({
-    version: 5, ore: 50000, tier: 3, stars: 0, clicks: 100, lifetimeMined: 5e5,
+    version: 5,
+    ore: 50000,
+    tier: 3,
+    stars: 0,
+    clicks: 100,
+    lifetimeMined: 5e5,
     tierEarned: [1e5, 1e5, 1e5, 1e5, 0, 0, 0, 0, 0, 0, 0, 0],
-    tierAnchorRate: 100, tutorialDone: true,
+    tierAnchorRate: 100,
+    tutorialDone: true,
     bossesDefeated: { boss_copper: true },
     levels: { pickaxe: 15, miner: 10, drill: 5 }
 });
@@ -145,7 +191,9 @@ const DEEP_SAVE = JSON.stringify({
     const newPage = async (save, viewport) => {
         const page = await b.newPage({ viewport });
         page.on('pageerror', (e) => errors.push(String(e)));
-        await page.addInitScript((s) => { localStorage.setItem('ore-rush-save', s); }, save);
+        await page.addInitScript((s) => {
+            localStorage.setItem('ore-rush-save', s);
+        }, save);
         await page.goto('http://localhost:5174', { waitUntil: 'load' });
         await page.waitForTimeout(3000);
         // Свежий сейв выдаёт дневную награду — закрываем (lock снимается
@@ -164,7 +212,11 @@ const DEEP_SAVE = JSON.stringify({
         // state-модуль: URL из resource-entries (HMR-таймстамп dev-сервера)
         const state = async (expr) => {
             return page.evaluate(async (e) => {
-                const u = performance.getEntriesByType('resource').map((r) => r.name).find((n) => /\/src\/state\.js/.test(n)) || '/src/state.js';
+                const u =
+                    performance
+                        .getEntriesByType('resource')
+                        .map((r) => r.name)
+                        .find((n) => /\/src\/state\.js/.test(n)) || '/src/state.js';
                 const m = await import(u);
                 return new Function('m', 'return (' + e + ');')(m);
             }, expr);
@@ -172,31 +224,33 @@ const DEEP_SAVE = JSON.stringify({
         return { page, state };
     };
 
-    const uiState = (page) => page.evaluate(() => {
-        const ui = window.__GAME.scene.getScene('UIScene');
-        return {
-            mapOpen: ui._mapOpen,
-            craftOpen: ui._craftOpen,
-            locked: window.__GAME.registry.get('blockLocked'),
-            mapRootVisible: ui.mapRoot.visible,
-            contentVisible: ui.mapContent.visible,
-            nodes: ui.mapNodes.length,
-            scrollY: ui.mapCam.scrollY,
-            anim: ui._mapAnim ? 'run' : null,
-            minerVisible: ui.mapMiner.visible,
-            minerY: ui.mapMiner.y,
-            mapCamVisible: ui.mapCam.visible,
-            boardTex: ui.mapBoard ? ui.mapBoard.texture.key : null,
-            boardVisible: ui.mapBoard ? ui.mapBoard.visible : false,
-            trailType: ui.mapTrail ? ui.mapTrail.type : null
-        };
-    });
+    const uiState = (page) =>
+        page.evaluate(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return {
+                mapOpen: ui._mapOpen,
+                craftOpen: ui._craftOpen,
+                locked: window.__GAME.registry.get('blockLocked'),
+                mapRootVisible: ui.mapRoot.visible,
+                contentVisible: ui.mapContent.visible,
+                nodes: ui.mapNodes.length,
+                scrollY: ui.mapCam.scrollY,
+                anim: ui._mapAnim ? 'run' : null,
+                minerVisible: ui.mapMiner.visible,
+                minerY: ui.mapMiner.y,
+                mapCamVisible: ui.mapCam.visible,
+                boardTex: ui.mapBoard ? ui.mapBoard.texture.key : null,
+                boardVisible: ui.mapBoard ? ui.mapBoard.visible : false,
+                trailType: ui.mapTrail ? ui.mapTrail.type : null
+            };
+        });
 
     // Координаты кликов берём с живых объектов (центры кнопок, слоты узлов)
-    const ptOf = (page, expr) => page.evaluate((e) => {
-        const ui = window.__GAME.scene.getScene('UIScene');
-        return new Function('ui', 'return (' + e + ');')(ui);
-    }, expr);
+    const ptOf = (page, expr) =>
+        page.evaluate((e) => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            return new Function('ui', 'return (' + e + ');')(ui);
+        }, expr);
 
     // ---------- Страница 1: свежий забег, ландшафт ----------
     {
@@ -211,7 +265,11 @@ const DEEP_SAVE = JSON.stringify({
         check('A2: registry blockLocked = true', s.locked === true);
         check('A3: 18 узлов (12 тиров + 6 боссов)', s.nodes === 18, String(s.nodes));
         check('A4: карта видна камере', s.mapCamVisible);
-        check('A4b: фон-доска map_board внутри панели видна', s.boardTex === 'map_board' && s.boardVisible, JSON.stringify({ tex: s.boardTex, vis: s.boardVisible }));
+        check(
+            'A4b: фон-доска map_board внутри панели видна',
+            s.boardTex === 'map_board' && s.boardVisible,
+            JSON.stringify({ tex: s.boardTex, vis: s.boardVisible })
+        );
         check('A4c: тропа-Graphics в mapContent', s.trailType === 'Graphics', String(s.trailType));
         // A1(П2-ревью): зазор тропы валиден для КАЖДОЙ пары соседних узлов —
         // низ подписи + 4s + 6 <= верх следующего кружка − 9s (иначе пунктир
@@ -221,7 +279,8 @@ const DEEP_SAVE = JSON.stringify({
             const sc = ui._adaptiveScale || 1;
             const bad = [];
             for (let k = 0; k < ui.mapNodes.length - 1; k++) {
-                const a = ui.mapNodes[k], b = ui.mapNodes[k + 1];
+                const a = ui.mapNodes[k],
+                    b = ui.mapNodes[k + 1];
                 const lbl = a.kind === 'tier' ? a.name : a.status;
                 const from = a.root.y + lbl.y + lbl.height + Math.round(4 * sc);
                 const to = b.root.y - Math.round(9 * sc);
@@ -229,7 +288,11 @@ const DEEP_SAVE = JSON.stringify({
             }
             return bad;
         });
-        check('A4d: тропа — зазор валиден для всех 17 пар соседних узлов', trailGaps.length === 0, JSON.stringify(trailGaps));
+        check(
+            'A4d: тропа — зазор валиден для всех 17 пар соседних узлов',
+            trailGaps.length === 0,
+            JSON.stringify(trailGaps)
+        );
         check('A5: scroll на текущем узле (тир 0)', Math.abs(s.scrollY - 0) < 1, String(s.scrollY));
 
         const states = await page.evaluate(() => {
@@ -245,20 +308,47 @@ const DEEP_SAVE = JSON.stringify({
                 pulsing: !!n.pulse
             }));
         });
-        check('A6: тир 1 текущий с пульсом', states[0].kind === 'tier' && states[0].tier === 0 && states[0].state === 'current' && states[0].pulsing);
+        check(
+            'A6: тир 1 текущий с пульсом',
+            states[0].kind === 'tier' && states[0].tier === 0 && states[0].state === 'current' && states[0].pulsing
+        );
         // Порядок по ТЗ: [t0, t1, boss_copper, t2, t3, boss_silver, ...]
-        check('A6b: boss_copper стоит после узла тира 1', states[1].kind === 'tier' && states[1].tier === 1 && states[2].id === 'boss_copper');
-        check('A6c: у каждого узла кружок-Graphics с обводкой по статусу', states.every((n) => n.ringType === 'Graphics' && typeof n.ringColor === 'number'), JSON.stringify(states.filter((n) => n.ringType !== 'Graphics').length));
-        check('A7: тиры 2..12 будущие — тёмная обводка 0x3a3d40', states.filter((n) => n.kind === 'tier' && n.tier > 0).every((n) => n.state === 'future' && n.ringColor === 0x3a3d40 && !n.pulsing));
-        check('A8: все боссы закрыты «нужен: шахта N+1», серая обводка', states.filter((n) => n.kind === 'boss').every((n) => n.state === 'locked' && /нужен: шахта \d+/.test(n.status) && n.ringColor === 0x6a6a6a));
-        check('A9: подпись босса тира 1 «нужен: шахта 2»', states.find((n) => n.id === 'boss_copper').status === 'нужен: шахта 2');
+        check(
+            'A6b: boss_copper стоит после узла тира 1',
+            states[1].kind === 'tier' && states[1].tier === 1 && states[2].id === 'boss_copper'
+        );
+        check(
+            'A6c: у каждого узла кружок-Graphics с обводкой по статусу',
+            states.every((n) => n.ringType === 'Graphics' && typeof n.ringColor === 'number'),
+            JSON.stringify(states.filter((n) => n.ringType !== 'Graphics').length)
+        );
+        check(
+            'A7: тиры 2..12 будущие — тёмная обводка 0x3a3d40',
+            states
+                .filter((n) => n.kind === 'tier' && n.tier > 0)
+                .every((n) => n.state === 'future' && n.ringColor === 0x3a3d40 && !n.pulsing)
+        );
+        check(
+            'A8: все боссы закрыты «нужен: шахта N+1», серая обводка',
+            states
+                .filter((n) => n.kind === 'boss')
+                .every((n) => n.state === 'locked' && /нужен: шахта \d+/.test(n.status) && n.ringColor === 0x6a6a6a)
+        );
+        check(
+            'A9: подпись босса тира 1 «нужен: шахта 2»',
+            states.find((n) => n.id === 'boss_copper').status === 'нужен: шахта 2'
+        );
 
         // B: закрытие снимает lock, клик по блоку добывает
         const closePt = await ptOf(page, '({ x: ui.mapRoot.x + ui.mapClose.x, y: ui.mapRoot.y + ui.mapClose.y })');
         await page.mouse.click(closePt.x, closePt.y);
         await page.waitForTimeout(300);
         s = await uiState(page);
-        check('B1: карта закрылась, lock снят', !s.mapOpen && !s.mapRootVisible && !s.contentVisible && s.locked === false, JSON.stringify(s));
+        check(
+            'B1: карта закрылась, lock снят',
+            !s.mapOpen && !s.mapRootVisible && !s.contentVisible && s.locked === false,
+            JSON.stringify(s)
+        );
         const ore0 = await state('m.gameState.ore');
         await page.mouse.click(400, 400);
         await page.waitForTimeout(300);
@@ -278,12 +368,23 @@ const DEEP_SAVE = JSON.stringify({
         s = await uiState(page);
         // Цели скролла считаем по живой геометрии узлов (root.y + _r — центр
         // кружка, не верх): target = clamp(centerY - h/2, 0, maxScroll)
-        const c2 = await ptOf(page, `(() => {
+        const c2 = await ptOf(
+            page,
+            `(() => {
             const n = ui.mapNodes.find((x) => x.kind === 'tier' && x.tier === 1);
             return { y: n.root.y + n._r, target: Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2)) };
-        })()`);
-        check('C2: skip завершил анимацию на целевом узле', !s.anim && Math.abs(s.scrollY - c2.target) < 1, `scrollY=${s.scrollY} target=${c2.target}`);
-        check('C3: шахтёр на узле нового тира', s.minerVisible && Math.abs(s.minerY - c2.y) < 1, `y=${s.minerY} узел=${c2.y}`);
+        })()`
+        );
+        check(
+            'C2: skip завершил анимацию на целевом узле',
+            !s.anim && Math.abs(s.scrollY - c2.target) < 1,
+            `scrollY=${s.scrollY} target=${c2.target}`
+        );
+        check(
+            'C3: шахтёр на узле нового тира',
+            s.minerVisible && Math.abs(s.minerY - c2.y) < 1,
+            `y=${s.minerY} узел=${c2.y}`
+        );
         const banner = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             return ui.mapRoot.list.some((o) => o.type === 'Text' && /Уровень 2: Медь!/.test(o.text));
@@ -293,7 +394,11 @@ const DEEP_SAVE = JSON.stringify({
         await page.waitForTimeout(1200);
         const tier = await state('m.gameState.tier');
         const blockTex = await page.evaluate(() => window.__GAME.scene.getScene('GameScene').block.texture.key);
-        check('C5: после closeMap шахта на тире 1 (медь)', tier === 1 && blockTex.includes('copper'), `tier=${tier} tex=${blockTex}`);
+        check(
+            'C5: после closeMap шахта на тире 1 (медь)',
+            tier === 1 && blockTex.includes('copper'),
+            `tier=${tier} tex=${blockTex}`
+        );
         s = await uiState(page);
         check('C6: lock снят после спуска и закрытия', s.locked === false);
         await page.close();
@@ -310,11 +415,18 @@ const DEEP_SAVE = JSON.stringify({
         await page.mouse.click(mapBtnPt.x, mapBtnPt.y);
         await page.waitForTimeout(300);
         let s = await uiState(page);
-        const d1 = await ptOf(page, `(() => {
+        const d1 = await ptOf(
+            page,
+            `(() => {
             const n = ui.mapNodes.find((x) => x.kind === 'tier' && x.tier === 3);
             return Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2));
-        })()`);
-        check('D1: карта открыта, scroll на тире 3 (по коду)', s.mapOpen && Math.abs(s.scrollY - d1) < 1, `scrollY=${s.scrollY} target=${d1}`);
+        })()`
+        );
+        check(
+            'D1: карта открыта, scroll на тире 3 (по коду)',
+            s.mapOpen && Math.abs(s.scrollY - d1) < 1,
+            `scrollY=${s.scrollY} target=${d1}`
+        );
 
         // D1b: физический драг двигает скролл (старт — с dim: его stopPropagation
         // гасит scene-level pointerdown)
@@ -345,22 +457,50 @@ const DEEP_SAVE = JSON.stringify({
                 ringPulse: !!n.ringPulse
             }));
         });
-        check('D2: тиры 0..2 пройдены — серая обводка 0x6a6a6a', states.filter((n) => n.kind === 'tier' && n.tier < 3).every((n) => n.state === 'passed' && n.ringColor === 0x6a6a6a && !n.pulsing));
-        check('D3: тир 3 текущий с пульсом (жёлтая обводка)', states.filter((n) => n.kind === 'tier' && n.tier === 3).every((n) => n.state === 'current' && n.ringColor === 0xffd75e && n.pulsing));
-        check('D4: boss_copper побеждён — зелёная обводка', states.find((n) => n.id === 'boss_copper').state === 'defeated'
-            && states.find((n) => n.id === 'boss_copper').ringColor === 0x7ee787
-            && states.find((n) => n.id === 'boss_copper').status === 'побеждён');
+        check(
+            'D2: тиры 0..2 пройдены — серая обводка 0x6a6a6a',
+            states
+                .filter((n) => n.kind === 'tier' && n.tier < 3)
+                .every((n) => n.state === 'passed' && n.ringColor === 0x6a6a6a && !n.pulsing)
+        );
+        check(
+            'D3: тир 3 текущий с пульсом (жёлтая обводка)',
+            states
+                .filter((n) => n.kind === 'tier' && n.tier === 3)
+                .every((n) => n.state === 'current' && n.ringColor === 0xffd75e && n.pulsing)
+        );
+        check(
+            'D4: boss_copper побеждён — зелёная обводка',
+            states.find((n) => n.id === 'boss_copper').state === 'defeated' &&
+                states.find((n) => n.id === 'boss_copper').ringColor === 0x7ee787 &&
+                states.find((n) => n.id === 'boss_copper').status === 'побеждён'
+        );
         const silver = states.find((n) => n.id === 'boss_silver');
-        check('D5: boss_silver доступен «Сразиться!» с пульсом текста И обводки', silver.state === 'available' && silver.status === 'Сразиться!' && silver.pulsing && silver.ringPulse && silver.ringColor === 0xffd75e);
-        check('D6: боссы 5..11 закрыты гейтом', states.filter((n) => n.id && n.id !== 'boss_copper' && n.id !== 'boss_silver').every((n) => n.state === 'locked' && /нужен: шахта \d+/.test(n.status)));
+        check(
+            'D5: boss_silver доступен «Сразиться!» с пульсом текста И обводки',
+            silver.state === 'available' &&
+                silver.status === 'Сразиться!' &&
+                silver.pulsing &&
+                silver.ringPulse &&
+                silver.ringColor === 0xffd75e
+        );
+        check(
+            'D6: боссы 5..11 закрыты гейтом',
+            states
+                .filter((n) => n.id && n.id !== 'boss_copper' && n.id !== 'boss_silver')
+                .every((n) => n.state === 'locked' && /нужен: шахта \d+/.test(n.status))
+        );
 
         // E: тап доступного босса — closeMap + старт боя (П4 заменил заглушку П3);
         // клик в центр кружка (ring — ребёнок root со сдвигом r вниз)
-        const silverPt = await ptOf(page, `(() => {
+        const silverPt = await ptOf(
+            page,
+            `(() => {
             const n = ui.mapNodes.find((x) => x.boss && x.boss.id === 'boss_silver');
             const v = ui._mapView;
             return { x: v.x + n.root.x + n.ring.x, y: v.y + n.root.y + n.ring.y - ui.mapCam.scrollY };
-        })()`);
+        })()`
+        );
         await page.mouse.click(silverPt.x, silverPt.y);
         await page.waitForTimeout(400);
         s = await uiState(page);
@@ -368,7 +508,11 @@ const DEEP_SAVE = JSON.stringify({
             const gs = window.__GAME.scene.getScene('GameScene');
             return !!gs.boss && gs.boss.def.id === 'boss_silver' && window.__GAME.registry.get('bossActive');
         });
-        check('E1: тап босса закрыл карту и начал бой (бой НЕ держит blockLocked)', !s.mapOpen && s.locked === false && fightOn, JSON.stringify(s));
+        check(
+            'E1: тап босса закрыл карту и начал бой (бой НЕ держит blockLocked)',
+            !s.mapOpen && s.locked === false && fightOn,
+            JSON.stringify(s)
+        );
         // ретрит: босс — мягкий контент, спуск не гейтит; ждём затухания флоата до аудита F
         await page.evaluate(() => window.__GAME.scene.getScene('GameScene').retreatBoss());
         await page.waitForTimeout(1500);
@@ -383,13 +527,22 @@ const DEEP_SAVE = JSON.stringify({
         // класс «панель × что-то под ней» выпадает; фон-доска map_board — часть
         // хрома карты (край под крестиком/заголовком) — тоже выпадает; сравниваем
         // остальное с фоном (карта закрыта) — новые пересечения контента запрещены.
-        const baseRelevant = new Set((await auditLayout(page)).violations
-            .filter((v) => !v.includes('modal_panel_metal') && !v.includes('map_board')).map(sig));
+        const baseRelevant = new Set(
+            (await auditLayout(page)).violations
+                .filter((v) => !v.includes('modal_panel_metal') && !v.includes('map_board'))
+                .map(sig)
+        );
         await page.mouse.click(mapBtnPt.x, mapBtnPt.y);
         await page.waitForTimeout(400);
-        const mapAudit = (await auditLayout(page)).violations.filter((v) => !v.includes('modal_panel_metal') && !v.includes('map_board'));
+        const mapAudit = (await auditLayout(page)).violations.filter(
+            (v) => !v.includes('modal_panel_metal') && !v.includes('map_board')
+        );
         const mapNew = mapAudit.filter((v) => !baseRelevant.has(sig(v)));
-        check('F1: аудит при открытой карте — новых нарушений нет', mapNew.length === 0, mapNew.join(' | ') || mapAudit.join(' | '));
+        check(
+            'F1: аудит при открытой карте — новых нарушений нет',
+            mapNew.length === 0,
+            mapNew.join(' | ') || mapAudit.join(' | ')
+        );
         await page.mouse.click(closePt.x, closePt.y);
         await page.waitForTimeout(300);
 
@@ -426,7 +579,11 @@ const DEEP_SAVE = JSON.stringify({
                 locked: window.__GAME.registry.get('blockLocked')
             };
         });
-        check('H1: крафт-кнопка открыла каркас «Мастерская»', craft.open && craft.root && craft.content && craft.title === 'Мастерская' && craft.locked === true, JSON.stringify(craft));
+        check(
+            'H1: крафт-кнопка открыла каркас «Мастерская»',
+            craft.open && craft.root && craft.content && craft.title === 'Мастерская' && craft.locked === true,
+            JSON.stringify(craft)
+        );
         await page.mouse.click(860, 132); // крестик каркаса
         await page.waitForTimeout(300);
         const craftClosed = await uiState(page);
@@ -447,21 +604,40 @@ const DEEP_SAVE = JSON.stringify({
         await page.mouse.click(unlockPt2.x, unlockPt2.y); // центр живой кнопки спуска
         await page.waitForTimeout(250);
         s = await uiState(page);
-        check('J1: спуск открыл карту с анимацией (клик по кнопке не skip-ает)', s.mapOpen && s.anim === 'run', JSON.stringify(s));
+        check(
+            'J1: спуск открыл карту с анимацией (клик по кнопке не skip-ает)',
+            s.mapOpen && s.anim === 'run',
+            JSON.stringify(s)
+        );
         await page.mouse.click(500, 500); // skip-тап по карте
         await page.waitForTimeout(150);
         s = await uiState(page);
-        const j2 = await ptOf(page, `(() => {
+        const j2 = await ptOf(
+            page,
+            `(() => {
             const n = ui.mapNodes.find((x) => x.kind === 'tier' && x.tier === 4);
             return { y: n.root.y + n._r, target: Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2)) };
-        })()`);
-        check('J2: skip поставил scroll на цель (по коду)', !s.anim && Math.abs(s.scrollY - j2.target) < 1, `scrollY=${s.scrollY} target=${j2.target}`);
-        check('J3: шахтёр на узле тира 4', s.minerVisible && Math.abs(s.minerY - j2.y) < 1, `y=${s.minerY} узел=${j2.y}`);
+        })()`
+        );
+        check(
+            'J2: skip поставил scroll на цель (по коду)',
+            !s.anim && Math.abs(s.scrollY - j2.target) < 1,
+            `scrollY=${s.scrollY} target=${j2.target}`
+        );
+        check(
+            'J3: шахтёр на узле тира 4',
+            s.minerVisible && Math.abs(s.minerY - j2.y) < 1,
+            `y=${s.minerY} узел=${j2.y}`
+        );
         await page.mouse.click(closePt.x, closePt.y);
         await page.waitForTimeout(1200);
         const deepTier = await state('m.gameState.tier');
         const deepTex = await page.evaluate(() => window.__GAME.scene.getScene('GameScene').block.texture.key);
-        check('J4: спуск на тир 4 (золото) выполнен', deepTier === 4 && deepTex.includes('gold'), `tier=${deepTier} tex=${deepTex}`);
+        check(
+            'J4: спуск на тир 4 (золото) выполнен',
+            deepTier === 4 && deepTex.includes('gold'),
+            `tier=${deepTier} tex=${deepTex}`
+        );
         await page.close();
     }
 
@@ -471,7 +647,11 @@ const DEEP_SAVE = JSON.stringify({
         await page.evaluate(() => window.__GAME.scene.getScene('UIScene').mapBtn.emit('pointerdown'));
         await page.waitForTimeout(300);
         const s = await uiState(page);
-        check('I1: карта открылась в портрете', s.mapOpen && s.mapRootVisible && s.contentVisible && s.mapCamVisible, JSON.stringify(s));
+        check(
+            'I1: карта открылась в портрете',
+            s.mapOpen && s.mapRootVisible && s.contentVisible && s.mapCamVisible,
+            JSON.stringify(s)
+        );
         check('I2: 18 узлов в портрете', s.nodes === 18);
         const view = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
@@ -489,14 +669,21 @@ const DEEP_SAVE = JSON.stringify({
                 trail: ui.mapTrail.type
             };
         });
-        check('I5: доска/кружки/тропа в портрете (радиусы по s)', ip.board && ip.trail === 'Graphics'
-            && ip.tierR === Math.round(28 * ip.s) && ip.bossR === Math.round(34 * ip.s), JSON.stringify(ip));
+        check(
+            'I5: доска/кружки/тропа в портрете (радиусы по s)',
+            ip.board &&
+                ip.trail === 'Graphics' &&
+                ip.tierR === Math.round(28 * ip.s) &&
+                ip.bossR === Math.round(34 * ip.s),
+            JSON.stringify(ip)
+        );
         const trailGapsP = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             const sc = ui._adaptiveScale || 1;
             const bad = [];
             for (let k = 0; k < ui.mapNodes.length - 1; k++) {
-                const a = ui.mapNodes[k], b = ui.mapNodes[k + 1];
+                const a = ui.mapNodes[k],
+                    b = ui.mapNodes[k + 1];
                 const lbl = a.kind === 'tier' ? a.name : a.status;
                 const from = a.root.y + lbl.y + lbl.height + Math.round(4 * sc);
                 const to = b.root.y - Math.round(9 * sc);
@@ -504,7 +691,11 @@ const DEEP_SAVE = JSON.stringify({
             }
             return bad;
         });
-        check('I6: тропа в портрете — зазор валиден для всех 17 пар', trailGapsP.length === 0, JSON.stringify(trailGapsP));
+        check(
+            'I6: тропа в портрете — зазор валиден для всех 17 пар',
+            trailGapsP.length === 0,
+            JSON.stringify(trailGapsP)
+        );
         await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             ui.mapClose.emit('pointerdown');
@@ -524,18 +715,32 @@ const DEEP_SAVE = JSON.stringify({
             const ui = window.__GAME.scene.getScene('UIScene');
             return { cx: ui._nodeCX, trailCX: ui._trailCX, s: ui._adaptiveScale, open: ui._mapOpen };
         });
-        check('K1: портрет-планшет s=1.0, тропа на колонке узлов', before.open && Math.abs(before.s - 1) < 0.01 && before.cx === before.trailCX, JSON.stringify(before));
+        check(
+            'K1: портрет-планшет s=1.0, тропа на колонке узлов',
+            before.open && Math.abs(before.s - 1) < 0.01 && before.cx === before.trailCX,
+            JSON.stringify(before)
+        );
         await page.setViewportSize({ width: 1280, height: 720 });
         await page.waitForTimeout(700);
         const after = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             return {
-                cx: ui._nodeCX, trailCX: ui._trailCX, s: ui._adaptiveScale, open: ui._mapOpen,
+                cx: ui._nodeCX,
+                trailCX: ui._trailCX,
+                s: ui._adaptiveScale,
+                open: ui._mapOpen,
                 rootsOnCX: ui.mapNodes.every((n) => n.root.x === ui._nodeCX)
             };
         });
-        check('K2: ротация при s=1.0 — тропа переехала за узлами (A2 ревью П2)',
-            after.open && Math.abs(after.s - 1) < 0.01 && after.cx === 340 && after.cx === after.trailCX && after.rootsOnCX, JSON.stringify(after));
+        check(
+            'K2: ротация при s=1.0 — тропа переехала за узлами (A2 ревью П2)',
+            after.open &&
+                Math.abs(after.s - 1) < 0.01 &&
+                after.cx === 340 &&
+                after.cx === after.trailCX &&
+                after.rootsOnCX,
+            JSON.stringify(after)
+        );
         await page.close();
     }
 
@@ -543,4 +748,7 @@ const DEEP_SAVE = JSON.stringify({
     console.log(`итого: ${passed} OK, ${failed} FAIL`);
     await b.close();
     process.exit(errors.length || failed ? 1 : 0);
-})().catch(e => { console.error(e.message); process.exit(1); });
+})().catch((e) => {
+    console.error(e.message);
+    process.exit(1);
+});

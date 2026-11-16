@@ -15,7 +15,9 @@ const ROOT = path.join(HERE, '..', '..');
 
 function runSim(args) {
     return execFileSync(process.execPath, ['scripts/balance-sim.mjs', ...args], {
-        cwd: ROOT, encoding: 'utf8', timeout: 120000
+        cwd: ROOT,
+        encoding: 'utf8',
+        timeout: 120000
     });
 }
 

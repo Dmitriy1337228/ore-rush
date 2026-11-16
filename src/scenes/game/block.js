@@ -1,6 +1,12 @@
 import Phaser from 'phaser';
 import {
-    gameState, rollClickGain, addOre, getAutoClicksPerSecond, fmt, MUTATIONS, getMutationBreakBonus
+    gameState,
+    rollClickGain,
+    addOre,
+    getAutoClicksPerSecond,
+    fmt,
+    MUTATIONS,
+    getMutationBreakBonus
 } from '../../state.js';
 import { playSfx } from '../../sfx.js';
 import { floatText, showHitFeedback } from './effects.js';
@@ -55,7 +61,9 @@ export const blockMethods = {
             this.block.destroy();
         }
         this.blockGen = (this.blockGen || 0) + 1; // поколение блока — для отмены отложенных цепочек
-        this.block = this.add.image(this.blockX, this.blockY, blockStageKey(gameState.tier, 1)).setScale(this.blockScale);
+        this.block = this.add
+            .image(this.blockX, this.blockY, blockStageKey(gameState.tier, 1))
+            .setScale(this.blockScale);
         this.block.setInteractive({ useHandCursor: true });
         this.startBreathingTween();
 
@@ -171,8 +179,12 @@ export const blockMethods = {
         if (mut && mut.breakBonusMult) {
             const bonus = getMutationBreakBonus(this.mutation.id);
             addOre(bonus);
-            floatText(this, this.blockX, this.blockY - 80, `ВЗРЫВ! +${fmt(bonus)}`, 30, '#ff9040',
-                { depth: GAME_DEPTH.floatBurst, rise: 60, duration: 1100, ease: 'Cubic.easeOut' });
+            floatText(this, this.blockX, this.blockY - 80, `ВЗРЫВ! +${fmt(bonus)}`, 30, '#ff9040', {
+                depth: GAME_DEPTH.floatBurst,
+                rise: 60,
+                duration: 1100,
+                ease: 'Cubic.easeOut'
+            });
             this.oreEmitter.explode(60, this.blockX, this.blockY);
             this.debrisEmitter.explode(30, this.blockX, this.blockY);
         }
@@ -188,8 +200,12 @@ export const blockMethods = {
         // Тряска камеры при разрушении убрана по фидбеку — фон не должен дёргаться
         // (фидбек разрушения: взрыв частиц + «Блок разрушен!» + звук)
 
-        floatText(this, this.blockX, this.blockY - 120, 'Блок разрушен!', 24, TEXT.cream,
-            { depth: GAME_DEPTH.floatText, rise: 50, duration: 900, ease: 'Cubic.easeOut' });
+        floatText(this, this.blockX, this.blockY - 120, 'Блок разрушен!', 24, TEXT.cream, {
+            depth: GAME_DEPTH.floatText,
+            rise: 50,
+            duration: 900,
+            ease: 'Cubic.easeOut'
+        });
 
         this.tweens.killTweensOf(this.block);
         this.tweens.add({

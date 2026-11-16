@@ -23,7 +23,8 @@ const dataUri = (name) => {
 };
 
 const tokens = fs.readFileSync(path.join(ROOT, 'src/dom/tokens.css'), 'utf8');
-const domCss = fs.readFileSync(path.join(ROOT, 'src/dom/dom.css'), 'utf8')
+const domCss = fs
+    .readFileSync(path.join(ROOT, 'src/dom/dom.css'), 'utf8')
     .replace(/url\('([^']+)'\)/g, (m, p) => (p.includes('assets/ui/') ? `url('${dataUri(path.basename(p))}')` : m));
 
 const fontBase64 = fs.readFileSync(path.join(ROOT, 'assets/fonts/Monocraft.ttf')).toString('base64');

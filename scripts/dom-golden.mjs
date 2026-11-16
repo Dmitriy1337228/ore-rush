@@ -49,19 +49,29 @@ async function capture(i) {
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
-    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-    await page.addInitScript((s) => {
-        for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
-    }, { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' });
+    page.on('console', (m) => {
+        if (m.type() === 'error') errors.push(m.text());
+    });
+    await page.addInitScript(
+        (s) => {
+            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+        },
+        { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
+    );
     await page.goto(`${BASE}/?dom=1`, { waitUntil: 'load' });
-    await page.waitForFunction(() => !!window.__DOM_CRAFT && window.__GAME.scene.getScene('UIScene').L, null, { timeout: 30000 });
+    await page.waitForFunction(() => !!window.__DOM_CRAFT && window.__GAME.scene.getScene('UIScene').L, null, {
+        timeout: 30000
+    });
     await page.waitForTimeout(1250);
     await page.evaluate(async () => {
         const ui = window.__GAME.scene.getScene('UIScene');
         ui._pendingDaily = null;
         ui.registry.set('dailyInfo', null);
         if (ui._dailyOpen) ui.hideDailyModal();
-        const url = performance.getEntriesByType('resource').map((r) => r.name).find((u) => u.includes('/src/state.js'));
+        const url = performance
+            .getEntriesByType('resource')
+            .map((r) => r.name)
+            .find((u) => u.includes('/src/state.js'));
         const m = await import(url);
         for (const id of Object.keys(m.gameState.levels)) m.gameState.levels[id] = 0;
         for (const c of m.COMPONENTS) m.gameState.components[c.id] = 100;
@@ -117,9 +127,13 @@ if (errors.length) {
             worst = Math.max(worst, ratio);
             const ok = ratio <= MAX_DIFF_RATIO;
             if (!ok) bad++;
-            console.log(`dom-golden run ${s.i}: ${(ratio * 100).toFixed(3)}% пикселей вне допуска ${CHANNEL_TOLERANCE} — ${ok ? 'ok' : 'FAIL'}`);
+            console.log(
+                `dom-golden run ${s.i}: ${(ratio * 100).toFixed(3)}% пикселей вне допуска ${CHANNEL_TOLERANCE} — ${ok ? 'ok' : 'FAIL'}`
+            );
         }
-        console.log(`dom-golden: прогонов ${RUNS}, худший ${(worst * 100).toFixed(3)}%, порог ${(MAX_DIFF_RATIO * 100).toFixed(2)}% — ${bad ? 'FAIL' : 'ok'}`);
+        console.log(
+            `dom-golden: прогонов ${RUNS}, худший ${(worst * 100).toFixed(3)}%, порог ${(MAX_DIFF_RATIO * 100).toFixed(2)}% — ${bad ? 'FAIL' : 'ok'}`
+        );
         if (bad) {
             console.error(`Сравните ${path.relative(ROOT, shots[0].file)} с ${path.relative(ROOT, GOLDEN)}`);
             process.exitCode = 1;

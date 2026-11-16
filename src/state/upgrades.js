@@ -110,7 +110,8 @@ export function getAffordableBulk(id, want) {
     const start = getUpgradeLevel(id);
     const cap = limitByMaxLevel(def, start, want);
     let budget = gameState.ore;
-    let n = 0, total = 0;
+    let n = 0,
+        total = 0;
     while (n < cap) {
         const cost = costAtLevel(def, start + n, tier);
         // Infinity-бюджет (битый сейв, ore: 1e999 -> Infinity) или Infinity-цена

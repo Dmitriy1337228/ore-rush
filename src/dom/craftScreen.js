@@ -38,10 +38,11 @@ const structure = () => html`
 const chip = (c) => html`
     <span class="dom-chip" data-comp="${c.id}">${iconBox(c.icon)}<span>${c.text}</span></span>`;
 
-const itemRow = (it) => card({
-    cls: 'dom-row dom-item',
-    rowId: it.id,
-    children: html`
+const itemRow = (it) =>
+    card({
+        cls: 'dom-row dom-item',
+        rowId: it.id,
+        children: html`
         ${iconSlot(it.icon)}
         <div class="dom-row-text">
             <div class="dom-name">${it.name}</div>
@@ -52,19 +53,22 @@ const itemRow = (it) => card({
             ${button({ label: `Купить ${it.priceText}`, dim: it.buyBlocked, act: 'buy', id: it.id })}
             ${button({ label: 'Активировать', dim: it.blocked, act: 'use', id: it.id })}
         </div>`
-});
+    });
 
-const recipeRow = (r) => card({
-    cls: 'dom-row dom-recipe',
-    rowId: r.id,
-    children: html`
+const recipeRow = (r) =>
+    card({
+        cls: 'dom-row dom-recipe',
+        rowId: r.id,
+        children: html`
         ${iconSlot(r.icon)}
         <div class="dom-row-text">
             <div class="dom-name">${r.name}</div>
             <div class="dom-desc">${r.resultText}</div>
             <div class="dom-need">Нужно:
-                ${r.need.map((n) => html`
-                    <span class="dom-pair${n.enough ? '' : ' dom-missing'}">${iconBox(n.icon)}<span>${n.n}</span></span>`)}
+                ${r.need.map(
+                    (n) => html`
+                    <span class="dom-pair${n.enough ? '' : ' dom-missing'}">${iconBox(n.icon)}<span>${n.n}</span></span>`
+                )}
             </div>
             <div class="dom-src">${r.source}</div>
             ${r.status ? html`<div class="dom-status">${r.status}</div>` : ''}
@@ -76,19 +80,20 @@ const recipeRow = (r) => card({
             act: r.mine ? 'claim' : 'craft',
             id: r.id
         })}`
-});
+    });
 
-const artifactCard = (a) => card({
-    cls: `dom-art${a.owned ? ' is-owned' : ''}`,
-    artId: a.id,
-    act: 'hint',
-    children: html`
+const artifactCard = (a) =>
+    card({
+        cls: `dom-art${a.owned ? ' is-owned' : ''}`,
+        artId: a.id,
+        act: 'hint',
+        children: html`
         ${iconSlot(a.icon)}
         <div class="dom-row-text">
             <div class="dom-name">${a.name}</div>
             <div class="${a.hintActive ? 'dom-error' : 'dom-line'}">${a.hintActive ? a.hint : a.line}</div>
         </div>`
-});
+    });
 
 export function createDomCraft(scene) {
     const { root, sync } = ensureUiRoot(scene.game);
@@ -164,8 +169,15 @@ export function createDomCraft(scene) {
     };
 
     // D3: Phaser-оверлей верхнего приоритета не должен оказаться под DOM-панелью.
-    const hasOverlay = () => !!(scene._settingsOpen || scene._offlineOpen || scene._dailyOpen
-        || scene._mapOpen || scene._bossRewardOpen || scene._playerDownOpen);
+    const hasOverlay = () =>
+        !!(
+            scene._settingsOpen ||
+            scene._offlineOpen ||
+            scene._dailyOpen ||
+            scene._mapOpen ||
+            scene._bossRewardOpen ||
+            scene._playerDownOpen
+        );
 
     const hideForOverlays = () => {
         if (!isOpen()) return;
@@ -200,7 +212,10 @@ export function createDomCraft(scene) {
                 playSfx(scene, 'purchase');
             } else {
                 const item = itemById(id);
-                transient.set(`i:${id}`, { msg: buyError({ stock: item ? item.stock : 0, stackMax: item ? item.stackMax : 0 }), until: Date.now() + ERROR_MS });
+                transient.set(`i:${id}`, {
+                    msg: buyError({ stock: item ? item.stock : 0, stackMax: item ? item.stackMax : 0 }),
+                    until: Date.now() + ERROR_MS
+                });
             }
             forceRefresh();
         } else if (act === 'use') {
@@ -243,7 +258,9 @@ export function createDomCraft(scene) {
 
     closeBtn.addEventListener('click', () => close());
     backdrop.addEventListener('click', () => close());
-    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const onKey = (e) => {
+        if (e.key === 'Escape') close();
+    };
     window.addEventListener('keydown', onKey);
 
     const api = {

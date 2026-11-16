@@ -53,11 +53,7 @@ const ENABLE_SHOTS = !flag('no-shots');
 // Сколько строк обязано быть проверено: боевой экран (7 предметов + 10 рецептов
 // + 9 артефактов) из каталогов state.js.
 const EXPECTED_ROWS = ITEMS.length + CRAFT_RECIPES.length + ARTIFACTS.length;
-const EXPECTED_ROW_IDS = [
-    ...ITEMS.map((x) => x.id),
-    ...CRAFT_RECIPES.map((x) => x.id),
-    ...ARTIFACTS.map((x) => x.id)
-];
+const EXPECTED_ROW_IDS = [...ITEMS.map((x) => x.id), ...CRAFT_RECIPES.map((x) => x.id), ...ARTIFACTS.map((x) => x.id)];
 
 // Допуск на субпиксельные округления при измерении прямоугольников.
 // 1 CSS px — тот же порядок, что overlapTolerance UI_RULES (1 игровой px на базовой сетке).
@@ -88,7 +84,8 @@ const auditFn = ({ rules, tolerance }) => {
         const d = Math.abs(rootRect[k] - canvasRect[k]);
         if (d > tolerance) {
             result.violations.push({
-                rule: 'ROOT-RECT', severity: 'error',
+                rule: 'ROOT-RECT',
+                severity: 'error',
                 rect: [rootRect.left, rootRect.top, rootRect.width, rootRect.height],
                 msg: `#ui-root.${k} отличается от канваса на ${d.toFixed(1)} CSS px (${rootRect[k].toFixed(1)} vs ${canvasRect[k].toFixed(1)})`
             });
@@ -102,11 +99,18 @@ const auditFn = ({ rules, tolerance }) => {
     }
     const panelRect = r(panel);
     const scrollRect = r(scroll);
-    const contains = (a, b) => a.left <= b.left - tolerance && a.right >= b.right + tolerance
-        && a.top <= b.top - tolerance && a.bottom >= b.bottom + tolerance;
-    const intersects = (rect, zone) => rect.width > 0 && rect.height > 0
-        && rect.right > zone.left - tolerance && rect.left < zone.right + tolerance
-        && rect.bottom > zone.top - tolerance && rect.top < zone.bottom + tolerance;
+    const contains = (a, b) =>
+        a.left <= b.left - tolerance &&
+        a.right >= b.right + tolerance &&
+        a.top <= b.top - tolerance &&
+        a.bottom >= b.bottom + tolerance;
+    const intersects = (rect, zone) =>
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.right > zone.left - tolerance &&
+        rect.left < zone.right + tolerance &&
+        rect.bottom > zone.top - tolerance &&
+        rect.top < zone.bottom + tolerance;
     // Элементы шапки (заголовок/подсказка/чипы) лежат вне скролла — видимость
     // считаем по врезке, иначе их пересечения с крестиком не проверялись.
     const visibleEl = (el) => {
@@ -128,9 +132,22 @@ const auditFn = ({ rules, tolerance }) => {
 
     // Блоки: карточки, текстовые строки и интерактив (Button/role=button).
     const BLOCK_SELECTOR = [
-        '.dom-title', '.dom-close', '.dom-hint', '.dom-chip', '.dom-section',
-        '.dom-row', '.dom-art', '.dom-name', '.dom-sub', '.dom-desc',
-        '.dom-stock', '.dom-error', '.dom-need', '.dom-src', '.dom-status', '.dom-line',
+        '.dom-title',
+        '.dom-close',
+        '.dom-hint',
+        '.dom-chip',
+        '.dom-section',
+        '.dom-row',
+        '.dom-art',
+        '.dom-name',
+        '.dom-sub',
+        '.dom-desc',
+        '.dom-stock',
+        '.dom-error',
+        '.dom-need',
+        '.dom-src',
+        '.dom-status',
+        '.dom-line',
         '.dom-btn'
     ].join(',');
     // Для блоков внутри скролла сравниваем ТОЛЬКО видимую (обрезанную) часть:
@@ -164,14 +181,17 @@ const auditFn = ({ rules, tolerance }) => {
     // OVERLAP: пересечение двух блоков, ни один не содержит другой.
     for (let i = 0; i < blocks.length; i++) {
         for (let j = i + 1; j < blocks.length; j++) {
-            const a = blocks[i], b = blocks[j];
+            const a = blocks[i],
+                b = blocks[j];
             if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
-            const ra = a.rect, rb = b.rect;
+            const ra = a.rect,
+                rb = b.rect;
             const ox = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
             const oy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
             if (ox > tolerance && oy > tolerance) {
                 result.violations.push({
-                    rule: 'OVERLAP', severity: 'error',
+                    rule: 'OVERLAP',
+                    severity: 'error',
                     rect: [Math.max(ra.left, rb.left), Math.max(ra.top, rb.top), ox, oy],
                     msg: `"${a.el.className}" (${Math.round(ra.left)},${Math.round(ra.top)}) x "${b.el.className}" (${Math.round(rb.left)},${Math.round(rb.top)}) ox=${Math.round(ox)} oy=${Math.round(oy)}`
                 });
@@ -183,7 +203,12 @@ const auditFn = ({ rules, tolerance }) => {
     for (const { el } of blocks) {
         const rr = r(el);
         if (rr.left < panelRect.left - tolerance || rr.right > panelRect.right + tolerance) {
-            result.violations.push({ rule: 'BOUNDS', severity: 'error', rect: [rr.left, rr.top, rr.width, rr.height], msg: `"${el.className}" выходит за врезку по горизонтали (${Math.round(rr.left)}..${Math.round(rr.right)} vs ${Math.round(panelRect.left)}..${Math.round(panelRect.right)})` });
+            result.violations.push({
+                rule: 'BOUNDS',
+                severity: 'error',
+                rect: [rr.left, rr.top, rr.width, rr.height],
+                msg: `"${el.className}" выходит за врезку по горизонтали (${Math.round(rr.left)}..${Math.round(rr.right)} vs ${Math.round(panelRect.left)}..${Math.round(panelRect.right)})`
+            });
         }
     }
 
@@ -194,10 +219,20 @@ const auditFn = ({ rules, tolerance }) => {
         if (!Number.isFinite(size) || size <= 0) continue;
         if (size < rules.minFontCss.error) {
             const rr = r(el);
-            result.violations.push({ rule: 'MIN-FONT', severity: 'error', rect: [rr.left, rr.top, rr.width, rr.height], msg: `"${el.className}": кегль ${size}px < ${rules.minFontCss.error}` });
+            result.violations.push({
+                rule: 'MIN-FONT',
+                severity: 'error',
+                rect: [rr.left, rr.top, rr.width, rr.height],
+                msg: `"${el.className}": кегль ${size}px < ${rules.minFontCss.error}`
+            });
         } else if (size < rules.minFontCss.warn) {
             const rr = r(el);
-            result.violations.push({ rule: 'MIN-FONT', severity: 'warn', rect: [rr.left, rr.top, rr.width, rr.height], msg: `"${el.className}": кегль ${size}px < ${rules.minFontCss.warn}` });
+            result.violations.push({
+                rule: 'MIN-FONT',
+                severity: 'warn',
+                rect: [rr.left, rr.top, rr.width, rr.height],
+                msg: `"${el.className}": кегль ${size}px < ${rules.minFontCss.warn}`
+            });
         }
     }
 
@@ -208,7 +243,12 @@ const auditFn = ({ rules, tolerance }) => {
         if (!el.getClientRects().length || !visibleEl(el)) continue;
         const rr = r(el);
         if (rr.width < touchMin - tolerance || rr.height < touchMin - tolerance) {
-            result.violations.push({ rule: 'TOUCH', severity: 'warn', rect: [rr.left, rr.top, rr.width, rr.height], msg: `"${el.className}" ${Math.round(rr.width)}x${Math.round(rr.height)} < ${touchMin} CSS px` });
+            result.violations.push({
+                rule: 'TOUCH',
+                severity: 'warn',
+                rect: [rr.left, rr.top, rr.width, rr.height],
+                msg: `"${el.className}" ${Math.round(rr.width)}x${Math.round(rr.height)} < ${touchMin} CSS px`
+            });
         }
     }
 
@@ -216,12 +256,19 @@ const auditFn = ({ rules, tolerance }) => {
     for (const host of panel.querySelectorAll('.dom-row, .dom-art')) {
         if (!visibleEl(host)) continue;
         const hr = r(host);
-        for (const text of host.querySelectorAll('.dom-name, .dom-sub, .dom-desc, .dom-stock, .dom-error, .dom-need, .dom-src, .dom-status, .dom-line')) {
+        for (const text of host.querySelectorAll(
+            '.dom-name, .dom-sub, .dom-desc, .dom-stock, .dom-error, .dom-need, .dom-src, .dom-status, .dom-line'
+        )) {
             const tr = r(text);
             if (!tr.width || !tr.height) continue;
             const pad = Math.min(tr.left - hr.left, hr.right - tr.right);
             if (pad < rules.minPadding.panel - tolerance) {
-                result.violations.push({ rule: 'PADDING', severity: 'warn', rect: [tr.left, tr.top, tr.width, tr.height], msg: `"${text.className}" отступ ${pad.toFixed(1)} < ${rules.minPadding.panel} CSS px` });
+                result.violations.push({
+                    rule: 'PADDING',
+                    severity: 'warn',
+                    rect: [tr.left, tr.top, tr.width, tr.height],
+                    msg: `"${text.className}" отступ ${pad.toFixed(1)} < ${rules.minPadding.panel} CSS px`
+                });
             }
         }
     }
@@ -235,16 +282,25 @@ for (const vp of viewports) {
     const page = await ctx.newPage();
     const consoleErrors = [];
     page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e}`));
-    page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(`console: ${m.text()}`); });
-    await page.addInitScript((s) => {
-        for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
-    }, { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' });
+    page.on('console', (m) => {
+        if (m.type() === 'error') consoleErrors.push(`console: ${m.text()}`);
+    });
+    await page.addInitScript(
+        (s) => {
+            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+        },
+        { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
+    );
     await page.goto(URL, { waitUntil: 'load' });
-    await page.waitForFunction(() => {
-        const g = window.__GAME;
-        const ui = g && g.scene.getScene('UIScene');
-        return !!(ui && ui.L && window.__DOM_CRAFT && document.fonts.status === 'loaded');
-    }, null, { timeout: 30000 });
+    await page.waitForFunction(
+        () => {
+            const g = window.__GAME;
+            const ui = g && g.scene.getScene('UIScene');
+            return !!(ui && ui.L && window.__DOM_CRAFT && document.fonts.status === 'loaded');
+        },
+        null,
+        { timeout: 30000 }
+    );
     await page.waitForTimeout(1250); // отложенная ежедневная награда (delayedCall 900 мс)
     await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
@@ -254,7 +310,10 @@ for (const vp of viewports) {
     });
     await page.waitForTimeout(350); // updateBlockLock снимет блокировку в следующем кадре
     await page.evaluate(async () => {
-        const url = performance.getEntriesByType('resource').map((r) => r.name).find((u) => u.includes('/src/state.js'));
+        const url = performance
+            .getEntriesByType('resource')
+            .map((r) => r.name)
+            .find((u) => u.includes('/src/state.js'));
         const m = await import(url);
         // Как состояние craft в ui-matrix: компоненты и предметы выданы,
         // пассив = 0 (руда не меняется во время аудита).
@@ -310,7 +369,9 @@ for (const vp of viewports) {
     const missingRows = EXPECTED_ROW_IDS.filter((id) => !seenRows.has(id));
     if (!failures && missingRows.length) {
         unique.push({
-            rule: 'ROWS', severity: 'error', step: 'scroll',
+            rule: 'ROWS',
+            severity: 'error',
+            step: 'scroll',
             msg: `проверено ${seenRows.size} из ${EXPECTED_ROWS} рядов; не попали в проверенную зону: ${missingRows.join(', ')}`
         });
     }
@@ -327,22 +388,39 @@ for (const vp of viewports) {
             for (const it of items) {
                 const box = document.createElement('div');
                 const [x, y, w, h] = it.rect;
-                box.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;`
-                    + `outline:2px solid ${it.sev === 'error' ? '#ff3b30' : '#ffcc00'};outline-offset:1px;`;
+                box.style.cssText =
+                    `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;` +
+                    `outline:2px solid ${it.sev === 'error' ? '#ff3b30' : '#ffcc00'};outline-offset:1px;`;
                 layer.appendChild(box);
             }
             document.body.appendChild(layer);
         }, marks);
-        await page.evaluate(() => { document.querySelector('[data-dom-scroll]').scrollTop = 0; });
+        await page.evaluate(() => {
+            document.querySelector('[data-dom-scroll]').scrollTop = 0;
+        });
         await page.waitForTimeout(120);
         await page.screenshot({ path: path.join(SHOT_DIR, `${vp.id}__craft-dom.png`) });
         await page.evaluate(() => document.querySelectorAll('.ui-check-mark').forEach((n) => n.remove()));
     }
     const errors = unique.filter((v) => v.severity === 'error');
     const warns = unique.filter((v) => v.severity === 'warn');
-    results.push({ viewport: vp.id, size: `${vp.width}x${vp.height}`, rows: seenRows.size, rowIds: Array.from(seenRows), errors: errors.length, warns: warns.length, violations: unique, consoleErrors, failure: failures });
-    console.log(`${failures ? 'FAIL' : (errors.length ? 'ERR ' : (warns.length ? 'warn' : 'ok  '))} ${vp.id.padEnd(6)} ${String(vp.width + 'x' + vp.height).padEnd(9)} рядов: ${seenRows.size}; новых: ${errors.length} err, ${warns.length} warn${failures ? ' — ' + failures : ''}`);
-    unique.slice(0, 20).forEach((v) => console.log(`    ${v.severity === 'error' ? 'ERR ' : 'warn'} #${v.step} ${v.rule}: ${v.msg}`));
+    results.push({
+        viewport: vp.id,
+        size: `${vp.width}x${vp.height}`,
+        rows: seenRows.size,
+        rowIds: Array.from(seenRows),
+        errors: errors.length,
+        warns: warns.length,
+        violations: unique,
+        consoleErrors,
+        failure: failures
+    });
+    console.log(
+        `${failures ? 'FAIL' : errors.length ? 'ERR ' : warns.length ? 'warn' : 'ok  '} ${vp.id.padEnd(6)} ${String(vp.width + 'x' + vp.height).padEnd(9)} рядов: ${seenRows.size}; новых: ${errors.length} err, ${warns.length} warn${failures ? ' — ' + failures : ''}`
+    );
+    unique
+        .slice(0, 20)
+        .forEach((v) => console.log(`    ${v.severity === 'error' ? 'ERR ' : 'warn'} #${v.step} ${v.rule}: ${v.msg}`));
     if (consoleErrors.length) consoleErrors.slice(0, 5).forEach((e) => console.log(`    console: ${e}`));
     await ctx.close();
 }
@@ -352,16 +430,31 @@ const totalWarn = results.reduce((s, r) => s + r.warns, 0);
 const totalConsole = results.reduce((s, r) => s + r.consoleErrors.length, 0);
 const totalFail = results.filter((r) => r.failure).length;
 
-fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({
-    createdAt: new Date().toISOString(),
-    url: URL,
-    rules: UI_RULES,
-    tolerance: RECT_TOLERANCE_CSS,
-    summary: { viewports: results.length, errors: totalErr, warns: totalWarn, consoleErrors: totalConsole, failures: totalFail },
-    results
-}, null, 2) + '\n');
+fs.writeFileSync(
+    path.join(OUT, 'report.json'),
+    JSON.stringify(
+        {
+            createdAt: new Date().toISOString(),
+            url: URL,
+            rules: UI_RULES,
+            tolerance: RECT_TOLERANCE_CSS,
+            summary: {
+                viewports: results.length,
+                errors: totalErr,
+                warns: totalWarn,
+                consoleErrors: totalConsole,
+                failures: totalFail
+            },
+            results
+        },
+        null,
+        2
+    ) + '\n'
+);
 
-console.log(`\n=== Итог ===\nвьюпортов: ${results.length}, ошибок: ${totalErr}, предупреждений: ${totalWarn}, console errors: ${totalConsole}, сбоев: ${totalFail}`);
+console.log(
+    `\n=== Итог ===\nвьюпортов: ${results.length}, ошибок: ${totalErr}, предупреждений: ${totalWarn}, console errors: ${totalConsole}, сбоев: ${totalFail}`
+);
 console.log(`Отчёт: ${path.relative(process.cwd(), OUT)}/report.json`);
 await browser.close();
-process.exitCode = (totalErr || totalConsole || totalFail) ? 1 : 0;
+process.exitCode = totalErr || totalConsole || totalFail ? 1 : 0;

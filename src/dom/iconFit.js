@@ -27,7 +27,11 @@ function contentBox(img) {
             // 4-связная компонента; через границу строки не переходим
             const queue = [start];
             seen[start] = 1;
-            let count = 0, minX = sx, maxX = sx, minY = sy, maxY = sy;
+            let count = 0,
+                minX = sx,
+                maxX = sx,
+                minY = sy,
+                maxY = sy;
             while (queue.length) {
                 const cur = queue.pop();
                 const x = cur % w;

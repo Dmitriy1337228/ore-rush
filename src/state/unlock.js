@@ -13,9 +13,9 @@ import { gameState } from './gameState.js';
 import { TIERS, LAST_TIER_INDEX } from './catalog/tiers.js';
 import { getEarningRate, getPrestigeMult } from './income.js';
 
-export const UNLOCK_BASE_SECONDS = 180;    // спуск из тира 0 стоит 180 сек дохода
+export const UNLOCK_BASE_SECONDS = 180; // спуск из тира 0 стоит 180 сек дохода
 export const UNLOCK_SECONDS_GROWTH = 2.95; // требования растут за каждый тир
-export const UNLOCK_FLOOR = 2500;          // минимум (старт с нулевым доходом)
+export const UNLOCK_FLOOR = 2500; // минимум (старт с нулевым доходом)
 // Нижняя граница ставки: защита от деления на ноль и нулевого якоря
 const MIN_RATE = 1e-9;
 

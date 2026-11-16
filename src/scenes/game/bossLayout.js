@@ -15,8 +15,18 @@ export const BOSS_UI = {
         hpText: { dy: -144, size: 20, stroke: true },
         time: { dx: 190, dy: -176, size: 16, scaleMax: 1.3, originX: 1 },
         // Слоты предметов: шаг 130 при кнопках 120/132
-        slot: { step: 130, dy: 142, activeW: 120, emptyW: 132, h: 60, iconDx: -28, iconSize: 34, cntDx: 20,
-            cnt: { size: 14, scaleMax: 1.3 }, buy: { size: 13, scaleMax: 1.3 } },
+        slot: {
+            step: 130,
+            dy: 142,
+            activeW: 120,
+            emptyW: 132,
+            h: 60,
+            iconDx: -28,
+            iconSize: 34,
+            cntDx: 20,
+            cnt: { size: 14, scaleMax: 1.3 },
+            buy: { size: 13, scaleMax: 1.3 }
+        },
         hint: null // описания предметов читаются в панели «Снаряжение»
     },
     landscape: {
@@ -28,15 +38,25 @@ export const BOSS_UI = {
         hpText: { dy: -180, size: 13 },
         time: { dx: 0, dy: -146, size: 16, originX: 0.5 },
         // Шаг 110: пустой слот (100) шире активного (84) — при 92 наезжали
-        slot: { step: 110, dy: 172, activeW: 84, emptyW: 100, h: 44, iconDx: -20, iconSize: 26, cntDx: 14,
-            cnt: { size: 14 }, buy: { size: 11 } },
+        slot: {
+            step: 110,
+            dy: 172,
+            activeW: 84,
+            emptyW: 100,
+            h: 44,
+            iconDx: -20,
+            iconSize: 26,
+            cntDx: 14,
+            cnt: { size: 14 },
+            buy: { size: 11 }
+        },
         hint: { dy: 204, size: 12 }
     }
 };
 
 export const BOSS_BAR = {
-    border: 2,                // рамка полос HP
-    playerFill: 8,            // высота заливки полосы шахтёра (h 12 - 2*border)
+    border: 2, // рамка полос HP
+    playerFill: 8, // высота заливки полосы шахтёра (h 12 - 2*border)
     background: 0x1a1c1f,
     playerColor: 0xff8a4a,
     // Цвет полосы босса: от зелёного (полное HP) к красному (пусто)
@@ -45,8 +65,8 @@ export const BOSS_BAR = {
 };
 export const PLAYER_TEXT_COLOR = '#ffb38a';
 export const BOSS_HP_STROKE = { color: '#14161a', width: 3 };
-export const BOSS_SPRITE_PULSE = 0.03;   // пульсация спрайта босса, доля масштаба
-export const BOSS_WINDUP_SHAKE_PX = 6;   // амплитуда дрожи при замахе
+export const BOSS_SPRITE_PULSE = 0.03; // пульсация спрайта босса, доля масштаба
+export const BOSS_WINDUP_SHAKE_PX = 6; // амплитуда дрожи при замахе
 export const BOSS_WINDUP_SHAKE_STEP_MS = 55;
 export const BOSS_WINDUP_TINT = 0xff5a5a;
 export const BOSS_STRIKE_FLASH = { color: 0xff3b3b, alpha: 0.22, durationMs: 280 };

@@ -32,11 +32,16 @@ try {
         const page = await ctx.newPage();
         const errors = [];
         page.on('pageerror', (e) => errors.push(String(e)));
-        await page.addInitScript((s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
-        }, { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' });
+        await page.addInitScript(
+            (s) => {
+                for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            },
+            { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
+        );
         await page.goto(`${BASE}/?dom=1`, { waitUntil: 'load' });
-        await page.waitForFunction(() => !!window.__DOM_UI && document.fonts.status === 'loaded', null, { timeout: 30000 });
+        await page.waitForFunction(() => !!window.__DOM_UI && document.fonts.status === 'loaded', null, {
+            timeout: 30000
+        });
         await page.waitForTimeout(500);
         const metrics = await page.evaluate(() => {
             const panel = document.querySelector('[data-dom-panel]');
@@ -65,8 +70,37 @@ try {
 } finally {
     await browser.close();
 }
-const stable = report.every((r) => r.nameFont === report[0].nameFont && r.btnFont === report[0].btnFont
-    && Math.abs(r.panel.width - report[0].panel.width) < 0.6 && Math.abs(r.panel.height - report[0].panel.height) < 0.6);
-const out = { createdAt: new Date().toISOString(), viewport: `${vw}x${vh}`, dprs: DPRS, cssPxStable: stable, shots: report };
+const stable = report.every(
+    (r) =>
+        r.nameFont === report[0].nameFont &&
+        r.btnFont === report[0].btnFont &&
+        Math.abs(r.panel.width - report[0].panel.width) < 0.6 &&
+        Math.abs(r.panel.height - report[0].panel.height) < 0.6
+);
+const out = {
+    createdAt: new Date().toISOString(),
+    viewport: `${vw}x${vh}`,
+    dprs: DPRS,
+    cssPxStable: stable,
+    shots: report
+};
 fs.writeFileSync(path.join(OUT, 'dpr-report.json'), JSON.stringify(out, null, 2) + '\n');
-console.log(JSON.stringify({ cssPxStable: stable, snaps: report.map((r) => ({ dpr: r.dpr, nameFont: r.nameFont, btnFont: r.btnFont, btnH: Number(r.btnH.toFixed(1)), panel: `${r.panel.width.toFixed(1)}x${r.panel.height.toFixed(1)}`, fontLoaded: r.fontLoaded, errors: r.errors.length, file: r.file })) }, null, 2));
+console.log(
+    JSON.stringify(
+        {
+            cssPxStable: stable,
+            snaps: report.map((r) => ({
+                dpr: r.dpr,
+                nameFont: r.nameFont,
+                btnFont: r.btnFont,
+                btnH: Number(r.btnH.toFixed(1)),
+                panel: `${r.panel.width.toFixed(1)}x${r.panel.height.toFixed(1)}`,
+                fontLoaded: r.fontLoaded,
+                errors: r.errors.length,
+                file: r.file
+            }))
+        },
+        null,
+        2
+    )
+);

@@ -1,6 +1,14 @@
 import Phaser from 'phaser';
 import {
-    gameState, TIERS, addOre, loadGame, readLastExit, computeOfflineReward, saveLastExit, canClaimDaily, claimDailyReward
+    gameState,
+    TIERS,
+    addOre,
+    loadGame,
+    readLastExit,
+    computeOfflineReward,
+    saveLastExit,
+    canClaimDaily,
+    claimDailyReward
 } from '../state.js';
 import { YandexSDKStub } from '../sdk-stub.js';
 import { computeLayout } from '../layout.js';
@@ -20,17 +28,17 @@ export class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
         this.streakTimer = null;
-        this.blockStage = 0;   // 0..3 — визуальная стадия трещин
+        this.blockStage = 0; // 0..3 — визуальная стадия трещин
         this.blockBusy = false;
         this.blockScale = 4.4;
-        this.mutation = null;  // { id, endsAt } — активная мутация блока (Этап 3); единственный терминатор — таймер
+        this.mutation = null; // { id, endsAt } — активная мутация блока (Этап 3); единственный терминатор — таймер
         this.mutationUi = null;
-        this.hitProgress = 0;  // удары, накопленные на текущей стадии (для hitsPerStage > 1)
-        this.boss = null;      // активный босс: { def, hp, maxHp, busy, startedAt, endsAt } — режим боя
-        this.bossUi = null;    // контейнер оверлея боя (спрайт, HP-бар, кнопки)
+        this.hitProgress = 0; // удары, накопленные на текущей стадии (для hitsPerStage > 1)
+        this.boss = null; // активный босс: { def, hp, maxHp, busy, startedAt, endsAt } — режим боя
+        this.bossUi = null; // контейнер оверлея боя (спрайт, HP-бар, кнопки)
         this._preBossBgm = null; // обычный BGM, замещённый босс-темой на время боя
-        this._bossBy = 0;      // фактический Y оверлея боя (портретный кламп)
-        this._bossSaveAt = 0;  // троттлинг сейва персиста боя (раз в 3 с)
+        this._bossBy = 0; // фактический Y оверлея боя (портретный кламп)
+        this._bossSaveAt = 0; // троттлинг сейва персиста боя (раз в 3 с)
     }
 
     create() {
@@ -117,12 +125,14 @@ export class GameScene extends Phaser.Scene {
         // Слой фона локации: bgCurrent (видимый) + bgNext (невидимый верхний для кроссфейда).
         // Позиция/размер — по раскладке (positionBg): cover видимой зоны + 8% оверсайз.
         // bgShade — лёгкое затемнение поверх фона: контент фона не спорит с блоком и HUD.
-        this.bgCurrent = this.add.image(0, 0, tierBgKey(gameState.tier))
-            .setOrigin(0.5).setDepth(-3);
-        this.bgNext = this.add.image(0, 0, tierBgKey(gameState.tier))
-            .setOrigin(0.5).setDepth(-2).setAlpha(0).setVisible(false);
-        this.bgShade = this.add.rectangle(0, 0, 10, 10, 0x000000, BG_SHADE_ALPHA)
-            .setDepth(-1);
+        this.bgCurrent = this.add.image(0, 0, tierBgKey(gameState.tier)).setOrigin(0.5).setDepth(-3);
+        this.bgNext = this.add
+            .image(0, 0, tierBgKey(gameState.tier))
+            .setOrigin(0.5)
+            .setDepth(-2)
+            .setAlpha(0)
+            .setVisible(false);
+        this.bgShade = this.add.rectangle(0, 0, 10, 10, 0x000000, BG_SHADE_ALPHA).setDepth(-1);
         // Тень над панелью (портрет): плавный градиент прячет нижнюю кромку фото
         // (при зуме читается как серая полоса) — контент «уходит» под лист
         this.bgFade = this.add.graphics().setDepth(-1);
@@ -137,7 +147,8 @@ export class GameScene extends Phaser.Scene {
         this.L = L;
         if (this.bgBase) this.drawBase();
         this.positionBg();
-        const bx = L.block.x, by = L.block.y;
+        const bx = L.block.x,
+            by = L.block.y;
         const moved = this.blockX !== bx || this.blockY !== by;
         this.blockX = bx;
         this.blockY = by;
@@ -147,20 +158,25 @@ export class GameScene extends Phaser.Scene {
                 // Подпись мутации привязана к блоку — перезапускаем боб-твин от новой точки
                 this.tweens.killTweensOf(this.mutationUi);
                 this.mutationUi.setPosition(bx, by - 200);
-                this.tweens.add({ targets: this.mutationUi, y: by - 208, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                this.tweens.add({
+                    targets: this.mutationUi,
+                    y: by - 208,
+                    duration: 900,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
             }
         }
     }
 
     setupTimers() {
-
         this.setupPassiveIncomeTimer();
         this.setupMutationTimer();
         this.setupAutoMineTimer();
         this.setupAutosaveTimer();
         this.setupVisibilityHandlers();
         this.setupShutdownHandler();
-
     }
 
     update() {

@@ -21,11 +21,13 @@ const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог ск�
     await page.goto('http://localhost:5174', { waitUntil: 'load' });
     await page.waitForTimeout(3000);
 
-    const panelVisible = () => page.evaluate(() => {
-        const p = document.getElementById('dev-admin-panel');
-        return p ? p.style.display !== 'none' : false;
-    });
-    const panelState = () => page.evaluate(() => JSON.parse(document.querySelector('#dev-admin-panel .dev-state').textContent));
+    const panelVisible = () =>
+        page.evaluate(() => {
+            const p = document.getElementById('dev-admin-panel');
+            return p ? p.style.display !== 'none' : false;
+        });
+    const panelState = () =>
+        page.evaluate(() => JSON.parse(document.querySelector('#dev-admin-panel .dev-state').textContent));
 
     // 1. Панель скрыта по умолчанию
     console.log('1. hidden by default:', !(await panelVisible()) ? 'OK' : 'FAIL');
@@ -40,13 +42,18 @@ const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог ск�
     await page.click('#dev-admin-panel button:has-text("+1M")');
     await page.waitForTimeout(300);
     const after = await page.evaluate(() => window.__GAME.scene.getScene('UIScene').coalText.text);
-    console.log('3. +1M works:', (before !== after) ? `OK (${before} -> ${after})` : 'FAIL');
+    console.log('3. +1M works:', before !== after ? `OK (${before} -> ${after})` : 'FAIL');
 
     // 4. Макс всё: динамит на макс, кирка на свой кап (30), бесконечные на 50
     await page.click('#dev-admin-panel button:has-text("Макс всё")');
     await page.waitForTimeout(300);
     const st1 = await panelState();
-    console.log('4. max all:', (st1.levels.pickaxe === 30 && st1.levels.dynamite === 23 && st1.levels.miner === 50) ? `OK (pickaxe=${st1.levels.pickaxe}, dynamite=${st1.levels.dynamite}, miner=${st1.levels.miner})` : `FAIL (pickaxe=${st1.levels.pickaxe}, dynamite=${st1.levels.dynamite}, miner=${st1.levels.miner})`);
+    console.log(
+        '4. max all:',
+        st1.levels.pickaxe === 30 && st1.levels.dynamite === 23 && st1.levels.miner === 50
+            ? `OK (pickaxe=${st1.levels.pickaxe}, dynamite=${st1.levels.dynamite}, miner=${st1.levels.miner})`
+            : `FAIL (pickaxe=${st1.levels.pickaxe}, dynamite=${st1.levels.dynamite}, miner=${st1.levels.miner})`
+    );
 
     // 5. След. тир: принудительный переход (без оплаты)
     await page.click('#dev-admin-panel button:has-text("След. тир")');
@@ -77,14 +84,24 @@ const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог ск�
     await page.waitForTimeout(400);
     const st3 = await panelState();
     const blockKey = await page.evaluate(() => window.__GAME.scene.getScene('GameScene').block.texture.key);
-    const okReset = st3.ore === 0 && st3.tier === 0 && st3.stars === 0 && st3.levels.pickaxe === 0
-        && st3.levels.miner === 0 && blockKey === 'block_stage_1_intact';
+    const okReset =
+        st3.ore === 0 &&
+        st3.tier === 0 &&
+        st3.stars === 0 &&
+        st3.levels.pickaxe === 0 &&
+        st3.levels.miner === 0 &&
+        blockKey === 'block_stage_1_intact';
     console.log('7b. full reset:', okReset ? 'OK' : `FAIL (${JSON.stringify({ st3, blockKey })})`);
 
     // 8. JSON состояния сериализуется
     const jsonOk = await page.evaluate(() => {
         const t = document.querySelector('#dev-admin-panel .dev-state').textContent;
-        try { const o = JSON.parse(t); return typeof o.ore === 'number' && typeof o.levels === 'object'; } catch (e) { return false; }
+        try {
+            const o = JSON.parse(t);
+            return typeof o.ore === 'number' && typeof o.levels === 'object';
+        } catch (e) {
+            return false;
+        }
     });
     console.log('8. state JSON:', jsonOk ? 'OK' : 'FAIL');
 
@@ -104,4 +121,7 @@ const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог ск�
     console.log(`done, failures: ${failed}`);
     await b.close();
     process.exit(failed > 0 ? 1 : 0);
-})().catch(e => { console.error(e.message); process.exit(1); });
+})().catch((e) => {
+    console.error(e.message);
+    process.exit(1);
+});

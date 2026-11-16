@@ -18,11 +18,17 @@ export function renderFixture(root) {
     const panel = root.querySelector('[data-dom-panel]');
     const closeBtn = root.querySelector('.dom-close');
 
-    const show = () => { panel.hidden = false; };
-    const hide = () => { panel.hidden = true; };
+    const show = () => {
+        panel.hidden = false;
+    };
+    const hide = () => {
+        panel.hidden = true;
+    };
 
     closeBtn.addEventListener('click', hide);
-    const onKey = (e) => { if (e.key === 'Escape') hide(); };
+    const onKey = (e) => {
+        if (e.key === 'Escape') hide();
+    };
     window.addEventListener('keydown', onKey);
 
     // Таймер рецепта: точечное обновление подписи (не перерисовка списка) —

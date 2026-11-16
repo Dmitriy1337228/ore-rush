@@ -30,7 +30,9 @@ export const YandexSDKStub = {
                 const data = readAll();
                 Object.assign(data, stats || {});
                 localStorage.setItem(MOCK_STATS_KEY, JSON.stringify(data));
-            } catch (err) { /* тихо */ }
+            } catch (err) {
+                /* тихо */
+            }
             return true;
         },
         getStats: async (keys) => {
@@ -57,7 +59,11 @@ export const YandexSDKStub = {
                     raw = localStorage.getItem(LEGACY_SAVE_KEY);
                     if (raw) {
                         // миграция сейва под новым ключом; старый остаётся бэкапом
-                        try { localStorage.setItem(SAVE_STORAGE_KEY, raw); } catch (err) { /* читаем как есть */ }
+                        try {
+                            localStorage.setItem(SAVE_STORAGE_KEY, raw);
+                        } catch (err) {
+                            /* читаем как есть */
+                        }
                     }
                 }
                 if (!raw) return null;

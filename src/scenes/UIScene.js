@@ -22,19 +22,19 @@ export class UIScene extends Phaser.Scene {
         this.scrollPos = 0;
         this.maxScroll = 0;
         this.activeTab = 'equipment'; // вкладка панели улучшений
-        this.buyAmount = 1;           // мультипокупка: 1 / 10 / 100 / 'max'
+        this.buyAmount = 1; // мультипокупка: 1 / 10 / 100 / 'max'
         // Полноэкранные состояния: любой может быть открыт одновременно, блокировка
         // (registry 'blockLocked') снимается только после закрытия ПОСЛЕДНЕГО.
         // Единый пересчёт — updateBlockLock() из refreshUi каждый кадр по диффу.
         this._settingsOpen = false;
         this._offlineOpen = false;
         this._dailyOpen = false;
-        this._mapOpen = false;       // экран карты шахты
-        this._craftOpen = false;     // экран мастерской (каркас П5)
+        this._mapOpen = false; // экран карты шахты
+        this._craftOpen = false; // экран мастерской (каркас П5)
         this._bossRewardOpen = false; // окно награды босса (П4)
         this._playerDownOpen = false; // окно вырубления шахтёра (смерть в бою)
-        this._blockLocked = null;    // кеш updateBlockLock: registry 'blockLocked'
-        this._adaptiveScale = 1;     // портретный масштаб кеглей (applyLayout)
+        this._blockLocked = null; // кеш updateBlockLock: registry 'blockLocked'
+        this._adaptiveScale = 1; // портретный масштаб кеглей (applyLayout)
         this._rowsBuiltS = 1;
         this._craftRowsS = 1;
         this._mapS = 1;
@@ -43,7 +43,7 @@ export class UIScene extends Phaser.Scene {
         this._tutorialPending = false; // обучение ждёт закрытия окна дневной награды
         this._tutSuppressed = false; // учебные слои погашены модалкой/боем (updateBlockLock)
         this._panelHidden = false; // портретная панель скрыта под оверлеем (applyPanelVisibility)
-        this._iconMetrics = {};      // кеш метрик иконок (см. iconMetrics)
+        this._iconMetrics = {}; // кеш метрик иконок (см. iconMetrics)
     }
 
     create() {
@@ -84,8 +84,12 @@ export class UIScene extends Phaser.Scene {
         this.game.events.on(EVENTS.layoutChanged, () => this.applyLayout());
 
         this.input.on('wheel', (pointer, over, dx, dy) => {
-            if (pointer.x >= VIEWPORT.x - 10 && pointer.x <= VIEWPORT.x + VIEWPORT.w + 10
-                && pointer.y >= VIEWPORT.y - 10 && pointer.y <= VIEWPORT.y + VIEWPORT.h + 10) {
+            if (
+                pointer.x >= VIEWPORT.x - 10 &&
+                pointer.x <= VIEWPORT.x + VIEWPORT.w + 10 &&
+                pointer.y >= VIEWPORT.y - 10 &&
+                pointer.y <= VIEWPORT.y + VIEWPORT.h + 10
+            ) {
                 this.scrollPos = Phaser.Math.Clamp(this.scrollPos + dy * 0.5, 0, this.maxScroll);
                 this.updateScroll();
             }
@@ -150,8 +154,12 @@ export class UIScene extends Phaser.Scene {
         // Мастерская — DOM-слой (пилот закрыт, G3 = go). Контроллер грузится
         // отдельным чанком и монтируется один раз; openCraft() ждёт готовности.
         this._domCraftReady = import('../dom/craftScreen.js')
-            .then(({ createDomCraft }) => { this.domCraft = createDomCraft(this); })
-            .catch((err) => { console.error('[craft:dom] не загрузился:', err); });
+            .then(({ createDomCraft }) => {
+                this.domCraft = createDomCraft(this);
+            })
+            .catch((err) => {
+                console.error('[craft:dom] не загрузился:', err);
+            });
     }
 
     // Открытие мастерской: единственная точка входа (HUD-кнопка, горячие клавиши).
@@ -179,8 +187,14 @@ export class UIScene extends Phaser.Scene {
     // настройки открываются поверх боя (бой продолжается робо-рукой и пассивом),
     // заблокированы только спуск (guard в unlockBtn) и престиж/сброс (tryPrestige/tryReset).
     updateBlockLock() {
-        const locked = this._settingsOpen || this._offlineOpen || this._dailyOpen
-            || this._mapOpen || this._craftOpen || this._bossRewardOpen || this._playerDownOpen;
+        const locked =
+            this._settingsOpen ||
+            this._offlineOpen ||
+            this._dailyOpen ||
+            this._mapOpen ||
+            this._craftOpen ||
+            this._bossRewardOpen ||
+            this._playerDownOpen;
         if (locked !== this._blockLocked) {
             this._blockLocked = locked;
             this.registry.set(REG.blockLocked, locked);
@@ -194,7 +208,16 @@ export class UIScene extends Phaser.Scene {
             const suppress = locked || bossNow;
             if (suppress !== this._tutSuppressed) {
                 this._tutSuppressed = suppress;
-                const layers = [this.tutDim, this.tutRing, this.tutArrow, this.tutBubble, this.tutText, this.tutFinal, this.tutBtn, this.tutBtnLbl];
+                const layers = [
+                    this.tutDim,
+                    this.tutRing,
+                    this.tutArrow,
+                    this.tutBubble,
+                    this.tutText,
+                    this.tutFinal,
+                    this.tutBtn,
+                    this.tutBtnLbl
+                ];
                 if (suppress) {
                     for (const o of layers) {
                         o._tutVis = o.visible;

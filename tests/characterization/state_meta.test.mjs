@@ -7,33 +7,43 @@ import { importState, stubRandom } from './helpers/globals.mjs';
 
 const S = await importState();
 
-beforeEach(() => { S.resetGame(); });
+beforeEach(() => {
+    S.resetGame();
+});
 
 describe('rollClickGain: крит/жила/синергия/бафы (Math.random стаб)', () => {
     it('roll 0.999: ни крита, ни жилы — голый клик', () => {
         const restore = stubRandom(() => 0.999);
         try {
             assert.deepEqual(S.rollClickGain(null), { gain: 1, crit: false, lucky: false });
-        } finally { restore(); }
+        } finally {
+            restore();
+        }
     });
     it('roll 0: крит (0<0.05); жилы нет (шанс жилы 0 — сравнение 0<0 ложно)', () => {
         const restore = stubRandom(() => 0);
         try {
             assert.deepEqual(S.rollClickGain(null), { gain: 5, crit: true, lucky: false });
-        } finally { restore(); }
+        } finally {
+            restore();
+        }
     });
     it('прокачанные вкладки: пороги 0.35/0.08, roll 0.999/0.5 без проков', () => {
         S.gameState.levels.dynamite = 10; // крит 0.05+0.30=0.35
         S.gameState.levels.focuslens = 2; // critMult 6
-        S.gameState.levels.lucky = 4;     // жила 0.08
+        S.gameState.levels.lucky = 4; // жила 0.08
         const restore = stubRandom(() => 0.999);
         try {
             assert.deepEqual(S.rollClickGain(null), { gain: 1, crit: false, lucky: false });
-        } finally { restore(); }
+        } finally {
+            restore();
+        }
         const restore2 = stubRandom(() => 0.5);
         try {
             assert.deepEqual(S.rollClickGain(null), { gain: 1, crit: false, lucky: false });
-        } finally { restore2(); }
+        } finally {
+            restore2();
+        }
     });
     it('дневная жила форсит lucky; veinMult зависит от magnet (10 при 0)', () => {
         S.gameState.levels.dynamite = 10;
@@ -43,7 +53,9 @@ describe('rollClickGain: крит/жила/синергия/бафы (Math.rando
         const restore = stubRandom(() => 0.999);
         try {
             assert.deepEqual(S.rollClickGain(null), { gain: 10, crit: false, lucky: true });
-        } finally { restore(); }
+        } finally {
+            restore();
+        }
     });
     it('предметный баф добычи множит итог клика', () => {
         S.gameState.miningBuffUntil = Date.now() + 60000;
@@ -51,12 +63,14 @@ describe('rollClickGain: крит/жила/синергия/бафы (Math.rando
         const restore = stubRandom(() => 0.999);
         try {
             assert.deepEqual(S.rollClickGain(null), { gain: 3, crit: false, lucky: false });
-        } finally { restore(); }
+        } finally {
+            restore();
+        }
     });
     it('мутации: радуга x10 ко всему после крит/жилы; заморозка — форс-крит без множителя', () => {
         S.gameState.levels.dynamite = 10;
         S.gameState.levels.focuslens = 2; // critMult 6
-        S.gameState.levels.lucky = 4;     // veinMult 10 (magnet 0)
+        S.gameState.levels.lucky = 4; // veinMult 10 (magnet 0)
         S.gameState.miningBuffUntil = Date.now() + 60000;
         S.gameState.miningBuffMult = 3;
         const restore = stubRandom(() => 0);
@@ -65,7 +79,9 @@ describe('rollClickGain: крит/жила/синергия/бафы (Math.rando
             assert.deepEqual(S.rollClickGain('rainbow'), { gain: 1800, crit: true, lucky: true });
             // заморозка: forceCrit, но clickGainMult нет -> 1*6*10*3 = 180
             assert.deepEqual(S.rollClickGain('frozen'), { gain: 180, crit: true, lucky: true });
-        } finally { restore(); }
+        } finally {
+            restore();
+        }
     });
     it('кап крит-шанса 0.74 на 23 динамита', () => {
         S.gameState.levels.dynamite = 23;
@@ -73,13 +89,15 @@ describe('rollClickGain: крит/жила/синергия/бафы (Math.rando
         const restore = stubRandom(() => 0.4);
         try {
             assert.deepEqual(S.rollClickGain(null), { gain: 5, crit: true, lucky: false });
-        } finally { restore(); }
+        } finally {
+            restore();
+        }
     });
     it('дневной крит-баф: +0.25 и потолок 0.95', () => {
         assert.equal(S.getCritChance(), 0.05);
         S.gameState.dailyCritUntil = Date.now() + 60000;
         assert.equal(S.getCritChance(), 0.3); // 0.05+0.25
-        S.gameState.levels.dynamite = 23;     // 0.74+0.25=0.99 -> кап 0.95
+        S.gameState.levels.dynamite = 23; // 0.74+0.25=0.99 -> кап 0.95
         assert.equal(S.getCritChance(), 0.95);
     });
     it('дневной множитель добычи применяется и к клику', () => {
@@ -88,7 +106,9 @@ describe('rollClickGain: крит/жила/синергия/бафы (Math.rando
         const restore = stubRandom(() => 0.999);
         try {
             assert.deepEqual(S.rollClickGain(null), { gain: 2, crit: false, lucky: false });
-        } finally { restore(); }
+        } finally {
+            restore();
+        }
     });
 });
 
@@ -106,15 +126,15 @@ describe('addOre: учёт по тиру и lifetime', () => {
 
 describe('боссы: HP, живучесть, скорость, рекорды, награда', () => {
     it('bossHpFor / getPlayerMaxHp / bossAttackPower (golden)', () => {
-        assert.equal(S.bossHpFor(S.BOSSES[0]), 75000);        // ceil(25000*3*1.0)
-        assert.equal(S.bossHpFor(S.BOSSES[5]), 15500362500);  // ceil(25000*3^11*3.5)
+        assert.equal(S.bossHpFor(S.BOSSES[0]), 75000); // ceil(25000*3*1.0)
+        assert.equal(S.bossHpFor(S.BOSSES[5]), 15500362500); // ceil(25000*3^11*3.5)
         assert.equal(S.getPlayerMaxHp(), 3000);
         S.gameState.levels.helmet = 5;
         S.gameState.tier = 2;
-        assert.equal(S.getPlayerMaxHp(), 117000);             // ceil((3000+10000)*9)
+        assert.equal(S.getPlayerMaxHp(), 117000); // ceil((3000+10000)*9)
         S.gameState.tier = 0;
         S.gameState.levels.helmet = 0;
-        assert.equal(S.bossAttackPower(S.BOSSES[0]), 300);    // ceil(75000*0.004)
+        assert.equal(S.bossAttackPower(S.BOSSES[0]), 300); // ceil(75000*0.004)
     });
     it('bossSpeedMult: пороги 45/90/180 (golden)', () => {
         assert.equal(S.bossSpeedMult(5000), 1.5);
@@ -128,7 +148,7 @@ describe('боссы: HP, живучесть, скорость, рекорды, 
     });
     it('рекорды: только улучшение, кап 359999, чужие ключи отвергаются', () => {
         assert.equal(S.updateBossRecord('boss_copper', 42.7), true);
-        assert.equal(S.getBossRecord('boss_copper'), 42);     // floor(42.7)
+        assert.equal(S.getBossRecord('boss_copper'), 42); // floor(42.7)
         assert.equal(S.updateBossRecord('boss_copper', 50), false);
         assert.equal(S.getBossRecord('boss_copper'), 42);
         assert.equal(S.updateBossRecord('boss_copper', 30), true);
@@ -144,13 +164,21 @@ describe('боссы: HP, живучесть, скорость, рекорды, 
         const restore = stubRandom(() => 0); // дроп всегда минимум
         try {
             const r = S.grantBossKill('boss_copper', 10000);
-            assert.deepEqual(r, { bounty: 621, comps: { scrap: 2 }, artifactId: 'art_miner_totem', elapsedSec: 10, speedMult: 1.5 });
+            assert.deepEqual(r, {
+                bounty: 621,
+                comps: { scrap: 2 },
+                artifactId: 'art_miner_totem',
+                elapsedSec: 10,
+                speedMult: 1.5
+            });
             assert.equal(S.gameState.ore, 621);
             assert.deepEqual(S.gameState.components, { scrap: 2 });
             assert.deepEqual(S.gameState.artifacts, ['art_miner_totem']);
             assert.deepEqual(S.gameState.bossesDefeated, { boss_copper: true });
             assert.equal(S.getBossRecord('boss_copper'), 10);
-        } finally { restore(); }
+        } finally {
+            restore();
+        }
     });
     it('grantBossKill: неизвестный босс — null, повторное убийство без артефакта', () => {
         assert.equal(S.grantBossKill('boss_xxx', 1000), null);
@@ -162,19 +190,25 @@ describe('боссы: HP, живучесть, скорость, рекорды, 
             const r = S.grantBossKill('boss_copper', 10000);
             assert.equal(r.artifactId, null); // уже есть
             assert.deepEqual(S.gameState.artifacts, ['art_miner_totem']);
-        } finally { restore(); }
+        } finally {
+            restore();
+        }
     });
     it('rollBossHit: крит/жила как у клика + артефактный/предметный урон боссу', () => {
         const restore = stubRandom(() => 0.999);
         try {
             assert.deepEqual(S.rollBossHit(), { gain: 1, crit: false, lucky: false });
-        } finally { restore(); }
+        } finally {
+            restore();
+        }
         S.gameState.artifacts.push('art_hardpick'); // bossDamageMult 1.25
         const restore2 = stubRandom(() => 0);
         try {
             // 1 * critMult 5 * bossDamageMult 1.25 = 6.25
             assert.deepEqual(S.rollBossHit(), { gain: 6.25, crit: true, lucky: false });
-        } finally { restore2(); }
+        } finally {
+            restore2();
+        }
     });
     it('updateBossFight: клампы hp/playerHp; clearBossFight', () => {
         S.gameState.levels.miner = 1;
@@ -285,7 +319,7 @@ describe('крафт', () => {
 describe('предметы: цены, покупка, активация', () => {
     it('цена = ceil(ставка * priceSeconds); без дохода — от floor-ставки 3.6', () => {
         assert.equal(S.getItemPrice('item_bomb'), 216); // ceil(3.6*60)
-        S.gameState.levels.miner = 1;                   // ставка 4.6
+        S.gameState.levels.miner = 1; // ставка 4.6
         assert.equal(S.getItemPrice('item_bomb'), 276); // ceil(4.6*60)
     });
     it('покупка: хватает руды и места в стаки; stackMax блокирует', () => {
@@ -347,9 +381,14 @@ describe('ежедневные награды', () => {
             if (i === 3) assert.equal(S.gameState.levels.pickaxe, 1); // free pickaxe
             if (i === 6) assert.equal(S.isDailyVeinActive(), true);
         }
-        assert.deepEqual(ids.map((x) => x.id),
-            ['boost2', 'stash', 'crit', 'upgrade', 'boost3', 'boost10', 'vein', 'boost2']);
-        assert.deepEqual(ids.map((x) => x.streak), [1, 2, 3, 4, 5, 6, 7, 8]);
+        assert.deepEqual(
+            ids.map((x) => x.id),
+            ['boost2', 'stash', 'crit', 'upgrade', 'boost3', 'boost10', 'vein', 'boost2']
+        );
+        assert.deepEqual(
+            ids.map((x) => x.streak),
+            [1, 2, 3, 4, 5, 6, 7, 8]
+        );
     });
     it('пропуск >= 2 дней сбрасывает серию на 1', () => {
         const day = S.getDailyDay();
@@ -371,7 +410,10 @@ describe('ежедневные награды', () => {
     });
     it('applyDailyReward(upgrade): на 4-й день серии бесплатно качается лучшее по ROI', () => {
         const day = S.getDailyDay();
-        for (let i = 0; i < 3; i++) { S.gameState.lastDailyDay = day - 1; S.claimDailyReward(); }
+        for (let i = 0; i < 3; i++) {
+            S.gameState.lastDailyDay = day - 1;
+            S.claimDailyReward();
+        }
         S.gameState.lastDailyDay = day - 1;
         const r = S.claimDailyReward(); // streak 4 -> upgrade
         assert.equal(r.reward.id, 'upgrade');
@@ -400,11 +442,18 @@ describe('престиж', () => {
         S.gameState.bossesDefeated = { boss_copper: true };
         S.gameState.tierEarned[S.DIAMOND_INDEX] = 4 * S.PRESTIGE_REQUIREMENT;
         assert.equal(S.doPrestige(), 2);
-        assert.deepEqual({
-            ore: S.gameState.ore, tier: S.gameState.tier, stars: S.gameState.stars,
-            pickaxe: S.gameState.levels.pickaxe, bosses: S.gameState.bossesDefeated,
-            anchor: S.gameState.tierAnchorRate, earned: S.gameState.tierEarned
-        }, { ore: 0, tier: 0, stars: 2, pickaxe: 0, bosses: {}, anchor: 0, earned: S.TIERS.map(() => 0) });
+        assert.deepEqual(
+            {
+                ore: S.gameState.ore,
+                tier: S.gameState.tier,
+                stars: S.gameState.stars,
+                pickaxe: S.gameState.levels.pickaxe,
+                bosses: S.gameState.bossesDefeated,
+                anchor: S.gameState.tierAnchorRate,
+                earned: S.gameState.tierEarned
+            },
+            { ore: 0, tier: 0, stars: 2, pickaxe: 0, bosses: {}, anchor: 0, earned: S.TIERS.map(() => 0) }
+        );
         assert.equal(S.getPrestigeMult(), 1.2); // 1 + 0.1*2
         // артефакты и мета переживают престиж
         S.gameState.artifacts.push('art_miner_totem');

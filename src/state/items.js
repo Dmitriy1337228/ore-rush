@@ -10,10 +10,10 @@ import { addOre, saveGame } from './ore.js';
 // wall-clock, value — хранимое значение множителя/прибавки; null = у слота нет значения).
 const BUFF_SLOTS = [
     { effect: 'miningMult', until: 'miningBuffUntil', value: 'miningBuffMult' },
-    { effect: 'bossMult',    until: 'bossBuffUntil',   value: 'bossBuffMult' },
-    { effect: 'veinForce',   until: 'itemVeinUntil',   value: null },
-    { effect: 'autoMult',    until: 'rigBuffUntil',    value: 'rigBuffMult' },
-    { effect: 'critAdd',     until: 'oilBuffUntil',    value: 'oilBuffAdd' }
+    { effect: 'bossMult', until: 'bossBuffUntil', value: 'bossBuffMult' },
+    { effect: 'veinForce', until: 'itemVeinUntil', value: null },
+    { effect: 'autoMult', until: 'rigBuffUntil', value: 'rigBuffMult' },
+    { effect: 'critAdd', until: 'oilBuffUntil', value: 'oilBuffAdd' }
 ];
 
 // Активация предмета. Отказ: нет предмета; bossUse-предмет вне боя; тот же слот

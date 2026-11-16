@@ -12,14 +12,18 @@
 import { addImgC, setHitWorld, makeLabel } from './uiKit.js';
 import { TEXT, TEX } from './theme.js';
 
-export function createPanel(scene, {
-    w, h,
-    title,
-    titleY,
-    titleSize,
-    titleColor = TEXT.cream,
-    close = null       // { x, y, size = 44, onClose } — крестик в правом верхнем углу
-} = {}) {
+export function createPanel(
+    scene,
+    {
+        w,
+        h,
+        title,
+        titleY,
+        titleSize,
+        titleColor = TEXT.cream,
+        close = null // { x, y, size = 44, onClose } — крестик в правом верхнем углу
+    } = {}
+) {
     const panel = addImgC(scene, 0, 0, TEX.modalPanel, w, h);
     const titleLabel = makeLabel(scene, 0, titleY, title, titleSize, titleColor).setOrigin(0.5);
     let closeBtn = null;

@@ -66,6 +66,9 @@ describe('dom bridge: snapshot', () => {
         const snap = snapshot({ bossActive: false });
         const hardpick = snap.recipes.find((r) => r.id === 'r_hardpick');
         assert.equal(hardpick.disabled, true);
-        assert.deepEqual(hardpick.need.map((n) => n.enough), [false, false]);
+        assert.deepEqual(
+            hardpick.need.map((n) => n.enough),
+            [false, false]
+        );
     });
 });

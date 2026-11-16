@@ -1,6 +1,4 @@
-import {
-    gameState
-} from '../../state.js';
+import { gameState } from '../../state.js';
 import { BG_FADE_MS, BG_OVERSIZE, tierBgKey } from './constants.js';
 
 export const backgroundMethods = {
@@ -24,9 +22,7 @@ export const backgroundMethods = {
         const dw = Math.round(frame.width * scale * BG_OVERSIZE);
         const dh = Math.round(frame.height * scale * BG_OVERSIZE);
         const cx = this.L.W / 2;
-        const cy = this.L.portrait
-            ? coverDeep - dh / 2 + 2
-            : this.L.H / 2;
+        const cy = this.L.portrait ? coverDeep - dh / 2 + 2 : this.L.H / 2;
         this.bgCurrent.setPosition(cx, cy).setDisplaySize(dw, dh);
         this.bgNext.setPosition(cx, cy).setDisplaySize(dw, dh);
         this.bgShade.setPosition(this.L.W / 2, this.L.H / 2).setSize(this.L.W, this.L.H);
@@ -52,7 +48,8 @@ export const backgroundMethods = {
     // чистое fade-in поверх тёмного старого «не видно» в ранних кадрах, если новый фон светлее.
     swapBg() {
         const key = tierBgKey(gameState.tier);
-        const cur = this.bgCurrent, nxt = this.bgNext;
+        const cur = this.bgCurrent,
+            nxt = this.bgNext;
         if (!nxt.visible && cur.texture.key === key) return;
 
         // Незавершённый кроссфейд мгновенно доводим до конца: частично проявленный

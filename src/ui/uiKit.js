@@ -9,7 +9,7 @@ export const FONT = '"Monocraft", "Inter", "Consolas", monospace';
 
 // Все подписи рисуются с resolution 2 — иначе пиксельный шрифт мылится при FIT-даунскейле
 const TEXT_RESOLUTION = 2;
-const DEFAULT_FONT_MIN = 9;          // минимальный кегль при ужине
+const DEFAULT_FONT_MIN = 9; // минимальный кегль при ужине
 const ONE_LINE_HEIGHT_FACTOR = 1.55; // высота строки Monocraft относительно кегля
 
 // Размеры исходников 9-slice текстур (в манифесте их нет — держим рядом;
@@ -50,19 +50,25 @@ const NS_FALLBACK = {
 const NS_SRC = { ...NS_FALLBACK };
 for (const entry of manifest.assets || []) {
     if (!entry.nine_slice || !entry.file) continue;
-    const key = entry.file.split('/').pop().replace(/\.png$/, '');
+    const key = entry.file
+        .split('/')
+        .pop()
+        .replace(/\.png$/, '');
     const size = NS_SOURCE_SIZE[key];
     if (size) {
         NS_SRC[key] = {
-            l: entry.nine_slice.left, t: entry.nine_slice.top,
-            r: entry.nine_slice.right, b: entry.nine_slice.bottom,
-            w: size.w, h: size.h
+            l: entry.nine_slice.left,
+            t: entry.nine_slice.top,
+            r: entry.nine_slice.right,
+            b: entry.nine_slice.bottom,
+            w: size.w,
+            h: size.h
         };
     }
 }
 
-const NS_MIN_BORDER = 3;     // борда не тоньше 3px
-const NS_MIN_SCALE = 0.25;   // борды ужимаются вместе с элементом, но не мельче 1/4
+const NS_MIN_BORDER = 3; // борда не тоньше 3px
+const NS_MIN_SCALE = 0.25; // борды ужимаются вместе с элементом, но не мельче 1/4
 
 function nsBorders(key, w, h) {
     const s = NS_SRC[key];
@@ -88,13 +94,15 @@ export function addNineC(scene, x, y, key, w, h) {
 // NineSlice со «масштированными» бордами сплющивает центр текстуры (борды в Phaser
 // берутся из текстуры 1:1, не масштабируются) — врезки ложатся непредсказуемо.
 // Image сохраняет пропорции текстуры, врезки считаются линейным масштабом.
-export function addImg(scene, x, y, key, w, h, depth = 0) { // x,y = левый верхний угол
+export function addImg(scene, x, y, key, w, h, depth = 0) {
+    // x,y = левый верхний угол
     const img = scene.add.image(x + w / 2, y + h / 2, key).setDisplaySize(w, h);
     img.setOrigin(0.5).setDepth(depth);
     return img;
 }
 
-export function addImgC(scene, x, y, key, w, h) { // origin (0.5), координаты центра (контейнеры модалок)
+export function addImgC(scene, x, y, key, w, h) {
+    // origin (0.5), координаты центра (контейнеры модалок)
     return scene.add.image(x, y, key).setDisplaySize(w, h);
 }
 
@@ -107,13 +115,24 @@ export function addImgC(scene, x, y, key, w, h) { // origin (0.5), коорди�
 // нетронутыми — слот растёт по высоте с чёткими краями.
 const ROW_CARD = {
     key: 'upgrade_row_card_1',
-    left: 200,   // слот иконки лежит в x 38..192 арта + запас до плоской заливки
-    right: 30,   // рамка справа (как врезка 9-slice из манифеста)
-    flatY: 108   // строка внутри плоской заливки слота (арт 218 высотой, центр 109)
+    left: 200, // слот иконки лежит в x 38..192 арта + запас до плоской заливки
+    right: 30, // рамка справа (как врезка 9-slice из манифеста)
+    flatY: 108 // строка внутри плоской заливки слота (арт 218 высотой, центр 109)
 };
 
 export function addRowCard(scene, w, h) {
-    const card = scene.add.nineslice(0, 0, ROW_CARD.key, null, 1, 1, ROW_CARD.left, ROW_CARD.right, ROW_CARD.flatY, ROW_CARD.flatY);
+    const card = scene.add.nineslice(
+        0,
+        0,
+        ROW_CARD.key,
+        null,
+        1,
+        1,
+        ROW_CARD.left,
+        ROW_CARD.right,
+        ROW_CARD.flatY,
+        ROW_CARD.flatY
+    );
     card.setOrigin(0.5);
     fitRowCard(card, w, h);
     return card;
@@ -124,7 +143,9 @@ export function addRowCard(scene, w, h) {
 export function fitRowCard(card, w, h) {
     const k = w / NS_SOURCE_SIZE[ROW_CARD.key].w;
     const innerH = Math.max(h / k, ROW_CARD.flatY * 2 + 2); // меньше суммы бордов 9-slice схлопывается
-    card.setScale(k).setSize(w / k, innerH).setPosition(w / 2, h / 2);
+    card.setScale(k)
+        .setSize(w / k, innerH)
+        .setPosition(w / 2, h / 2);
     if (card.input) applyHitArea(card, new Phaser.Geom.Rectangle(0, 0, w / k, innerH));
     return card;
 }
@@ -149,9 +170,7 @@ export function addModalContainer(scene) {
 // — это кадр текстуры, а не отображаемый размер). centered — прямоугольник
 // вокруг (0,0) (контейнеры, центрированные объекты).
 export function setHitRect(obj, w, h, centered = false) {
-    const rect = centered
-        ? new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h)
-        : new Phaser.Geom.Rectangle(0, 0, w, h);
+    const rect = centered ? new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h) : new Phaser.Geom.Rectangle(0, 0, w, h);
     return obj.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
 }
 
@@ -187,12 +206,7 @@ export function setHitWorld(obj, w, h) {
         // центр видимой области в единицах локального пространства
         const cx = (obj.displayWidth || obj.width || 0) / 2;
         const cy = (obj.displayHeight || obj.height || 0) / 2;
-        rect = new Phaser.Geom.Rectangle(
-            (cx - w / 2) / sx,
-            (cy - h / 2) / sy,
-            w / sx,
-            h / sy
-        );
+        rect = new Phaser.Geom.Rectangle((cx - w / 2) / sx, (cy - h / 2) / sy, w / sx, h / sy);
     }
     return applyHitArea(obj, rect);
 }
@@ -215,12 +229,7 @@ export function setHitWorldRect(obj, rx, ry, rw, rh) {
     const sy = Math.max(1e-6, Math.abs(obj.scaleY || 1));
     const dx = obj.x - (obj.originX ?? 0.5) * (obj.displayWidth || 0);
     const dy = obj.y - (obj.originY ?? 0.5) * (obj.displayHeight || 0);
-    const rect = new Phaser.Geom.Rectangle(
-        (rx - dx) / sx,
-        (ry - dy) / sy,
-        rw / sx,
-        rh / sy
-    );
+    const rect = new Phaser.Geom.Rectangle((rx - dx) / sx, (ry - dy) / sy, rw / sx, rh / sy);
     return applyHitArea(obj, rect);
 }
 

@@ -28,18 +28,27 @@ const out = { viewport: `${w}x${h}`, checks: {}, pass: false };
 try {
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
-    await page.addInitScript((s) => {
-        for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
-    }, { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' });
+    await page.addInitScript(
+        (s) => {
+            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+        },
+        { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
+    );
     await page.goto(`${BASE}/?dom=1`, { waitUntil: 'load' });
-    await page.waitForFunction(() => !!window.__DOM_UI && window.__GAME.scene.getScene('UIScene').L, null, { timeout: 30000 });
+    await page.waitForFunction(() => !!window.__DOM_UI && window.__GAME.scene.getScene('UIScene').L, null, {
+        timeout: 30000
+    });
     await page.waitForTimeout(800);
 
-    const ore = () => page.evaluate(async () => {
-        const url = performance.getEntriesByType('resource').map((r) => r.name).find((u) => u.includes('/src/state.js'));
-        const m = await import(url);
-        return m.gameState.ore;
-    });
+    const ore = () =>
+        page.evaluate(async () => {
+            const url = performance
+                .getEntriesByType('resource')
+                .map((r) => r.name)
+                .find((u) => u.includes('/src/state.js'));
+            const m = await import(url);
+            return m.gameState.ore;
+        });
 
     out.checks.rootRect = await page.evaluate((tol) => {
         const root = document.getElementById('ui-root').getBoundingClientRect();
@@ -63,21 +72,38 @@ try {
     }
     const oreAfter = await ore();
     const pdHidden = await page.evaluate(() => window.__CANVAS_PD);
-    out.checks.mineClickPasses = { ok: oreAfter > oreBefore && pdHidden >= 3, oreBefore, oreAfter, canvasPointerDown: pdHidden };
+    out.checks.mineClickPasses = {
+        ok: oreAfter > oreBefore && pdHidden >= 3,
+        oreBefore,
+        oreAfter,
+        canvasPointerDown: pdHidden
+    };
 
     // 2) панель видима — клик по панели не доходит до канваса
-    await page.evaluate(() => { window.__DOM_UI.show(); window.__CANVAS_PD = 0; });
+    await page.evaluate(() => {
+        window.__DOM_UI.show();
+        window.__CANVAS_PD = 0;
+    });
     await page.waitForTimeout(200);
     const oreBeforePanel = await ore();
     await page.mouse.click(w / 2, h / 2);
     await page.waitForTimeout(300);
     const oreAfterPanel = await ore();
     const pdPanel = await page.evaluate(() => window.__CANVAS_PD);
-    out.checks.panelBlocks = { ok: pdPanel === 0 && oreAfterPanel === oreBeforePanel, oreBeforePanel, oreAfterPanel, canvasPointerDown: pdPanel };
+    out.checks.panelBlocks = {
+        ok: pdPanel === 0 && oreAfterPanel === oreBeforePanel,
+        oreBeforePanel,
+        oreAfterPanel,
+        canvasPointerDown: pdPanel
+    };
 
     // 3) пустое место #ui-root вне панели — доходит до канваса
-    await page.evaluate(() => { window.__CANVAS_PD = 0; });
-    const panelBox = await page.evaluate(() => document.querySelector('[data-dom-panel]').getBoundingClientRect().toJSON());
+    await page.evaluate(() => {
+        window.__CANVAS_PD = 0;
+    });
+    const panelBox = await page.evaluate(() =>
+        document.querySelector('[data-dom-panel]').getBoundingClientRect().toJSON()
+    );
     const px = Math.max(8, Math.round(panelBox.left / 2));
     const py = Math.round(panelBox.top + panelBox.height * 0.75);
     await page.mouse.click(px, py);

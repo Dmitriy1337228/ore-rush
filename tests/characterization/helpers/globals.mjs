@@ -12,8 +12,10 @@ globalThis.localStorage = {
     setItem: (k, v) => store.set(k, String(v)),
     removeItem: (k) => store.delete(k),
     clear: () => store.clear(),
-    key: (i) => ([...store.keys()][i] ?? null),
-    get length() { return store.size; }
+    key: (i) => [...store.keys()][i] ?? null,
+    get length() {
+        return store.size;
+    }
 };
 
 // Р”РёРЅР°РјРёС‡РµСЃРєРёР№ РёРјРїРѕСЂС‚ AFTER С€РёРјР°: Сѓ state.js/sdk-stub.js РЅРµС‚ СЃС‚Р°С‚РёРєРё РЅР° Р±СЂР°СѓР·РµСЂ.
@@ -34,13 +36,15 @@ export async function importSdkAdapter() {
 export function stubRandom(values) {
     const real = Math.random;
     let i = 0;
-    Math.random = Array.isArray(values)
-        ? () => values[i++ % values.length]
-        : values; // С„СѓРЅРєС†РёСЏ
-    return () => { Math.random = real; };
+    Math.random = Array.isArray(values) ? () => values[i++ % values.length] : values; // С„СѓРЅРєС†РёСЏ
+    return () => {
+        Math.random = real;
+    };
 }
 
 // normalize РґР»СЏ СЃСЂР°РІРЅРµРЅРёСЏ С‚РµРєСЃС‚Р°: BOM (PowerShell Out-File) Рё CRLF -> LF
 export function normalizeText(s) {
-    return String(s).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
+    return String(s)
+        .replace(/^\uFEFF/, '')
+        .replace(/\r\n/g, '\n');
 }

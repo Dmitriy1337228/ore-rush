@@ -1,9 +1,29 @@
 import {
-    gameState, TIERS, addOre, getOrePerSecond, getAutoClicksPerSecond, saveGame, saveLastExit, readLastExit, computeOfflineReward, fmt, SECOND_MS, MUTATIONS, MUTATION_CHECK_MS, MUTATION_CHANCE
+    gameState,
+    TIERS,
+    addOre,
+    getOrePerSecond,
+    getAutoClicksPerSecond,
+    saveGame,
+    saveLastExit,
+    readLastExit,
+    computeOfflineReward,
+    fmt,
+    SECOND_MS,
+    MUTATIONS,
+    MUTATION_CHECK_MS,
+    MUTATION_CHANCE
 } from '../../state.js';
 import { floatText } from './effects.js';
 import { TEXT, EVENTS, REG } from '../../ui/theme.js';
-import { GAME_DEPTH, PASSIVE_TICK_MS, AUTO_TICK_MS, AUTO_BUDGET_CAP, AUTO_CLICKS_PER_TICK_GUARD, AUTOSAVE_MS } from './constants.js';
+import {
+    GAME_DEPTH,
+    PASSIVE_TICK_MS,
+    AUTO_TICK_MS,
+    AUTO_BUDGET_CAP,
+    AUTO_CLICKS_PER_TICK_GUARD,
+    AUTOSAVE_MS
+} from './constants.js';
 
 export const timersMethods = {
     wireEvents() {
@@ -22,8 +42,11 @@ export const timersMethods = {
         this.game.events.on(EVENTS.tierChanged, this._onTierChanged);
 
         this._onOfflineApplied = (info) => {
-            floatText(this, this.blockX, this.blockY - 140, `Шахтёры добыли: +${fmt(info.reward)}`, 26, TEXT.cream,
-                { depth: GAME_DEPTH.floatText, rise: 50, duration: 1100 });
+            floatText(this, this.blockX, this.blockY - 140, `Шахтёры добыли: +${fmt(info.reward)}`, 26, TEXT.cream, {
+                depth: GAME_DEPTH.floatText,
+                rise: 50,
+                duration: 1100
+            });
         };
         this.game.events.on(EVENTS.offlineApplied, this._onOfflineApplied);
 
@@ -48,8 +71,15 @@ export const timersMethods = {
                     const mut = this.mutation ? MUTATIONS[this.mutation.id] : null;
                     const mult = mut && mut.passiveMult ? mut.passiveMult : 1;
                     addOre(gps * mult);
-                    floatText(this, this.blockX + 150, this.blockY - 90, `+${fmt(gps * mult)}`, 16, TIERS[gameState.tier].floatColor,
-                        { depth: GAME_DEPTH.floatText, startAlpha: 0.85, rise: 30, duration: 900 });
+                    floatText(
+                        this,
+                        this.blockX + 150,
+                        this.blockY - 90,
+                        `+${fmt(gps * mult)}`,
+                        16,
+                        TIERS[gameState.tier].floatColor,
+                        { depth: GAME_DEPTH.floatText, startAlpha: 0.85, rise: 30, duration: 900 }
+                    );
                     this.refreshTick();
                 }
             }

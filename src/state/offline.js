@@ -34,7 +34,9 @@ export function computeOfflineReward(lastExitMs, nowMs = Date.now()) {
 export function saveLastExit(nowMs = Date.now()) {
     try {
         localStorage.setItem(LAST_EXIT_KEY, String(nowMs));
-    } catch (err) { /* приватный режим и т.п. */ }
+    } catch (err) {
+        /* приватный режим и т.п. */
+    }
     YandexSDKStub.player.setStats({ lastExit: nowMs });
 }
 
@@ -47,7 +49,9 @@ function readStoredExit(key) {
             const n = Number(raw);
             if (Number.isFinite(n) && n > 0) return n;
         }
-    } catch (err) { /* ignore */ }
+    } catch (err) {
+        /* ignore */
+    }
     return null;
 }
 
@@ -58,6 +62,8 @@ export async function readLastExit() {
     try {
         const stats = await YandexSDKStub.player.getStats(['lastExit']);
         if (typeof stats?.lastExit === 'number' && stats.lastExit > 0) return stats.lastExit;
-    } catch (err) { /* идём к фолбэку */ }
+    } catch (err) {
+        /* идём к фолбэку */
+    }
     return readStoredExit(LAST_EXIT_KEY) ?? readStoredExit(LEGACY_LAST_EXIT_KEY);
 }

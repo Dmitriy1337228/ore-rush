@@ -71,21 +71,25 @@ export const YandexSDK = {
         const emit = (event) => {
             try {
                 if (typeof window !== 'undefined' && window.__GAME) window.__GAME.events.emit(event);
-            } catch (e) { /* события — не критичный путь */ }
-        };
-        this.sdk.adv.showFullscreenAdv({ callbacks: {
-            onOpen: () => {
-                emit('yandex-ad-open');
-                if (callbacks.onOpen) callbacks.onOpen();
-            },
-            onClose: (wasShown) => {
-                emit('yandex-ad-close');
-                if (callbacks.onClose) callbacks.onClose(wasShown);
-            },
-            onError: (err) => {
-                emit('yandex-ad-close');
-                if (callbacks.onError) callbacks.onError(err);
+            } catch (e) {
+                /* события — не критичный путь */
             }
-        } });
+        };
+        this.sdk.adv.showFullscreenAdv({
+            callbacks: {
+                onOpen: () => {
+                    emit('yandex-ad-open');
+                    if (callbacks.onOpen) callbacks.onOpen();
+                },
+                onClose: (wasShown) => {
+                    emit('yandex-ad-close');
+                    if (callbacks.onClose) callbacks.onClose(wasShown);
+                },
+                onError: (err) => {
+                    emit('yandex-ad-close');
+                    if (callbacks.onError) callbacks.onError(err);
+                }
+            }
+        });
     }
 };
