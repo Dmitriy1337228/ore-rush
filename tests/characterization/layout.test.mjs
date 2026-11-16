@@ -44,6 +44,7 @@ describe('computeLayout(1280, 720): ландшафт (golden)', () => {
             panel: {
                 px: 900, py: 124, pw: 364, ph: 582, titleDy: 47, titleSize: 24,
                 tabsCY: 84, tabH: 32, tabLabelSize: 14,
+                tabW: 145, tierInset: 2,
                 tierCY: 125, tierLabelSize: 13,
                 amountW: 76, amountH: 24, amountSize: 14, amountPadRight: 0
             },
@@ -78,6 +79,7 @@ describe('computeLayout(720, 1558): портрет для 390x844 (golden)', () 
                 px: 0, py: 658, pw: 720, ph: 900, titleDy: 73, titleSize: 26,
                 recessTop: 167, recessBot: 851,
                 tabsCY: 211, tabH: 68, tabLabelSize: 20,
+                tabW: 309, tierInset: 14,
                 tierCY: 277, tierLabelSize: 22,
                 amountW: 120, amountH: 48, amountSize: 20, amountPadRight: 16
             },

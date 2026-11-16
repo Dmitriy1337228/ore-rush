@@ -44,6 +44,9 @@ export function computeLayout(W, H) {
             panel: {
                 px: 900, py: 124, pw: 364, ph: 582, titleDy: 47, titleSize: 24,
                 tabsCY: 84, tabH: 32, tabLabelSize: 14,
+                // tabW — ширина вкладки (две по 145 + зазор 6 = ширина списка);
+                // tierInset — отступ строки тира от левого края вьюпорта
+                tabW: 145, tierInset: 2,
                 tierCY: 125, tierLabelSize: 13,
                 amountW: 76, amountH: 24, amountSize: 14, amountPadRight: 0
             },
@@ -98,6 +101,9 @@ export function computeLayout(W, H) {
             px, py, pw, ph, titleDy: Math.round(0.081 * ph), titleSize: 26,
             recessTop, recessBot,
             tabsCY: recessTop + 44, tabH: 68, tabLabelSize: 20,
+            // tabW — половина ширины списка минус зазор 6 (SPACE.sm): вкладки
+            // растягиваются на врезку; tierInset — отступ строки тира слева
+            tabW: Math.floor((vpR - vpX - 6) / 2), tierInset: 14,
             tierCY: recessTop + 110, tierLabelSize: 22,
             amountW: 120, amountH: 48, amountSize: 20, amountPadRight: 16
         },
