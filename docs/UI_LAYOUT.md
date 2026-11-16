@@ -114,7 +114,7 @@ npm run test:dom-golden                 # tolerant-diff эталона DOM-па�
 JSON-отчёт — `shots/ui-check-dom/report.json`; код выхода ≠ 0 при новых ошибках.
 
 Размеры DOM — только токены: `npm run dom:tokens` генерирует `src/dom/tokens.css` из
-`src/ui/theme.js` (+ `DOM_EXTRA` в `scripts/gates/gen-dom-tokens.mjs`), проверка дрейфа —
+`src/ui/shared/theme.js` (+ `DOM_EXTRA` в `scripts/gates/gen-dom-tokens.mjs`), проверка дрейфа —
 `npm run dom:tokens -- --check`. Ручные правки `tokens.css` запрещены.
 
 `ui:check` (Phaser) для состояния `craft-dom` делает только скриншот: display-list аудит

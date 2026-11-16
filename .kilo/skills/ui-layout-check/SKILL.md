@@ -39,7 +39,7 @@ BUTTON-GAP, MISALIGNED, EDGE (таблица в `docs/UI_LAYOUT.md`).
 
 С пилота DOM (G3 = go) мастерская живёт в `src/dom/*`, Phaser-экран удалён. Для правок действует дополнительный цикл:
 
-1. Размеры — **только токены**: `npm run dom:tokens` (генерация из `src/ui/theme.js`),
+1. Размеры — **только токены**: `npm run dom:tokens` (генерация из `src/ui/shared/theme.js`),
    `npm run dom:tokens -- --check` (дрейф), `npm run ui:tokens:css` (голые px/rem/em вне
    `tokens.css` запрещены; 1px — только с комментарием-причиной).
 2. `npm run ui:check:dom` — 7 вьюпортов × 26 рядов, `getBoundingClientRect`, пороги `UI_RULES`;

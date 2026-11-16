@@ -22,7 +22,7 @@
 - Нельзя «лечить проверку»: не добавлять новые нарушения в `tests/ui-check/baseline.json`, не ослаблять `UI_RULES` (`src/dev/uiAudit.js`) и не скрывать объекты ради зелёного прогона. Закрыли долг — `--update-baseline` и в сообщении коммита указать, на сколько долг уменьшился.
 - Новый экран/модалка = новое состояние в `scripts/lib/ui-matrix.mjs`.
 - Если игрок прислал `ui-report-*.json` (F9 в dev-сборке) — сначала воспроизвести: `npm run ui:check -- --replay <файл>`.
-- Новые «голые» числа раскладки не плодить: константы/токены (`src/ui/theme.js`, `src/ui/listGeometry.js`, `src/scenes/game/*Layout.js`). Кегли в `src/scenes/ui` — только токены `FONT_SIZE`: `npm run ui:tokens` должен завершаться без нарушений (исключение — файлы раскладок). План системного лечения — `docs/UI_LAYOUT_TODO.md`.
+- Новые «голые» числа раскладки не плодить: константы/токены (`src/ui/shared/theme.js`, `src/ui/shared/listGeometry.js`, `src/game/*Layout.js`). Кегли в `src/ui/phaser` — только токены `FONT_SIZE`: `npm run ui:tokens` должен завершаться без нарушений (исключение — файлы раскладок). План системного лечения — `docs/UI_LAYOUT_TODO.md`.
 
 ## Токены отступов и размеров (системное правило — действует во всех диалогах)
 - Открывая любой код UI, агент не должен видеть «чисел с потолка»: отступ/размер выражается
@@ -35,13 +35,13 @@
   единственный источник раскладки.
 - `ui:tokens` проверяет кегли И отступы/размеры: голый литерал в sizing-вызовах
   (`setPosition/setDisplaySize/setSize/fillRect/fillRoundedRect/Rectangle/...`) в
-  `src/scenes/ui` без соседнего комментария — нарушение.
+  `src/ui/phaser` без соседнего комментария — нарушение.
 - Любая правка экрана проверяется минимум в двух вьюпортах: десктоп (1280x720) и
   мобилка (390x844) — скриншоты прикладываются к апруву вместе с аудитом.
 
 ## DOM-слой UI (`src/dom/`, мастерская — основной экран с G3 = go)
 - Мастерская собирается в `src/dom/` и **включена по умолчанию** в проде и dev (Phaser-экран удалён). Контроллер грузится отдельным чанком при старте UIScene; `openCraft()` ждёт готовности.
-- Размеры — только токены: `npm run dom:tokens` генерирует `src/dom/tokens.css` из `src/ui/theme.js`; дрейф — `npm run dom:tokens -- --check`; голые `px/rem/em` вне `tokens.css` запрещены (`npm run ui:tokens:css`, 1px — только с комментарием-причиной).
+- Размеры — только токены: `npm run dom:tokens` генерирует `src/dom/tokens.css` из `src/ui/shared/theme.js`; дрейф — `npm run dom:tokens -- --check`; голые `px/rem/em` вне `tokens.css` запрещены (`npm run ui:tokens:css`, 1px — только с комментарием-причиной).
 - Гейты: `npm run ui:check:dom` (7 вьюпортов × 26 рядов, PNG в `shots/ui-check/<vp>__craft-dom.png`) и `npm run test:dom-golden` (tolerant-diff, порог 0.5%). **Полный UI-прогон = `npm run ui:check` + `npm run ui:check:dom`** + `npm test`, `npm run test:ui`, `npm run format:check`, `npm run lint`.
 - Бизнес-правила и запись состояния — только в `src/state.js`; `src/dom/*` читает через `bridge.js`, тексты ошибок — `src/state/craftMessages.js` (без копий).
 - Фикстуры и стенды (`fixtures*.js`, `lab.js`, `scripts/stands/build-dom-*.mjs`) — не прод-код; для проверки на телефоне без сети: `shots/pilot-gates/dom-craft-phone.html` / `dom-lab.html`.
