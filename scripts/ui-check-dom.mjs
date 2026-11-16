@@ -100,25 +100,60 @@ const auditFn = ({ rules, tolerance }) => {
     const scrollRect = r(scroll);
     const contains = (a, b) => a.left <= b.left - tolerance && a.right >= b.right + tolerance
         && a.top <= b.top - tolerance && a.bottom >= b.bottom + tolerance;
-    const visible = (rect) => rect.width > 0 && rect.height > 0
-        && rect.right > scrollRect.left - tolerance && rect.left < scrollRect.right + tolerance
-        && rect.bottom > scrollRect.top - tolerance && rect.top < scrollRect.bottom + tolerance;
+    const intersects = (rect, zone) => rect.width > 0 && rect.height > 0
+        && rect.right > zone.left - tolerance && rect.left < zone.right + tolerance
+        && rect.bottom > zone.top - tolerance && rect.top < zone.bottom + tolerance;
+    // Элементы шапки (заголовок/подсказка/чипы) лежат вне скролла — видимость
+    // считаем по врезке, иначе их пересечения с крестиком не проверялись.
+    const visibleEl = (el) => {
+        const zone = scroll.contains(el) ? scrollRect : panelRect;
+        return intersects(r(el), zone);
+    };
+    // Для чисто-текстовых блоков меряем текст (Range), а не блочную коробку:
+    // заголовок-блок на всю ширину давал ложные пересечения с крестиком.
+    const boxOf = (el) => {
+        const onlyText = el.childNodes.length === 1 && el.firstChild.nodeType === Node.TEXT_NODE;
+        if (onlyText) {
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const rect = range.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) return rect;
+        }
+        return r(el);
+    };
 
     // Блоки: карточки, текстовые строки и интерактив (Button/role=button).
     const BLOCK_SELECTOR = [
-        '.dom-title', '.dom-hint', '.dom-chip', '.dom-section',
+        '.dom-title', '.dom-close', '.dom-hint', '.dom-chip', '.dom-section',
         '.dom-row', '.dom-art', '.dom-name', '.dom-sub', '.dom-desc',
         '.dom-stock', '.dom-error', '.dom-need', '.dom-src', '.dom-status', '.dom-line',
         '.dom-btn'
     ].join(',');
+    // Для блоков внутри скролла сравниваем ТОЛЬКО видимую (обрезанную) часть:
+    // иначе ряд, ушедший под шапку, «пересекается» с заголовком/чипами фиктивно.
+    const clipToScroll = (rect) => {
+        const left = Math.max(rect.left, scrollRect.left);
+        const right = Math.min(rect.right, scrollRect.right);
+        const top = Math.max(rect.top, scrollRect.top);
+        const bottom = Math.min(rect.bottom, scrollRect.bottom);
+        if (right - left <= tolerance || bottom - top <= tolerance) return null;
+        return { left, right, top, bottom, width: right - left, height: bottom - top };
+    };
+    const clipOf = (el) => {
+        const box = boxOf(el);
+        if (scroll.contains(el)) return clipToScroll(box);
+        return intersects(box, panelRect) ? box : null;
+    };
+
     const blocks = Array.from(panel.querySelectorAll(BLOCK_SELECTOR))
         .filter((el) => el.getClientRects().length)
-        .filter((el) => visible(r(el)));
+        .map((el) => ({ el, rect: clipOf(el) }))
+        .filter((b) => b.rect);
     result.counts.rectangles = blocks.length;
 
     const rows = new Set();
     for (const el of panel.querySelectorAll('[data-row], [data-art]')) {
-        if (visible(r(el))) rows.add(el.dataset.row || el.dataset.art);
+        if (visibleEl(el)) rows.add(el.dataset.row || el.dataset.art);
     }
     result.rows = Array.from(rows);
 
@@ -126,21 +161,21 @@ const auditFn = ({ rules, tolerance }) => {
     for (let i = 0; i < blocks.length; i++) {
         for (let j = i + 1; j < blocks.length; j++) {
             const a = blocks[i], b = blocks[j];
-            if (a.contains(b) || b.contains(a)) continue;
-            const ra = r(a), rb = r(b);
+            if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+            const ra = a.rect, rb = b.rect;
             const ox = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
             const oy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
             if (ox > tolerance && oy > tolerance) {
                 result.violations.push({
                     rule: 'OVERLAP', severity: 'error',
-                    msg: `"${a.className}" (${Math.round(ra.left)},${Math.round(ra.top)}) x "${b.className}" (${Math.round(rb.left)},${Math.round(rb.top)}) ox=${Math.round(ox)} oy=${Math.round(oy)}`
+                    msg: `"${a.el.className}" (${Math.round(ra.left)},${Math.round(ra.top)}) x "${b.el.className}" (${Math.round(rb.left)},${Math.round(rb.top)}) ox=${Math.round(ox)} oy=${Math.round(oy)}`
                 });
             }
         }
     }
 
     // BOUNDS: горизонтальный выход за врезку (вертикаль ограничена скроллом).
-    for (const el of blocks) {
+    for (const { el } of blocks) {
         const rr = r(el);
         if (rr.left < panelRect.left - tolerance || rr.right > panelRect.right + tolerance) {
             result.violations.push({ rule: 'BOUNDS', severity: 'error', msg: `"${el.className}" выходит за врезку по горизонтали (${Math.round(rr.left)}..${Math.round(rr.right)} vs ${Math.round(panelRect.left)}..${Math.round(panelRect.right)})` });
@@ -148,7 +183,7 @@ const auditFn = ({ rules, tolerance }) => {
     }
 
     // MIN-FONT: кегль на экране (CSS px — масштаба FIT здесь нет).
-    for (const el of blocks) {
+    for (const { el } of blocks) {
         const style = getComputedStyle(el);
         const size = parseFloat(style.fontSize);
         if (!Number.isFinite(size) || size <= 0) continue;
@@ -163,7 +198,7 @@ const auditFn = ({ rules, tolerance }) => {
     const mobile = window.innerWidth <= rules.mobileMaxWidthCss;
     const touchMin = mobile ? rules.minTouchCss.mobile : rules.minTouchCss.desktop;
     for (const el of panel.querySelectorAll('.dom-btn, .dom-close')) {
-        if (!el.getClientRects().length || !visible(r(el))) continue;
+        if (!el.getClientRects().length || !visibleEl(el)) continue;
         const rr = r(el);
         if (rr.width < touchMin - tolerance || rr.height < touchMin - tolerance) {
             result.violations.push({ rule: 'TOUCH', severity: 'warn', msg: `"${el.className}" ${Math.round(rr.width)}x${Math.round(rr.height)} < ${touchMin} CSS px` });
@@ -172,7 +207,7 @@ const auditFn = ({ rules, tolerance }) => {
 
     // PADDING: текст внутри карточки ряда не ближе rules.minPadding.panel к её краю.
     for (const host of panel.querySelectorAll('.dom-row, .dom-art')) {
-        if (!visible(r(host))) continue;
+        if (!visibleEl(host)) continue;
         const hr = r(host);
         for (const text of host.querySelectorAll('.dom-name, .dom-sub, .dom-desc, .dom-stock, .dom-error, .dom-need, .dom-src, .dom-status, .dom-line')) {
             const tr = r(text);

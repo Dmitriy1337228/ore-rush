@@ -365,6 +365,12 @@
     font-size: var(--font-label);
 }
 
+/* На узком портрете заголовок не должен заезжать под крестик:
+   кегль ступенью ниже (30 -> 22), симметричные поля остаются от .dom-title */
+.portrait .dom-title {
+    font-size: var(--font-title);
+}
+
 .portrait .dom-recipe .dom-btn {
     grid-column: 1 / -1;
     width: 100%;

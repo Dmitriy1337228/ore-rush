@@ -357,6 +357,30 @@ const check = (name, ok, details = {}) => {
     check('S10: паритет DOM и данных', parity.mism.length === 0, parity);
     await closeCraft();
 
+    // 4.4. Реклама/фуллскрин Яндекса: панель скрывается и восстанавливается
+    await openCraft();
+    await page.evaluate(() => window.__GAME.events.emit('yandex-ad-open'));
+    await wait(250);
+    const adOpen = await page.evaluate(() => ({
+        open: window.__DOM_CRAFT.isOpen(),
+        sceneOpen: window.__GAME.scene.getScene('UIScene')._craftOpen
+    }));
+    await page.evaluate(() => window.__GAME.events.emit('yandex-ad-close'));
+    await wait(400);
+    const adClosed = await page.evaluate(() => {
+        const root = document.getElementById('ui-root').getBoundingClientRect();
+        const canvas = document.querySelector('#game canvas').getBoundingClientRect();
+        return {
+            open: window.__DOM_CRAFT.isOpen(),
+            sceneOpen: window.__GAME.scene.getScene('UIScene')._craftOpen,
+            root: [root.left, root.top, root.width, root.height],
+            canvas: [canvas.left, canvas.top, canvas.width, canvas.height]
+        };
+    });
+    const rectOk = adClosed.root.every((v, i) => Math.abs(v - adClosed.canvas[i]) <= 1.5);
+    check('4.4 реклама: DOM скрыт и восстановлен', !adOpen.open && !adOpen.sceneOpen && adClosed.open && adClosed.sceneOpen && rectOk, { adOpen, adClosed });
+    await closeCraft();
+
     // 6) D3: каждый Phaser-оверлей закрывает DOM и виден сам
     const overlays = [
         ['daily', `ui._pendingDaily = { streak: 3, extra: 1200 }; ui.tryShowDailyModal();`, 'ui.hideDailyModal()'],
@@ -385,6 +409,151 @@ const check = (name, ok, details = {}) => {
 
     check('нет console/pageerror (DOM-режим)', errors.length === 0, { errors: errors.slice(0, 5) });
     await page.screenshot({ path: path.join(OUT, 'verify-dom-craft.png') });
+    await ctx.close();
+}
+
+// ---- Этап 4.2: тач (тап, дрожание ≤10 CSS px, прокрутка без ложных нажатий) ----
+{
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    await page.addInitScript((s) => {
+        for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+    }, { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' });
+    await page.goto(`${BASE}/?dom=1`, { waitUntil: 'load' });
+    await page.waitForFunction(() => !!window.__DOM_CRAFT, null, { timeout: 30000 });
+    await page.waitForTimeout(1250);
+    await page.evaluate(async () => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        ui._pendingDaily = null;
+        ui.registry.set('dailyInfo', null);
+        if (ui._dailyOpen) ui.hideDailyModal();
+        const url = performance.getEntriesByType('resource').map((r) => r.name).find((u) => u.includes('/src/state.js'));
+        window.__ST = await import(url);
+        for (const id of Object.keys(window.__ST.gameState.levels)) window.__ST.gameState.levels[id] = 0;
+        window.__ST.gameState.ore = 1e6;
+        window.__ST.gameState.items.item_bomb = 0;
+    });
+    await page.waitForTimeout(350); // блокировка снимется в следующем кадре
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
+    await page.waitForFunction(() => window.__DOM_CRAFT.isOpen(), null, { timeout: 10000 });
+    await page.waitForTimeout(400);
+    const st = (code) => page.evaluate((c) => { const m = window.__ST; return eval(c); }, code);
+    const wait = (ms = 400) => page.waitForTimeout(ms);
+
+    const buyBtn = page.locator('[data-row="item_bomb"] [data-act="buy"]');
+    await buyBtn.scrollIntoViewIfNeeded();
+    const style = await buyBtn.evaluate((el) => ({
+        touch: getComputedStyle(el).touchAction,
+        tap: getComputedStyle(el).webkitTapHighlightColor
+    }));
+    const box = await buyBtn.boundingBox();
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+    await wait(500);
+    let stock = await st('m.gameState.items.item_bomb || 0');
+    check('4.2 тап покупает предмет', stock === 1, { stock, ...style });
+
+    // Дрожание пальца: смещение 8x3 CSS px — это тап, а не скролл
+    await st('m.gameState.items.item_bomb = 0; m.gameState.ore = 1e6;');
+    await wait(400);
+    await buyBtn.scrollIntoViewIfNeeded();
+    const b2 = await buyBtn.boundingBox();
+    const cdp = await ctx.newCDPSession(page);
+    const x = Math.round(b2.x + b2.width / 2);
+    const y = Math.round(b2.y + b2.height / 2);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 8, y: y + 3 }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await wait(500);
+    stock = await st('m.gameState.items.item_bomb || 0');
+    check('4.2 дрожание ≤10 px = тап', stock === 1, { stock, jitter: [8, 3] });
+
+    // Прокрутка списка не нажимает кнопки
+    await st('m.gameState.items.item_bomb = 0; m.gameState.ore = 1e6;');
+    await wait(400);
+    const scrollBefore = await page.evaluate(() => document.querySelector('[data-dom-scroll]').scrollTop);
+    await page.touchscreen.tap(150, 700); // фокус в области списка (не кнопка)
+    const scrollBox = await page.locator('[data-dom-scroll]').boundingBox();
+    const sx = Math.round(scrollBox.x + scrollBox.width * 0.4);
+    const sy = Math.round(scrollBox.y + scrollBox.height * 0.75);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: sx, y: sy }] });
+    for (let i = 1; i <= 10; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: sx, y: sy - i * 22 }] });
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await wait(500);
+    const scrollAfter = await page.evaluate(() => document.querySelector('[data-dom-scroll]').scrollTop);
+    stock = await st('m.gameState.items.item_bomb || 0');
+    check('4.2 прокрутка не нажимает кнопки', scrollAfter > scrollBefore && stock === 0, { scrollBefore, scrollAfter, stock });
+    check('4.2 тач: нет ошибок в консоли', errors.length === 0, { errors: errors.slice(0, 4) });
+    await ctx.close();
+}
+
+// ---- Этап 4.3: обучение не ломается от мастерской ----
+{
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    const save = { ...SEEDS.mid, tutorialDone: false, clicks: 0 };
+    await page.addInitScript((s) => {
+        for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+    }, { [SAVE_KEY]: JSON.stringify(save), domUi: '1' });
+    await page.goto(`${BASE}/?dom=1`, { waitUntil: 'load' });
+    await page.waitForFunction(() => {
+        const ui = window.__GAME && window.__GAME.scene.getScene('UIScene');
+        return !!(ui && ui.L && window.__DOM_CRAFT);
+    }, null, { timeout: 30000 });
+    await page.waitForTimeout(1000);
+    // Ежедневная награда при загрузке откладывает обучение — закрываем её, как игрок
+    await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        ui._pendingDaily = null;
+        ui.registry.set('dailyInfo', null);
+        if (ui._dailyOpen) ui.hideDailyModal();
+    });
+    await page.waitForFunction(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        return !!ui.tutDim;
+    }, null, { timeout: 10000 });
+    await page.waitForTimeout(300); // updateBlockLock снимает блокировку после награды
+    const started = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        return { step: ui.tutorialStep, dim: !!ui.tutDim };
+    });
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
+    await page.waitForTimeout(300);
+    const during = await page.evaluate(() => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        return { open: window.__DOM_CRAFT.isOpen(), step: ui.tutorialStep, dim: !!ui.tutDim };
+    });
+    await page.evaluate(() => window.__DOM_CRAFT.close({ notify: false }));
+    await page.waitForTimeout(200);
+    // Пройти шаги штатно: клики → вкладка 1 → вкладка 2 → «Играть»
+    const flow = await page.evaluate(async () => {
+        const ui = window.__GAME.scene.getScene('UIScene');
+        const url = performance.getEntriesByType('resource').map((r) => r.name).find((u) => u.includes('/src/state.js'));
+        const m = await import(url);
+        const steps = [];
+        m.gameState.clicks = ui.tutClickStart + 3;
+        await new Promise((r) => setTimeout(r, 250));
+        steps.push(ui.tutorialStep);
+        ui.tabBtns[0].c.emit('pointerdown');
+        await new Promise((r) => setTimeout(r, 250));
+        steps.push(ui.tutorialStep);
+        ui.tabBtns[1].c.emit('pointerdown');
+        await new Promise((r) => setTimeout(r, 250));
+        steps.push(ui.tutorialStep);
+        ui.tutBtn.emit('pointerdown');
+        await new Promise((r) => setTimeout(r, 200));
+        return { steps, done: m.gameState.tutorialDone, dim: !!ui.tutDim };
+    });
+    check('4.3 мастерская не ломает обучение', during.open && during.dim && during.step === started.step
+        && flow.steps.join(',') === '1,2,3' && flow.done && !flow.dim && errors.length === 0,
+        { started, during, flow, errors: errors.slice(0, 3) });
     await ctx.close();
 }
 

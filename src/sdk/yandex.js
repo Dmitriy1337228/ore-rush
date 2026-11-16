@@ -66,10 +66,26 @@ export const YandexSDK = {
             if (callbacks.onClose) callbacks.onClose(false);
             return;
         }
+        // События для DOM-слоя (D3/4.4): на время рекламы панель скрывается,
+        // после — восстанавливается; #ui-root пересчитывается по канвасу.
+        const emit = (event) => {
+            try {
+                if (typeof window !== 'undefined' && window.__GAME) window.__GAME.events.emit(event);
+            } catch (e) { /* события — не критичный путь */ }
+        };
         this.sdk.adv.showFullscreenAdv({ callbacks: {
-            onOpen: () => callbacks.onOpen && callbacks.onOpen(),
-            onClose: (wasShown) => callbacks.onClose && callbacks.onClose(wasShown),
-            onError: (err) => callbacks.onError && callbacks.onError(err)
+            onOpen: () => {
+                emit('yandex-ad-open');
+                if (callbacks.onOpen) callbacks.onOpen();
+            },
+            onClose: (wasShown) => {
+                emit('yandex-ad-close');
+                if (callbacks.onClose) callbacks.onClose(wasShown);
+            },
+            onError: (err) => {
+                emit('yandex-ad-close');
+                if (callbacks.onError) callbacks.onError(err);
+            }
         } });
     }
 };

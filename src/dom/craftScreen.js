@@ -14,7 +14,7 @@ import { fitIcons } from './iconFit.js';
 import { MSG, buyError, activateError } from '../state/craftMessages.js';
 import { buyItem, useItem, startCraft, claimCraft } from '../state.js';
 import { playSfx } from '../sfx.js';
-import { REG } from '../ui/theme.js';
+import { REG, EVENTS } from '../ui/theme.js';
 import './tokens.css';
 import './dom.css';
 
@@ -91,7 +91,7 @@ const artifactCard = (a) => card({
 });
 
 export function createDomCraft(scene) {
-    const { root } = ensureUiRoot(scene.game);
+    const { root, sync } = ensureUiRoot(scene.game);
     setHtml(root, structure());
 
     const backdrop = root.querySelector('[data-dom-backdrop]');
@@ -164,12 +164,33 @@ export function createDomCraft(scene) {
     };
 
     // D3: Phaser-оверлей верхнего приоритета не должен оказаться под DOM-панелью.
+    const hasOverlay = () => !!(scene._settingsOpen || scene._offlineOpen || scene._dailyOpen
+        || scene._mapOpen || scene._bossRewardOpen || scene._playerDownOpen);
+
     const hideForOverlays = () => {
         if (!isOpen()) return;
-        const overlay = scene._settingsOpen || scene._offlineOpen || scene._dailyOpen
-            || scene._mapOpen || scene._bossRewardOpen || scene._playerDownOpen;
-        if (overlay) close({ notify: false });
+        if (hasOverlay()) close({ notify: false });
     };
+
+    // 4.4: реклама/фуллскрин Яндекса — панель прячется, после выхода возвращается
+    // (если за это время не открылся Phaser-оверлей), #ui-root пересчитывается.
+    let adWasOpen = false;
+    const onAdOpen = () => {
+        adWasOpen = isOpen();
+        if (adWasOpen) close({ notify: false });
+    };
+    const onAdClose = () => {
+        sync();
+        if (!adWasOpen) return;
+        adWasOpen = false;
+        if (hasOverlay()) return;
+        panelEl.hidden = false;
+        backdrop.hidden = false;
+        scene._craftOpen = true;
+        forceRefresh();
+    };
+    scene.game.events.on(EVENTS.adOpen, onAdOpen);
+    scene.game.events.on(EVENTS.adClose, onAdClose);
 
     // Действия S1–S6: единственные точки записи — state.js; тексты — craftMessages.
     const onAction = (act, id) => {
@@ -244,6 +265,8 @@ export function createDomCraft(scene) {
         },
         destroy() {
             window.removeEventListener('keydown', onKey);
+            scene.game.events.off(EVENTS.adOpen, onAdOpen);
+            scene.game.events.off(EVENTS.adClose, onAdClose);
             close({ notify: false });
             panelEl.remove();
             backdrop.remove();

@@ -115,7 +115,10 @@ export const EVENTS = {
     bossDefeated: 'boss-defeated',
     playerDown: 'player-down',
     offlineApplied: 'offline-applied',
-    dailyClaimed: 'daily-claimed'
+    dailyClaimed: 'daily-claimed',
+    // Реклама/фуллскрин Яндекса: DOM-слой прячется на время и восстанавливается
+    adOpen: 'yandex-ad-open',
+    adClose: 'yandex-ad-close'
 };
 
 // ---------- Ключи scene.registry ----------
