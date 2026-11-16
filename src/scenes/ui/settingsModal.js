@@ -2,10 +2,10 @@ import Phaser from 'phaser';
 import {
     gameState, TIERS, getOfflineRate, getOfflineCapSeconds, canPrestige, getStarsGain, doPrestige, PRESTIGE_REQUIREMENT, getPrestigeMult, DIAMOND_INDEX, resetGame, saveGame, fmt
 } from '../../state.js';
-import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer } from '../../ui/uiKit.js';
+import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer, setHitWorldRect } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
 import { createPanel } from '../../ui/panel.js';
-import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
+import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE, TOUCH_MIN } from '../../ui/theme.js';
 import { playSfx } from '../../sfx.js';
 
 export const settingsModalMethods = {
@@ -117,6 +117,11 @@ export const settingsModalMethods = {
             fitMaxW: rbW - SPACE.lg * 2
         }));
         this.resetBtn.on('pointerdown', () => this.tryReset());
+        // Две кнопки подряд (центры 158 и 216, видимая высота 50/46 = 27-34 CSS px):
+        // зоны нажатия — полосы по TOUCH_MIN, граница — середина зазора между кнопками
+        const midY = (this.prestigeBtn.y + this.resetBtn.y) / 2;
+        setHitWorldRect(this.prestigeBtn, -pbW / 2, midY - TOUCH_MIN, pbW, TOUCH_MIN);
+        setHitWorldRect(this.resetBtn, -rbW / 2, midY, rbW, TOUCH_MIN);
 
         this.modal.add([panel, title, closeBtn, this.modalStats, this.soundBtn, this.soundText, this.musicBtn, this.musicText, this.volLabel, this.volG, this.volPct, volZone, presTitle, this.prestigeInfo, this.prestigeBtn, this.prestigeText, this.resetBtn, this.resetText]);
         this.prestigeArmed = false;

@@ -2,9 +2,9 @@ import Phaser from 'phaser';
 import {
     gameState, TIERS, getClickDamage, getOrePerSecond, getSynergyGain, getCritChance, getPrestigeMult, fmt
 } from '../../state.js';
-import { addImg, makeLabel, fitFontSize, setHitRect } from '../../ui/uiKit.js';
+import { addImg, makeLabel, fitFontSize, setHitRect, setHitWorld } from '../../ui/uiKit.js';
 import { addButton } from '../../ui/button.js';
-import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
+import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE, TOUCH_MIN } from '../../ui/theme.js';
 import { measureIcon } from '../../ui/iconMetrics.js';
 
 // Пол ужина строки статов в ландшафте (min fitFontSize; измерительная строка
@@ -216,6 +216,11 @@ export const hudMethods = {
         this.craftBtn.setPosition(h.craftBtn.x + h.craftBtn.w / 2, h.craftBtn.y + h.craftBtn.h / 2);
         this.craftBtn.setDisplaySize(h.craftBtn.w, h.craftBtn.h);
         this.craftLbl.setPosition(h.craftBtn.x + h.craftBtn.w / 2, h.craftBtn.y + h.craftBtn.h / 2);
+        // Зона нажатия кнопок шапки не ниже TOUCH_MIN по высоте: картинки 48-60px
+        // дают 26-33 CSS px на телефоне (картинка не меняется)
+        for (const btn of [this.settingsBtn, this.mapBtn, this.craftBtn]) {
+            setHitWorld(btn, btn.displayWidth, Math.max(btn.displayHeight, TOUCH_MIN));
+        }
         if (L.portrait) {
             // Док: крупные кнопки (150/306 x 92), кегль от масштаба с читаемым минимумом
             this.mapLbl.setFontSize(Phaser.Math.Clamp(Math.round(FONT_SIZE.label * s), 16, 26));

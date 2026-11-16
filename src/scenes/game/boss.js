@@ -3,9 +3,9 @@ import {
 } from '../../state.js';
 import { computeLayout } from '../../layout.js';
 import { playSfx } from '../../sfx.js';
-import { makeLabel, setHitRect, fitFontSize } from '../../ui/uiKit.js';
+import { makeLabel, setHitWorld, fitFontSize } from '../../ui/uiKit.js';
 import { floatText, showHitFeedback } from './effects.js';
-import { TEXT, TEX, HIT, EVENTS, REG } from '../../ui/theme.js';
+import { TEXT, TEX, EVENTS, REG, TOUCH_MIN } from '../../ui/theme.js';
 import { GAME_DEPTH, BOSS_ITEM_BUFF_FIELD } from './constants.js';
 import {
     BOSS_UI, BOSS_BAR, PLAYER_TEXT_COLOR, BOSS_HP_STROKE, BOSS_SPRITE_PULSE, bossFontSize, bossHealthColor,
@@ -17,6 +17,13 @@ import {
 function buffSecondsLeft(itemId) {
     const until = gameState[BOSS_ITEM_BUFF_FIELD[itemId]] || 0;
     return Math.max(0, Math.ceil((until - Date.now()) / SECOND_MS));
+}
+
+// Слот предмета в бою: зона нажатия не ниже TOUCH_MIN по высоте (кнопка 44-60px
+// даёт 24-33 CSS px на телефоне); ширина — как у картинки; вызывать после
+// каждой смены размера кнопки
+function touchHit(btn) {
+    setHitWorld(btn, btn.displayWidth, Math.max(btn.displayHeight, TOUCH_MIN));
 }
 
 export const bossMethods = {
@@ -97,7 +104,7 @@ export const bossMethods = {
             const cx = bx + (i - (usable.length - 1) / 2) * slot.step;
             const slotY = by + slot.dy;
             const btn = this.add.image(cx, slotY, TEX.button).setDisplaySize(slot.activeW, slot.h);
-            setHitRect(btn, ...HIT.button);
+            touchHit(btn);
             const icon = this.add.image(cx + slot.iconDx, slotY, it.id).setDisplaySize(slot.iconSize, slot.iconSize);
             const cnt = makeLabel(this, cx + slot.cntDx, slotY, '', bossFontSize(slot.cnt, ps), TEXT.white).setOrigin(0.5);
             const buyLbl = makeLabel(this, cx, slotY, '', bossFontSize(slot.buy, ps), TEXT.white).setOrigin(0.5);
@@ -247,6 +254,7 @@ export const bossMethods = {
                 if (slot._key === key) continue;
                 slot._key = key;
                 slot.btn.setDisplaySize(spec.emptyW, spec.h).setTexture(affordable ? TEX.button : TEX.buttonDisabled).setAlpha(1);
+                touchHit(slot.btn);
                 slot.icon.setVisible(false);
                 slot.cnt.setVisible(false);
                 slot.buyLbl.setVisible(true).setText(`Купить ${fmt(price)}`);
@@ -258,6 +266,7 @@ export const bossMethods = {
     // Слот с активным бафом или запасом: иконка + подпись (таймер либо «xN»)
     showFilledSlot(slot, spec, caption) {
         slot.btn.setDisplaySize(spec.activeW, spec.h).setTexture(TEX.button).setAlpha(1);
+        touchHit(slot.btn);
         slot.icon.setVisible(true).setPosition(slot.btn.x + spec.iconDx, slot.btn.y).setDisplaySize(spec.iconSize, spec.iconSize);
         slot.cnt.setVisible(true).setText(caption);
         slot.buyLbl.setVisible(false);

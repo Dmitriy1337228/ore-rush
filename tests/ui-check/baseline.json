@@ -49,15 +49,11 @@
       "MIN-FONT|GameScene|\"ты: #M / #M · удар босса #\"": 1,
       "MIN-FONT|GameScene|\"#K / #K\"": 1,
       "MIN-FONT|GameScene|\"#:#\"": 1,
-      "TOUCH-TARGET|GameScene|[buy_button_normal]": 2,
       "MIN-FONT|GameScene|\"x#\"": 2,
-      "TOUCH-TARGET|GameScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|GameScene|\"Купить #B\"": 1,
       "MIN-FONT|GameScene|\"урон боссу x# на # сек · у\"": 1,
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"клик: #M · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Настройки\"": 1,
       "MIN-FONT|UIScene|\"Карта\"": 1,
@@ -76,8 +72,6 @@
     "l844|boss-reward": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"клик: #M · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -98,8 +92,6 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -127,8 +119,6 @@
     "l844|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -145,8 +135,6 @@
     "l844|deep": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"клик: #M · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -163,8 +151,6 @@
     "l844|fresh": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -182,8 +168,6 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -201,8 +185,6 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -220,8 +202,6 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -239,8 +219,6 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -257,8 +235,6 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -275,8 +251,6 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -299,8 +273,6 @@
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "MIN-FONT|UIScene|\"клик: #e# · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -322,8 +294,6 @@
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "MIN-FONT|UIScene|\"клик: #e# · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -339,8 +309,6 @@
     "l844|tutorial": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -358,8 +326,6 @@
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -374,75 +340,61 @@
       "MIN-FONT|UIScene|\"Отлично!\"": 1
     },
     "p360|boss": {
-      "TOUCH-TARGET|GameScene|[buy_button_normal]": 2,
       "MIN-FONT|GameScene|\"x#\"": 2,
-      "TOUCH-TARGET|GameScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|GameScene|\"Купить #B\"": 1,
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
-      "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1
     },
     "p360|boss-reward": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1
     },
     "p360|craft": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"#\"": 5,
       "MIN-FONT|UIScene|\"Активировать\"": 4,
       "MIN-FONT|UIScene|\"Купить #K\"": 4
     },
     "p360|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p360|deep": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
-      "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1
     },
     "p360|fresh": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p360|map": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p360|mid": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p360|mid-scrolled": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p360|offline": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p360|player-down": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p360|settings": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3,
       "MIN-FONT|UIScene|\"Звук: вкл\"": 1,
       "MIN-FONT|UIScene|\"Музыка: вкл\"": 1,
       "MIN-FONT|UIScene|\"Громкость:\"": 1,
@@ -454,195 +406,152 @@
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "MIN-FONT|UIScene|\"+#e#/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
       "MIN-FONT|UIScene|\"Звук: вкл\"": 1,
       "MIN-FONT|UIScene|\"Музыка: вкл\"": 1,
       "MIN-FONT|UIScene|\"Громкость:\"": 1,
       "MIN-FONT|UIScene|\"#%\"": 1,
       "MIN-FONT|UIScene|\"За текущий забег: +# ★\nСбр\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1,
       "MIN-FONT|UIScene|\"Сбросить весь прогресс\"": 1
     },
     "p360|stress": {
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "MIN-FONT|UIScene|\"+#e#/сек\"": 1,
-      "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1
     },
     "p360|tutorial": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p360|unlock-ready": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p390|boss": {
-      "TOUCH-TARGET|GameScene|[buy_button_normal]": 2,
       "MIN-FONT|GameScene|\"x#\"": 2,
-      "TOUCH-TARGET|GameScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|GameScene|\"Купить #B\"": 1,
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
-      "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1
     },
     "p390|boss-reward": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1
     },
     "p390|craft": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"#\"": 5,
       "MIN-FONT|UIScene|\"Активировать\"": 5,
       "MIN-FONT|UIScene|\"Купить #K\"": 5
     },
     "p390|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p390|deep": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
-      "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик #M · крит #%\"": 1
     },
     "p390|fresh": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p390|map": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p390|mid": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p390|mid-scrolled": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p390|offline": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p390|player-down": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p390|settings": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p390|settings-stress": {
       "MIN-FONT|UIScene|\"алмаз\"": 1,
-      "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1
     },
     "p390|stress": {
       "MIN-FONT|UIScene|\"алмаз\"": 1,
-      "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1
     },
     "p390|tutorial": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p390|unlock-ready": {
       "MIN-FONT|UIScene|\"медь\"": 1,
-      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"клик # · крит #%\"": 1
     },
     "p412|boss": {
-      "TOUCH-TARGET|GameScene|[buy_button_normal]": 2,
-      "TOUCH-TARGET|GameScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|GameScene|\"Купить #B\"": 1,
       "MIN-FONT|UIScene|\"изумруд\"": 1,
-      "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"+#B руды/сек\"": 1
     },
     "p412|boss-reward": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
       "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"пассивная добыча x#\"": 1
     },
     "p412|craft": {
-      "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"медь\"": 1
     },
     "p412|daily": {
-      "MIN-FONT|UIScene|\"уголь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"уголь\"": 1
     },
     "p412|deep": {
       "MIN-FONT|UIScene|\"изумруд\"": 1,
-      "MIN-FONT|UIScene|\"+#B руды/сек\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"+#B руды/сек\"": 1
     },
     "p412|fresh": {
-      "MIN-FONT|UIScene|\"уголь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"уголь\"": 1
     },
     "p412|map": {
-      "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"медь\"": 1
     },
     "p412|mid": {
-      "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"медь\"": 1
     },
     "p412|mid-scrolled": {
-      "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"медь\"": 1
     },
     "p412|offline": {
-      "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"медь\"": 1
     },
     "p412|player-down": {
-      "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"медь\"": 1
     },
     "p412|settings": {
-      "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3
+      "MIN-FONT|UIScene|\"медь\"": 1
     },
     "p412|settings-stress": {
-      "MIN-FONT|UIScene|\"алмаз\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
+      "MIN-FONT|UIScene|\"алмаз\"": 1
     },
     "p412|stress": {
-      "MIN-FONT|UIScene|\"алмаз\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"алмаз\"": 1
     },
     "p412|tutorial": {
-      "MIN-FONT|UIScene|\"уголь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"уголь\"": 1
     },
     "p412|unlock-ready": {
-      "MIN-FONT|UIScene|\"медь\"": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
+      "MIN-FONT|UIScene|\"медь\"": 1
     }
   },
-  "updatedAt": "2026-11-16T15:08:24.885Z"
+  "updatedAt": "2026-11-16T15:32:44.352Z"
 }
