@@ -47,6 +47,14 @@
 - Фикстуры и стенды (`fixtures*.js`, `lab.js`, `scripts/stands/build-dom-*.mjs`) — не прод-код; для проверки на телефоне без сети: `shots/pilot-gates/dom-craft-phone.html` / `dom-lab.html`.
 - Фаза 2 (перенос других форм на DOM) — только отдельным документом с таймбоксом; HUD/бой/босс/шахта остаются в Phaser.
 
+## Структура `src/` (куда класть новое)
+- Новая механика — `src/game/*` (сцены/подсистемы) + правила и запись состояния в `src/state.js`; `src/state/` — только чистые подсистемы.
+- Новый экран/форма на DOM — `src/ui/dom/`; новый HUD/оверлей на Phaser — `src/ui/phaser/`.
+- Общее для обоих стеков и **без** импортов Phaser/DOM — `src/ui/shared/` (`theme.js`, `iconMetrics.js`, `listGeometry.js`).
+- `src/ui/UIScene.js` — хост слоёв (может тянуть и `phaser/`, и `dom/` динамически); `src/main.js` — точка входа.
+- Второго `ui` вне `src/ui` быть не должно: `src/scenes/ui` и `src/scenes/game` запрещены (`src/scenes/` — только `BootScene.js`).
+- Гард слоёв — `npm run layers:check`: `ui/dom` не импортирует Phaser, `ui/phaser` — DOM, `ui/shared` — ни то, ни другое, `game` — не импортирует DOM; dev-фикстуры `src/ui/dom/dev/` не тянутся прод-кодом.
+
 ## Скрипты `scripts/` (индекс и алиасы — обязательное правило)
 - Каждый скрипт запускается по **npm-алиасу** (`verify:boss`, `metrics:p95`, …), а не по пути: индекс — `scripts/README.md`, гард — `npm run scripts:check` (алиас + строка в README + файл существует).
 - Новый скрипт — сразу в целевую папку (`gates|verify|metrics|stands|audio|data`), с алиасом в `package.json` и строкой в `scripts/README.md`; `scripts/lib/` — библиотеки без алиасов, `scripts/archive/` — снятые с эксплуатации (вне гардов).

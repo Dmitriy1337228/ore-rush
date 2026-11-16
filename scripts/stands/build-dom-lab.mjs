@@ -32,7 +32,7 @@ const domCss = fs
 const fontBase64 = fs.readFileSync(path.join(ROOT, 'assets/fonts/Monocraft.ttf')).toString('base64');
 const body = String(markup()).replace(/src="assets\/ui\/([^"]+)"/g, (m, name) => `src="${dataUri(name)}"`);
 
-// Центровка иконок по alpha-bbox: тот же код, что в src/dom/iconFit.js (единый источник),
+// Центровка иконок по alpha-bbox: тот же код, что в src/ui/dom/iconFit.js (единый источник),
 // с вырезанным export — стенд не использует модули.
 const iconFitSource = fs.readFileSync(path.join(ROOT, 'src/ui/dom/iconFit.js'), 'utf8').replace(/\bexport\s+/g, '');
 

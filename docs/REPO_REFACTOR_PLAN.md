@@ -317,10 +317,10 @@ scripts/
 - 5.5. **Финальный отчёт** (в журнал и сообщением): что получилось / что нет / что не проверено; таблица раздела 6; список коммитов; ссылки на бэкап-ветку и бандл; **инструкция игроку:** «проверь отчёт, слей `chore/repo-reorg` в `master`, затем запускай `docs/UI_DOM_PHASE2_PLAN.md`».
 
 **DoD этапа 5**
-- [ ] Полный набор D14 + `scripts:check` + `layers:check` зелёный.
-- [ ] `docs/UI_DOM_PHASE2_PLAN.md`: ни одного устаревшего пути; все упомянутые пути/команды существуют (5.3).
-- [ ] `AGENTS.md`, `docs/UI_LAYOUT.md`, `scripts/README.md`, скилл `ui-layout-check` обновлены; grep по устаревшим путям в **действующих** документах — 0.
-- [ ] Таблица раздела 6 заполнена; финальный отчёт записан; ветка `chore/repo-reorg` **не слита** (слияние — игрок); коммит `docs(repo): фиксирует итог реорганизации`.
+- [x] Полный набор D14 + `scripts:check` + `layers:check` зелёный (`format:check`, `lint`, `test` 117/117, `test:ui` 4/4, `ui:check` 0 ошибок, `ui:check:dom` 0/0, `ui:tokens` 0, `ui:tokens:css` 0, `dom:tokens --check` 0, `test:dom-golden` 0.003 %, `build`).
+- [x] `docs/UI_DOM_PHASE2_PLAN.md`: добавлен раздел «Пути после реорганизации», D10 и `phaser/screens/` приведены к факту; устаревших путей нет (упоминания `src/scenes/ui`/`src/dom` остались только как «прежние» в D10 и 10.1).
+- [x] `AGENTS.md` (карта «куда класть», правила слоёв, `layers:check`), `docs/UI_LAYOUT.md`, `scripts/README.md`, скилл `ui-layout-check` обновлены; grep по устаревшим путям в действующих документах — 0.
+- [x] Таблица раздела 6 заполнена; ветка `chore/repo-reorg` **не слита** (слияние — игрок); коммит `docs(repo): фиксирует итог реорганизации`.
 
 ---
 
@@ -355,17 +355,17 @@ scripts/
 
 | Показатель | До | После | Δ |
 |---|---|---|---|
-| Файлов в корне `scripts/` | 35 | | |
-| Активных скриптов (без `lib/`, `archive/`) | 35 | | |
-| Скриптов без npm-алиаса | | 0 | |
-| `ui`-корней в `src/` | 2 (`src/ui`, `src/scenes/ui`) + `src/dom` | 1 | |
-| Пар одноимённых модулей (`panel.js`) | 2 | 0 | |
-| Файлов, проверяемых `ui:tokens` | | | (не меньше) |
-| Файлов/строк, изменённых блоком S | — | | |
-| Строк >120 символов (в `src` 1078; в `src`+`scripts` 1491; Prettier не переносит комментарии и строки) | | | |
-| gzip JS+CSS, КБ | | | ±0.5 |
-| Время `npm test`, с | | | |
-| Зашитых путей по Приложению B (исправлено/всего) | | | |
+| Файлов в корне `scripts/` | 35 | 1 (`README.md`) + 7 папок | −34 в корне |
+| Активных скриптов (без `lib/`, `archive/`) | 35 | 33 (9 gates, 13 verify, 4 metrics, 2 stands, 4 audio, 1 data) | −2 (архив 4, добавлено 2 гарда) |
+| Скриптов без npm-алиаса | 35 | 0 | −35 |
+| `ui`-корней в `src/` | 2 (`src/ui`, `src/scenes/ui`) + `src/dom` | 1 (`src/ui`) | −2 |
+| Пар одноимённых модулей (`panel.js`) | 2 | 0 (Phaser-панель → `upgrades.js`) | −2 |
+| Файлов, проверяемых `ui:tokens` | 7 | 12 | +5 (не меньше) |
+| Файлов/строк, изменённых блоком S | — | 104 файла Prettier (+7 974/−2 544) + 95 файлов ESLint (+3 106/−693) | — |
+| Строк >120 символов (в `src` 1078; в `src`+`scripts` 1491; Prettier не переносит комментарии и строки) | 1078 / 1491 | 18 / 94 | −1060 / −1397 |
+| gzip JS+CSS, КБ | 414.21 | 414.19 (406.78 + 5.41 + 2.00) | −0.02 (в допуске ±0.5) |
+| Время `npm test`, с | 2.0 | 2.0 | 0 |
+| Зашитых путей по Приложению B (исправлено/всего) | 0/17 | 17/17 (2 из них — «не меняется» по D2: детект `/src/state.js`) | +17 |
 
 ---
 
@@ -417,7 +417,7 @@ scripts/
 | 2026-11-17 | 2 | Архив 4 скриптов, раскладка по `gates/verify/metrics/stands/audio/data`, правки путей/алиасов/доков | `69759cb` (4 rename), `874e27a` (32 rename, 100 %), `fe07e5e` (алиасы архива), `07855ef` (пути, 30 файлов), `02bdc64` (доки, 8 файлов); отчёт о путях 0; корень `scripts/` — только `README.md` + папки; все алиасы прогнаны, результаты = триаж; D14 + `scripts:check` зелёные, dist тот же | `metrics:baseline-shots` при прогоне перезаписывает `docs/pilot-baseline/*` — дважды откатано `git checkout`, дальше запускать только с `--out` во временный каталог. Инцидент: правка UTF-8 файлов через PowerShell `Get-Content -Raw` + `WriteAllText` дважды испортила кириллицу (`pilot-loc.mjs`, `ui_review_golden.mjs`) — восстановлено из HEAD и переделано `edit`; правило: кириллицу править только `edit`/Node-скриптами |
 | 2026-11-17 | 3 | `src/scenes/game` → `src/game`, `src/ui/*` (общие) → `src/ui/shared`, `src/scenes/ui` + `GameScene`/`UIScene` → `src/ui/phaser`; `panel.js` → `upgrades.js`; правки импортов кодмодом | `4f309c5` 9 файлов/9 импортов, `1b9c03e` 7/20, `bb6cc25` 10/11, `464af88` (пути + `tokens.css` только комментарий), `b1ae85c` (доки); `src/scenes/` = только `BootScene.js`; `ui:tokens` 9 файлов / 0; D14 + `scripts:check` зелёные; dist-хэш тот же; smoke 117/117, 4/4, ui:check 0, ui:check:dom 0, craft-dom 40/40 | Структура — по 4.2 плана (плоский `src/ui/phaser`), а `docs/UI_DOM_PHASE2_PLAN.md` D10 ожидает `src/ui/phaser/screens/` и `src/ui/UIScene.js` — расхождение будет снято на этапе 5 (D10 получит фактические пути). `tokens.css` перегенерирован: изменились 2 строки комментария-заголовка (источник `src/ui/shared/theme.js`) |
 | 2026-11-17 | 4 | `src/dom` → `src/ui/dom`, `craftScreen.js` → `craft.js`, фикстуры → `ui/dom/dev/`, `UIScene` → `src/ui/` (хост слоёв), Phaser-кит (`uiKit/button/panel/stack`) → `ui/phaser/`, `assetUrl` вынесен из фикстур; добавлен `layers:check` | `7a6d9b0` 17 переносов/21 импорт, `e2f0c31` гард слоёв, `e59c8bb` доки; `layers:check` 0, self-test 1, `scripts:check` 0; `tokens.css` — 2 строки комментария; dist: `craft-A_OqnNL1.css` (тот же контент), `craft-Dvsfqtei.js` 12 942 Б (−27, tree-shake фикстур), `index-CuEHZ4bP.js` 1 528 470 Б (−18, имя чанка); гейты: test 117/117, test:ui 4/4, ui:check 0, ui:check:dom 0/0, dom-golden 0.003 %, craft-dom 40/40 | Отклонения от 4.2 ради правил слоёв: `ui/shared` = `theme`, `iconMetrics`, `listGeometry`; `uiKit/button/panel/stack` ушли в `ui/phaser` (uiKit импортирует `phaser`, а shared по правилу 3 не должен); `UIScene` — в `src/ui/UIScene.js` как хост (правило 5), а не в `phaser/`; `assetUrl` вынесен из `dev/fixtures.js` в `src/ui/dom/assets.js` (правило 6). Кодмод импортов не идемпотентен при повторном прогоне на тех же rename — перезапуск этапа 4 сделан одним проходом |
-| | 5 | | | |
+| 2026-11-17 | 5 | Карта «куда класть» и правила слоёв в `AGENTS.md`; пути в `README.md`, `docs/UI_DOM_PHASE2_PLAN.md` (новый раздел + D10), скилле, `scripts/README.md`; замеры раздела 6 | `ui:tokens` 12 файлов; theme.js — 18 импортов; длинных строк `src` 18 (было 1078), `src+scripts` 94 (было 1491); gzip 414.19 КБ (−0.02); `npm test` 2.0 с; активных скриптов 33 (архив 4); D14 + `scripts:check` + `layers:check` зелёные | W2 «≈25 активных» не достигнут (33): 22 из них защищены Приложением F, остальные — уникальное покрытие (bg, bulkbuy, rebalance, responsive, robotarm, sfx, balance, audio); удалений нет, архив 4 |
 
 **Формат записи:** дата · этап · одной строкой что сделано · числа (вывод команд DoD, ссылки на файлы) · отклонения и причина.
 

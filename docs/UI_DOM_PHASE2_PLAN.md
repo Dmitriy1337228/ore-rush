@@ -5,7 +5,7 @@
 > ## ⚠ Режим исполнения (обязательно к прочтению)
 >
 > 1. **План неделим.** Выполняется **целиком, за один непрерывный проход**: от предстартовой проверки до финального отчёта (этап 4). Остановок, пауз «ждать игрока», промежуточных приёмок и вопросов в ходе работы **нет**. Бывшие остановки P1, P2, P3 и гейт GA заменены автоматическими правилами (раздел 0.0, п. 4; раздел 5; раздел 10.4).
-> 2. **Предусловие старта (проверяется один раз, до начала работы):** `docs/REPO_REFACTOR_PLAN.md` **выполнен полностью** и ветка `chore/repo-reorg` **слита игроком в `master`**: в `master` существуют `src/ui/dom/`, `src/ui/phaser/screens/`, `src/ui/shared/`, `scripts/gates/`, `scripts/README.md`, `.git-blame-ignore-revs`; зелёные `npm run format:check`, `npm run lint`, `npm run scripts:check`, `npm run layers:check`. Если нет — план **не начинается**, игроку задаётся один вопрос сразу («сначала выполните `REPO_REFACTOR_PLAN`»).
+> 2. **Предусловие старта (проверяется один раз, до начала работы):** `docs/REPO_REFACTOR_PLAN.md` **выполнен полностью** и ветка `chore/repo-reorg` **слита игроком в `master`**: в `master` существуют `src/ui/dom/`, `src/ui/phaser/`, `src/ui/shared/`, `scripts/gates/`, `scripts/README.md`, `.git-blame-ignore-revs`; зелёные `npm run format:check`, `npm run lint`, `npm run scripts:check`, `npm run layers:check`. Если нет — план **не начинается**, игроку задаётся один вопрос сразу («сначала выполните `REPO_REFACTOR_PLAN`»).
 > 3. **Участие игрока — только до старта и после финала:** после финального отчёта игрок проверяет результат (в т.ч. на телефоне) и сливает ветку `phase2/dom-forms` в `master`.
 > 4. **Сбой = аварийное завершение, а не пауза:** общие гейты/инфраструктура красные и не исправлены за 2 попытки → откат этапа `git revert`, финальный отчёт «план не выполнен», ветка не сливается. Провал формы (R-критерий) — не сбой: форма откатывается флагом на Phaser-путь автоматически, план продолжается (раздел 10.4).
 > 5. **Вне плана:** M3, карта, HUD; **удаление Phaser-путей** — последующая задача после релиза (раздел 8) — отдельный неделимый план по запросу.
@@ -28,7 +28,27 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 | 7 | Сценарии M2: 4 формы | Добавлены сценарии **очереди модалок** (логика очереди — поведенческая, не «одна вёрстка») |
 | 8 | Карта «только с обоснованием» | Карта и HUD — **вне плана**; HUD-спайк — отдельное решение |
 | 9 | Остановки P1/P2/P3 и «решение игрока» на GA и G-итог | **Неделимый план:** GA — формула (раздел 5), G-итог — таблица правил (10.4), провал формы — автооткат флагом; подтверждение игроком — после финального отчёта и не блокирует |
-| 10 | Прежние пути `src/dom/`, `src/scenes/ui/`, `scripts/*.mjs` | Пути — **после** `docs/REPO_REFACTOR_PLAN.md`: `src/ui/dom/`, `src/ui/phaser/screens/`, `src/ui/shared/`, `src/ui/UIScene.js`, `scripts/gates|verify|metrics|stands/`. `fixcount` считает историю с учётом переименований (`--follow`) |
+| 10 | Прежние пути `src/dom/`, `src/scenes/ui/`, `scripts/*.mjs` | Пути — **после** `docs/REPO_REFACTOR_PLAN.md` (факт — раздел «Пути после реорганизации»): `src/ui/dom/`, `src/ui/phaser/`, `src/ui/shared/`, `src/ui/UIScene.js`, `scripts/gates/`, `scripts/verify/`, `scripts/metrics/`, `scripts/stands/`, `scripts/audio/`, `scripts/data/`. `fixcount` считает историю с учётом переименований (`--follow`) |
+
+---
+
+## Пути после реорганизации (факт, 2026-11-17)
+
+`docs/REPO_REFACTOR_PLAN.md` выполнен; ниже — реальные пути, на которые опирается фаза 2.
+
+| Что | Путь |
+|---|---|
+| DOM-слой (мастерская) | `src/ui/dom/` (`craft.js`, `bridge.js`, `components.js`, `html.js`, `root.js`, `iconFit.js`, `assets.js`, `dom.css`, `tokens.css`) |
+| Dev-фикстуры и стенды DOM | `src/ui/dom/dev/` (`fixtures.js`, `fixtureMarkup.js`, `fixtureApp.js`, `lab.js`) — прод-код их не импортирует (`npm run layers:check`) |
+| Phaser-слой (HUD, модалки, экраны, кит) | `src/ui/phaser/` (`hud.js`, `gear.js`, `layout.js`, `mapScreen.js`, `settingsModal.js`, `statusModals.js`, `tutorial.js`, `upgrades.js`, `uiKit.js`, `button.js`, `panel.js`, `stack.js`, `GameScene.js`) |
+| Общее для стеков (без Phaser/DOM) | `src/ui/shared/` (`theme.js`, `iconMetrics.js`, `listGeometry.js`) |
+| Хост слоёв | `src/ui/UIScene.js` (динамически грузит `dom/craft.js`); точка входа — `src/main.js` |
+| Игровая логика | `src/game/*` + `src/state.js`/`src/state/*` |
+| Скрипты | `scripts/gates/`, `scripts/verify/`, `scripts/metrics/`, `scripts/stands/`, `scripts/audio/`, `scripts/data/`; библиотеки — `scripts/lib/`, снятые — `scripts/archive/`; запуск только по npm-алиасу (`scripts/README.md`, гард `npm run scripts:check`) |
+| Токены | генератор `scripts/gates/gen-dom-tokens.mjs` → `src/ui/dom/tokens.css` из `src/ui/shared/theme.js` |
+
+Путь смены флагов и матрица состояний (`scripts/lib/ui-matrix.mjs`) не менялись. Пути
+`statusModals.js` и других форм для `fixcount` — в `src/ui/phaser/`.
 
 ---
 
@@ -59,7 +79,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 | **GA** | Гейт между M1 и M2 (пересчёт метрик, решение по M2) |
 | **G-итог** | Итоговое решение по фазе (этап 4): **вычисляется по правилам 10.4**, без остановки |
 | **Форма** | Один экран-модалка: `settings` (настройки) или `status` (пакет из 4 модалок: offline, daily, boss-reward, player-down) |
-| **Phaser-путь** | Старая реализация формы в `src/ui/phaser/screens/*`; на время фазы остаётся под флагом-откатом |
+| **Phaser-путь** | Старая реализация формы в `src/ui/phaser/*`; на время фазы остаётся под флагом-откатом |
 | **DOM-путь** | Новая реализация в `src/ui/dom/*`, включена по умолчанию |
 | **Флаг-откат** | `?phaserForms=settings,status` (или `localStorage.phaserForms`) — возвращает перечисленные формы на Phaser-путь |
 
@@ -103,7 +123,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 - 0.1. `git status` — чисто; ветка `master` содержит результат `REPO_REFACTOR_PLAN` (предусловие). `git switch master && git switch -c phase2/dom-forms`.
 - 0.2. Прогнать и сохранить вывод: `npm test`, `npm run test:ui`, `npm run ui:tokens`, `npm run ui:tokens:css`, `npm run dom:tokens -- --check`, `npm run ui:check`, `npm run ui:check:dom`, `npm run format:check`, `npm run lint`, `npm run scripts:check`, `npm run layers:check`, `node scripts/verify/verify-craft-dom.mjs`. Всё зелёное; иначе — «внешний долг», не чинить, записать в журнал.
 - 0.3. **Baseline форм** → `docs/UI_DOM_PHASE2_BASELINE.md`:
-  - строки: `src/ui/phaser/screens/settings.js`, `statusModals.js` (baseline снимается заново на отформатированном коде; прежние числа 322 и 301 не использовать), плюс специфичные скрипты проверок форм (`verify-daily.mjs`, части `verify-boss.cjs`, `verify-offline.cjs`) — списком с числами; метрика — `scripts/metrics/pilot-loc.mjs` по явному списку файлов формы;
+  - строки: `src/ui/phaser/settingsModal.js`, `statusModals.js` (baseline снимается заново на отформатированном коде; прежние числа 322 и 301 не использовать), плюс специфичные скрипты проверок форм (`verify-daily.mjs`, части `verify-boss.cjs`, `verify-offline.cjs`) — списком с числами; метрика — `scripts/metrics/pilot-loc.mjs` по явному списку файлов формы;
   - нарушения: из `tests/ui-check/baseline.json` и отчёта `ui:check` — таблица «состояние × вьюпорт × нарушения» для `settings`, `settings-stress`, `daily`, `offline`, `player-down`, `boss-reward`; итоговая сумма по форме;
   - скриншоты Phaser-эталонов по 6 вьюпортам (360×640, 390×844, 412×915, 768×1024, 844×390, 1280×720) для `settings`, `daily`, `offline`, `boss-reward`, `player-down` → `docs/pilot-baseline/phase2/<состояние>-<вьюпорт>.png` (скриптом на базе `scripts/metrics/pilot-baseline-shots.mjs`);
   - вес бандла: `npm run build`, gzip всех `dist/assets/*.js` и `*.css`;
@@ -111,7 +131,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 - 0.4. **Пересчёт `fix`-счётчиков по новому правилу** (скрипт `scripts/metrics/phase2-fixcount.mjs`):
   - период — 90 дней (`git log --since=90.days`); коммит считается `fix`, если тема начинается с `fix(` (Conventional Commits);
   - история файла считается **с учётом переименований** (`git log --follow -- <файл>`; прежние имена: `settingsModal.js` → `screens/settings.js`, `mapScreen.js` → `screens/map.js`, `panel.js` → `screens/upgradesList.js`), иначе после реорганизации счётчики обнулятся;
-  - **массовым** считается коммит, затрагивающий ≥ 6 файлов в UI-каталогах — прежних (`src/ui/phaser/screens/`, `src/ui/`, `src/ui/dom/`) и новых (`src/ui/phaser/`, `src/ui/shared/`, `src/ui/dom/`); массовые исключаются из счёта всех форм. Коммиты реорганизации и стиля (`style(repo)`, `refactor(ui|game)`, `chore(repo)`) — массовые по определению и не `fix`. Справочно проверить отсев `b2ffc68`, `25b07b1`, `3c79031`, `f987eef`, `0ba871d` (хэши сверить с текущей историей — она переписывалась);
+  - **массовым** считается коммит, затрагивающий ≥ 6 файлов в UI-каталогах — прежних (`src/ui/phaser/`, `src/ui/`, `src/ui/dom/`) и новых (`src/ui/phaser/`, `src/ui/shared/`, `src/ui/dom/`); массовые исключаются из счёта всех форм. Коммиты реорганизации и стиля (`style(repo)`, `refactor(ui|game)`, `chore(repo)`) — массовые по определению и не `fix`. Справочно проверить отсев `b2ffc68`, `25b07b1`, `3c79031`, `f987eef`, `0ba871d` (хэши сверить с текущей историей — она переписывалась);
   - вывод: таблица «файл — все коммиты — массовые — **чистые коммиты** — **чистые `fix`**» для `settings.js` (был `settingsModal.js`), `statusModals.js`, `upgradesList.js` (был `panel.js`), `map.js` (был `mapScreen.js`), `gear.js`, `hud.js`, `tutorial.js`;
   - результат записать в baseline-файл (раздел «Пересчёт») и в журнал; **это числа для гейта GA**, не для старта этапа 1.
 - 0.5. Записать в baseline-файл метод p95/LOC/нарушений (чтобы замеры этапа 4 были теми же скриптами).
@@ -157,7 +177,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 
 ## 4. Этап 2 — M1: Настройки (1–1.5 дня)
 
-Эталон поведения — `src/ui/phaser/screens/settings.js` и текущие состояния `settings`, `settings-stress`.
+Эталон поведения — `src/ui/phaser/settingsModal.js` и текущие состояния `settings`, `settings-stress`.
 
 ### 4.1. Шаги
 - 2.1. **Функции state** (D2): новый модуль `src/state/settings.js`, реэкспорт из `src/state.js`: `setSoundOn(on)`, `setMusicOn(on)`, `setMusicVolume(v)` (clamp 0..1). Сохранение — как в Phaser: после тумблеров `saveGame()` сразу, после слайдера — по окончании жеста (`commitSettings()` = `saveGame()`). Тесты: `tests/characterization/state_settings.test.mjs` (границы громкости, 0 сохраняется как 0, тумблеры).
@@ -229,7 +249,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 
 ## 6. Этап 3 — M2: Статус-модалки (1–1.5 дня)
 
-Эталон — `src/ui/phaser/screens/statusModals.js`: `offline` («С возвращением!»), `daily` («Ежедневная награда»), `boss-reward` («Босс повержен!»), `player-down` («Ты вырубился!»). Очередь модалок остаётся **в `UIScene`** (`tryShowDailyModal`, флаги), DOM только рисует.
+Эталон — `src/ui/phaser/statusModals.js`: `offline` («С возвращением!»), `daily` («Ежедневная награда»), `boss-reward` («Босс повержен!»), `player-down` («Ты вырубился!»). Очередь модалок остаётся **в `UIScene`** (`tryShowDailyModal`, флаги), DOM только рисует.
 
 ### 6.1. Шаги
 - 3.1. **Тексты** `src/state/statusMessages.js`: `offlineBody(info, ctx)`, `dailyStreak(streak)` (склонение день/дня/дней), `dailyDesc(reward, info)` (конкретика: «+N руды» / «улучшение: …»), `bossRewardSpeed(reward)` («Время: m:ss · бонус xN»), `playerDownBody(info)`, подписи кнопок («Забрать», «Отлично!», «В шахту»). Тесты `tests/characterization/status_messages.test.mjs`. Phaser-путь переключается на этот модуль.
@@ -302,7 +322,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 Выполняется **отдельным неделимым планом по запросу игрока** и **не раньше одного релиза** после слияния ветки этого плана: «релиз» = деплой в прод, подтверждённый игроком, **и** подтверждение, что откатов не было. Релиз — внешнее событие, поэтому удаление не может быть частью неделимого плана. До этого флаг-откат остаётся. Ниже — заготовка состава работ (нумерация 5.x сохранена для ссылок).
 
 ### Шаги
-- 5.1. Удалить Phaser-пути: код форм в `src/ui/phaser/screens/settings.js` и `statusModals.js` (остаются только фасадные методы UIScene и общие `afterPrestige/afterReset`), Phaser-контейнеры, layout-обращения (`applyModalsLayout`, `applySettingsTextLayout`), неиспользуемые токены/текстуры; удалить `phaserForms`-флаг и `LEGACY_FORMS_QUERY`.
+- 5.1. Удалить Phaser-пути: код форм в `src/ui/phaser/settingsModal.js` и `statusModals.js` (остаются только фасадные методы UIScene и общие `afterPrestige/afterReset`), Phaser-контейнеры, layout-обращения (`applyModalsLayout`, `applySettingsTextLayout`), неиспользуемые токены/текстуры; удалить `phaserForms`-флаг и `LEGACY_FORMS_QUERY`.
 - 5.2. Мигрировать оставшиеся скрипты на DOM-селекторы и фасад: `ui-review.mjs` (строки с `ui.soundBtn`, `settingsBtn`), `verify-boss.cjs` (клики по координатам престижа/сброса и `ui.modal.visible`), `verify-daily.mjs`, `verify-map.cjs`, `verify-offline.cjs`, `verify-devpanel.cjs`; обновить Phaser-golden в `tests/characterization/golden/ui/` (`06_settings_modal`, `07_offline_*`, `12_*`, `20_boss_reward`) **только после апрува игроком**.
 - 5.3. Матрица: состояния `settings`, `settings-stress`, `daily`, `offline`, `boss-reward`, `player-down` теперь DOM (`dom: true`); `*-dom`-дубли убрать. `npm run ui:check -- --update-baseline` — долг уменьшился; **в сообщении коммита указать, на сколько** (до/после по состояниям).
 - 5.4. Документация: правка `AGENTS.md` (раздел «DOM-слой»: список форм на DOM — мастерская, настройки, статус-модалки), `docs/UI_LAYOUT.md`, скилл `.kilo/skills/ui-layout-check/SKILL.md` (триггеры «настройки/модалки DOM»).
@@ -450,9 +470,9 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 | `src/dev/uiAudit.js` (511–515) | `ui.modal.visible`, `_offlineOpen`, `_dailyOpen`, `_bossRewardOpen`, `_playerDownOpen` → переводится на флаги `_*Open` (этапы 2–3) |
 | `src/dev/DevPanel.js` (227–229) | `ui.hideDailyModal()`, `ui.closeModal()` — работает через фасад D6 |
 | `src/ui/UIScene.js` | флаги и обработчики событий; `updateBlockLock` читает `_*Open` |
-| `src/ui/phaser/screens/layout.js` (39, 41) | `applyModalsLayout`, `applySettingsTextLayout` — Phaser-путь |
-| `src/ui/phaser/screens/hud.js` (61–62) | `settingsBtn` → `openModal()` — остаётся |
-| `src/ui/phaser/screens/map.js` (379) | `tryShowDailyModal()` после закрытия карты — остаётся |
+| `src/ui/phaser/layout.js` (39, 41) | `applyModalsLayout`, `applySettingsTextLayout` — Phaser-путь |
+| `src/ui/phaser/hud.js` (61–62) | `settingsBtn` → `openModal()` — остаётся |
+| `src/ui/phaser/map.js` (379) | `tryShowDailyModal()` после закрытия карты — остаётся |
 | `scripts/lib/ui-matrix.mjs` | `hideDailyModal`, `settingsBtn.emit`, `showPlayerDownModal` |
 | `scripts/gates/ui-review.mjs` | `hideDailyModal`, `settingsBtn`, `soundBtn.y`, `bossRewardModal`, `_bossRewardOpen` |
 | `scripts/verify/verify-boss.cjs` | `ui.modal.visible`, `prestigeBtn/resetBtn`, клики по координатам, `bossRewardModal.*`, `playerDownModal.*` |
@@ -466,8 +486,8 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 
 ## Приложение B. Что удаляется в последующей задаче (раздел 8; в план не входит)
 
-- `src/ui/phaser/screens/settings.js`: `buildModal`, `refreshSoundToggle`, `refreshMusicControls`, `refreshSettingsModal`, `applyModalsLayout` (части настроек), `applySettingsTextLayout`, `tryPrestige`/`tryReset` (остаётся общий `afterPrestige/afterReset`).
-- `src/ui/phaser/screens/statusModals.js`: `createAlertShell`, `build*Modal`, Phaser-ветки `show*/hide*` (остаются фасадные методы и очередь).
+- `src/ui/phaser/settingsModal.js`: `buildModal`, `refreshSoundToggle`, `refreshMusicControls`, `refreshSettingsModal`, `applyModalsLayout` (части настроек), `applySettingsTextLayout`, `tryPrestige`/`tryReset` (остаётся общий `afterPrestige/afterReset`).
+- `src/ui/phaser/statusModals.js`: `createAlertShell`, `build*Modal`, Phaser-ветки `show*/hide*` (остаются фасадные методы и очередь).
 - Phaser-сцены-контейнеры `modal`, `modalDim`, `offlineModal/Dim`, `dailyModal/Dim`, `bossRewardModal/Dim`, `playerDownModal/Dim`.
 - `src/ui/dom/formsFlag.js`, `scripts/lib/forms-flag.mjs`, флаг в скриптах.
 - Устаревшие Phaser-проверки и golden `tests/characterization/golden/ui/*` (заменяются DOM-эквивалентами).
@@ -475,4 +495,4 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 ## Приложение C. Файлы фазы (ожидаемый состав)
 
 Новые: `scripts/metrics/phase2-fixcount.mjs`, `scripts/lib/dom-forms.mjs`, `scripts/lib/forms-flag.mjs`, `scripts/stands/build-dom-form-snapshot.mjs`, `scripts/verify/verify-settings-dom.mjs`, `scripts/verify/verify-status-dom.mjs`, `src/ui/dom/formsFlag.js`, `src/ui/dom/modal.js`, `src/ui/dom/lock.js`, `src/ui/dom/settingsScreen.js`, `src/ui/dom/statusModals.js`, `src/state/settings.js`, `src/state/settingsMessages.js`, `src/state/statusMessages.js`, `tests/characterization/{forms_flag,state_settings,settings_messages,status_messages}.test.mjs`, `docs/UI_DOM_PHASE2_BASELINE.md`.
-Изменяются: `src/state.js` (реэкспорт), `src/ui/dom/bridge.js`, `src/ui/dom/components.js`, `src/ui/dom/dom.css`, `src/ui/shared/theme.js` (+ `tokens.css` генератором), `src/ui/UIScene.js`, `src/ui/phaser/screens/{settings,statusModals}.js`, `src/dev/uiAudit.js`, `scripts/gates/ui-check-dom.mjs`, `scripts/gates/dom-golden.mjs`, `scripts/metrics/pilot-frame-p95.mjs`, `scripts/metrics/pilot-loc.mjs`, `scripts/stands/build-dom-craft-snapshot.mjs`, `scripts/lib/ui-matrix.mjs`, `scripts/README.md`, `package.json` (алиасы).
+Изменяются: `src/state.js` (реэкспорт), `src/ui/dom/bridge.js`, `src/ui/dom/components.js`, `src/ui/dom/dom.css`, `src/ui/shared/theme.js` (+ `tokens.css` генератором), `src/ui/UIScene.js`, `src/ui/phaser/{settings,statusModals}.js`, `src/dev/uiAudit.js`, `scripts/gates/ui-check-dom.mjs`, `scripts/gates/dom-golden.mjs`, `scripts/metrics/pilot-frame-p95.mjs`, `scripts/metrics/pilot-loc.mjs`, `scripts/stands/build-dom-craft-snapshot.mjs`, `scripts/lib/ui-matrix.mjs`, `scripts/README.md`, `package.json` (алиасы).
