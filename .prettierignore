@@ -1,0 +1,15 @@
+node_modules
+dist
+shots
+docs
+assets
+.kilo
+tests/characterization/golden
+tests/ui-check
+package-lock.json
+**/*.css
+**/*.html
+**/*.md
+**/*.json
+**/*.out
+**/*.py

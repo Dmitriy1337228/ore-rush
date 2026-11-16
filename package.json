@@ -15,7 +15,11 @@
         "dom:tokens": "node scripts/gen-dom-tokens.mjs",
         "ui:check:dom": "node scripts/ui-check-dom.mjs",
         "ui:tokens:css": "node scripts/ui-tokens-css.mjs",
-        "test:dom-golden": "node scripts/dom-golden.mjs"
+        "test:dom-golden": "node scripts/dom-golden.mjs",
+        "format": "prettier --write \"src/**/*.js\" \"scripts/**/*.{js,mjs,cjs}\" \"tests/**/*.{js,mjs,cjs}\" vite.config.js",
+        "format:check": "prettier --check \"src/**/*.js\" \"scripts/**/*.{js,mjs,cjs}\" \"tests/**/*.{js,mjs,cjs}\" vite.config.js",
+        "lint": "eslint src scripts tests vite.config.js",
+        "lint:fix": "eslint --fix src scripts tests vite.config.js"
     },
     "keywords": [],
     "author": "",
@@ -25,7 +29,10 @@
         "phaser": "^4.2.1"
     },
     "devDependencies": {
+        "@stylistic/eslint-plugin": "6.0.1",
+        "eslint": "10.15.0",
         "playwright": "^1.65.0",
+        "prettier": "3.10.1",
         "vite": "^8.3.6"
     }
 }
