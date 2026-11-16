@@ -49,7 +49,10 @@ const NS_FALLBACK = {
 // подхватывается без правки кода.
 const NS_SRC = { ...NS_FALLBACK };
 for (const entry of manifest.assets || []) {
-    if (!entry.nine_slice || !entry.file) continue;
+    if (!entry.nine_slice || !entry.file) {
+        continue;
+    }
+
     const key = entry.file
         .split('/')
         .pop()
@@ -72,9 +75,13 @@ const NS_MIN_SCALE = 0.25; // борды ужимаются вместе с эл
 
 function nsBorders(key, w, h) {
     const s = NS_SRC[key];
-    if (!s) return { left: 0, top: 0, right: 0, bottom: 0 };
+    if (!s) {
+        return { left: 0, top: 0, right: 0, bottom: 0 };
+    }
+
     const f = Math.min(w / s.w, h / s.h, 1);
     const b = (v) => Math.max(NS_MIN_BORDER, Math.round(v * Math.max(f, NS_MIN_SCALE)));
+
     return { left: b(s.l), top: b(s.t), right: b(s.r), bottom: b(s.b) };
 }
 
@@ -82,11 +89,13 @@ export function addNine(scene, x, y, key, w, h, depth = 0) {
     const b = nsBorders(key, w, h);
     const ns = scene.add.nineslice(x, y, key, null, w, h, b.left, b.right, b.top, b.bottom);
     ns.setOrigin(0, 0).setDepth(depth);
+
     return ns;
 }
 
 export function addNineC(scene, x, y, key, w, h) {
     const b = nsBorders(key, w, h);
+
     return scene.add.nineslice(x, y, key, null, w, h, b.left, b.right, b.top, b.bottom);
 }
 
@@ -98,6 +107,7 @@ export function addImg(scene, x, y, key, w, h, depth = 0) {
     // x,y = левый верхний угол
     const img = scene.add.image(x + w / 2, y + h / 2, key).setDisplaySize(w, h);
     img.setOrigin(0.5).setDepth(depth);
+
     return img;
 }
 
@@ -135,6 +145,7 @@ export function addRowCard(scene, w, h) {
     );
     card.setOrigin(0.5);
     fitRowCard(card, w, h);
+
     return card;
 }
 
@@ -146,7 +157,10 @@ export function fitRowCard(card, w, h) {
     card.setScale(k)
         .setSize(w / k, innerH)
         .setPosition(w / 2, h / 2);
-    if (card.input) applyHitArea(card, new Phaser.Geom.Rectangle(0, 0, w / k, innerH));
+    if (card.input) {
+        applyHitArea(card, new Phaser.Geom.Rectangle(0, 0, w / k, innerH));
+    }
+
     return card;
 }
 
@@ -157,6 +171,7 @@ export const DIM_ALPHA = { screen: 0.6, alert: 0.65, tutorial: 0.45 };
 
 export function addScreenDim(scene, alpha) {
     const { w, h } = LANDSCAPE_BASE;
+
     return scene.add.rectangle(w / 2, h / 2, w, h, 0x000000, alpha);
 }
 
@@ -171,6 +186,7 @@ export function addModalContainer(scene) {
 // вокруг (0,0) (контейнеры, центрированные объекты).
 export function setHitRect(obj, w, h, centered = false) {
     const rect = centered ? new Phaser.Geom.Rectangle(-w / 2, -h / 2, w, h) : new Phaser.Geom.Rectangle(0, 0, w, h);
+
     return obj.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
 }
 
@@ -183,11 +199,14 @@ function applyHitArea(obj, rect) {
         obj.input.hitArea = rect;
         obj.input.hitAreaCallback = Phaser.Geom.Rectangle.Contains;
         obj.input.customHitArea = true;
+
         return obj;
     }
+
     if (obj.scene && obj.scene.input) {
         return obj.scene.input.setHitArea(obj, rect, Phaser.Geom.Rectangle.Contains);
     }
+
     return obj.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
 }
 
@@ -208,6 +227,7 @@ export function setHitWorld(obj, w, h) {
         const cy = (obj.displayHeight || obj.height || 0) / 2;
         rect = new Phaser.Geom.Rectangle((cx - w / 2) / sx, (cy - h / 2) / sy, w / sx, h / sy);
     }
+
     return applyHitArea(obj, rect);
 }
 
@@ -218,6 +238,7 @@ export function setHitWorld(obj, w, h) {
 export function tapSlopPx(scene, baseW) {
     const parent = scene.scale ? scene.scale.parentSize : null;
     const fit = parent && parent.width ? Math.max(0.35, parent.width / baseW) : 1;
+
     return Math.max(6, Math.round(9 / fit));
 }
 
@@ -230,6 +251,7 @@ export function setHitWorldRect(obj, rx, ry, rw, rh) {
     const dx = obj.x - (obj.originX ?? 0.5) * (obj.displayWidth || 0);
     const dy = obj.y - (obj.originY ?? 0.5) * (obj.displayHeight || 0);
     const rect = new Phaser.Geom.Rectangle((rx - dx) / sx, (ry - dy) / sy, rw / sx, rh / sy);
+
     return applyHitArea(obj, rect);
 }
 
@@ -237,6 +259,7 @@ export function makeLabel(scene, x, y, text, size, color, style = {}) {
     // Monocraft — пиксельный шрифт без жирных начертаний: синтетический bold его «замыливает»
     const rest = { ...style };
     delete rest.fontStyle;
+
     return scene.add.text(x, y, text, {
         fontFamily: FONT,
         fontSize: `${size}px`,
@@ -255,6 +278,7 @@ export function fitFontSize(t, target, maxW, min = DEFAULT_FONT_MIN) {
         size -= 1;
         t.setFontSize(size);
     }
+
     return size;
 }
 
@@ -266,5 +290,6 @@ export function fitOneLine(t, target, min = DEFAULT_FONT_MIN) {
         size -= 1;
         t.setFontSize(size);
     }
+
     return size;
 }

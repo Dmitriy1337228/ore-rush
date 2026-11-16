@@ -11,8 +11,14 @@ export const mutationMethods = {
     // Единственный терминатор — таймер: мутация переживает разрушение блока и смену тира.
     startMutation(typeId, duration = MUTATION_DURATION_MS) {
         const def = MUTATIONS[typeId];
-        if (!def) return;
-        if (this.mutation) this.clearMutation(false);
+        if (!def) {
+            return;
+        }
+
+        if (this.mutation) {
+            this.clearMutation(false);
+        }
+
         // Конечные цвета пульса предвычисляем один раз — update() интерполирует числа без аллокаций
         const c1 = Phaser.Display.Color.IntegerToColor(def.tints[0]);
         const c2 = Phaser.Display.Color.IntegerToColor(def.tints[1]);
@@ -70,6 +76,7 @@ export const mutationMethods = {
             this.mutationName = null;
             this.mutationTime = null;
         }
+
         this.mutation = null;
         this.hitProgress = 0;
         this.registry.set(REG.passiveMult, 1);
@@ -77,18 +84,26 @@ export const mutationMethods = {
         if (restoreTexture && !this.blockBusy) {
             this.block.setTexture(blockStageKey(gameState.tier, Math.min(this.blockStage + 1, 4)));
         }
+
         this.refreshTick();
     },
 
     // Тик мутации блока: таймер, тинт
     tickMutation() {
-        if (!this.mutation) return;
+        if (!this.mutation) {
+            return;
+        }
+
         const remaining = this.mutation.endsAt - this.time.now;
         if (remaining <= 0) {
             this.clearMutation(true);
+
             return;
         }
-        if (this.mutationTime) this.mutationTime.setText(`${Math.ceil(remaining / 1000)}с`);
+
+        if (this.mutationTime) {
+            this.mutationTime.setText(`${Math.ceil(remaining / 1000)}с`);
+        }
 
         const palette = this.mutation.tints;
         if (palette.length > 2) {

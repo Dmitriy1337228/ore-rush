@@ -10,10 +10,16 @@ export function getArtifactBonus(field) {
     const isMult = ARTIFACT_MULT_FIELDS.includes(field);
     let acc = isMult ? 1 : 0;
     for (const def of ARTIFACTS) {
-        if (!gameState.artifacts.includes(def.id)) continue;
+        if (!gameState.artifacts.includes(def.id)) {
+            continue;
+        }
+
         const v = def.bonuses[field];
-        if (v) acc = isMult ? acc * v : acc + v;
+        if (v) {
+            acc = isMult ? acc * v : acc + v;
+        }
     }
+
     return acc;
 }
 

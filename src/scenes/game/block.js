@@ -15,8 +15,13 @@ import { BLOCK_STAGES, blockStageKey, GAME_DEPTH } from './constants.js';
 
 export const blockMethods = {
     buildEmitters(oreIconKey) {
-        if (this.oreEmitter) this.oreEmitter.destroy();
-        if (this.debrisEmitter) this.debrisEmitter.destroy();
+        if (this.oreEmitter) {
+            this.oreEmitter.destroy();
+        }
+
+        if (this.debrisEmitter) {
+            this.debrisEmitter.destroy();
+        }
 
         // Текстуры руд разного разрешения (канвасы от 30 до 256px) — нормируем
         // частицы к ~30px видимого размера (старый калибр: 135px x 0.22 = 30px).
@@ -60,6 +65,7 @@ export const blockMethods = {
             this.tweens.killTweensOf(this.block);
             this.block.destroy();
         }
+
         this.blockGen = (this.blockGen || 0) + 1; // поколение блока — для отмены отложенных цепочек
         this.block = this.add
             .image(this.blockX, this.blockY, blockStageKey(gameState.tier, 1))
@@ -89,30 +95,41 @@ export const blockMethods = {
     // Единый путь добычи для ручного клика и Робо-руки.
     // isAuto: без тряски камеры и без инкремента счётчика ручных кликов.
     performMine(px, py, isAuto) {
-        if (this.blockBusy) return;
+        if (this.blockBusy) {
+            return;
+        }
+
         // Модалка блокирует только РУЧНОЙ клик (robо-рука — машинный доход, как
         // пассив: продолжает работать под модалкой). Ручной клик до блока и так
         // не доходит (интерактивный dim модалки перехватывает ввод) — guard
         // оставлен как страховка.
-        if (!isAuto && this.registry.get(REG.blockLocked)) return;
+        if (!isAuto && this.registry.get(REG.blockLocked)) {
+            return;
+        }
 
         const mut = this.mutation ? MUTATIONS[this.mutation.id] : null;
         // ключ мутации = this.mutation.id (сеется из ключа MUTATIONS в startMutation)
         const { gain, crit, lucky } = rollClickGain(this.mutation ? this.mutation.id : null);
         addOre(gain);
-        if (!isAuto) gameState.clicks += 1;
+        if (!isAuto) {
+            gameState.clicks += 1;
+        }
 
         // Звуки добычи — только ручные клики: авто-клики робо-руки работают в фоне
         // и звучали бы какофонией; разрушение блока — исключение (звучит всегда)
         if (!isAuto) {
             playSfx(this, 'pickaxe');
-            if (crit || lucky) playSfx(this, 'crit');
+            if (crit || lucky) {
+                playSfx(this, 'crit');
+            }
         }
 
         // Частицы руды и всплывающий текст в точке добычи
         showHitFeedback(this, px, py, gain, { crit, lucky, isAuto });
 
-        if ((crit || lucky) && !isAuto) this.cameras.main.shake(120, 0.004);
+        if ((crit || lucky) && !isAuto) {
+            this.cameras.main.shake(120, 0.004);
+        }
 
         // Трещины: 3 удара -> визуально «разбит» -> 4-й удар ломает блок и рождает новый.
         // Мутации могут замедлить прогресс стадий (замороженная: 3 удара на стадию,
@@ -145,7 +162,10 @@ export const blockMethods = {
         // не накапливает стадии — не разрушается вовсе.
         const aps = getAutoClicksPerSecond();
         const healMs = aps > 0 ? Math.max(1200, 1000 / aps + 400) : 1200;
-        if (this.streakTimer) this.streakTimer.remove();
+        if (this.streakTimer) {
+            this.streakTimer.remove();
+        }
+
         this.streakTimer = this.time.delayedCall(healMs, () => {
             if (!this.blockBusy) {
                 this.blockStage = 0;
@@ -164,8 +184,10 @@ export const blockMethods = {
             const bx = this.blockX + Phaser.Math.Between(-70, 70);
             const by = this.blockY + Phaser.Math.Between(-70, 50);
             this.performBossHit(bx, by, true);
+
             return;
         }
+
         const px = this.blockX + Phaser.Math.Between(-70, 70);
         const py = this.blockY + Phaser.Math.Between(-70, 50);
         this.performMine(px, py, true);
@@ -221,7 +243,10 @@ export const blockMethods = {
                 this.time.delayedCall(120, () => {
                     // блок пересоздан (смена тира / полный сброс) — зомби-цепочка отменена:
                     // buildBlock уже снял blockBusy и собрал новый блок с дыханием
-                    if (gen !== this.blockGen) return;
+                    if (gen !== this.blockGen) {
+                        return;
+                    }
+
                     this.block.setTexture(blockStageKey(gameState.tier, 1));
                     this.block.setScale(this.blockScale * 0.6);
                     this.tweens.add({

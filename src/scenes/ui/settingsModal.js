@@ -70,7 +70,10 @@ export const settingsModalMethods = {
         this.soundBtn.on('pointerdown', () => {
             gameState.soundOn = !gameState.soundOn;
             this.refreshSoundToggle();
-            if (gameState.soundOn) playSfx(this, 'purchase'); // подтверждение включения
+            if (gameState.soundOn) {
+                playSfx(this, 'purchase');
+            } // подтверждение включения
+
             saveGame();
             this.refreshUi();
         });
@@ -112,7 +115,9 @@ export const settingsModalMethods = {
             seekVolume(p.x);
         });
         this.input.on('pointermove', (p) => {
-            if (this.volDragging) seekVolume(p.x); // драг продолжается за пределами трека
+            if (this.volDragging) {
+                seekVolume(p.x);
+            } // драг продолжается за пределами трека
         });
         this.input.on('pointerup', () => {
             if (this.volDragging) {
@@ -191,14 +196,20 @@ export const settingsModalMethods = {
     },
 
     refreshSoundToggle() {
-        if (!this.soundBtn) return;
+        if (!this.soundBtn) {
+            return;
+        }
+
         this.soundBtn.setTexture(gameState.soundOn ? TEX.button : TEX.buttonDisabled);
         this.soundText.setText(gameState.soundOn ? 'Звук: вкл' : 'Звук: выкл');
         this.soundText.setColor(gameState.soundOn ? TEXT.white : TEXT.muted);
     },
 
     refreshMusicControls() {
-        if (!this.musicBtn) return;
+        if (!this.musicBtn) {
+            return;
+        }
+
         this.musicBtn.setTexture(gameState.musicOn ? TEX.button : TEX.buttonDisabled);
         this.musicText.setText(gameState.musicOn ? 'Музыка: вкл' : 'Музыка: выкл');
         this.musicText.setColor(gameState.musicOn ? TEXT.white : TEXT.muted);
@@ -239,14 +250,22 @@ export const settingsModalMethods = {
     },
 
     tryPrestige() {
-        if (this.registry.get(REG.bossActive)) return;
-        if (!canPrestige()) return;
+        if (this.registry.get(REG.bossActive)) {
+            return;
+        }
+
+        if (!canPrestige()) {
+            return;
+        }
+
         if (!this.prestigeArmed) {
             this.prestigeArmed = true;
             const gain = getStarsGain();
             this.prestigeText.setText(`Точно? +${gain} ★`);
+
             return;
         }
+
         const gain = doPrestige();
         playSfx(this, 'prestige');
         this.prestigeArmed = false;
@@ -271,12 +290,17 @@ export const settingsModalMethods = {
     },
 
     tryReset() {
-        if (this.registry.get(REG.bossActive)) return;
+        if (this.registry.get(REG.bossActive)) {
+            return;
+        }
+
         if (!this.resetArmed) {
             this.resetArmed = true;
             this.resetText.setText('Точно сбросить?');
+
             return;
         }
+
         resetGame();
         this.resetArmed = false;
         this.closeModal();
@@ -302,7 +326,10 @@ export const settingsModalMethods = {
         // уезжало за правый край экрана: координаты прибиты к ландшафту)
         this.playerDownDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
         this.playerDownModal.setPosition(L.modal.cx, L.modal.cy);
-        if (this.tutDim) this.tutDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
+        if (this.tutDim) {
+            this.tutDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
+        }
+
         if (L.portrait) {
             // Портрет: контейнерные модалки масштабируются в свободную зону
             // (zoneTop..zoneBot), иначе окно «маркой» на высоком телефоне.
@@ -317,7 +344,9 @@ export const settingsModalMethods = {
             // Окно вырубления масштабируется x1.45 — первая строка тела цепляла
             // нижний край заголовка «Ты вырубился!» (аудит, oy=2): опускаем
             // тело на 6 локальных px (~9 экранных)
-            if (this.playerDownBody) this.playerDownBody.setY(-14);
+            if (this.playerDownBody) {
+                this.playerDownBody.setY(-14);
+            }
         } else {
             this._modalScale = 1;
             this.modal.setScale(1);
@@ -325,7 +354,9 @@ export const settingsModalMethods = {
             this.dailyModal.setScale(1);
             this.bossRewardModal.setScale(1);
             this.playerDownModal.setScale(1);
-            if (this.playerDownBody) this.playerDownBody.setY(-20);
+            if (this.playerDownBody) {
+                this.playerDownBody.setY(-20);
+            }
         }
     },
 
@@ -394,6 +425,7 @@ export const settingsModalMethods = {
                 this.prestigeBtn.setTexture(TEX.buttonDisabled);
                 this.prestigeText.setColor(TEXT.muted);
             }
+
             this.resetText.setColor(bossLocked ? TEXT.muted : TEXT.white);
         }
     }

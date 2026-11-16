@@ -57,6 +57,7 @@ export class GameScene extends Phaser.Scene {
                 this.registry.set(REG.offlineInfo, info);
             }
         }
+
         // Счётчик отсутствия перезапускается при КАЖДОЙ загрузке: штамп от
         // прошлого сеанса (мобильный вебвью/kill процесса не дают hidden/
         // beforeunload) иначе используется повторно — повторное начисление
@@ -72,7 +73,10 @@ export class GameScene extends Phaser.Scene {
         this.startBgm();
         // Незавершённый бой из сейва продолжается (F5 не сбрасывает босса):
         // HP и накопленное время восстановлены, модалки дневной награды откладываются.
-        if (gameState.bossFight) this.startBossFight(gameState.bossFight.bossId, gameState.bossFight);
+        if (gameState.bossFight) {
+            this.startBossFight(gameState.bossFight.bossId, gameState.bossFight);
+        }
+
         this.setGameplay(true);
         this.refreshTick();
         this.claimDaily();
@@ -93,9 +97,15 @@ export class GameScene extends Phaser.Scene {
     // UIScene показывает модалку (registry 'dailyInfo' при загрузке или событие
     // 'daily-claimed' из DevPanel — оба пути в одну очередь).
     claimDaily() {
-        if (!canClaimDaily()) return;
+        if (!canClaimDaily()) {
+            return;
+        }
+
         const info = claimDailyReward();
-        if (!info) return;
+        if (!info) {
+            return;
+        }
+
         this.registry.set(REG.dailyInfo, info);
         this.game.events.emit(EVENTS.dailyClaimed, info);
     }
@@ -103,7 +113,10 @@ export class GameScene extends Phaser.Scene {
     // GameplayAPI Яндекса (стаб — no-op): start — игрок активен, stop — свёрнута.
     setGameplay(active) {
         const p = YandexSDKStub.player;
-        if (!p || !p.gameplayStart) return;
+        if (!p || !p.gameplayStart) {
+            return;
+        }
+
         if (active && !this._gameplayActive) {
             this._gameplayActive = true;
             p.gameplayStart();
@@ -145,7 +158,10 @@ export class GameScene extends Phaser.Scene {
     applyLayout() {
         const L = computeLayout(this.scale.gameSize.width, this.scale.gameSize.height);
         this.L = L;
-        if (this.bgBase) this.drawBase();
+        if (this.bgBase) {
+            this.drawBase();
+        }
+
         this.positionBg();
         const bx = L.block.x,
             by = L.block.y;

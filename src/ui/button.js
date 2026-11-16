@@ -30,10 +30,20 @@ export function addButton(
     } = {}
 ) {
     const bg = kind === 'image' ? scene.add.image(x, y, key).setDisplaySize(w, h) : addNineC(scene, x, y, key, w, h);
-    if (depth !== undefined) bg.setDepth(depth);
-    if (hitWorld) setHitWorld(bg, hitW, hitH);
-    else setHitRect(bg, hitW, hitH, hitCentered);
+    if (depth !== undefined) {
+        bg.setDepth(depth);
+    }
+
+    if (hitWorld) {
+        setHitWorld(bg, hitW, hitH);
+    } else {
+        setHitRect(bg, hitW, hitH, hitCentered);
+    }
+
     const label = makeLabel(scene, x, y, text, fontSize, color, style).setOrigin(0.5);
-    if (fitMaxW !== null) fitFontSize(label, fontSize, fitMaxW, fitMin);
+    if (fitMaxW !== null) {
+        fitFontSize(label, fontSize, fitMaxW, fitMin);
+    }
+
     return { bg, label };
 }

@@ -15,6 +15,7 @@ const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./
 const argv = process.argv.slice(2);
 const opt = (name, def = null) => {
     const i = argv.indexOf(`--${name}`);
+
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : def;
 };
 
@@ -45,11 +46,15 @@ try {
         const errors = [];
         page.on('pageerror', (e) => errors.push(`pageerror: ${e}`));
         page.on('console', (m) => {
-            if (m.type() === 'error') errors.push(`console: ${m.text()}`);
+            if (m.type() === 'error') {
+                errors.push(`console: ${m.text()}`);
+            }
         });
         await page.addInitScript(
             (s) => {
-                for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+                for (const [k, v] of Object.entries(s)) {
+                    localStorage.setItem(k, v);
+                }
             },
             { [SAVE_KEY]: JSON.stringify(craftState.seed) }
         );
@@ -58,6 +63,7 @@ try {
             () => {
                 const g = window.__GAME;
                 const ui = g && g.scene.getScene('UIScene');
+
                 return !!(ui && ui.L && document.fonts.status === 'loaded');
             },
             null,
@@ -78,7 +84,10 @@ try {
             file: path.relative(process.cwd(), file),
             errors
         });
-        if (errors.length) errors.slice(0, 5).forEach((e) => console.log(`  console[${vp.id}]: ${e}`));
+        if (errors.length) {
+            errors.slice(0, 5).forEach((e) => console.log(`  console[${vp.id}]: ${e}`));
+        }
+
         await ctx.close();
         console.log(`shot: ${path.relative(process.cwd(), file)}`);
     }

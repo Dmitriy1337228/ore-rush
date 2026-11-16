@@ -63,6 +63,9 @@ const BASE_BLOCK_STAGE_KEYS = [
 
 export function blockStageKey(tier, stage) {
     const prefix = TIERS[tier].blockPrefix;
-    if (prefix === 'block') return BASE_BLOCK_STAGE_KEYS[stage - 1];
+    if (prefix === 'block') {
+        return BASE_BLOCK_STAGE_KEYS[stage - 1];
+    }
+
     return `${prefix}_stage_${stage}`;
 }

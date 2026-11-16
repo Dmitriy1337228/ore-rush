@@ -376,11 +376,23 @@ describe('ежедневные награды', () => {
             S.gameState.lastDailyDay = day - 1; // «вчера»: серия продолжается
             const r = S.claimDailyReward();
             ids.push({ streak: r.streak, id: r.reward.id, extra: r.extra });
-            if (i === 1) assert.equal(S.gameState.ore, 1080); // stash: 300 * 3.6
-            if (i === 2) assert.equal(S.isDailyCritActive(), true);
-            if (i === 3) assert.equal(S.gameState.levels.pickaxe, 1); // free pickaxe
-            if (i === 6) assert.equal(S.isDailyVeinActive(), true);
+            if (i === 1) {
+                assert.equal(S.gameState.ore, 1080);
+            } // stash: 300 * 3.6
+
+            if (i === 2) {
+                assert.equal(S.isDailyCritActive(), true);
+            }
+
+            if (i === 3) {
+                assert.equal(S.gameState.levels.pickaxe, 1);
+            } // free pickaxe
+
+            if (i === 6) {
+                assert.equal(S.isDailyVeinActive(), true);
+            }
         }
+
         assert.deepEqual(
             ids.map((x) => x.id),
             ['boost2', 'stash', 'crit', 'upgrade', 'boost3', 'boost10', 'vein', 'boost2']
@@ -414,6 +426,7 @@ describe('ежедневные награды', () => {
             S.gameState.lastDailyDay = day - 1;
             S.claimDailyReward();
         }
+
         S.gameState.lastDailyDay = day - 1;
         const r = S.claimDailyReward(); // streak 4 -> upgrade
         assert.equal(r.reward.id, 'upgrade');

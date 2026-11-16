@@ -78,7 +78,10 @@ export const SLOT_LABEL_PADDING = 12;
 // Кегль подписи с учётом портретного масштаба UIScene
 export function bossFontSize(spec, uiScale) {
     let size = spec.scaleMax ? Math.round(spec.size * Phaser.Math.Clamp(uiScale, 1, spec.scaleMax)) : spec.size;
-    if (spec.min !== undefined) size = Math.max(spec.min, size);
+    if (spec.min !== undefined) {
+        size = Math.max(spec.min, size);
+    }
+
     return size;
 }
 
@@ -86,6 +89,7 @@ export function bossFontSize(spec, uiScale) {
 export function bossHealthColor(frac) {
     const t = 1 - frac;
     const { healthy: a, critical: z } = BOSS_BAR;
+
     return Phaser.Display.Color.GetColor(
         Math.round(a.r + (z.r - a.r) * t),
         Math.round(a.g + (z.g - a.g) * t),

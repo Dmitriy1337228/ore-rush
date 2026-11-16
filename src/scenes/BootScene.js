@@ -202,16 +202,21 @@ export class BootScene extends Phaser.Scene {
         if (fill) {
             this.load.on('progress', (v) => {
                 fill.style.width = `${Math.round(v * 100)}%`;
-                if (pctLabel) pctLabel.textContent = `загрузка… ${Math.round(v * 100)}%`;
+                if (pctLabel) {
+                    pctLabel.textContent = `загрузка… ${Math.round(v * 100)}%`;
+                }
             });
         }
+
         for (const key of IMAGES) {
             this.load.image(key, `assets/ui/${key}.png`);
         }
+
         for (const key of SFX) {
             // Два формата: Safari/iOS не декодирует Ogg Vorbis — Phaser выберет первый playable
             this.load.audio(key, [`assets/audio/${key}.ogg`, `assets/audio/${key}.mp3`]);
         }
+
         // Фоновая музыка — бесшовный луп, те же два формата
         this.load.audio('bgm', ['assets/audio/bgm.ogg', 'assets/audio/bgm.mp3']);
         // Босс-тема (луп на время боя, ключ без _N — играется напрямую, не через playSfx)

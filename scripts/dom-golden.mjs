@@ -21,6 +21,7 @@ const argv = process.argv.slice(2);
 const flag = (n) => argv.includes(`--${n}`);
 const opt = (n, d) => {
     const i = argv.indexOf(`--${n}`);
+
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
 };
 
@@ -50,11 +51,15 @@ async function capture(i) {
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
     page.on('console', (m) => {
-        if (m.type() === 'error') errors.push(m.text());
+        if (m.type() === 'error') {
+            errors.push(m.text());
+        }
     });
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
     );
@@ -67,15 +72,27 @@ async function capture(i) {
         const ui = window.__GAME.scene.getScene('UIScene');
         ui._pendingDaily = null;
         ui.registry.set('dailyInfo', null);
-        if (ui._dailyOpen) ui.hideDailyModal();
+        if (ui._dailyOpen) {
+            ui.hideDailyModal();
+        }
+
         const url = performance
             .getEntriesByType('resource')
             .map((r) => r.name)
             .find((u) => u.includes('/src/state.js'));
         const m = await import(url);
-        for (const id of Object.keys(m.gameState.levels)) m.gameState.levels[id] = 0;
-        for (const c of m.COMPONENTS) m.gameState.components[c.id] = 100;
-        for (const i of m.ITEMS) m.gameState.items[i.id] = 2;
+        for (const id of Object.keys(m.gameState.levels)) {
+            m.gameState.levels[id] = 0;
+        }
+
+        for (const c of m.COMPONENTS) {
+            m.gameState.components[c.id] = 100;
+        }
+
+        for (const i of m.ITEMS) {
+            m.gameState.items[i.id] = 2;
+        }
+
         m.gameState.crafting = null;
         m.gameState.bossBuffUntil = 0;
         m.gameState.miningBuffUntil = 0;
@@ -95,12 +112,15 @@ async function capture(i) {
     const file = path.join(path.dirname(SHOT), `run-${i}.png`);
     await page.screenshot({ path: file });
     await ctx.close();
+
     return { file, errors };
 }
 
 const shots = [];
 try {
-    for (let i = 1; i <= RUNS; i++) shots.push({ i, ...(await capture(i)) });
+    for (let i = 1; i <= RUNS; i++) {
+        shots.push({ i, ...(await capture(i)) });
+    }
 } finally {
     await browser.close();
 }
@@ -126,11 +146,15 @@ if (errors.length) {
             const ratio = diffRatio(want, got, CHANNEL_TOLERANCE);
             worst = Math.max(worst, ratio);
             const ok = ratio <= MAX_DIFF_RATIO;
-            if (!ok) bad++;
+            if (!ok) {
+                bad++;
+            }
+
             console.log(
                 `dom-golden run ${s.i}: ${(ratio * 100).toFixed(3)}% пикселей вне допуска ${CHANNEL_TOLERANCE} — ${ok ? 'ok' : 'FAIL'}`
             );
         }
+
         console.log(
             `dom-golden: прогонов ${RUNS}, худший ${(worst * 100).toFixed(3)}%, порог ${(MAX_DIFF_RATIO * 100).toFixed(2)}% — ${bad ? 'FAIL' : 'ok'}`
         );

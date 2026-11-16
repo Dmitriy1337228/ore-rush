@@ -14,6 +14,7 @@ const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./
 const argv = process.argv.slice(2);
 const opt = (n, d = null) => {
     const i = argv.indexOf(`--${n}`);
+
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
 };
 const OUT = path.resolve(opt('out', 'shots/pilot-gates'));
@@ -34,7 +35,9 @@ try {
         page.on('pageerror', (e) => errors.push(String(e)));
         await page.addInitScript(
             (s) => {
-                for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+                for (const [k, v] of Object.entries(s)) {
+                    localStorage.setItem(k, v);
+                }
             },
             { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
         );
@@ -49,6 +52,7 @@ try {
             const btn = document.querySelector('.dom-btn');
             const root = document.getElementById('ui-root');
             const cs = getComputedStyle(panel);
+
             return {
                 dpr: window.devicePixelRatio,
                 fontLoaded: document.fonts.check('16px Monocraft'),

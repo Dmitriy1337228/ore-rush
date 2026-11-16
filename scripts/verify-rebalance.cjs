@@ -31,7 +31,9 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     });
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { 'ore-rush-save': save }
     );
@@ -47,9 +49,13 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
         // Ряды скрытой вкладки не рендерятся — цены читаем по вкладкам через switchTab
         const readRows = (tabId) => {
             ui.switchTab(tabId);
+
             return ui.rows.flatMap((r) => {
                 const def = r.def;
-                if (def.tab !== tabId) return [];
+                if (def.tab !== tabId) {
+                    return [];
+                }
+
                 // Гейт-запертые ряды (текущий тир ниже def.tier) показывают
                 // «нужно: шахта N» вместо цены
                 if (def.tier !== undefined && gs.tier < def.tier) {
@@ -57,14 +63,17 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
                         `${def.id}: показано "${r.priceText.text}" / ожидается "" (гейт: шахта ${def.tier}) => ${r.priceText.text === '' ? 'OK' : 'FAIL'}`
                     ];
                 }
+
                 // Ожидаемая цена — из state.js (учитывает и growth, и множитель тира;
                 // раньше формула дублировалась без TIER_COST_MULT и валидна только при тире 0)
                 const expected = def.maxLevel !== null ? 'макс' : window.__fmt(window.__ec.getUpgradeCost(def.id));
+
                 return [
                     `${def.id}: показано "${r.priceText.text}" / ожидается "${expected}" => ${r.priceText.text === expected ? 'OK' : 'FAIL'}`
                 ];
             });
         };
+
         return [...readRows('equipment'), ...readRows('enhance')];
     });
     console.log(res.join('\n'));

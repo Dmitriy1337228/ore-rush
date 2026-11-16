@@ -89,8 +89,10 @@ for (const [k, v] of Object.entries({
     negFrac: -0.5,
     nan: NaN,
     hundredMill: 123456789
-}))
+})) {
     out.fmt[k] = S.fmt(v);
+}
+
 out.fmtDuration = {};
 for (const [k, v] of Object.entries({
     zero: 0,
@@ -102,8 +104,9 @@ for (const [k, v] of Object.entries({
     neg: -10,
     day: 90000,
     hOnly: 3660
-}))
+})) {
     out.fmtDuration[k] = S.fmtDuration(v);
+}
 
 // ---------- Экономика: цены/доходы (свежее состояние) ----------
 S.resetGame();
@@ -114,6 +117,7 @@ out.economy.costMinerL5 = (() => {
     S.gameState.levels.miner = 5;
     const c = S.getUpgradeCost('miner');
     S.gameState.levels.miner = 0;
+
     return c;
 })();
 out.economy.clickDamageFresh = S.getClickDamage();
@@ -126,13 +130,21 @@ out.economy.critChanceFresh = S.getCritChance();
 out.economy.luckyChanceFresh = S.getLuckyChance();
 out.economy.prestigeMultFresh = S.getPrestigeMult();
 out.economy.unlockSeconds = {};
-for (let t = 0; t <= 11; t++) out.economy.unlockSeconds[t] = S.unlockSecondsFor(t);
+for (let t = 0; t <= 11; t++) {
+    out.economy.unlockSeconds[t] = S.unlockSecondsFor(t);
+}
+
 out.economy.nextUnlockPriceFresh = S.getNextUnlockPrice(); // пол UNLOCK_FLOOR на тире 0
 out.economy.unlockEtaFresh = S.getUnlockEtaSeconds();
 out.economy.tierIncomeMult = {};
-for (let t = 0; t <= 5; t++) out.economy.tierIncomeMult[t] = S.TIER_INCOME_MULT(t);
+for (let t = 0; t <= 5; t++) {
+    out.economy.tierIncomeMult[t] = S.TIER_INCOME_MULT(t);
+}
+
 out.economy.tierCostMult = {};
-for (let t = 0; t <= 5; t++) out.economy.tierCostMult[t] = S.TIER_COST_MULT(t);
+for (let t = 0; t <= 5; t++) {
+    out.economy.tierCostMult[t] = S.TIER_COST_MULT(t);
+}
 
 // Цены улучшений на тире 2 (x9) с уровнями кирки/шахтёра
 S.resetGame();
@@ -153,14 +165,17 @@ S.gameState.tierAnchorRate = 100;
 out.economy.priceT0Anchor100 = S.getNextUnlockPrice();
 out.economy.priceT2Anchor100 = (() => {
     S.gameState.tier = 2;
+
     return S.getNextUnlockPrice();
 })();
 out.economy.priceT11Anchor100 = (() => {
     S.gameState.tier = 11;
+
     return S.getNextUnlockPrice();
 })();
 out.economy.lastTierPrice = (() => {
     S.gameState.tier = 11;
+
     return S.computeNextUnlockPrice(11);
 })();
 
@@ -173,6 +188,7 @@ out.bulk.costDrill5T0 = (() => {
 })();
 out.bulk.affordablePickaxe10With10000 = (() => {
     S.gameState.ore = 10000;
+
     return S.getAffordableBulk('pickaxe', 10);
 })();
 out.bulk.buyStrictFail = (() => {
@@ -187,6 +203,7 @@ out.bulk.levelAfterMax = S.gameState.levels.pickaxe;
 out.bulk.oreAfterMax = S.gameState.ore;
 out.bulk.buyExact = (() => {
     S.gameState.ore = 7665 + 2335;
+
     return S.buyBulk('pickaxe', 3);
 })();
 // (уровень 9: следующие 3 уровня стоят 15360+30720+61440=107520; бюджет 10000 -> отказ)
@@ -213,12 +230,14 @@ out.visibility = {
     canBuySledge: S.canBuy('sledge'),
     maxedPickaxe: (() => {
         S.gameState.levels.pickaxe = 30;
+
         return S.isMaxed('pickaxe');
     })()
 };
 S.resetGame();
 out.visibility.equipmentT6 = (() => {
     S.gameState.tier = 6;
+
     return S.getVisibleUpgrades('equipment').map((u) => u.id);
 })();
 
@@ -267,6 +286,7 @@ out.boss.playerMaxHpHelmet5T2 = (() => {
     const v = S.getPlayerMaxHp();
     S.gameState.tier = 0;
     S.gameState.levels.helmet = 0;
+
     return v;
 })();
 out.boss.attackPowerCopper = S.bossAttackPower(S.BOSSES[0]);
@@ -351,6 +371,7 @@ out.items.bossBuffAfter = { mult: S.gameState.bossBuffMult, untilDelta: S.gameSt
 out.items.bossDamageMult = S.getBossDamageMult();
 out.items.buyStackMax = (() => {
     S.gameState.items.item_bomb = 5;
+
     return S.canBuyItem('item_bomb');
 })();
 S.resetGame();
@@ -382,6 +403,7 @@ for (let i = 0; i < 8; i++) {
         instantOre: i === 1 ? S.gameState.ore : undefined
     });
 }
+
 // пропуск дня — сброс серии
 S.resetGame();
 S.gameState.lastDailyDay = day - 5;
@@ -433,6 +455,7 @@ out.offline.twoHours = S.computeOfflineReward(NOW - 7200000, NOW);
 out.offline.overCap = S.computeOfflineReward(NOW - 100 * 3600000, NOW);
 out.offline.noGps = (() => {
     S.gameState.levels.miner = 0;
+
     return S.computeOfflineReward(NOW - 7200000, NOW);
 })();
 S.resetGame();
@@ -475,6 +498,7 @@ migrationResults.v1 = (() => {
         totalMined: 150,
         levels: { pickaxe: 3, dynamite: 2, miner: 1, sledge: 7 }
     });
+
     return JSON.parse(JSON.stringify(S.gameState));
 })();
 migrationResults.v2 = (() => {
@@ -489,6 +513,7 @@ migrationResults.v2 = (() => {
         tierEarned: [10, 20, 30, 40, 50],
         levels: { pickaxe: 4, miner: 3 }
     });
+
     return JSON.parse(JSON.stringify(S.gameState));
 })();
 migrationResults.v3 = (() => {
@@ -503,6 +528,7 @@ migrationResults.v3 = (() => {
         tierEarned: [700],
         levels: { pickaxe: 2 }
     });
+
     return JSON.parse(JSON.stringify(S.gameState));
 })();
 migrationResults.v4 = (() => {
@@ -517,11 +543,13 @@ migrationResults.v4 = (() => {
         tierEarned: [700],
         levels: { pickaxe: 2 }
     });
+
     return JSON.parse(JSON.stringify(S.gameState));
 })();
 migrationResults.v5unknownVersion = (() => {
     S.resetGame();
     S.applySave({ version: 99, ore: 777 });
+
     return JSON.parse(JSON.stringify(S.gameState));
 })();
 migrationResults.v5garbage = (() => {
@@ -529,6 +557,7 @@ migrationResults.v5garbage = (() => {
     S.applySave(null);
     S.applySave('str');
     S.applySave(42);
+
     return JSON.parse(JSON.stringify(S.gameState));
 })();
 migrationResults.v5oreInfinity = (() => {
@@ -543,6 +572,7 @@ migrationResults.v5oreInfinity = (() => {
         tierEarned: [-2, 'x'],
         tierAnchorRate: -9
     });
+
     return JSON.parse(JSON.stringify(S.gameState));
 })();
 migrationResults.v5expiredBuffs = (() => {
@@ -564,6 +594,7 @@ migrationResults.v5expiredBuffs = (() => {
         oilBuffUntil: Date.now() - 1000,
         oilBuffAdd: 0.25
     });
+
     return JSON.parse(
         JSON.stringify({
             dailyBuffUntil: S.gameState.dailyBuffUntil,
@@ -591,6 +622,7 @@ migrationResults.v5bossFightValid = (() => {
         levels: { helmet: 2 },
         bossFight: { bossId: 'boss_copper', hp: 74000, playerHp: 999999, elapsedMs: 5000 }
     });
+
     return JSON.parse(JSON.stringify(S.gameState.bossFight));
 })();
 migrationResults.v5bossFightInvalid = (() => {
@@ -601,6 +633,7 @@ migrationResults.v5bossFightInvalid = (() => {
     const hpZero = JSON.parse(JSON.stringify(S.gameState.bossFight));
     S.applySave({ version: 5, bossFight: { bossId: 'boss_copper', hp: 1e9, playerHp: 100, elapsedMs: 5000 } });
     const hpTooBig = JSON.parse(JSON.stringify(S.gameState.bossFight));
+
     return { unknown, hpZero, hpTooBig };
 })();
 migrationResults.v5metaFiltering = (() => {
@@ -616,6 +649,7 @@ migrationResults.v5metaFiltering = (() => {
         crafting: { recipeId: 'r_hardpick', endsAt: Date.now() + 60000 },
         levels: { pickaxe: 99999, miner: -4, sledge: 3.7, unknown: 5 }
     });
+
     return JSON.parse(
         JSON.stringify({
             components: S.gameState.components,
@@ -640,6 +674,7 @@ migrationResults.v5prefs = (() => {
         dailyStreak: 4.9,
         lastDailyDay: 123.7
     });
+
     return JSON.parse(
         JSON.stringify({
             tutorialDone: S.gameState.tutorialDone,
@@ -711,6 +746,7 @@ out.tiers_flow.tierAfterForce = S.gameState.tier;
 out.tiers_flow.oreAfterForce = S.gameState.ore;
 out.tiers_flow.forceLastTier = (() => {
     S.gameState.tier = 11;
+
     return S.forceNextTier();
 })();
 out.tiers_flow.tierAfterLastForce = S.gameState.tier;
@@ -733,6 +769,7 @@ for (const id of [
 ]) {
     out.delta[id] = S.upgradeIncomeDelta(id);
 }
+
 S.gameState.levels.pickaxe = 10;
 out.delta.pickaxeL10 = S.upgradeIncomeDelta('pickaxe');
 S.resetGame();

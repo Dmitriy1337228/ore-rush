@@ -27,23 +27,31 @@ const mins = (ms) => Math.round(ms / 60000);
 
 const bossName = (id) => {
     const boss = BOSSES.find((b) => b.id === id);
+
     return boss ? boss.name : 'босс';
 };
 
 const artifactLine = (def) => {
-    if (def.source && def.source.startsWith('boss_')) return `Босс: ${bossName(def.source)}`;
+    if (def.source && def.source.startsWith('boss_')) {
+        return `Босс: ${bossName(def.source)}`;
+    }
+
     return 'Скрафти: рецепт';
 };
 
 // Подсказка по тапу на артефакт (2 с): откуда взять.
 const artifactHint = (def) => {
-    if (def.source && def.source.startsWith('boss_')) return `Получишь у босса: ${bossName(def.source)}`;
+    if (def.source && def.source.startsWith('boss_')) {
+        return `Получишь у босса: ${bossName(def.source)}`;
+    }
+
     return 'Скрафти: рецепт';
 };
 
 export function snapshot({ bossActive = false, now = Date.now() } = {}) {
     const components = COMPONENTS.map((c) => {
         const count = gameState.components[c.id] || 0;
+
         return { id: c.id, icon: c.icon, count, text: fmt(count) };
     });
 
@@ -62,6 +70,7 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
         } else if (eff.veinForce) {
             buffLeft = gameState.itemVeinUntil - now;
         }
+
         const active = buffLeft > 0;
         const blocked = stock <= 0 || (def.bossUse && !bossActive) || (active && buffLeft > 30000);
         let hint = itemStockHint({ stock, bossUse: def.bossUse });
@@ -71,6 +80,7 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
             hint = `в запасе: ${stock} · ${label} ${mmss(buffLeft)}`;
             hintKind = 'gold';
         }
+
         return {
             id: def.id,
             icon: def.id,
@@ -104,9 +114,14 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
         const status = recipeStatus({ mine, owned, busy, space, resultN: recipe.result.n, compsOk });
         const disabled = !mine && (owned || busy || !canCraft(recipe.id));
         let button;
-        if (mine) button = ready ? 'Забрать' : mmss(craftLeft);
-        else if (recipe.craftMs === 0) button = 'Создать';
-        else button = `Крафт ${mins(recipe.craftMs)} мин`;
+        if (mine) {
+            button = ready ? 'Забрать' : mmss(craftLeft);
+        } else if (recipe.craftMs === 0) {
+            button = 'Создать';
+        } else {
+            button = `Крафт ${mins(recipe.craftMs)} мин`;
+        }
+
         return {
             id: recipe.id,
             icon: recipe.result.id,
@@ -134,6 +149,7 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
 
     const artifacts = ARTIFACTS.map((def) => {
         const owned = gameState.artifacts.includes(def.id);
+
         return {
             id: def.id,
             icon: def.id,
@@ -167,15 +183,23 @@ export function snapshot({ bossActive = false, now = Date.now() } = {}) {
 export function createPublisher(emit, { intervalMs = PUBLISH_MS, getContext } = {}) {
     let last = null;
     let lastAt = 0;
+
     return {
         tick(now = Date.now()) {
-            if (now - lastAt < intervalMs) return false;
+            if (now - lastAt < intervalMs) {
+                return false;
+            }
+
             lastAt = now;
             const snap = snapshot((getContext && getContext()) || {});
             const key = JSON.stringify(snap);
-            if (key === last) return false;
+            if (key === last) {
+                return false;
+            }
+
             last = key;
             emit(snap);
+
             return true;
         },
         reset() {

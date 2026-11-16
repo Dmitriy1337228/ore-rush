@@ -4,8 +4,14 @@ import { TEXT, DEPTH, TEX, FONT_SIZE, SPACE } from '../../ui/theme.js';
 
 export const tutorialMethods = {
     buildTutorial() {
-        if (gameState.tutorialDone) return;
-        if (this.tutDim) return; // идемпотентность: не строим второй слой поверх
+        if (gameState.tutorialDone) {
+            return;
+        }
+
+        if (this.tutDim) {
+            return;
+        } // идемпотентность: не строим второй слой поверх
+
         this.tutorialStep = 0;
         this.tutClickStart = gameState.clicks;
         this.tutShownAt = 0;
@@ -59,8 +65,14 @@ export const tutorialMethods = {
             this.tutBtnLbl
         ];
         this.listCam.ignore(tutLayers);
-        if (this.mapCam) this.mapCam.ignore(tutLayers);
-        if (this.craftCam) this.craftCam.ignore(tutLayers);
+        if (this.mapCam) {
+            this.mapCam.ignore(tutLayers);
+        }
+
+        if (this.craftCam) {
+            this.craftCam.ignore(tutLayers);
+        }
+
         // Своя камера учебных слоёв ПОВЕРХ listCam: listCam рендерит карточки
         // ПОСЛЕ main-камеры, и любой учебный объект в зоне вьюпорта списка
         // прячется ЗА ними (бабл шага «Покупай оборудование» исчезал в списке).
@@ -178,7 +190,10 @@ export const tutorialMethods = {
     },
 
     stepTutorial() {
-        if (!this.tutDim) return;
+        if (!this.tutDim) {
+            return;
+        }
+
         const now = this.time.now;
         if (this.tutorialStep === 0 && gameState.clicks >= this.tutClickStart + 3) {
             this.tutorialStep = 1;
@@ -197,7 +212,10 @@ export const tutorialMethods = {
         this.tutorialStep = 3;
         // Под модалкой/боем слои погашены (updateBlockLock): показ финала здесь
         // вылез бы призраком поверх затемнения — отложено до снятия гашения
-        if (this._tutSuppressed) return;
+        if (this._tutSuppressed) {
+            return;
+        }
+
         this.tutRing.clear().setVisible(false);
         this.tutArrow.clear().setVisible(false);
         this.tutBubble.setVisible(false);
@@ -213,8 +231,14 @@ export const tutorialMethods = {
     finishTutorial() {
         gameState.tutorialDone = true;
         saveGame();
-        if (this.tutPulse) this.tutPulse.stop();
-        if (this.tutBob) this.tutBob.stop();
+        if (this.tutPulse) {
+            this.tutPulse.stop();
+        }
+
+        if (this.tutBob) {
+            this.tutBob.stop();
+        }
+
         [
             this.tutDim,
             this.tutRing,
@@ -237,6 +261,8 @@ export const tutorialMethods = {
     // появилось бы только после перезагрузки страницы (CONTEXT: «Полный сброс
     // показывает обучение заново»). Идемпотентно по tutDim.
     maybeRebuildTutorial() {
-        if (!gameState.tutorialDone && !this.tutDim) this.buildTutorial();
+        if (!gameState.tutorialDone && !this.tutDim) {
+            this.buildTutorial();
+        }
     }
 };

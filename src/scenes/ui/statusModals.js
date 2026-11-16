@@ -27,6 +27,7 @@ function createAlertShell(scene, { w, h, title, titleY, titleColor = TEXT.cream,
     dim.on('pointerdown', (pointer, lx, ly, event) => event.stopPropagation());
     const modal = addModalContainer(scene).setDepth(DEPTH.alert).setVisible(false);
     const win = createPanel(scene, { w, h, title, titleY, titleSize: FONT_SIZE.title, titleColor });
+
     return {
         dim,
         modal,
@@ -133,6 +134,7 @@ export const statusModalsMethods = {
             this.placeIcon(ic, DAILY_REWARDS[i].icon, x, 82, 22);
             this.dailySlots.push({ slot, ic });
         }
+
         shell.assemble(
             [this.dailyStreakText, this.dailyIcon, this.dailyName, this.dailyDesc],
             [...this.dailySlots.map((s) => s.slot), ...this.dailySlots.map((s) => s.ic)]
@@ -143,14 +145,30 @@ export const statusModalsMethods = {
     // очередь до их закрытия; в бою тоже откладывается (не дёргаем игрока),
     // покажется после боя — по закрытию окна награды/экрана
     tryShowDailyModal() {
-        if (!this._pendingDaily) return;
-        if (this.registry.get(REG.bossActive)) return;
+        if (!this._pendingDaily) {
+            return;
+        }
+
+        if (this.registry.get(REG.bossActive)) {
+            return;
+        }
+
         // Очередь: окно вырубления не проверялось — награда открывалась ОДНОВРЕМЕННО
         // с ним (два модальных окна в кадре, аудит: 20+ OVERLAP на состояние; таймер
         // выдачи награды стрелял позже hideDaily в сценарных прогонах)
-        if (this.offlineModal.visible || this.modal.visible || this.dailyModal.visible || this.playerDownModal.visible)
+        if (
+            this.offlineModal.visible ||
+            this.modal.visible ||
+            this.dailyModal.visible ||
+            this.playerDownModal.visible
+        ) {
             return;
-        if (this.mapRoot.visible || this._craftOpen || this._bossRewardOpen) return;
+        }
+
+        if (this.mapRoot.visible || this._craftOpen || this._bossRewardOpen) {
+            return;
+        }
+
         const info = this._pendingDaily;
         this._pendingDaily = null;
         const idx = (info.streak - 1) % DAILY_REWARDS.length;
@@ -162,8 +180,12 @@ export const statusModalsMethods = {
         this.placeIcon(this.dailyIcon, reward.icon, 0, -78, 64);
         let desc = reward.desc;
         // конкретика дня: сколько руды дал «Накопитель» / какое улучшение выбралось
-        if (info.extra && typeof info.extra === 'number') desc += `\n+${fmt(info.extra)} руды`;
-        else if (info.extra && info.extra.name) desc += `\nулучшение: ${info.extra.name}`;
+        if (info.extra && typeof info.extra === 'number') {
+            desc += `\n+${fmt(info.extra)} руды`;
+        } else if (info.extra && info.extra.name) {
+            desc += `\nулучшение: ${info.extra.name}`;
+        }
+
         this.dailyName.setText(reward.name);
         this.dailyDesc.setText(desc);
         for (let i = 0; i < this.dailySlots.length; i++) {
@@ -172,6 +194,7 @@ export const statusModalsMethods = {
             s.ic.setTint(active ? 0xffffff : 0x606060);
             s.slot.setTint(active ? 0xffffff : 0x909090);
         }
+
         this.dailyDim.setVisible(true);
         this.dailyModal.setVisible(true);
         this._dailyOpen = true;
@@ -209,15 +232,29 @@ export const statusModalsMethods = {
         // скролл-камер исключаем вручную (иначе сдвинутые копии окна во вьюпортах);
         // listCam накроет снапшотом setupListCamera, идущего после create()
         const bossLayers = [this.bossRewardDim, this.bossRewardModal];
-        if (this.mapCam) this.mapCam.ignore(bossLayers);
-        if (this.craftCam) this.craftCam.ignore(bossLayers);
+        if (this.mapCam) {
+            this.mapCam.ignore(bossLayers);
+        }
+
+        if (this.craftCam) {
+            this.craftCam.ignore(bossLayers);
+        }
     },
 
     showBossRewardModal(reward) {
-        if (!reward) return;
+        if (!reward) {
+            return;
+        }
+
         this._bossRewardOpen = true;
-        if (this._mapOpen) this.closeMap();
-        if (this._craftOpen) this.closeCraft();
+        if (this._mapOpen) {
+            this.closeMap();
+        }
+
+        if (this._craftOpen) {
+            this.closeCraft();
+        }
+
         this.bossRewardComps.removeAll(true);
         this.bossRewardBounty.setText(`Баунти: +${fmt(reward.bounty)} руды`);
         // Бонус за скорость: «Время: 0:32 · бонус x1.50» — пусто, если время не передано
@@ -229,6 +266,7 @@ export const statusModalsMethods = {
         } else {
             this.bossRewardSpeed.setVisible(false);
         }
+
         // Список награды — вертикальный стек (stackDown): ячейка строки
         // компонента = иконка 30, зазор SPACE.md (шаг 42 — как прежде); блок
         // артефакта = ячейка иконки 42, зазор после последнего компонента 26
@@ -243,7 +281,10 @@ export const statusModalsMethods = {
         let artifactAlone = false;
         for (const compId of Object.keys(reward.comps || {})) {
             const def = COMPONENTS.find((c) => c.id === compId);
-            if (!def) continue;
+            if (!def) {
+                continue;
+            }
+
             const icon = this.add.image(0, 0, def.icon);
             this.placeIcon(icon, def.icon, -120, 0, COMP_CELL); // позицию ставит place()
             const label = makeLabel(
@@ -264,6 +305,7 @@ export const statusModalsMethods = {
                 }
             });
         }
+
         if (reward.artifactId) {
             const def = ARTIFACTS.find((a) => a.id === reward.artifactId);
             if (def) {
@@ -278,6 +320,7 @@ export const statusModalsMethods = {
                 } else {
                     artifactAlone = true; // награда без компонентов (verify-craft)
                 }
+
                 rows.push({
                     h: ART_CELL,
                     place: (top) => {
@@ -288,11 +331,13 @@ export const statusModalsMethods = {
                 });
             }
         }
+
         if (rows.length) {
             // Артефакт без компонентов: прежний курсор не проходил цикл — блок
             // стоит на месте первой строки (центр имени -56, иконка -44)
             stackDown(rows, { top: artifactAlone ? -65 : -64 - COMP_CELL / 2 });
         }
+
         this.bossRewardComps.add(objs);
         this.bossRewardDim.setVisible(true);
         this.bossRewardModal.setVisible(true);
@@ -327,15 +372,29 @@ export const statusModalsMethods = {
         shell.assemble([this.playerDownBody]);
 
         const layers = [this.playerDownDim, this.playerDownModal];
-        if (this.mapCam) this.mapCam.ignore(layers);
-        if (this.craftCam) this.craftCam.ignore(layers);
+        if (this.mapCam) {
+            this.mapCam.ignore(layers);
+        }
+
+        if (this.craftCam) {
+            this.craftCam.ignore(layers);
+        }
     },
 
     showPlayerDownModal(info) {
-        if (!info) return;
+        if (!info) {
+            return;
+        }
+
         this._playerDownOpen = true;
-        if (this._mapOpen) this.closeMap();
-        if (this._craftOpen) this.closeCraft();
+        if (this._mapOpen) {
+            this.closeMap();
+        }
+
+        if (this._craftOpen) {
+            this.closeCraft();
+        }
+
         this.playerDownBody.setText(
             [
                 `${info.bossName} отбросил тебя в шахту.`,

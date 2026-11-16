@@ -17,11 +17,21 @@ export function floatText(scene, x, y, text, size, color, opts = {}) {
     const { style, depth, startAlpha, rise = FLOAT_RISE_PX, duration = FLOAT_DURATION_MS, ease } = opts;
     const float = makeLabel(scene, x, y, text, size, color, style);
     float.setOrigin(0.5);
-    if (depth !== undefined) float.setDepth(depth);
-    if (startAlpha !== undefined) float.setAlpha(startAlpha);
+    if (depth !== undefined) {
+        float.setDepth(depth);
+    }
+
+    if (startAlpha !== undefined) {
+        float.setAlpha(startAlpha);
+    }
+
     const tween = { targets: float, y: float.y - rise, alpha: 0, duration, onComplete: () => float.destroy() };
-    if (ease) tween.ease = ease;
+    if (ease) {
+        tween.ease = ease;
+    }
+
     scene.tweens.add(tween);
+
     return float;
 }
 
@@ -41,6 +51,7 @@ export function showHitFeedback(scene, px, py, amount, { crit, lucky, isAuto }, 
         label = `КРИТ! +${fmt(amount)}`;
         color = TEXT.gold;
     }
+
     const size = special ? HIT_FLOAT_SIZE.special : isAuto ? HIT_FLOAT_SIZE.auto : HIT_FLOAT_SIZE.manual;
     floatText(scene, px, py - FLOAT_OFFSET_Y, label, size, color, { depth, ease: 'Cubic.easeOut' });
 }

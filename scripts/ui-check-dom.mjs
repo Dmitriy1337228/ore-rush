@@ -27,6 +27,7 @@ const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./
 const argv = process.argv.slice(2);
 const opt = (name, def = null) => {
     const i = argv.indexOf(`--${name}`);
+
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : def;
 };
 const flag = (name) => argv.includes(`--${name}`);
@@ -75,8 +76,10 @@ const auditFn = ({ rules, tolerance }) => {
     const canvas = document.querySelector('#game canvas');
     if (!root || !canvas) {
         result.violations.push({ rule: 'ROOT-RECT', severity: 'error', msg: 'нет #ui-root или канваса' });
+
         return result;
     }
+
     const r = (el) => el.getBoundingClientRect();
     const rootRect = r(root);
     const canvasRect = r(canvas);
@@ -91,12 +94,15 @@ const auditFn = ({ rules, tolerance }) => {
             });
         }
     }
+
     const panel = root.querySelector('[data-dom-panel]');
     const scroll = root.querySelector('[data-dom-scroll]');
     if (!panel || !scroll || panel.hidden) {
         result.violations.push({ rule: 'ROOT-RECT', severity: 'error', msg: 'панель не смонтирована или скрыта' });
+
         return result;
     }
+
     const panelRect = r(panel);
     const scrollRect = r(scroll);
     const contains = (a, b) =>
@@ -115,6 +121,7 @@ const auditFn = ({ rules, tolerance }) => {
     // считаем по врезке, иначе их пересечения с крестиком не проверялись.
     const visibleEl = (el) => {
         const zone = scroll.contains(el) ? scrollRect : panelRect;
+
         return intersects(r(el), zone);
     };
     // Для чисто-текстовых блоков меряем текст (Range), а не блочную коробку:
@@ -125,8 +132,11 @@ const auditFn = ({ rules, tolerance }) => {
             const range = document.createRange();
             range.selectNodeContents(el);
             const rect = range.getBoundingClientRect();
-            if (rect.width > 0 && rect.height > 0) return rect;
+            if (rect.width > 0 && rect.height > 0) {
+                return rect;
+            }
         }
+
         return r(el);
     };
 
@@ -157,12 +167,18 @@ const auditFn = ({ rules, tolerance }) => {
         const right = Math.min(rect.right, scrollRect.right);
         const top = Math.max(rect.top, scrollRect.top);
         const bottom = Math.min(rect.bottom, scrollRect.bottom);
-        if (right - left <= tolerance || bottom - top <= tolerance) return null;
+        if (right - left <= tolerance || bottom - top <= tolerance) {
+            return null;
+        }
+
         return { left, right, top, bottom, width: right - left, height: bottom - top };
     };
     const clipOf = (el) => {
         const box = boxOf(el);
-        if (scroll.contains(el)) return clipToScroll(box);
+        if (scroll.contains(el)) {
+            return clipToScroll(box);
+        }
+
         return intersects(box, panelRect) ? box : null;
     };
 
@@ -174,8 +190,11 @@ const auditFn = ({ rules, tolerance }) => {
 
     const rows = new Set();
     for (const el of panel.querySelectorAll('[data-row], [data-art]')) {
-        if (visibleEl(el)) rows.add(el.dataset.row || el.dataset.art);
+        if (visibleEl(el)) {
+            rows.add(el.dataset.row || el.dataset.art);
+        }
     }
+
     result.rows = Array.from(rows);
 
     // OVERLAP: пересечение двух блоков, ни один не содержит другой.
@@ -183,7 +202,10 @@ const auditFn = ({ rules, tolerance }) => {
         for (let j = i + 1; j < blocks.length; j++) {
             const a = blocks[i],
                 b = blocks[j];
-            if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+            if (a.el.contains(b.el) || b.el.contains(a.el)) {
+                continue;
+            }
+
             const ra = a.rect,
                 rb = b.rect;
             const ox = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
@@ -216,7 +238,10 @@ const auditFn = ({ rules, tolerance }) => {
     for (const { el } of blocks) {
         const style = getComputedStyle(el);
         const size = parseFloat(style.fontSize);
-        if (!Number.isFinite(size) || size <= 0) continue;
+        if (!Number.isFinite(size) || size <= 0) {
+            continue;
+        }
+
         if (size < rules.minFontCss.error) {
             const rr = r(el);
             result.violations.push({
@@ -240,7 +265,10 @@ const auditFn = ({ rules, tolerance }) => {
     const mobile = window.innerWidth <= rules.mobileMaxWidthCss;
     const touchMin = mobile ? rules.minTouchCss.mobile : rules.minTouchCss.desktop;
     for (const el of panel.querySelectorAll('.dom-btn, .dom-close')) {
-        if (!el.getClientRects().length || !visibleEl(el)) continue;
+        if (!el.getClientRects().length || !visibleEl(el)) {
+            continue;
+        }
+
         const rr = r(el);
         if (rr.width < touchMin - tolerance || rr.height < touchMin - tolerance) {
             result.violations.push({
@@ -254,13 +282,19 @@ const auditFn = ({ rules, tolerance }) => {
 
     // PADDING: текст внутри карточки ряда не ближе rules.minPadding.panel к её краю.
     for (const host of panel.querySelectorAll('.dom-row, .dom-art')) {
-        if (!visibleEl(host)) continue;
+        if (!visibleEl(host)) {
+            continue;
+        }
+
         const hr = r(host);
         for (const text of host.querySelectorAll(
             '.dom-name, .dom-sub, .dom-desc, .dom-stock, .dom-error, .dom-need, .dom-src, .dom-status, .dom-line'
         )) {
             const tr = r(text);
-            if (!tr.width || !tr.height) continue;
+            if (!tr.width || !tr.height) {
+                continue;
+            }
+
             const pad = Math.min(tr.left - hr.left, hr.right - tr.right);
             if (pad < rules.minPadding.panel - tolerance) {
                 result.violations.push({
@@ -283,11 +317,15 @@ for (const vp of viewports) {
     const consoleErrors = [];
     page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e}`));
     page.on('console', (m) => {
-        if (m.type() === 'error') consoleErrors.push(`console: ${m.text()}`);
+        if (m.type() === 'error') {
+            consoleErrors.push(`console: ${m.text()}`);
+        }
     });
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
     );
@@ -296,6 +334,7 @@ for (const vp of viewports) {
         () => {
             const g = window.__GAME;
             const ui = g && g.scene.getScene('UIScene');
+
             return !!(ui && ui.L && window.__DOM_CRAFT && document.fonts.status === 'loaded');
         },
         null,
@@ -306,7 +345,9 @@ for (const vp of viewports) {
         const ui = window.__GAME.scene.getScene('UIScene');
         ui._pendingDaily = null;
         ui.registry.set('dailyInfo', null);
-        if (ui._dailyOpen) ui.hideDailyModal();
+        if (ui._dailyOpen) {
+            ui.hideDailyModal();
+        }
     });
     await page.waitForTimeout(350); // updateBlockLock снимет блокировку в следующем кадре
     await page.evaluate(async () => {
@@ -317,9 +358,18 @@ for (const vp of viewports) {
         const m = await import(url);
         // Как состояние craft в ui-matrix: компоненты и предметы выданы,
         // пассив = 0 (руда не меняется во время аудита).
-        for (const id of Object.keys(m.gameState.levels)) m.gameState.levels[id] = 0;
-        for (const c of m.COMPONENTS) m.gameState.components[c.id] = 100;
-        for (const i of m.ITEMS) m.gameState.items[i.id] = 2;
+        for (const id of Object.keys(m.gameState.levels)) {
+            m.gameState.levels[id] = 0;
+        }
+
+        for (const c of m.COMPONENTS) {
+            m.gameState.components[c.id] = 100;
+        }
+
+        for (const i of m.ITEMS) {
+            m.gameState.items[i.id] = 2;
+        }
+
         window.__GAME.scene.getScene('UIScene').openCraft();
     });
     await page.waitForFunction(() => window.__DOM_CRAFT.isOpen(), null, { timeout: 10000 });
@@ -332,11 +382,15 @@ for (const vp of viewports) {
     try {
         const metrics = await page.evaluate(() => {
             const el = document.querySelector('[data-dom-scroll]');
+
             return { max: el.scrollHeight - el.clientHeight, view: el.clientHeight };
         });
         const stepPx = Math.max(1, Math.floor(metrics.view * SCROLL_STEP_SHARE));
         positions = [];
-        for (let y = 0; y < metrics.max; y += stepPx) positions.push(y);
+        for (let y = 0; y < metrics.max; y += stepPx) {
+            positions.push(y);
+        }
+
         positions.push(metrics.max);
 
         for (const [i, y] of positions.entries()) {
@@ -363,8 +417,11 @@ for (const vp of viewports) {
     const dedup = new Map();
     for (const v of violations) {
         const key = `${v.rule}|${v.msg}`;
-        if (!dedup.has(key)) dedup.set(key, v);
+        if (!dedup.has(key)) {
+            dedup.set(key, v);
+        }
     }
+
     const unique = Array.from(dedup.values());
     const missingRows = EXPECTED_ROW_IDS.filter((id) => !seenRows.has(id));
     if (!failures && missingRows.length) {
@@ -381,7 +438,10 @@ for (const vp of viewports) {
         const marks = unique.filter((v) => v.rect).map((v) => ({ rect: v.rect, sev: v.severity }));
         await page.evaluate((items) => {
             document.querySelectorAll('.ui-check-mark').forEach((n) => n.remove());
-            if (!items.length) return;
+            if (!items.length) {
+                return;
+            }
+
             const layer = document.createElement('div');
             layer.className = 'ui-check-mark';
             layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647';
@@ -393,6 +453,7 @@ for (const vp of viewports) {
                     `outline:2px solid ${it.sev === 'error' ? '#ff3b30' : '#ffcc00'};outline-offset:1px;`;
                 layer.appendChild(box);
             }
+
             document.body.appendChild(layer);
         }, marks);
         await page.evaluate(() => {
@@ -402,6 +463,7 @@ for (const vp of viewports) {
         await page.screenshot({ path: path.join(SHOT_DIR, `${vp.id}__craft-dom.png`) });
         await page.evaluate(() => document.querySelectorAll('.ui-check-mark').forEach((n) => n.remove()));
     }
+
     const errors = unique.filter((v) => v.severity === 'error');
     const warns = unique.filter((v) => v.severity === 'warn');
     results.push({
@@ -421,7 +483,10 @@ for (const vp of viewports) {
     unique
         .slice(0, 20)
         .forEach((v) => console.log(`    ${v.severity === 'error' ? 'ERR ' : 'warn'} #${v.step} ${v.rule}: ${v.msg}`));
-    if (consoleErrors.length) consoleErrors.slice(0, 5).forEach((e) => console.log(`    console: ${e}`));
+    if (consoleErrors.length) {
+        consoleErrors.slice(0, 5).forEach((e) => console.log(`    console: ${e}`));
+    }
+
     await ctx.close();
 }
 

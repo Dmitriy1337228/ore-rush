@@ -122,14 +122,17 @@ export function createDomCraft(scene) {
         const now = Date.now();
         const active = (key) => {
             const t = transient.get(key);
+
             return t && t.until > now ? t : null;
         };
         const items = snapshot.items.map((item) => {
             const err = active(`i:${item.id}`);
+
             return err ? { ...item, hint: err.msg, hintKind: 'warn' } : item;
         });
         const artifacts = snapshot.artifacts.map((art) => {
             const hint = active(`a:${art.id}`);
+
             return hint ? { ...art, hintActive: true } : art;
         });
         renderKeyed(chipsEl, snapshot.components, { keyOf: (c) => c.id, create: chip });
@@ -148,24 +151,39 @@ export function createDomCraft(scene) {
     const isOpen = () => !panelEl.hidden;
 
     const open = () => {
-        if (isOpen()) return true;
-        if (scene.registry.get(REG.blockLocked)) return false;
+        if (isOpen()) {
+            return true;
+        }
+
+        if (scene.registry.get(REG.blockLocked)) {
+            return false;
+        }
+
         panelEl.hidden = false;
         backdrop.hidden = false;
         scene._craftOpen = true;
         transient.clear();
-        if (scrollEl) scrollEl.scrollTop = 0;
+        if (scrollEl) {
+            scrollEl.scrollTop = 0;
+        }
+
         forceRefresh();
+
         return true;
     };
 
     const close = ({ notify = true } = {}) => {
-        if (!isOpen()) return;
+        if (!isOpen()) {
+            return;
+        }
+
         panelEl.hidden = true;
         backdrop.hidden = true;
         scene._craftOpen = false;
         transient.clear();
-        if (notify) scene.tryShowDailyModal?.();
+        if (notify) {
+            scene.tryShowDailyModal?.();
+        }
     };
 
     // D3: Phaser-оверлей верхнего приоритета не должен оказаться под DOM-панелью.
@@ -180,8 +198,13 @@ export function createDomCraft(scene) {
         );
 
     const hideForOverlays = () => {
-        if (!isOpen()) return;
-        if (hasOverlay()) close({ notify: false });
+        if (!isOpen()) {
+            return;
+        }
+
+        if (hasOverlay()) {
+            close({ notify: false });
+        }
     };
 
     // 4.4: реклама/фуллскрин Яндекса — панель прячется, после выхода возвращается
@@ -189,13 +212,21 @@ export function createDomCraft(scene) {
     let adWasOpen = false;
     const onAdOpen = () => {
         adWasOpen = isOpen();
-        if (adWasOpen) close({ notify: false });
+        if (adWasOpen) {
+            close({ notify: false });
+        }
     };
     const onAdClose = () => {
         sync();
-        if (!adWasOpen) return;
+        if (!adWasOpen) {
+            return;
+        }
+
         adWasOpen = false;
-        if (hasOverlay()) return;
+        if (hasOverlay()) {
+            return;
+        }
+
         panelEl.hidden = false;
         backdrop.hidden = false;
         scene._craftOpen = true;
@@ -217,6 +248,7 @@ export function createDomCraft(scene) {
                     until: Date.now() + ERROR_MS
                 });
             }
+
             forceRefresh();
         } else if (act === 'use') {
             if (useItem(id, bossActive())) {
@@ -229,17 +261,25 @@ export function createDomCraft(scene) {
                     until: Date.now() + ERROR_MS
                 });
             }
+
             forceRefresh();
         } else if (act === 'craft') {
             if (startCraft(id)) {
                 // Мгновенный рецепт выдаётся сразу (как в Phaser: startCraft + claimCraft)
                 const recipe = lastSnap ? lastSnap.recipes.find((r) => r.id === id) : null;
-                if (recipe && recipe.instant) claimCraft();
+                if (recipe && recipe.instant) {
+                    claimCraft();
+                }
+
                 playSfx(scene, 'purchase');
             }
+
             forceRefresh();
         } else if (act === 'claim') {
-            if (claimCraft()) playSfx(scene, 'purchase');
+            if (claimCraft()) {
+                playSfx(scene, 'purchase');
+            }
+
             forceRefresh();
         } else if (act === 'hint') {
             const art = artifactById(id);
@@ -252,14 +292,19 @@ export function createDomCraft(scene) {
 
     panelEl.addEventListener('click', (e) => {
         const el = e.target.closest('[data-act]');
-        if (!el || el.hasAttribute('disabled')) return;
+        if (!el || el.hasAttribute('disabled')) {
+            return;
+        }
+
         onAction(el.dataset.act, el.dataset.id);
     });
 
     closeBtn.addEventListener('click', () => close());
     backdrop.addEventListener('click', () => close());
     const onKey = (e) => {
-        if (e.key === 'Escape') close();
+        if (e.key === 'Escape') {
+            close();
+        }
     };
     window.addEventListener('keydown', onKey);
 
@@ -269,7 +314,10 @@ export function createDomCraft(scene) {
         isOpen,
         hideForOverlays,
         tick() {
-            if (!isOpen()) return;
+            if (!isOpen()) {
+                return;
+            }
+
             // Истёкшие подсказки/ошибки требуют перерисовки даже без смены состояния
             const now = Date.now();
             let expired = false;
@@ -279,7 +327,11 @@ export function createDomCraft(scene) {
                     expired = true;
                 }
             }
-            if (expired) forceRefresh();
+
+            if (expired) {
+                forceRefresh();
+            }
+
             publisher.tick(now);
         },
         destroy() {
@@ -289,9 +341,14 @@ export function createDomCraft(scene) {
             close({ notify: false });
             panelEl.remove();
             backdrop.remove();
-            if (import.meta.env.DEV && window.__DOM_CRAFT === api) delete window.__DOM_CRAFT;
+            if (import.meta.env.DEV && window.__DOM_CRAFT === api) {
+                delete window.__DOM_CRAFT;
+            }
         }
     };
-    if (import.meta.env.DEV) window.__DOM_CRAFT = api;
+    if (import.meta.env.DEV) {
+        window.__DOM_CRAFT = api;
+    }
+
     return api;
 }

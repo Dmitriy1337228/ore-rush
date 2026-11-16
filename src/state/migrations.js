@@ -25,11 +25,16 @@ export function applyLegacyV1(data) {
     for (const id of LEGACY_V1_UPGRADES) {
         gameState.levels[id] = nonNegative(data.levels && data.levels[id]);
     }
+
     // верхний кламп до капов — как в основной ветке applySave
     for (const def of UPGRADES) {
-        if (def.maxLevel === null) continue;
+        if (def.maxLevel === null) {
+            continue;
+        }
+
         gameState.levels[def.id] = Math.min(gameState.levels[def.id], def.maxLevel);
     }
+
     gameState.version = SAVE_VERSION;
     gameState.tutorialDone = true; // старые игроки — обучение не показываем
     gameState.soundOn = true;
@@ -50,8 +55,11 @@ function migrateV2(data) {
     const mappedEarned = TIERS.map(() => 0);
     LEGACY_V2_TIER_KEYS.forEach((key, i) => {
         const idx = TIERS.findIndex((t) => t.key === key);
-        if (idx >= 0) mappedEarned[idx] = nonNegative(legacyEarned[i]);
+        if (idx >= 0) {
+            mappedEarned[idx] = nonNegative(legacyEarned[i]);
+        }
     });
+
     return { ...data, version: SAVE_VERSION, tier: mappedTier, tierEarned: mappedEarned };
 }
 

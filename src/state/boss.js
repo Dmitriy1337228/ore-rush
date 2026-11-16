@@ -37,13 +37,17 @@ export const getPlayerMaxHp = () => computePlayerMaxHp(gameState.levels.helmet |
 // Крит-шанс в бою усилен «Точильным камнем» (oilBuffAdd).
 export function rollBossHit() {
     const r = rollClickGain(null, getOilBuffAdd());
+
     return { gain: r.gain * getBossDamageMult(), crit: r.crit, lucky: r.lucky };
 }
 
 // Персист незавершённого боя: HP и накопленное время пишутся в состояние, чтобы
 // перезагрузка страницы (F5) не была бесплатным отступлением — бой продолжается.
 export function updateBossFight(hp, elapsedMs, playerHp) {
-    if (!gameState.bossFight) return;
+    if (!gameState.bossFight) {
+        return;
+    }
+
     gameState.bossFight.hp = Math.max(0, Math.ceil(hp));
     gameState.bossFight.elapsedMs = Math.max(0, Math.floor(elapsedMs));
     if (playerHp !== undefined) {
@@ -61,26 +65,35 @@ const toSeconds = (ms) => Math.max(1, Math.round(ms / SECOND_MS));
 export function bossSpeedMult(elapsedMs) {
     const sec = toSeconds(elapsedMs);
     for (const [limit, mult] of BOSS_SPEED_TIERS) {
-        if (sec <= limit) return mult;
+        if (sec <= limit) {
+            return mult;
+        }
     }
+
     return BOSS_SPEED_SLOW;
 }
 
 // Рекорд скорости: пишется только улучшение (меньше секунды). Возвращает true,
 // если рекорд обновлён. Хранится в мете — база будущих достижений.
 export function updateBossRecord(bossId, elapsedSec) {
-    if (!BOSSES.some((b) => b.id === bossId)) return false;
+    if (!BOSSES.some((b) => b.id === bossId)) {
+        return false;
+    }
+
     const sec = Math.min(Math.max(BOSS_RECORD_MIN_SEC, Math.floor(elapsedSec)), BOSS_RECORD_MAX_SEC);
     const cur = gameState.bestBossTimes[bossId];
     if (cur === undefined || sec < cur) {
         gameState.bestBossTimes[bossId] = sec;
+
         return true;
     }
+
     return false;
 }
 
 export function getBossRecord(bossId) {
     const v = gameState.bestBossTimes[bossId];
+
     return typeof v === 'number' && v > 0 ? v : null;
 }
 
@@ -94,7 +107,10 @@ function rollDrop([min, max]) {
 // и артефакт за первый раз. Рекорд времени пишется всегда.
 export function grantBossKill(bossId, elapsedMs = 0) {
     const def = getBossDef(bossId);
-    if (!def) return null;
+    if (!def) {
+        return null;
+    }
+
     const elapsedSec = toSeconds(elapsedMs);
     const speedMult = bossSpeedMult(elapsedMs);
     const bounty = Math.ceil(BOSS_BOUNTY_SECONDS * getEarningRate() * speedMult);
@@ -107,6 +123,7 @@ export function grantBossKill(bossId, elapsedMs = 0) {
             gameState.components[compId] = (gameState.components[compId] || 0) + n;
         }
     }
+
     gameState.bossesDefeated[bossId] = true;
     updateBossRecord(bossId, elapsedSec);
     let artifactId = null;
@@ -114,6 +131,8 @@ export function grantBossKill(bossId, elapsedMs = 0) {
         gameState.artifacts.push(def.artifact);
         artifactId = def.artifact;
     }
+
     saveGame();
+
     return { bounty, comps, artifactId, elapsedSec, speedMult };
 }

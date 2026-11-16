@@ -54,6 +54,7 @@ export function getPrestigeMult() {
 export function getClickDamage() {
     // в единицах текущего тира
     const base = PICKAXE_BASE_DAMAGE + getUpgradeLevel('pickaxe');
+
     // артефактный множитель клика — как престиж: входит и в якорь (симметрия)
     return (
         base *
@@ -99,7 +100,10 @@ export function luckyChanceForLevel(luckyLevel) {
 export function getCritChance() {
     const base = critChanceForLevel(getUpgradeLevel('dynamite'), getArtifactBonus('critAdd'));
     // «Критический импульс» (дневная награда): потолок 95% — всегда остаётся шанс промаха по шансу
-    if (isDailyCritActive()) return Math.min(base + DAILY_CRIT_BONUS, CRIT_CHANCE_CAP_WITH_DAILY);
+    if (isDailyCritActive()) {
+        return Math.min(base + DAILY_CRIT_BONUS, CRIT_CHANCE_CAP_WITH_DAILY);
+    }
+
     return base;
 }
 

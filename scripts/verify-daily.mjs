@@ -10,8 +10,11 @@ let passed = 0,
     failed = 0;
 function check(name, cond, detail = '') {
     console.log(`${cond ? 'OK  ' : 'FAIL'} ${name}${detail ? ' (' + detail + ')' : ''}`);
-    if (cond) passed++;
-    else failed++;
+    if (cond) {
+        passed++;
+    } else {
+        failed++;
+    }
 }
 
 // ---------- Фаза 1: node (чистая логика state.js) ----------
@@ -129,6 +132,7 @@ const b = await chromium.launch();
     const daily = () =>
         page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return { visible: ui.dailyModal.visible, name: ui.dailyName.text, streak: ui.dailyStreakText.text };
         });
     const st = async () =>
@@ -138,6 +142,7 @@ const b = await chromium.launch();
                 .map((r) => r.name)
                 .find((n) => /\/src\/state\.js/.test(n));
             const m = await import(u);
+
             return {
                 streak: m.gameState.dailyStreak,
                 mult: m.getDailyMult(),
@@ -157,6 +162,7 @@ const b = await chromium.launch();
     await page.waitForTimeout(300);
     const closed = await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
+
         return { visible: ui.dailyModal.visible, locked: ui.registry.get('blockLocked'), rows: ui.listContent.visible };
     });
     check(
@@ -180,6 +186,7 @@ const b = await chromium.launch();
             }
         }
     }
+
     const day7 = await daily();
     const s7 = await st();
     check('U5 серия 7, день 7 = «Золотая жила»', s7.streak === 7 && day7.visible && day7.name === 'Золотая жила');
@@ -202,12 +209,14 @@ const b = await chromium.launch();
             .map((r) => r.name)
             .find((n) => /\/src\/state\.js/.test(n));
         const m = await import(u);
+
         return m.getClickDamage() * (10 + m.getUpgradeLevel('magnet')); // veinMult x10 (магнит 0)
     });
     await page.evaluate(() => {
         let rs = 42;
         const lcg = () => {
             rs = (rs * 1103515245 + 12345) % 2147483648;
+
             return 0.05 + (rs / 2147483648) * 0.9;
         };
         Math.random = lcg;
@@ -240,7 +249,10 @@ const b = await chromium.launch();
     check('U8 перезагрузка: повторной выдачи нет, серия сохранена', !afterReload.visible && (await st()).streak === 1);
 
     check('U9 page errors', errors.length === 0 ? 'OK (0)' : `FAIL (${errors.join(' | ')})`);
-    if (errors.length) failed++;
+    if (errors.length) {
+        failed++;
+    }
+
     await page.close();
 }
 await b.close();

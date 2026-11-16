@@ -8,8 +8,11 @@ let passed = 0,
     failed = 0;
 function check(name, cond, detail = '') {
     console.log(`${cond ? 'OK  ' : 'FAIL'} ${name}${detail ? ' (' + detail + ')' : ''}`);
-    if (cond) passed++;
-    else failed++;
+    if (cond) {
+        passed++;
+    } else {
+        failed++;
+    }
 }
 
 (async () => {
@@ -33,7 +36,9 @@ function check(name, cond, detail = '') {
     });
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { 'ore-rush-save': save }
     );
@@ -47,11 +52,14 @@ function check(name, cond, detail = '') {
                 .getEntriesByType('resource')
                 .map((r) => r.name)
                 .find((n) => /\/src\/state\.js/.test(n));
+
             return hit || '/src/state.js';
         });
+
         return page.evaluate(
             async ({ u, e }) => {
                 const m = await import(u);
+
                 return new Function('m', 'return (' + e + ');')(m);
             },
             { u, e: expr }
@@ -136,6 +144,7 @@ function check(name, cond, detail = '') {
         page.evaluate(() => {
             const sc = window.__GAME.scene.getScene('UIScene');
             const row = sc.rows.find((r) => r.def.id === 'pickaxe');
+
             return {
                 amount: sc.amountLbl.text,
                 btnTex: row.btn.texture.key,

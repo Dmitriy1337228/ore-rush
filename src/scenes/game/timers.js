@@ -96,8 +96,14 @@ export const timersMethods = {
             delay: MUTATION_CHECK_MS,
             loop: true,
             callback: () => {
-                if (this.mutation || this.registry.get(REG.blockLocked) || this.registry.get(REG.bossActive)) return;
-                if (Math.random() >= MUTATION_CHANCE) return;
+                if (this.mutation || this.registry.get(REG.blockLocked) || this.registry.get(REG.bossActive)) {
+                    return;
+                }
+
+                if (Math.random() >= MUTATION_CHANCE) {
+                    return;
+                }
+
                 const types = Object.keys(MUTATIONS);
                 this.startMutation(types[Math.floor(Math.random() * types.length)]);
             }
@@ -116,16 +122,25 @@ export const timersMethods = {
             loop: true,
             callback: () => {
                 const aps = getAutoClicksPerSecond();
-                if (aps <= 0) return;
+                if (aps <= 0) {
+                    return;
+                }
+
                 this.autoBudget += aps * (AUTO_TICK_MS / SECOND_MS);
                 // Кап бюджета: во время анимации разрушения (blockBusy) клики не
                 // списываются — без капа копился бы залп на всё время простоя.
                 // Модалки (blockLocked) робо-руку не останавливают — она работает
                 // под ними, как и пассивный доход.
-                if (this.autoBudget > AUTO_BUDGET_CAP) this.autoBudget = AUTO_BUDGET_CAP;
+                if (this.autoBudget > AUTO_BUDGET_CAP) {
+                    this.autoBudget = AUTO_BUDGET_CAP;
+                }
+
                 let guard = 0;
                 while (this.autoBudget >= 1 && guard < AUTO_CLICKS_PER_TICK_GUARD) {
-                    if (this.blockBusy) break;
+                    if (this.blockBusy) {
+                        break;
+                    }
+
                     this.autoBudget -= 1;
                     guard++;
                     this.autoMine();
@@ -170,8 +185,10 @@ export const timersMethods = {
                 readLastExit().then((lastExit) => {
                     if (!lastExit) {
                         saveLastExit(); // первый отсчёт
+
                         return;
                     }
+
                     const info = computeOfflineReward(lastExit);
                     if (info) {
                         addOre(info.reward);
@@ -199,7 +216,10 @@ export const timersMethods = {
     setupShutdownHandler() {
         this.events.on('shutdown', () => {
             saveGame();
-            if (this.boss) this.stopBossBgm();
+            if (this.boss) {
+                this.stopBossBgm();
+            }
+
             this.cancelBossWindup();
             this.destroyBossOverlay();
             this.boss = null;

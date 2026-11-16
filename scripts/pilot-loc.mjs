@@ -42,13 +42,21 @@ const COMMENT = [
 
 function walk(target, acc) {
     const abs = path.join(ROOT, target);
-    if (!fs.existsSync(abs)) return acc;
-    const st = fs.statSync(abs);
-    if (st.isDirectory()) {
-        for (const entry of fs.readdirSync(abs).sort()) walk(path.join(target, entry), acc);
+    if (!fs.existsSync(abs)) {
         return acc;
     }
+
+    const st = fs.statSync(abs);
+    if (st.isDirectory()) {
+        for (const entry of fs.readdirSync(abs).sort()) {
+            walk(path.join(target, entry), acc);
+        }
+
+        return acc;
+    }
+
     acc.push(target);
+
     return acc;
 }
 
@@ -60,7 +68,10 @@ function measure(files) {
     const perFile = [];
     for (const rel of files) {
         const abs = path.join(ROOT, rel);
-        if (!fs.existsSync(abs)) continue;
+        if (!fs.existsSync(abs)) {
+            continue;
+        }
+
         const lines = fs.readFileSync(abs, 'utf8').split(/\r?\n/);
         let t = 0,
             c = 0,
@@ -71,19 +82,23 @@ function measure(files) {
                 b++;
                 continue;
             }
+
             t++;
             if (COMMENT.some((re) => re.test(line))) {
                 m++;
                 continue;
             }
+
             c++;
         }
+
         total += t;
         code += c;
         blank += b;
         comments += m;
         perFile.push({ file: rel, total: t, code: c, blank: b, comments: m });
     }
+
     return { total, code, blank, comments, perFile };
 }
 
@@ -93,7 +108,10 @@ const baselineFiles = BASELINE_FILES.filter((f) => fs.existsSync(path.join(ROOT,
 const SKIP_FILES = new Set(['fixtures.js', 'fixtureMarkup.js', 'fixtureApp.js', 'lab.js']);
 const SKIP_SCRIPTS = [/^scripts[\\/]build-dom-.*\.mjs$/];
 const domFiles = [];
-for (const p of DOM_PATHS) walk(p, domFiles);
+for (const p of DOM_PATHS) {
+    walk(p, domFiles);
+}
+
 // Windows: walk() отдаёт пути с '\', явный список — с '/'; приводим к одному виду.
 const domUnique = Array.from(new Set(domFiles.map((f) => f.replace(/\\/g, '/'))))
     .filter((f) => !SKIP_FILES.has(path.basename(f)))
@@ -102,7 +120,10 @@ const domUnique = Array.from(new Set(domFiles.map((f) => f.replace(/\\/g, '/')))
 const baseline = measure(baselineFiles);
 const dom = measure(domUnique);
 const checkFiles = [];
-for (const p of CHECK_PATHS) walk(p, checkFiles);
+for (const p of CHECK_PATHS) {
+    walk(p, checkFiles);
+}
+
 const checks = measure(Array.from(new Set(checkFiles.map((f) => f.replace(/\\/g, '/')))));
 
 const json = {
@@ -128,10 +149,18 @@ if (process.argv.includes('--json')) {
         ['DOM (пилот)', dom],
         ['Проверки DOM', checks]
     ]) {
-        if (!m.perFile.length) continue;
+        if (!m.perFile.length) {
+            continue;
+        }
+
         console.log(`\n${label}:`);
-        for (const f of m.perFile) console.log(`  ${String(f.code).padStart(5)}  ${f.file}`);
+        for (const f of m.perFile) {
+            console.log(`  ${String(f.code).padStart(5)}  ${f.file}`);
+        }
     }
+
     const missing = DOM_PATHS.filter((p) => !fs.existsSync(path.join(ROOT, p)));
-    if (missing.length) console.log(`\nещё не создано (0 строк): ${missing.join(', ')}`);
+    if (missing.length) {
+        console.log(`\nещё не создано (0 строк): ${missing.join(', ')}`);
+    }
 }

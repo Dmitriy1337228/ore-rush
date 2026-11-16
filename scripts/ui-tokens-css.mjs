@@ -54,15 +54,25 @@ function checkFile(rel, text) {
         const decls = noComment.matchAll(/([a-z-]+)\s*:\s*([^;{}]+)/g);
         for (const decl of decls) {
             const prop = decl[1].toLowerCase();
-            if (!SIZE_PROPS.has(prop)) continue;
+            if (!SIZE_PROPS.has(prop)) {
+                continue;
+            }
+
             for (const lit of decl[2].matchAll(LITERAL)) {
                 const value = lit[0];
-                if (ZERO.test(value)) continue;
-                if (value === '1px' && hasReason) continue;
+                if (ZERO.test(value)) {
+                    continue;
+                }
+
+                if (value === '1px' && hasReason) {
+                    continue;
+                }
+
                 problems.push({ file: rel, line: i + 1, prop, value: value.trim(), text: line.trim() });
             }
         }
     });
+
     return problems;
 }
 
@@ -74,8 +84,10 @@ function run(files) {
             all.push({ file: rel, line: 0, prop: '-', value: '-', text: 'файл не найден' });
             continue;
         }
+
         all.push(...checkFile(path.relative(ROOT, abs).replace(/\\/g, '/'), fs.readFileSync(abs, 'utf8')));
     }
+
     return all;
 }
 
@@ -105,6 +117,7 @@ if (argv.includes('--self-test')) {
             .filter((f) => f.endsWith('.css') && !SKIP.has(f))
             .map((f) => path.join('src/dom', f));
     }
+
     const problems = run(list);
     if (!problems.length) {
         console.log(`ui:tokens:css — ок: голых размеров вне tokens.css нет (${list.length} файл(ов))`);
@@ -114,6 +127,7 @@ if (argv.includes('--self-test')) {
         for (const p of problems.slice(0, 40)) {
             console.error(`  ${p.file}:${p.line}  ${p.prop}: ${p.value}  →  ${p.text}`);
         }
+
         console.error(
             'Размер — через var(--space-*/--font-*/--dom-*) из tokens.css; 1px только с комментарием-причиной.'
         );

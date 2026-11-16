@@ -38,36 +38,51 @@ function splitCallArgs(src, openIdx) {
                 i++;
                 continue;
             }
-            if (ch === quote) quote = null;
+
+            if (ch === quote) {
+                quote = null;
+            }
+
             continue;
         }
+
         if (ch === "'" || ch === '"' || ch === '`') {
             quote = ch;
             cur += ch;
             continue;
         }
+
         if (ch === '(' || ch === '[' || ch === '{') {
             depth++;
-            if (depth > 1) cur += ch;
+            if (depth > 1) {
+                cur += ch;
+            }
+
             continue;
         }
+
         if (ch === ')' || ch === ']' || ch === '}') {
             depth--;
             if (depth === 0 && ch === ')') {
                 args.push({ text: cur.trim(), start: argStart });
+
                 return { args, end: i };
             }
+
             cur += ch;
             continue;
         }
+
         if (ch === ',' && depth === 1) {
             args.push({ text: cur.trim(), start: argStart });
             cur = '';
             argStart = i + 1;
             continue;
         }
+
         cur += ch;
     }
+
     return { args, end: src.length };
 }
 
@@ -94,18 +109,26 @@ const SIZE_CALLS = [
 // Кегль в makeLabel(scene, x, y, text, SIZE, ...) — 5-й аргумент (индекс 4)
 function bareMakeLabelSize(src, callIdx) {
     const open = src.indexOf('(', callIdx);
-    if (open < 0) return null;
+    if (open < 0) {
+        return null;
+    }
+
     const { args } = splitCallArgs(src, open);
     const size = (args[4] || {}).text || '';
+
     return /^\d+$/.test(size) ? size : null;
 }
 
 // Кегль в .setFontSize(N) — единственный аргумент
 function bareSetFontSize(src, callIdx) {
     const open = src.indexOf('(', callIdx);
-    if (open < 0) return null;
+    if (open < 0) {
+        return null;
+    }
+
     const { args } = splitCallArgs(src, open);
     const size = (args[0] || {}).text || '';
+
     return /^\d+$/.test(size) ? size : null;
 }
 
@@ -122,8 +145,11 @@ function hasCommentNearby(src, callIdx, argStart) {
     const argLine = src.slice(0, argStart).split('\n').length - 1;
     const lines = src.split('\n');
     for (let i = Math.max(0, startLine - 1); i <= argLine && i < lines.length; i++) {
-        if (lines[i].includes('//')) return true;
+        if (lines[i].includes('//')) {
+            return true;
+        }
     }
+
     return false;
 }
 
@@ -134,6 +160,7 @@ function findCalls(src, name) {
         out.push(idx);
         idx = src.indexOf(name, idx + name.length);
     }
+
     return out;
 }
 
@@ -147,24 +174,48 @@ for (const file of files) {
     const lineAt = (pos) => src.slice(0, pos).split('\n').length;
     for (const idx of findCalls(src, 'makeLabel(')) {
         const size = bareMakeLabelSize(src, idx);
-        if (size !== null) violations.push(`${path}:${lineAt(idx)}: makeLabel(..., ${size}, ...)`);
+        if (size !== null) {
+            violations.push(`${path}:${lineAt(idx)}: makeLabel(..., ${size}, ...)`);
+        }
     }
+
     for (const idx of findCalls(src, '.setFontSize(')) {
         const size = bareSetFontSize(src, idx);
-        if (size !== null) violations.push(`${path}:${lineAt(idx)}: setFontSize(${size})`);
+        if (size !== null) {
+            violations.push(`${path}:${lineAt(idx)}: setFontSize(${size})`);
+        }
     }
+
     for (const [call, argIdxs] of SIZE_CALLS) {
-        if (!WATCHED.has(file)) continue;
+        if (!WATCHED.has(file)) {
+            continue;
+        }
+
         for (const idx of findCalls(src, call)) {
             const open = src.indexOf('(', idx);
-            if (open < 0) continue;
+            if (open < 0) {
+                continue;
+            }
+
             const { args } = splitCallArgs(src, open);
             for (const ai of argIdxs) {
                 const arg = args[ai];
-                if (!arg) continue;
-                if (!/^-?\d+$/.test(arg.text)) continue;
-                if (isStructural(parseInt(arg.text, 10))) continue;
-                if (hasCommentNearby(src, idx, arg.start)) continue;
+                if (!arg) {
+                    continue;
+                }
+
+                if (!/^-?\d+$/.test(arg.text)) {
+                    continue;
+                }
+
+                if (isStructural(parseInt(arg.text, 10))) {
+                    continue;
+                }
+
+                if (hasCommentNearby(src, idx, arg.start)) {
+                    continue;
+                }
+
                 violations.push(
                     `${path}:${lineAt(idx)}: ${call.replace('(', '')} ${arg.text} — токен (SPACE.*, L.*) или комментарий «что это и зачем»`
                 );
@@ -177,7 +228,11 @@ if (violations.length) {
     console.error(
         `ui:tokens — голые кегли/отступы в ${DIR} (${violations.length}); токены (FONT_SIZE.*, SPACE.*, L.*) или комментарий «что это и зачем»:`
     );
-    for (const v of violations) console.error(`  ${v}`);
+    for (const v of violations) {
+        console.error(`  ${v}`);
+    }
+
     process.exit(1);
 }
+
 console.log(`ui:tokens — ок: голых кеглей/отступов в ${DIR} нет (исключения: ${[...EXCLUDE].join(', ') || '—'}).`);

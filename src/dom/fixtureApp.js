@@ -27,7 +27,9 @@ export function renderFixture(root) {
 
     closeBtn.addEventListener('click', hide);
     const onKey = (e) => {
-        if (e.key === 'Escape') hide();
+        if (e.key === 'Escape') {
+            hide();
+        }
     };
     window.addEventListener('keydown', onKey);
 
@@ -49,7 +51,10 @@ export function renderFixture(root) {
         show,
         hide,
         destroy() {
-            if (timerId) clearInterval(timerId);
+            if (timerId) {
+                clearInterval(timerId);
+            }
+
             window.removeEventListener('keydown', onKey);
         }
     };
@@ -60,11 +65,13 @@ export function mountFixtureCraft(game) {
     const api = renderFixture(root);
     api.destroy = (() => {
         const base = api.destroy;
+
         return () => {
             base();
             delete window.__DOM_UI;
         };
     })();
     window.__DOM_UI = api;
+
     return api;
 }

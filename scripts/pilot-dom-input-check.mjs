@@ -15,6 +15,7 @@ const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./
 const argv = process.argv.slice(2);
 const opt = (n, d = null) => {
     const i = argv.indexOf(`--${n}`);
+
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
 };
 const [w, h] = opt('viewport', '1280x720').split('x').map(Number);
@@ -30,7 +31,9 @@ try {
     const page = await ctx.newPage();
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
     );
@@ -47,6 +50,7 @@ try {
                 .map((r) => r.name)
                 .find((u) => u.includes('/src/state.js'));
             const m = await import(url);
+
             return m.gameState.ore;
         });
 
@@ -54,6 +58,7 @@ try {
         const root = document.getElementById('ui-root').getBoundingClientRect();
         const canvas = document.querySelector('#game canvas').getBoundingClientRect();
         const diffs = ['left', 'top', 'width', 'height'].map((k) => Math.abs(root[k] - canvas[k]));
+
         return { ok: diffs.every((d) => d <= tol), diffs };
     }, RECT_TOLERANCE_CSS);
 
@@ -70,6 +75,7 @@ try {
         await page.mouse.click(400, 390);
         await page.waitForTimeout(120);
     }
+
     const oreAfter = await ore();
     const pdHidden = await page.evaluate(() => window.__CANVAS_PD);
     out.checks.mineClickPasses = {

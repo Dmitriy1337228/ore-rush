@@ -8,7 +8,10 @@ export function createInitialState() {
     // Уровни собираются из каталога автоматически — новые улучшения не нужно
     // отдельно добавлять в состояние.
     const levels = {};
-    for (const def of UPGRADES) levels[def.id] = 0;
+    for (const def of UPGRADES) {
+        levels[def.id] = 0;
+    }
+
     return {
         version: SAVE_VERSION,
         ore: 0,

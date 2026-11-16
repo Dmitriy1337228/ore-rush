@@ -37,6 +37,7 @@ export function stubRandom(values) {
     const real = Math.random;
     let i = 0;
     Math.random = Array.isArray(values) ? () => values[i++ % values.length] : values; // С„СѓРЅРєС†РёСЏ
+
     return () => {
         Math.random = real;
     };

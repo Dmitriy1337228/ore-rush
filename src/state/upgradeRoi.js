@@ -40,24 +40,34 @@ export function upgradeIncomeDelta(id, manualCps = MANUAL_CPS_ASSUME) {
     const veinF = getVeinFactor();
     const tierPrestige = (chain) => chain * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult();
 
-    if (id === 'pickaxe') return tierPrestige(getClickChainMult()) * critF * veinF * cps;
+    if (id === 'pickaxe') {
+        return tierPrestige(getClickChainMult()) * critF * veinF * cps;
+    }
 
     const clickStep = CLICK_MULT_STEPS.find((s) => s.id === id);
-    if (clickStep) return dmg * clickStep.gain * critF * veinF * cps;
+    if (clickStep) {
+        return dmg * clickStep.gain * critF * veinF * cps;
+    }
 
     const passiveOre = PASSIVE_ORE_STEPS.find((s) => s.id === id);
-    if (passiveOre) return passiveOre.perLevel * tierPrestige(getPassiveTechMult());
+    if (passiveOre) {
+        return passiveOre.perLevel * tierPrestige(getPassiveTechMult());
+    }
 
     const passiveMult = PASSIVE_MULT_STEPS.find((s) => s.id === id);
-    if (passiveMult) return getOrePerSecond() * passiveMult.gain;
+    if (passiveMult) {
+        return getOrePerSecond() * passiveMult.gain;
+    }
 
     switch (id) {
         case 'dynamite': {
             const c = critChanceForLevel(getUpgradeLevel('dynamite') + 1) - getCritChance();
+
             return (dmg + syn) * c * (getCritMult() - 1) * veinF * cps;
         }
         case 'lucky': {
             const v = luckyChanceForLevel(getUpgradeLevel('lucky') + 1) - getLuckyChance();
+
             return (dmg + syn) * v * (getVeinMult() - 1) * critF * cps;
         }
         case 'resonance':
@@ -79,14 +89,21 @@ export function pickFreeUpgrade() {
     let best = null,
         bestRoi = 0;
     for (const def of UPGRADES) {
-        if (isMaxed(def.id) || !isUpgradeAvailable(def.id)) continue;
+        if (isMaxed(def.id) || !isUpgradeAvailable(def.id)) {
+            continue;
+        }
+
         const d = upgradeIncomeDelta(def.id);
-        if (d <= 0) continue;
+        if (d <= 0) {
+            continue;
+        }
+
         const roi = d / getUpgradeCost(def.id);
         if (roi > bestRoi) {
             bestRoi = roi;
             best = def;
         }
     }
+
     return best;
 }

@@ -36,7 +36,9 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     });
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { 'ore-rush-save': save }
     );
@@ -45,6 +47,7 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     const read = () =>
         page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return { coal: ui.coalText.text };
         });
     await page.waitForTimeout(10000);
@@ -90,7 +93,9 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     });
     await page2.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { 'ore-rush-save': save2 }
     );
@@ -116,10 +121,17 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     let breaks = 0,
         prevStage = 0;
     for (const s of samples) {
-        if (s.busy && prevStage >= 3) breaks++;
-        if (!s.busy && s.stage < prevStage && prevStage >= 3) breaks++;
+        if (s.busy && prevStage >= 3) {
+            breaks++;
+        }
+
+        if (!s.busy && s.stage < prevStage && prevStage >= 3) {
+            breaks++;
+        }
+
         prevStage = s.stage;
     }
+
     console.log(
         `block stages: max=${maxStage}, разрушений за 14с ~${breaks} => ${maxStage >= 3 && breaks >= 1 ? 'OK' : 'FAIL'}`
     );

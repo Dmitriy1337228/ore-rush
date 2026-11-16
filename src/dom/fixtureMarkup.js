@@ -84,5 +84,6 @@ export function markup() {
         ${recipeRows()}
         <h3 class="dom-section">Артефакты</h3>
         <div class="dom-arts">${artifactCells()}</div>`;
+
     return panel({ title: 'Мастерская', head, children: body });
 }

@@ -87,6 +87,7 @@ function runSimulation(mode) {
                 unlockTier();
                 buysThisTier = 0;
             }
+
             continue;
         }
 
@@ -100,7 +101,10 @@ function runSimulation(mode) {
             let best = null,
                 bestRoi = 0;
             for (const def of UPGRADES) {
-                if (!canBuy(def.id)) continue;
+                if (!canBuy(def.id)) {
+                    continue;
+                }
+
                 const d = deltaIncome(def.id);
                 const c = getUpgradeCost(def.id);
                 if (d > 0 && c / d <= eta) {
@@ -111,6 +115,7 @@ function runSimulation(mode) {
                     }
                 }
             }
+
             const canDescend = uc != null && gameState.ore >= uc;
             if (canDescend && (!best || buysThisTier >= PATIENCE)) {
                 durations.push({ tier: gameState.tier, dur: time - tierStart });
@@ -129,21 +134,41 @@ function runSimulation(mode) {
                 earnedAtEntry = gameState.tierEarned[gameState.tier];
                 break;
             }
-            if (!best || buysThisTier >= PATIENCE) break; // лимит терпения: ко-петля
+
+            if (!best || buysThisTier >= PATIENCE) {
+                break;
+            } // лимит терпения: ко-петля
+
             buyUpgrade(best);
             buys[best] = (buys[best] || 0) + 1;
             buysThisTier++;
         }
     }
+
     return { durations, buys, time, finished: gameState.tier >= TIERS.length - 1, tierStats };
 }
 
 function fmtLike(n) {
-    if (!isFinite(n)) return 'inf';
-    if (n >= 1e15) return n.toExponential(2);
-    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    if (!isFinite(n)) {
+        return 'inf';
+    }
+
+    if (n >= 1e15) {
+        return n.toExponential(2);
+    }
+
+    if (n >= 1e9) {
+        return (n / 1e9).toFixed(1) + 'B';
+    }
+
+    if (n >= 1e6) {
+        return (n / 1e6).toFixed(1) + 'M';
+    }
+
+    if (n >= 1e3) {
+        return (n / 1e3).toFixed(1) + 'K';
+    }
+
     return n.toFixed(1);
 }
 
@@ -162,13 +187,18 @@ function printResult(label, r) {
             );
             continue;
         }
+
         const growth = 'x' + (s.rateOut / Math.max(s.anchor, MIN_RATE)).toFixed(1);
         const ratio = (s.earnedIn / Math.max(s.price, MIN_RATE)).toFixed(2);
         console.log(
             `${String(d.tier).padStart(2)} ${NAMES[d.tier].padEnd(8)} ${(d.dur / SECONDS_PER_MINUTE).toFixed(1).padStart(9)} мин ${fmtLike(s.price).padStart(12)} ${fmtLike(s.anchor).padStart(12)} ${fmtLike(s.rateOut).padStart(12)} ${growth.padStart(7)}  ${ratio}`
         );
     }
-    if (!r.finished) console.log(`!! оборвалась на ${MAX_H}ч, тир ${gameState.tier} (${NAMES[gameState.tier]})`);
+
+    if (!r.finished) {
+        console.log(`!! оборвалась на ${MAX_H}ч, тир ${gameState.tier} (${NAMES[gameState.tier]})`);
+    }
+
     const totalBuys = Object.values(r.buys).reduce((a, b) => a + b, 0);
     const top = Object.entries(r.buys)
         .sort((a, b) => b[1] - a[1])
@@ -192,7 +222,9 @@ let artFails = 0;
 function artCheck(name, cond, detail = '') {
     const ok = Boolean(cond);
     console.log(`${ok ? 'OK  ' : 'FAIL'} ${name}${detail ? ' — ' + detail : ''}`);
-    if (!ok) artFails++;
+    if (!ok) {
+        artFails++;
+    }
 }
 const grantAllArtifacts = () => {
     gameState.artifacts = ARTIFACTS.map((a) => a.id);
@@ -283,6 +315,7 @@ console.log('\n=== ВСЕ АРТЕФАКТЫ СТАРТА (гейт П6) ===');
         gameState.ore += getUpgradeCost('pickaxe');
         buyUpgrade('pickaxe');
     }
+
     const price = getNextUnlockPrice(); // якорь фиксируется от буста кирки
     const anchor = gameState.tierAnchorRate;
     const sec = price / anchor;
@@ -303,4 +336,6 @@ console.log('\n=== ВСЕ АРТЕФАКТЫ СТАРТА (гейт П6) ===');
     );
 }
 console.log(artFails === 0 ? 'БАЛАНС «ВСЕ АРТЕФАКТЫ»: PASS' : `БАЛАНС «ВСЕ АРТЕФАКТЫ»: FAIL (${artFails})`);
-if (artFails > 0) process.exitCode = 1;
+if (artFails > 0) {
+    process.exitCode = 1;
+}

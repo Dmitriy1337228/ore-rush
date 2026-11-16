@@ -70,7 +70,10 @@ export const mapScreenMethods = {
         this._nodeCX = 340;
 
         this.input.on('wheel', (pointer, over, dx, dy) => {
-            if (!this._mapOpen) return;
+            if (!this._mapOpen) {
+                return;
+            }
+
             const v = this._mapView;
             if (
                 pointer.x >= v.x - 10 &&
@@ -94,21 +97,29 @@ export const mapScreenMethods = {
                 node.pulse.stop();
                 node.pulse = null;
             }
+
             if (node.ringPulse) {
                 node.ringPulse.stop();
                 node.ringPulse = null;
             }
+
             node.root.destroy();
         }
+
         this.mapNodes = [];
         let idx = 0;
         for (let t = 0; t < TIERS.length; t++) {
             this.mapNodes.push(this.buildMapTierNode(t, idx++));
             const boss = BOSSES.find((b) => b.tier === t);
-            if (boss) this.mapNodes.push(this.buildMapBossNode(boss, idx++));
+            if (boss) {
+                this.mapNodes.push(this.buildMapBossNode(boss, idx++));
+            }
         }
+
         this._mapContentH = Math.round((MAP_HEAD + this.mapNodes.length * MAP_NODE_H + MAP_TAIL) * s);
-        if (this.mapTrail) this.mapTrail.clear();
+        if (this.mapTrail) {
+            this.mapTrail.clear();
+        }
     },
 
     buildMapTierNode(t, idx) {
@@ -126,9 +137,13 @@ export const mapScreenMethods = {
         );
         fitFontSize(name, FONT_SIZE.captionLg * s, (this._mapView ? this._mapView.w : 680) - 24, 10);
         // Портрет: обводка — серое по камню на телефоне читалось плохо (ревью)
-        if (this.L.portrait) name.setStroke('#14161a', 4);
+        if (this.L.portrait) {
+            name.setStroke('#14161a', 4);
+        }
+
         root.add([ring, ringLine, icon, name]);
         this.mapContent.add(root);
+
         return {
             kind: 'tier',
             tier: t,
@@ -166,6 +181,7 @@ export const mapScreenMethods = {
             name.setStroke('#14161a', 4);
             status.setStroke('#14161a', 4);
         }
+
         root.add([ring, ringLine, icon, name, status]);
         this.mapContent.add(root);
         const node = {
@@ -186,31 +202,49 @@ export const mapScreenMethods = {
         // и с него, иначе жест, начатый на кружке, не скроллит
         ring.on('pointerdown', (p) => this.startMapDrag(p));
         ring.on('pointerup', () => {
-            if (this._mapDragging) return;
+            if (this._mapDragging) {
+                return;
+            }
+
             // Ключ состояния включает рекорд («available|45») — сравниваем префикс
-            if (!node._state || !node._state.startsWith('available')) return;
+            if (!node._state || !node._state.startsWith('available')) {
+                return;
+            }
+
             this._onBossNodeTap(boss.id);
         });
+
         return node;
     },
 
     _onBossNodeTap(bossId) {
-        if (this.registry.get(REG.bossActive)) return;
+        if (this.registry.get(REG.bossActive)) {
+            return;
+        }
+
         this.closeMap();
         // registry 'blockLocked' обновляется в refreshUi следующего кадра — пересчитываем
         // сразу, иначе guard startBossFight увидит устаревший lock от открытой карты
         this.updateBlockLock();
         const gs = this.scene.get('GameScene');
-        if (gs) gs.startBossFight(bossId);
+        if (gs) {
+            gs.startBossFight(bossId);
+        }
     },
 
     refreshMapNodes() {
-        if (!this.mapNodes) return;
+        if (!this.mapNodes) {
+            return;
+        }
+
         let changed = false;
         for (const node of this.mapNodes) {
             if (node.kind === 'tier') {
                 const key = gameState.tier > node.tier ? 'passed' : gameState.tier === node.tier ? 'current' : 'future';
-                if (node._state === key) continue;
+                if (node._state === key) {
+                    continue;
+                }
+
                 node._state = key;
                 changed = true;
                 // future-узлы читаемее прежнего: tint 0x505050 / кольцо 0x3a3d40
@@ -240,7 +274,10 @@ export const mapScreenMethods = {
                 const rec = getBossRecord(b.id);
                 const recTxt = rec ? ` · ${Math.floor(rec / 60)}:${String(rec % 60).padStart(2, '0')}` : '';
                 const key = `${defeated ? 'defeated' : gameState.tier >= b.tier ? 'available' : 'locked'}|${rec ?? 'x'}`;
-                if (node._state === key) continue;
+                if (node._state === key) {
+                    continue;
+                }
+
                 node._state = key;
                 changed = true;
                 if (key.startsWith('defeated')) {
@@ -250,6 +287,7 @@ export const mapScreenMethods = {
                 } else {
                     node.status.setText(`нужен: шахта ${b.tier + 1}`).setColor(TEXT.dim);
                 }
+
                 const ringColor = key.startsWith('defeated')
                     ? 0x7ee787
                     : key.startsWith('available')
@@ -285,7 +323,10 @@ export const mapScreenMethods = {
                 }
             }
         }
-        if (changed) this._redrawMapTrail();
+
+        if (changed) {
+            this._redrawMapTrail();
+        }
     },
 
     // Кружок узла: тёмная заливка (ring) + цветная обводка отдельным Graphics
@@ -305,7 +346,10 @@ export const mapScreenMethods = {
     // (от подписи узла до шеврона у вершины следующего кружка). Пройденные
     // отрезки — золото, будущие — тусклые. Перерисовка при смене статусов узлов.
     _redrawMapTrail() {
-        if (!this.mapTrail || !this.mapNodes || this.mapNodes.length < 2) return;
+        if (!this.mapTrail || !this.mapNodes || this.mapNodes.length < 2) {
+            return;
+        }
+
         const g = this.mapTrail;
         g.clear();
         const s = this._adaptiveScale || 1;
@@ -326,6 +370,7 @@ export const mapScreenMethods = {
             for (let y = from; y + 6 <= to; y += 12) {
                 g.fillRect(cx - dashW / 2, y, dashW, 6);
             }
+
             g.fillTriangle(cx - Math.round(5 * s), to, cx + Math.round(5 * s), to, cx, b.root.y + Math.round(2 * s));
         }
     },
@@ -340,6 +385,7 @@ export const mapScreenMethods = {
         const s = this._adaptiveScale || 1;
         const node = this.mapNodes && this.mapNodes[idx];
         const r = node ? node._r : Math.round(MAP_R_TIER * s);
+
         return Math.round((MAP_HEAD + idx * MAP_NODE_H) * s) + r;
     },
 
@@ -366,8 +412,14 @@ export const mapScreenMethods = {
     },
 
     openMap({ animate = false } = {}) {
-        if (this._mapOpen) return;
-        if (this.registry.get(REG.blockLocked)) return;
+        if (this._mapOpen) {
+            return;
+        }
+
+        if (this.registry.get(REG.blockLocked)) {
+            return;
+        }
+
         this._mapOpen = true;
         this.mapDim.setVisible(true);
         this.mapRoot.setVisible(true);
@@ -405,7 +457,10 @@ export const mapScreenMethods = {
     },
 
     skipMapAnim() {
-        if (!this._mapAnim) return;
+        if (!this._mapAnim) {
+            return;
+        }
+
         this._mapAnim.stop();
         this._mapAnim = null;
         const curIdx = this._findNodeIndex(gameState.tier);
@@ -458,6 +513,7 @@ export const mapScreenMethods = {
             this._mapAnim.stop();
             this._mapAnim = null;
         }
+
         this.mapDim.setVisible(false);
         this.mapRoot.setVisible(false);
         this.mapCam.setVisible(false);
@@ -468,13 +524,20 @@ export const mapScreenMethods = {
     setupMapDrag() {
         const inMapZone = (p) => {
             const v = this._mapView;
+
             return p.x >= v.x - 6 && p.x <= v.x + v.w + 6 && p.y >= v.y - 6 && p.y <= v.y + v.h + 6;
         };
         // Вызывается из хендлеров dim и слотов боссов (dim гасит scene-level down).
         // Тап/драг по слоту во время анимации спуска тоже завершает её (skip)
         this.startMapDrag = (p) => {
-            if (this._mapAnim) this.skipMapAnim();
-            if (!this._mapOpen || !inMapZone(p)) return;
+            if (this._mapAnim) {
+                this.skipMapAnim();
+            }
+
+            if (!this._mapOpen || !inMapZone(p)) {
+                return;
+            }
+
             this._mapDragId = p.id;
             this._mapDragStartY = p.y;
             this._mapDragStartScroll = this.mapCam.scrollY;
@@ -482,15 +545,24 @@ export const mapScreenMethods = {
             this._mapTapSlop = tapSlopPx(this, this.L.W);
         };
         this.input.on('pointermove', (p) => {
-            if (p.id !== this._mapDragId || !p.isDown) return;
+            if (p.id !== this._mapDragId || !p.isDown) {
+                return;
+            }
+
             const delta = this._mapDragStartY - p.y;
-            if (!this._mapDragging && Math.abs(delta) > this._mapTapSlop) this._mapDragging = true;
+            if (!this._mapDragging && Math.abs(delta) > this._mapTapSlop) {
+                this._mapDragging = true;
+            }
+
             if (this._mapDragging) {
                 this.mapCam.scrollY = Phaser.Math.Clamp(this._mapDragStartScroll + delta, 0, this._mapMaxScroll);
             }
         });
         const endDrag = (p) => {
-            if (p && p.id !== this._mapDragId) return;
+            if (p && p.id !== this._mapDragId) {
+                return;
+            }
+
             this._mapDragId = null;
             this.time.delayedCall(0, () => {
                 this._mapDragging = false;
@@ -514,6 +586,7 @@ export const mapScreenMethods = {
             mph = 620;
             mcy = L.modal.cy;
         }
+
         this.mapRoot.setPosition(L.modal.cx, mcy);
         this.mapPanel.setDisplaySize(mpw, mph);
         this.mapTitle.setPosition(0, -mph / 2 + 64);
@@ -537,17 +610,29 @@ export const mapScreenMethods = {
         this.mapBoard.setDisplaySize(board.w, board.h);
         if (this.mapNodes && this._mapS !== s) {
             this._mapS = s;
-            if (this._mapAnim) this.skipMapAnim();
+            if (this._mapAnim) {
+                this.skipMapAnim();
+            }
+
             this.buildMapNodes();
         }
+
         this._mapHalfH = mph / 2;
         this._mapMaxScroll = Math.max(0, this._mapContentH - board.h);
         this.mapCam.scrollY = Phaser.Math.Clamp(this.mapCam.scrollY, 0, this._mapMaxScroll);
         this._nodeCX = board.w / 2;
-        for (const node of this.mapNodes) node.root.x = this._nodeCX;
-        if (this.mapMiner) this.mapMiner.x = this._nodeCX + Math.round(-150 * s);
+        for (const node of this.mapNodes) {
+            node.root.x = this._nodeCX;
+        }
+
+        if (this.mapMiner) {
+            this.mapMiner.x = this._nodeCX + Math.round(-150 * s);
+        }
+
         // Смена ориентации без смены s (s=1.0): узлы не пересобираются, но cx
         // меняется — тропа осталась бы на старой колонке; сдвигаем вслед за узлами
-        if (this._trailCX !== undefined && this._trailCX !== this._nodeCX) this._redrawMapTrail();
+        if (this._trailCX !== undefined && this._trailCX !== this._nodeCX) {
+            this._redrawMapTrail();
+        }
     }
 };

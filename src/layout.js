@@ -23,8 +23,10 @@ export function baseForOrientation(pw, ph) {
     if (ph > pw) {
         // Высота = пропорции окна: canvas заполняет экран целиком (390x844 -> 720x1558)
         const h = Math.min(PORTRAIT_H_MAX, Math.max(PORTRAIT_H_MIN, Math.round((720 * ph) / pw)));
+
         return { w: 720, h };
     }
+
     return LANDSCAPE_BASE;
 }
 

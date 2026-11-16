@@ -15,6 +15,7 @@ export function stackDown(rows, { top, gap = 0 }) {
         bottom = cursor + row.h;
         cursor = bottom + (row.gapAfter !== undefined ? row.gapAfter : gap);
     }
+
     return bottom;
 }
 
@@ -28,5 +29,6 @@ export function rowRight(items, { left, gap = 0 }) {
         right = cursor + item.w;
         cursor = right + (item.gapAfter !== undefined ? item.gapAfter : gap);
     }
+
     return right;
 }

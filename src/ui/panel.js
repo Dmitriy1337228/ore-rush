@@ -33,8 +33,11 @@ export function createPanel(
         // Хит 80x80 мировых px (крестик 44-64 видимых — на телефонах меньше
         // 40 CSS px): enlargement сверх границ, соседние интерактивные далеко
         setHitWorld(closeBtn, 80, 80);
-        if (close.onClose) closeBtn.on('pointerdown', close.onClose);
+        if (close.onClose) {
+            closeBtn.on('pointerdown', close.onClose);
+        }
     }
+
     return {
         panel,
         title: titleLabel,
@@ -42,6 +45,7 @@ export function createPanel(
         contentRect({ left = 0, right = 0, top = 0, bottom = 0 } = {}) {
             const cw = panel.displayWidth;
             const ch = panel.displayHeight;
+
             return {
                 x: -cw / 2 + left,
                 y: -ch / 2 + top,

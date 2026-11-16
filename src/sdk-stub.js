@@ -33,11 +33,15 @@ export const YandexSDKStub = {
             } catch (err) {
                 /* тихо */
             }
+
             return true;
         },
         getStats: async (keys) => {
             const data = readAll();
-            if (!keys) return data;
+            if (!keys) {
+                return data;
+            }
+
             return Object.fromEntries(keys.map((k) => [k, data[k]]));
         },
         // Основной слот сейва. Принимает JSON-строку или объект; хранит payload
@@ -47,6 +51,7 @@ export const YandexSDKStub = {
             try {
                 const payload = typeof data === 'string' ? data : JSON.stringify(data);
                 localStorage.setItem(SAVE_STORAGE_KEY, payload);
+
                 return true;
             } catch (err) {
                 return false;
@@ -66,7 +71,11 @@ export const YandexSDKStub = {
                         }
                     }
                 }
-                if (!raw) return null;
+
+                if (!raw) {
+                    return null;
+                }
+
                 return JSON.parse(raw);
             } catch (err) {
                 return null;

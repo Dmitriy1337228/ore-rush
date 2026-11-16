@@ -15,6 +15,7 @@ const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./
 const argv = process.argv.slice(2);
 const opt = (n, d = null) => {
     const i = argv.indexOf(`--${n}`);
+
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
 };
 const OUT = path.resolve(opt('out', 'shots/pilot-gates'));
@@ -32,7 +33,9 @@ try {
     page.on('pageerror', (e) => errors.push(String(e)));
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
     );
@@ -60,6 +63,7 @@ try {
                 w: Math.round(o.width || 0),
                 h: Math.round(o.height || 0)
             }));
+
         return { daily, alerts };
     });
     await page.waitForTimeout(400);
@@ -72,11 +76,13 @@ try {
         const cs = getComputedStyle(root);
         const r = (el) => {
             const b = el.getBoundingClientRect();
+
             return { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height) };
         };
         const cx = Math.round(window.innerWidth / 2);
         const cy = Math.round(window.innerHeight / 2);
         const top = document.elementFromPoint(cx, cy);
+
         return {
             rootZ: cs.zIndex,
             rootPosition: cs.position,
@@ -92,11 +98,15 @@ try {
     await page.waitForTimeout(300);
     const devPanel = await page.evaluate(() => {
         const el = document.getElementById('dev-admin-panel');
-        if (!el || getComputedStyle(el).display === 'none') return { present: false };
+        if (!el || getComputedStyle(el).display === 'none') {
+            return { present: false };
+        }
+
         const b = el.getBoundingClientRect();
         const x = Math.round(b.left + b.width / 2);
         const y = Math.round(b.top + Math.min(b.height, 40) / 2);
         const top = document.elementFromPoint(x, y);
+
         return {
             present: true,
             z: getComputedStyle(el).zIndex,

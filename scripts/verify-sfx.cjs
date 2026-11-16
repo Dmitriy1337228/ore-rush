@@ -21,7 +21,10 @@ const SFX = [
     const origLog = console.log;
     console.log = (...args) => {
         const s = args.map(String).join(' ');
-        if (s.includes('FAIL')) failed++;
+        if (s.includes('FAIL')) {
+            failed++;
+        }
+
         origLog(...args);
     };
     const b = await chromium.launch();
@@ -65,6 +68,7 @@ const SFX = [
     await page.waitForTimeout(40);
     const playing = await page.evaluate(() => {
         const s = window.__GAME.scene.getScene('GameScene').sound;
+
         return s.getAllPlaying().length;
     });
     console.log('3. click plays sound:', playing > 0 ? `OK (${playing} playing)` : 'FAIL');
@@ -76,6 +80,7 @@ const SFX = [
     await page.waitForTimeout(300);
     const mut = await page.evaluate(() => {
         const s = window.__GAME.scene.getScene('GameScene').sound;
+
         return s
             .getAllPlaying()
             .map((x) => x.key)
@@ -89,12 +94,14 @@ const SFX = [
     await page.waitForTimeout(300);
     const rows = await page.evaluate(() => {
         const u = window.__GAME.scene.getScene('UIScene');
+
         return u.listContent.list.filter((c) => c.visible).length;
     });
     await page.mouse.click(1176, 318); // кнопка «Купить» первого ряда: listCam(934,270) + btn(242,48)
     await page.waitForTimeout(40);
     const bought = await page.evaluate(() => {
         const s = window.__GAME.scene.getScene('GameScene').sound;
+
         return s
             .getAllPlaying()
             .map((x) => x.key)
@@ -116,6 +123,7 @@ const SFX = [
         const gs = window.__GAME.scene.getScene('GameScene');
         const m = window.__GAME.scene.getScene('UIScene');
         const bgm = gs.sound.getAllPlaying().find((x) => x.key === 'bgm');
+
         return { on: m.musicText.text, bgmMute: bgm ? bgm.mute : null, bgmPlaying: !!bgm };
     });
     console.log(
@@ -130,6 +138,7 @@ const SFX = [
         const gs = window.__GAME.scene.getScene('GameScene');
         const m = window.__GAME.scene.getScene('UIScene');
         const bgm = gs.sound.getAllPlaying().find((x) => x.key === 'bgm');
+
         return { on: m.musicText.text, bgmMute: bgm ? bgm.mute : null };
     });
     console.log(
@@ -142,6 +151,7 @@ const SFX = [
         const gs = window.__GAME.scene.getScene('GameScene');
         const m = window.__GAME.scene.getScene('UIScene');
         const bgm = gs.sound.getAllPlaying().find((x) => x.key === 'bgm');
+
         return { lbl: m.soundText.text, bgmMute: bgm ? bgm.mute : null };
     });
     console.log(
@@ -174,6 +184,7 @@ const SFX = [
         const gs = window.__GAME.scene.getScene('GameScene');
         const m = window.__GAME.scene.getScene('UIScene');
         const bgm = gs.sound.getAllPlaying().find((x) => x.key === 'bgm');
+
         return { pct: m.volPct.text, bgmVol: bgm ? bgm.volume : null };
     });
     const volOk = vol.pct === '39%' && vol.bgmVol !== null && Math.abs(vol.bgmVol - 0.389) < 0.02;
@@ -192,6 +203,7 @@ const SFX = [
     const bgmOn = await page.evaluate(() => {
         const s = window.__GAME.scene.getScene('GameScene').sound;
         const bgm = s.getAllPlaying().find((x) => x.key === 'bgm');
+
         return bgm ? { playing: bgm.isPlaying, loop: bgm.loop, mute: bgm.mute } : null;
     });
     console.log(

@@ -10,7 +10,10 @@ export const backgroundMethods = {
     },
 
     positionBg() {
-        if (!this.bgCurrent || !this.L) return;
+        if (!this.bgCurrent || !this.L) {
+            return;
+        }
+
         // Cover видимой зоны (0..bgCoverToY по вертикали, вся ширина) с запасом 8%:
         // тряска камеры при крите (~5px) не открывает края. Ландшафт даёт ровно
         // прежние 1382x778. Портрет — масштаб считается от ЗОНЫ УГЛУБЛЁННОЙ за панель
@@ -33,10 +36,16 @@ export const backgroundMethods = {
     // чёрному — нижняя кромка фото «тонет» в тени перед листом. Прежние
     // ступенчатые 16 полос читались на телефоне как «полоски» (вопрос игрока)
     drawFade() {
-        if (!this.bgFade || !this.L) return;
+        if (!this.bgFade || !this.L) {
+            return;
+        }
+
         const g = this.bgFade;
         g.clear();
-        if (!this.L.portrait) return;
+        if (!this.L.portrait) {
+            return;
+        }
+
         const FH = 260;
         g.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0, 0.88, 0.88);
         g.fillRect(0, this.L.bgCoverToY - FH, this.L.W, FH);
@@ -50,7 +59,9 @@ export const backgroundMethods = {
         const key = tierBgKey(gameState.tier);
         const cur = this.bgCurrent,
             nxt = this.bgNext;
-        if (!nxt.visible && cur.texture.key === key) return;
+        if (!nxt.visible && cur.texture.key === key) {
+            return;
+        }
 
         // Незавершённый кроссфейд мгновенно доводим до конца: частично проявленный
         // новый фон становится текущим, иначе новая смена стартует «с прыжка»
@@ -58,7 +69,9 @@ export const backgroundMethods = {
         if (nxt.visible) {
             cur.setTexture(nxt.texture.key).setAlpha(1).setVisible(true);
             nxt.setVisible(false).setAlpha(0);
-            if (cur.texture.key === key) return;
+            if (cur.texture.key === key) {
+                return;
+            }
         }
 
         // Фейд: новый слой проявляется сверху, старый под ним гаснет

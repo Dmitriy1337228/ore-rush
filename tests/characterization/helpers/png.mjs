@@ -7,13 +7,22 @@ function paeth(a, b, c) {
     const pa = Math.abs(p - a),
         pb = Math.abs(p - b),
         pc = Math.abs(p - c);
-    if (pa <= pb && pa <= pc) return a;
-    if (pb <= pc) return b;
+    if (pa <= pb && pa <= pc) {
+        return a;
+    }
+
+    if (pb <= pc) {
+        return b;
+    }
+
     return c;
 }
 
 export function decodePng(buf) {
-    if (buf.toString('ascii', 1, 4) !== 'PNG') throw new Error('не PNG');
+    if (buf.toString('ascii', 1, 4) !== 'PNG') {
+        throw new Error('не PNG');
+    }
+
     let off = 8,
         w = 0,
         h = 0,
@@ -29,13 +38,26 @@ export function decodePng(buf) {
             h = data.readUInt32BE(4);
             bitDepth = data[8];
             colorType = data[9];
-            if (data[12] !== 0) throw new Error('interlaced PNG не поддерживается');
-        } else if (type === 'IDAT') idat.push(data);
-        else if (type === 'IEND') break;
+            if (data[12] !== 0) {
+                throw new Error('interlaced PNG не поддерживается');
+            }
+        } else if (type === 'IDAT') {
+            idat.push(data);
+        } else if (type === 'IEND') {
+            break;
+        }
+
         off += 12 + len;
     }
-    if (bitDepth !== 8) throw new Error(`bitDepth ${bitDepth} не поддерживается`);
-    if (colorType !== 6 && colorType !== 2) throw new Error(`colorType ${colorType} не поддерживается`);
+
+    if (bitDepth !== 8) {
+        throw new Error(`bitDepth ${bitDepth} не поддерживается`);
+    }
+
+    if (colorType !== 6 && colorType !== 2) {
+        throw new Error(`colorType ${colorType} не поддерживается`);
+    }
+
     const bpp = colorType === 6 ? 4 : 3;
     const stride = w * bpp;
     const raw = zlib.inflateSync(Buffer.concat(idat));
@@ -75,13 +97,17 @@ export function decodePng(buf) {
             dst[x] = v & 0xff;
         }
     }
+
     return { w, h, bpp, data: out };
 }
 
 // Доля пикселей, различающихся хотя бы одним каналом сильнее tolerance (0..255).
 // Разные размеры -> ratio 1 (нарушение golden-геометрии).
 export function diffRatio(a, b, tolerance = 0) {
-    if (a.w !== b.w || a.h !== b.h) return 1;
+    if (a.w !== b.w || a.h !== b.h) {
+        return 1;
+    }
+
     let diff = 0;
     const n = a.w * a.h;
     const A = a.data,
@@ -96,5 +122,6 @@ export function diffRatio(a, b, tolerance = 0) {
             }
         }
     }
+
     return diff / n;
 }

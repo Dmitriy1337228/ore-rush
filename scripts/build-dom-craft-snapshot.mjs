@@ -16,6 +16,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
 const opt = (n, d = null) => {
     const i = argv.indexOf(`--${n}`);
+
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
 };
 const OUT = path.resolve(opt('out', 'shots/pilot-gates/dom-craft-phone.html'));
@@ -39,7 +40,9 @@ try {
     const page = await ctx.newPage();
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
     );
@@ -52,20 +55,29 @@ try {
         const ui = window.__GAME.scene.getScene('UIScene');
         ui._pendingDaily = null;
         ui.registry.set('dailyInfo', null);
-        if (ui._dailyOpen) ui.hideDailyModal();
+        if (ui._dailyOpen) {
+            ui.hideDailyModal();
+        }
+
         const url = performance
             .getEntriesByType('resource')
             .map((r) => r.name)
             .find((u) => u.includes('/src/state.js'));
         const m = await import(url);
-        for (const c of m.COMPONENTS) m.gameState.components[c.id] = 100;
-        for (const i of m.ITEMS) m.gameState.items[i.id] = 2;
+        for (const c of m.COMPONENTS) {
+            m.gameState.components[c.id] = 100;
+        }
+
+        for (const i of m.ITEMS) {
+            m.gameState.items[i.id] = 2;
+        }
     });
     await page.waitForTimeout(350);
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
     await page.waitForTimeout(700);
     const snap = await page.evaluate(() => {
         const root = document.getElementById('ui-root');
+
         return { body: root.innerHTML, cls: root.className };
     });
     body = snap.body;

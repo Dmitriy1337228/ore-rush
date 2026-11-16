@@ -13,7 +13,10 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     let failed = 0;
     const origLog = console.log;
     console.log = (...a) => {
-        if (String(a.join(' ')).includes('FAIL')) failed++;
+        if (String(a.join(' ')).includes('FAIL')) {
+            failed++;
+        }
+
         origLog(...a);
     };
     const b = await chromium.launch();
@@ -47,6 +50,7 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     const st = await page.evaluate(async (url) => {
         const m = await import(url);
         const ui = window.__GAME.scene.getScene('UIScene');
+
         return {
             ore: m.gameState.ore,
             lastExit: localStorage.getItem('ore-rush-lastExit'),
@@ -75,7 +79,9 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
 
     // 5. page errors
     console.log('5. page errors:', errors.length ? `FAIL (${errors.join(' | ')})` : 'OK (0)');
-    if (errors.length) failed++;
+    if (errors.length) {
+        failed++;
+    }
 
     // 6. МИГРАЦИЯ со старого имени игры (переименование 2026-11-13): сейв и
     // lastExit под СТАРЫМИ ключами читаются, зеркало создаётся под новым
@@ -96,7 +102,9 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     const legacyExit = Date.now() - 3600 * 1000;
     await page2.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         {
             'minecraft-clicker-save': legacySave,
@@ -108,6 +116,7 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     await page2.waitForTimeout(3000);
     const mig = await page2.evaluate(async (url) => {
         const m = await import(url);
+
         return {
             ore: m.gameState.ore,
             miner: m.gameState.levels.miner,
@@ -127,6 +136,7 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
         console.log(`6c. page errors: FAIL (${errors2.join(' | ')})`);
         failed++;
     }
+
     await ctx2.close();
 
     // 7. АНТИ-ПРИЗРАК при загрузке: 72-часовой штамп от старого сеанса (kill
@@ -151,9 +161,14 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     // каждой навигации, и без флага reload в 7b заново сеял бы призрачный штамп
     await page3.addInitScript(
         (s) => {
-            if (sessionStorage.getItem('__offlineSeeded')) return;
+            if (sessionStorage.getItem('__offlineSeeded')) {
+                return;
+            }
+
             sessionStorage.setItem('__offlineSeeded', '1');
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         {
             'ore-rush-save': v4Save,
@@ -165,6 +180,7 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     await page3.waitForTimeout(3000);
     const g1 = await page3.evaluate(async (url) => {
         const m = await import(url);
+
         return {
             ore: m.gameState.ore,
             modal: window.__GAME.scene.getScene('UIScene').offlineModal.visible,
@@ -189,6 +205,7 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     await page3.waitForTimeout(2500);
     const g2 = await page3.evaluate(async (url) => {
         const m = await import(url);
+
         return {
             ore: m.gameState.ore,
             modal: window.__GAME.scene.getScene('UIScene').offlineModal.visible
@@ -217,6 +234,7 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     await page3.waitForTimeout(6500);
     const hb = await page3.evaluate(async (url) => {
         const m = await import(url);
+
         return { lastExit: Number(localStorage.getItem('ore-rush-lastExit')), ore: m.gameState.ore };
     }, stateUrl);
     console.log(
@@ -228,6 +246,7 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
     await page3.waitForTimeout(600);
     const hb2 = await page3.evaluate(async (url) => {
         const m = await import(url);
+
         return { ore: m.gameState.ore, modal: window.__GAME.scene.getScene('UIScene').offlineModal.visible };
     }, stateUrl);
     console.log(
@@ -240,6 +259,7 @@ const { ensureDevServer, releaseDevServer } = require('./lib/dev-server.cjs');
         console.log(`8b. page errors: FAIL (${errors3.join(' | ')})`);
         failed++;
     }
+
     await ctx3.close();
 
     await b.close();

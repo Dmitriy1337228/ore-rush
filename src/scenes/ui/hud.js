@@ -137,17 +137,34 @@ export const hudMethods = {
         const parts = [];
         const left = (until) => {
             const sec = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+
             return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
         };
-        if (Date.now() < gameState.dailyBuffUntil)
+        if (Date.now() < gameState.dailyBuffUntil) {
             parts.push(`x${gameState.dailyBuffMult} ${left(gameState.dailyBuffUntil)}`);
-        if (Date.now() < gameState.dailyVeinUntil) parts.push(`жила ${left(gameState.dailyVeinUntil)}`);
-        if (Date.now() < gameState.dailyCritUntil) parts.push(`крит ${left(gameState.dailyCritUntil)}`);
+        }
+
+        if (Date.now() < gameState.dailyVeinUntil) {
+            parts.push(`жила ${left(gameState.dailyVeinUntil)}`);
+        }
+
+        if (Date.now() < gameState.dailyCritUntil) {
+            parts.push(`крит ${left(gameState.dailyCritUntil)}`);
+        }
+
         // Бафы предметов (мастерская): множитель добычи, бомба (бой), стимулятор жилы
-        if (Date.now() < gameState.miningBuffUntil)
+        if (Date.now() < gameState.miningBuffUntil) {
             parts.push(`x${gameState.miningBuffMult} ${left(gameState.miningBuffUntil)}`);
-        if (Date.now() < gameState.bossBuffUntil) parts.push(`бомба ${left(gameState.bossBuffUntil)}`);
-        if (Date.now() < gameState.itemVeinUntil) parts.push(`жила ${left(gameState.itemVeinUntil)}`);
+        }
+
+        if (Date.now() < gameState.bossBuffUntil) {
+            parts.push(`бомба ${left(gameState.bossBuffUntil)}`);
+        }
+
+        if (Date.now() < gameState.itemVeinUntil) {
+            parts.push(`жила ${left(gameState.itemVeinUntil)}`);
+        }
+
         const text = parts.join(' · ');
         if (text !== this._buffLineText) {
             this._buffLineText = text;
@@ -168,7 +185,10 @@ export const hudMethods = {
     // Единый визуальный размер и ЦЕНТРИРОВКА иконок по КОНТЕНТУ (см. ui/iconMetrics.js);
     // метрики кешируются на сцене по ключу текстуры.
     iconMetrics(key) {
-        if (!this._iconMetrics[key]) this._iconMetrics[key] = measureIcon(this.textures, key);
+        if (!this._iconMetrics[key]) {
+            this._iconMetrics[key] = measureIcon(this.textures, key);
+        }
+
         return this._iconMetrics[key];
     },
 
@@ -227,6 +247,7 @@ export const hudMethods = {
             this.starsText.setFontSize(FONT_SIZE.stat);
             this.buffLine.setFontSize(FONT_SIZE.captionLg);
         }
+
         this.statsLine.setVisible(h.statsVisible);
         // Кегль/позиции сброшены — кеши ужина обязаны инвалидироваться
         this._statsFitKey = null;
@@ -255,6 +276,7 @@ export const hudMethods = {
             this.settingsLbl.setPosition(btnX + h.labelDx, h.centerY);
             this.settingsLbl.setFontSize(FONT_SIZE.stat);
         }
+
         this.mapBtn.setPosition(h.mapBtn.x + h.mapBtn.w / 2, h.mapBtn.y + h.mapBtn.h / 2);
         this.mapBtn.setDisplaySize(h.mapBtn.w, h.mapBtn.h);
         this.mapLbl.setPosition(h.mapBtn.x + h.mapBtn.w / 2, h.mapBtn.y + h.mapBtn.h / 2);
@@ -266,6 +288,7 @@ export const hudMethods = {
         for (const btn of [this.settingsBtn, this.mapBtn, this.craftBtn]) {
             setHitWorld(btn, btn.displayWidth, Math.max(btn.displayHeight, TOUCH_MIN));
         }
+
         if (L.portrait) {
             // Док: крупные кнопки (150/306 x 92), кегль от масштаба с читаемым минимумом
             this.mapLbl.setFontSize(Phaser.Math.Clamp(Math.round(FONT_SIZE.label * s), 16, 26));
@@ -282,8 +305,10 @@ export const hudMethods = {
         const h = this.L.hud;
 
         this.coalText.setText(fmt(gameState.ore));
-        if (this.oreIcon.texture.key !== tier.iconKey)
+        if (this.oreIcon.texture.key !== tier.iconKey) {
             this.placeIcon(this.oreIcon, tier.iconKey, h.iconX, h.centerY, h.iconSize);
+        }
+
         this.oreName.setText(tier.name.toLowerCase());
         this.oreName.x = h.counterX + this.coalText.width + (this.L.portrait ? h.nameGap : 10);
         // Ставка = фактическая фоновая добыча (пассив × множитель мутации)
@@ -310,12 +335,16 @@ export const hudMethods = {
                     fitFontSize(this.gpsText, h.gpsSize, avail, 14);
                 }
             }
+
             this.gpsText.x = limitR;
             const gIconX = limitR - this.gpsText.width - h.gpsIconGap - h.gpsIconSize / 2;
             const gIconY = Math.round(this.gpsText.y - this.gpsText.height / 2);
-            if (this.gpsIcon.texture.key !== tier.iconKey)
+            if (this.gpsIcon.texture.key !== tier.iconKey) {
                 this.placeIcon(this.gpsIcon, tier.iconKey, gIconX, gIconY, h.gpsIconSize);
-            else this.gpsIcon.setPosition(gIconX, gIconY);
+            } else {
+                this.gpsIcon.setPosition(gIconX, gIconY);
+            }
+
             // Статы (строка 2): левый край = counterX, предел — limitR
             const statsTxt = `клик ${clickTxt} · крит ${critPct}%`;
             const statsKey = `${statsTxt}|${limitR}`;
@@ -324,6 +353,7 @@ export const hudMethods = {
                 this.statsLine.setText(statsTxt);
                 fitFontSize(this.statsLine, this._hudStatsSize, limitR - h.statsXBase, 14);
             }
+
             this.statsLine.x = h.statsXBase;
         } else {
             // Ландшафт: ставка и статы одной строкой; правый предел — левый край
@@ -332,9 +362,12 @@ export const hudMethods = {
             // ужина (10px) — короткая «+N/сек»; иначе статы наезжали на кнопку
             // «Карта» при больших числах (аудит stress/settings-stress)
             const gx = Math.max(h.gpsIconX, this.oreName.x + this.oreName.width + 14);
-            if (this.gpsIcon.texture.key !== tier.iconKey)
+            if (this.gpsIcon.texture.key !== tier.iconKey) {
                 this.placeIcon(this.gpsIcon, tier.iconKey, gx, h.centerY, h.gpsIconSize);
-            else this.gpsIcon.x = gx;
+            } else {
+                this.gpsIcon.x = gx;
+            }
+
             const limitR = h.mapBtn.x - SPACE.sm;
             const statsTxt = `клик: ${clickTxt} · крит: ${critPct}%`;
             // Минимальная ширина статов — меряем внеэкранной строкой, не трогая
@@ -342,6 +375,7 @@ export const hudMethods = {
             if (!this._hudMeasure) {
                 this._hudMeasure = makeLabel(this, 0, -2000, '', STATS_MIN_SIZE, '#ffffff').setVisible(false);
             }
+
             this._hudMeasure.setFontSize(STATS_MIN_SIZE).setText(statsTxt);
             const statsMinW = Math.ceil(this._hudMeasure.width);
             const gpsX = gx + 20;
@@ -351,6 +385,7 @@ export const hudMethods = {
                 this.gpsText.setText(`+${rate}/сек`);
                 this.gpsText.x = gpsX;
             }
+
             this.statsLine.x = this.gpsText.x + this.gpsText.width + 26;
             const statsKey = `${statsTxt}|${Math.round(this.statsLine.x)}`;
             if (statsKey !== this._statsFitKey) {
@@ -359,6 +394,7 @@ export const hudMethods = {
                 fitFontSize(this.statsLine, this.L.hud.statsSize, limitR - this.statsLine.x, STATS_MIN_SIZE);
             }
         }
+
         this.updateBuffLine();
         // x звёзд фиксирован (правый край перед кнопкой «Настройки»), не двигается от статов
         // Имя руды бывает длинным («Серебро», «Уранит») — ужинаем кегль строки

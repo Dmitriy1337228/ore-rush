@@ -27,6 +27,7 @@ const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(`--${name}`);
 const opt = (name, def = null) => {
     const i = argv.indexOf(`--${name}`);
+
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : def;
 };
 const BASE = process.env.BASE_URL || 'http://localhost:5174';
@@ -49,18 +50,24 @@ const baseline = fs.existsSync(BASELINE_PATH)
 
 function countSigs(violations) {
     const counts = {};
-    for (const v of violations) counts[v.sig] = (counts[v.sig] || 0) + 1;
+    for (const v of violations) {
+        counts[v.sig] = (counts[v.sig] || 0) + 1;
+    }
+
     return counts;
 }
 
 // Какие нарушения «известный долг»: первые N экземпляров каждой сигнатуры, где N — из baseline
 function classify(comboKey, violations) {
     const allowed = USE_BASELINE ? { ...(baseline.combos[comboKey] || {}) } : {};
+
     return violations.map((v) => {
         if (allowed[v.sig] > 0) {
             allowed[v.sig] -= 1;
+
             return { ...v, known: true };
         }
+
         return { ...v, known: false };
     });
 }
@@ -72,24 +79,33 @@ async function openPage({ viewport, seed, extraStorage = {}, name }) {
     const errors = [];
     page.on('pageerror', (e) => errors.push(`pageerror: ${e}`));
     page.on('console', (m) => {
-        if (m.type() === 'error') errors.push(`console: ${m.text()}`);
+        if (m.type() === 'error') {
+            errors.push(`console: ${m.text()}`);
+        }
     });
     const storage = { ...extraStorage };
-    if (seed) storage[SAVE_KEY] = JSON.stringify(seed);
+    if (seed) {
+        storage[SAVE_KEY] = JSON.stringify(seed);
+    }
+
     await page.addInitScript((s) => {
-        for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+        for (const [k, v] of Object.entries(s)) {
+            localStorage.setItem(k, v);
+        }
     }, storage);
     await page.goto(BASE, { waitUntil: 'load' });
     await page.waitForFunction(
         () => {
             const g = window.__GAME;
             const ui = g && g.scene.getScene('UIScene');
+
             return !!(ui && ui.L && window.__uiAudit && document.fonts.status === 'loaded');
         },
         null,
         { timeout: 30000 }
     );
     await page.waitForTimeout(500);
+
     return { ctx, page, errors, name };
 }
 
@@ -113,6 +129,7 @@ async function settle(page) {
         stable = key === prev ? stable + 1 : 0;
         prev = key;
     }
+
     return audit;
 }
 
@@ -126,6 +143,7 @@ async function auditAndShoot(page, file, comboKey) {
     });
     await page.screenshot({ path: file });
     await page.evaluate(() => window.__uiOverlay.hide());
+
     return { audit, violations };
 }
 
@@ -137,6 +155,7 @@ async function runCombo(vp, state) {
         extra['ore-rush-lastExit'] = String(exit);
         extra.mockStats = JSON.stringify({ lastExit: exit });
     }
+
     const errors = [];
     let ctx = null;
     try {
@@ -155,6 +174,7 @@ async function runCombo(vp, state) {
         // HUD, его кегли — известный долг Phaser-аудита). Вёрстку DOM меряет ui:check:dom.
         if (state.dom) {
             await opened.page.screenshot({ path: file });
+
             return {
                 comboKey,
                 vp: vp.id,
@@ -165,7 +185,9 @@ async function runCombo(vp, state) {
                 errors
             };
         }
+
         const { audit, violations } = await auditAndShoot(opened.page, file, comboKey);
+
         return {
             comboKey,
             vp: vp.id,
@@ -185,7 +207,9 @@ async function runCombo(vp, state) {
             errors
         };
     } finally {
-        if (ctx) await ctx.close();
+        if (ctx) {
+            await ctx.close();
+        }
     }
 }
 // ---------- Replay ----------
@@ -207,7 +231,10 @@ if (opt('replay')) {
     console.log(
         `в репорте было: ошибок ${rep.counts.error}, предупреждений ${rep.counts.warn}; сейчас: ошибок ${audit.counts.error}, предупреждений ${audit.counts.warn}`
     );
-    if (errors.length) errors.forEach((e) => console.log('  console: ' + e));
+    if (errors.length) {
+        errors.forEach((e) => console.log('  console: ' + e));
+    }
+
     await ctx.close();
     await browser.close();
     process.exit(audit.counts.error > 0 ? 1 : 0);
@@ -220,7 +247,9 @@ function printViolations(violations, label, limit = LIST_LIMIT) {
             `  #${i + 1} ${v.severity === 'error' ? 'ERR ' : 'warn'} ${v.known ? '(долг) ' : ''}${v.rule}: ${v.msg}`
         );
     });
-    if (violations.length > limit) console.log(`  ... ещё ${violations.length - limit} (см. ${label})`);
+    if (violations.length > limit) {
+        console.log(`  ... ещё ${violations.length - limit} (см. ${label})`);
+    }
 }
 
 // ---------- Матрица ----------
@@ -240,7 +269,12 @@ if (!viewports.length || !states.length) {
 }
 
 const jobs = [];
-for (const vp of viewports) for (const st of states) jobs.push({ vp, st });
+for (const vp of viewports) {
+    for (const st of states) {
+        jobs.push({ vp, st });
+    }
+}
+
 console.log(
     `ui:check: ${viewports.length} вьюпортов x ${states.length} состояний = ${jobs.length} прогонов, параллельно ${CONCURRENCY}`
 );
@@ -268,17 +302,26 @@ results.sort((a, b) => a.comboKey.localeCompare(b.comboKey));
 if (flag('update-baseline') || flag('merge-baseline')) {
     fs.mkdirSync(path.dirname(BASELINE_PATH), { recursive: true });
     for (const r of results) {
-        if (r.failure) continue;
+        if (r.failure) {
+            continue;
+        }
+
         const counts = countSigs(r.violations);
         if (flag('merge-baseline')) {
             // слияние по максимуму: сглаживает «мерцающие» нарушения (набор видимых рядов списка
             // чуть плавает между прогонами) — прогоните 2-3 раза подряд
             const prev = baseline.combos[r.comboKey] || {};
-            for (const [sig, n] of Object.entries(prev)) counts[sig] = Math.max(counts[sig] || 0, n);
+            for (const [sig, n] of Object.entries(prev)) {
+                counts[sig] = Math.max(counts[sig] || 0, n);
+            }
         }
+
         baseline.combos[r.comboKey] = counts;
-        if (!Object.keys(counts).length) delete baseline.combos[r.comboKey];
+        if (!Object.keys(counts).length) {
+            delete baseline.combos[r.comboKey];
+        }
     }
+
     baseline.updatedAt = new Date().toISOString();
     fs.writeFileSync(BASELINE_PATH, JSON.stringify(baseline, null, 2) + '\n');
     const debt = Object.values(baseline.combos).reduce((s, c) => s + Object.values(c).reduce((a, b) => a + b, 0), 0);
@@ -296,9 +339,13 @@ const byRule = {};
 for (const v of flat) {
     const k = byRule[v.rule] || (byRule[v.rule] = { error: 0, warn: 0, newE: 0, newW: 0, known: 0 });
     k[v.severity === 'error' ? 'error' : 'warn'] += 1;
-    if (v.known) k.known += 1;
-    else if (v.severity === 'error') k.newE += 1;
-    else k.newW += 1;
+    if (v.known) {
+        k.known += 1;
+    } else if (v.severity === 'error') {
+        k.newE += 1;
+    } else {
+        k.newW += 1;
+    }
 }
 
 fs.writeFileSync(
@@ -331,21 +378,30 @@ md.push(
     ''
 );
 md.push('| Правило | всего err | всего warn | новых err | новых warn | долг |', '|---|---|---|---|---|---|');
-for (const [rule, k] of Object.entries(byRule))
+for (const [rule, k] of Object.entries(byRule)) {
     md.push(`| ${rule} | ${k.error} | ${k.warn} | ${k.newE} | ${k.newW} | ${k.known} |`);
+}
+
 md.push('', '## Новые нарушения', '');
 const listNew = newErrors.concat(newWarns);
-if (!listNew.length) md.push('нет');
-for (const v of listNew)
+if (!listNew.length) {
+    md.push('нет');
+}
+
+for (const v of listNew) {
     md.push(`- **${v.severity.toUpperCase()} ${v.rule}** \`${v.combo}\` #${v.n}: ${v.msg} (${v.file})`);
+}
+
 if (failures.length) {
     md.push('', '## Сбои прогонов', '');
     failures.forEach((f) => md.push(`- ${f.comboKey}: ${f.failure}`));
 }
+
 if (allErrors.length) {
     md.push('', '## Console errors', '');
     allErrors.forEach((e) => md.push(`- ${e}`));
 }
+
 fs.writeFileSync(path.join(OUT, 'report.md'), md.join('\n') + '\n');
 
 // ---------- Итог ----------
@@ -367,11 +423,13 @@ if (listNew.length) {
                 `  ${v.severity === 'error' ? 'ERR ' : 'warn'} ${v.combo} #${v.n} ${v.rule}: ${v.msg}\n        -> ${v.file}`
             )
         );
-    if (listNew.length > LIST_LIMIT)
+    if (listNew.length > LIST_LIMIT) {
         console.log(
             `  ... ещё ${listNew.length - LIST_LIMIT} — полный список в ${path.relative(process.cwd(), path.join(OUT, 'report.md'))}`
         );
+    }
 }
+
 allErrors.slice(0, 20).forEach((e) => console.log('  console: ' + e));
 console.log(`\nОтчёты: ${path.relative(process.cwd(), OUT)}/report.md, report.json, размеченные PNG рядом.`);
 

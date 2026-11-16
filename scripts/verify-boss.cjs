@@ -15,8 +15,11 @@ let passed = 0,
     failed = 0;
 function check(name, cond, detail = '') {
     console.log(`${cond ? 'OK  ' : 'FAIL'} ${name}${detail ? ' (' + detail + ')' : ''}`);
-    if (cond) passed++;
-    else failed++;
+    if (cond) {
+        passed++;
+    } else {
+        failed++;
+    }
 }
 
 const mkSave = (over = {}) =>
@@ -58,6 +61,7 @@ const mkSave = (over = {}) =>
 // «1:07» -> секунды (счётчик прошедшего времени боя m:ss)
 const parseElapsed = (t) => {
     const m = /^(\d+):(\d{2})$/.exec(t || '');
+
     return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : -1;
 };
 
@@ -98,6 +102,7 @@ const parseElapsed = (t) => {
             window.__rs = 7;
             Math.random = () => {
                 window.__rs = (window.__rs * 1103515245 + 12345) % 2147483648;
+
                 return 0.05 + (window.__rs / 2147483648) * 0.95;
             };
         });
@@ -110,18 +115,22 @@ const parseElapsed = (t) => {
                         .map((r) => r.name)
                         .find((n) => /\/src\/state\.js/.test(n)) || '/src/state.js';
                 const m = await import(u);
+
                 return new Function('m', 'return (' + e + ');')(m);
             }, expr);
         const ptOf = (expr) =>
             page.evaluate((e) => {
                 const ui = window.__GAME.scene.getScene('UIScene');
+
                 return new Function('ui', 'return (' + e + ');')(ui);
             }, expr);
         const gsOf = (expr) =>
             page.evaluate((e) => {
                 const gs = window.__GAME.scene.getScene('GameScene');
+
                 return new Function('gs', 'return (' + e + ');')(gs);
             }, expr);
+
         return { page, state, ptOf, gsOf };
     };
 
@@ -130,12 +139,20 @@ const parseElapsed = (t) => {
         for (let i = 0; i < 18; i++) {
             const st = await page.evaluate(() => {
                 const gs = window.__GAME.scene.getScene('GameScene');
+
                 return gs.boss ? (gs.boss.busy ? 'busy' : 'alive') : 'dead';
             });
-            if (st === 'dead') break;
-            if (st === 'alive') await page.mouse.click(pt.x, pt.y);
+            if (st === 'dead') {
+                break;
+            }
+
+            if (st === 'alive') {
+                await page.mouse.click(pt.x, pt.y);
+            }
+
             await page.waitForTimeout(260);
         }
+
         await page.waitForTimeout(900); // твин смерти 600мс + grantBossKill + очистка
     };
 
@@ -144,6 +161,7 @@ const parseElapsed = (t) => {
             const s = window.__GAME.scene.getScene('GameScene').sound;
             const playing = s.getAllPlaying().map((x) => x.key);
             const theme = s.getAllPlaying().find((x) => x.key === 'boss_theme');
+
             return {
                 themePlaying: !!theme && theme.isPlaying,
                 themeLoop: !!theme && theme.loop,
@@ -156,6 +174,7 @@ const parseElapsed = (t) => {
     const bgmMuteState = (page) =>
         page.evaluate(() => {
             const gs = window.__GAME.scene.getScene('GameScene');
+
             return gs.bgm ? { key: gs.bgm.key, muted: !!gs.bgm.mute, playing: !!gs.bgm.isPlaying } : null;
         });
 
@@ -173,6 +192,7 @@ const parseElapsed = (t) => {
                 .concat(nested)
                 .filter((o) => o.type === 'Image' && o.texture && /^(comp_|art_)/.test(o.texture.key))
                 .map((o) => o.texture.key);
+
             return {
                 visible: ui.bossRewardModal.visible,
                 open: ui._bossRewardOpen,
@@ -278,6 +298,7 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(300);
         const settings = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return {
                 open: ui.modal.visible,
                 presTex: ui.prestigeBtn.texture.key,
@@ -295,6 +316,7 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(200);
         const presAfter = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return { text: ui.prestigeText.text, armed: ui.prestigeArmed };
         });
         check(
@@ -333,6 +355,7 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(300);
         const mapInFight = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return {
                 open: ui._mapOpen,
                 active: window.__GAME.registry.get('bossActive'),
@@ -354,6 +377,7 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(300);
         const craftInFight = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return {
                 open: ui._craftOpen,
                 active: window.__GAME.registry.get('bossActive'),
@@ -388,6 +412,7 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(120);
         const hitSfx = await page.evaluate(() => {
             const s = window.__GAME.scene.getScene('GameScene').sound;
+
             return s
                 .getAllPlaying()
                 .map((x) => x.key)
@@ -478,6 +503,7 @@ const parseElapsed = (t) => {
         const nodeState = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             const n = ui.mapNodes.find((x) => x.boss && x.boss.id === 'boss_copper');
+
             return { state: n._state, status: n.status.text };
         });
         // Статус с рекордом скорости: «побеждён · m:ss» (рекорд пишется grantBossKill)
@@ -543,6 +569,7 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(300);
         const presNormal = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return { open: ui.modal.visible, tex: ui.prestigeBtn.texture.key };
         });
         check(
@@ -578,6 +605,7 @@ const parseElapsed = (t) => {
 
         const keys = await page.evaluate(() => {
             const c = window.__GAME.scene.getScene('GameScene').cache.audio;
+
             return ['boss_hit_1', 'boss_hit_2', 'boss_hit_3', 'boss_theme'].filter((k) => !c.exists(k));
         });
         check('A2: ключи boss_hit_1..3 и boss_theme в аудио-кэше', keys.length === 0, `missing: ${keys.join(', ')}`);
@@ -613,6 +641,7 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(120);
         const hitSfx = await page.evaluate(() => {
             const s = window.__GAME.scene.getScene('GameScene').sound;
+
             return s
                 .getAllPlaying()
                 .map((x) => x.key)
@@ -666,6 +695,7 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(300);
         const k1 = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return { open: ui._craftOpen, root: ui.craftRoot.visible };
         });
         check('K1: крафт открыт в бою', k1.open && k1.root, JSON.stringify(k1));
@@ -675,6 +705,7 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(2500);
         const k2 = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return {
                 reward: ui.bossRewardModal.visible,
                 open: ui._bossRewardOpen,
@@ -693,6 +724,7 @@ const parseElapsed = (t) => {
         const claimHit = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             const btn = ui.bossRewardModal.list.find((o) => o.texture && o.texture.key === 'buy_button_normal');
+
             return { x: ui.bossRewardModal.x + btn.x, y: ui.bossRewardModal.y + btn.y };
         });
         const invBefore = await state(
@@ -702,6 +734,7 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(400);
         const k3 = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return {
                 visible: ui.bossRewardModal.visible,
                 open: ui._bossRewardOpen,
@@ -725,6 +758,7 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(300);
         const k5 = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return { open: ui._craftOpen, root: ui.craftRoot.visible };
         });
         check('K5: после закрытия награды крафт открывается заново', k5.open && k5.root, JSON.stringify(k5));
@@ -736,7 +770,10 @@ const parseElapsed = (t) => {
         );
 
         await state('m.gameState.levels.robotarm = 0');
-        for (let t = 0; t < 20 && (await gsOf('gs.blockBusy')); t++) await page.waitForTimeout(150);
+        for (let t = 0; t < 20 && (await gsOf('gs.blockBusy')); t++) {
+            await page.waitForTimeout(150);
+        }
+
         await page.evaluate(() => {
             const gs = window.__GAME.scene.getScene('GameScene');
             gs.blockStage = 0;
@@ -1019,13 +1056,17 @@ const parseElapsed = (t) => {
             const alive = await gsOf(
                 '({ alive: !!gs.boss, active: gs.registry.get("bossActive"), hp: gs.boss && gs.boss.hp, blocked: gs.registry.get("blockLocked") })'
             );
-            if (!alive.alive) return { dead: alive };
+            if (!alive.alive) {
+                return { dead: alive };
+            }
+
             const hp0 = alive.hp;
             const rate = await state('m.getAutoClicksPerSecond()');
             const t0 = Date.now();
             await page.waitForTimeout(3000);
             const hp1 = await gsOf('gs.boss.hp');
             const dt = (Date.now() - t0) / 1000;
+
             return { avg: (hp0 - hp1) / (rate * dt), rate, dt, hp0, hp1 };
         };
         const m1 = await measureAuto();

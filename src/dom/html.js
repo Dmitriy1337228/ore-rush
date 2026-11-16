@@ -16,9 +16,18 @@ export class SafeHtml {
 }
 
 function render(value) {
-    if (value == null || value === false) return '';
-    if (value instanceof SafeHtml) return value.value;
-    if (Array.isArray(value)) return value.map(render).join('');
+    if (value == null || value === false) {
+        return '';
+    }
+
+    if (value instanceof SafeHtml) {
+        return value.value;
+    }
+
+    if (Array.isArray(value)) {
+        return value.map(render).join('');
+    }
+
     return escapeHtml(value);
 }
 
@@ -26,13 +35,17 @@ export function html(strings, ...values) {
     let out = '';
     for (let i = 0; i < strings.length; i++) {
         out += strings[i];
-        if (i < values.length) out += render(values[i]);
+        if (i < values.length) {
+            out += render(values[i]);
+        }
     }
+
     return new SafeHtml(out);
 }
 
 export function setHtml(el, safe) {
     el.innerHTML = String(safe);
+
     return el;
 }
 
@@ -40,6 +53,7 @@ export function setHtml(el, safe) {
 export function toNode(safe) {
     const tpl = document.createElement('template');
     tpl.innerHTML = String(safe).trim();
+
     return tpl.content.firstElementChild;
 }
 
@@ -59,14 +73,22 @@ export function renderKeyed(container, items, { keyOf, sigOf, create }) {
             const next = built instanceof Element ? built : toNode(built);
             next.dataset.key = key;
             next.dataset.sig = sig;
-            if (el) el.replaceWith(next);
+            if (el) {
+                el.replaceWith(next);
+            }
+
             el = next;
         }
+
         const at = container.children[index];
-        if (at !== el) container.insertBefore(el, at || null);
+        if (at !== el) {
+            container.insertBefore(el, at || null);
+        }
     });
     for (const [key, el] of existing) {
-        if (!keep.has(key)) el.remove();
+        if (!keep.has(key)) {
+            el.remove();
+        }
     }
 }
 
@@ -75,7 +97,10 @@ export function renderKeyed(container, items, { keyOf, sigOf, create }) {
 // только если сигнатура (sig) изменилась.
 export function patchKeyed(container, items, { keyOf, sigOf, create, update }) {
     const existing = new Map();
-    for (const el of Array.from(container.children)) existing.set(el.dataset.key, { el, sig: el.dataset.sig });
+    for (const el of Array.from(container.children)) {
+        existing.set(el.dataset.key, { el, sig: el.dataset.sig });
+    }
+
     const keep = new Set();
     let cursor = container.firstElementChild;
     for (const item of items) {
@@ -88,8 +113,12 @@ export function patchKeyed(container, items, { keyOf, sigOf, create, update }) {
                 update(found.el, item);
                 found.el.dataset.sig = sig;
             }
-            if (cursor === found.el) cursor = cursor.nextElementSibling;
-            else container.insertBefore(found.el, cursor);
+
+            if (cursor === found.el) {
+                cursor = cursor.nextElementSibling;
+            } else {
+                container.insertBefore(found.el, cursor);
+            }
         } else {
             const el = create(item);
             el.dataset.key = key;
@@ -97,7 +126,10 @@ export function patchKeyed(container, items, { keyOf, sigOf, create, update }) {
             container.insertBefore(el, cursor);
         }
     }
+
     for (const [key, rec] of existing) {
-        if (!keep.has(key)) rec.el.remove();
+        if (!keep.has(key)) {
+            rec.el.remove();
+        }
     }
 }

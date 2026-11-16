@@ -72,14 +72,21 @@ function applyDaily(data, now) {
 // HP (0 < hp <= максимум); иначе бой молча сбрасывается.
 // playerHp клампится к текущей живучести шахтёра.
 function restoreBossFight(raw, data) {
-    if (!raw || typeof raw !== 'object') return null;
+    if (!raw || typeof raw !== 'object') {
+        return null;
+    }
+
     const def = getBossDef(raw.bossId);
     const hp = Math.floor(Number(raw.hp));
     const playerHp = Math.floor(Number(raw.playerHp));
     const elapsedMs = nonNegativeInt(raw.elapsedMs);
-    if (!def || !(hp > 0 && hp <= bossHpFor(def))) return null;
+    if (!def || !(hp > 0 && hp <= bossHpFor(def))) {
+        return null;
+    }
+
     const helmetLevel = Number(data.levels && data.levels.helmet) || 0;
     const maxPlayer = computePlayerMaxHp(helmetLevel, Number(data.tier) || 0);
+
     return {
         bossId: raw.bossId,
         hp,
@@ -90,9 +97,15 @@ function restoreBossFight(raw, data) {
 
 // Верстак: валиден только с рецептом каталога и осмысленным временем окончания.
 function restoreCrafting(raw) {
-    if (!raw || typeof raw !== 'object') return null;
+    if (!raw || typeof raw !== 'object') {
+        return null;
+    }
+
     const endsAt = finitePositive(raw.endsAt);
-    if (!endsAt || !CRAFT_RECIPES.some((r) => r.id === raw.recipeId)) return null;
+    if (!endsAt || !CRAFT_RECIPES.some((r) => r.id === raw.recipeId)) {
+        return null;
+    }
+
     return { recipeId: raw.recipeId, endsAt };
 }
 
@@ -107,9 +120,12 @@ function applyMeta(data) {
     gameState.bossesDefeated = {};
     if (data.bossesDefeated && typeof data.bossesDefeated === 'object') {
         for (const def of BOSSES) {
-            if (data.bossesDefeated[def.id]) gameState.bossesDefeated[def.id] = true;
+            if (data.bossesDefeated[def.id]) {
+                gameState.bossesDefeated[def.id] = true;
+            }
         }
     }
+
     gameState.bossFight = restoreBossFight(data.bossFight, data);
     // Рекорды скорости убийства (мета для будущих достижений): ключи только из
     // каталога; мусор/чужие ключи отбрасываются.
@@ -117,9 +133,12 @@ function applyMeta(data) {
     if (data.bestBossTimes && typeof data.bestBossTimes === 'object') {
         for (const def of BOSSES) {
             const v = intInRange(data.bestBossTimes[def.id], BOSS_RECORD_MIN_SEC, BOSS_RECORD_MAX_SEC);
-            if (v !== null) gameState.bestBossTimes[def.id] = v;
+            if (v !== null) {
+                gameState.bestBossTimes[def.id] = v;
+            }
         }
     }
+
     gameState.crafting = restoreCrafting(data.crafting);
 }
 
@@ -150,15 +169,20 @@ function applyLevels(data) {
 }
 
 export function applySave(data) {
-    if (!data || typeof data !== 'object') return;
+    if (!data || typeof data !== 'object') {
+        return;
+    }
 
     if (data.version === 1) {
         applyLegacyV1(data);
+
         return;
     }
 
     data = migrateSaveData(data);
-    if (data.version !== SAVE_VERSION) return;
+    if (data.version !== SAVE_VERSION) {
+        return;
+    }
 
     const now = Date.now();
     applyProgress(data);

@@ -27,15 +27,22 @@ function portReady() {
 async function waitForServer(timeoutMs) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
-        if (await portReady()) return true;
+        if (await portReady()) {
+            return true;
+        }
+
         await new Promise((r) => setTimeout(r, 300));
     }
+
     return false;
 }
 
 // Возвращает { base, spawned, pid }. Синхронный release по pid через taskkill /T.
 async function ensureDevServer(timeoutMs = 20000) {
-    if (await portReady()) return { base: BASE, spawned: false, pid: 0 };
+    if (await portReady()) {
+        return { base: BASE, spawned: false, pid: 0 };
+    }
+
     const child = spawn('cmd', ['/c', 'npx', 'vite', '--port', String(PORT), '--strictPort'], {
         cwd: PROJECT_ROOT,
         stdio: 'ignore',
@@ -53,12 +60,16 @@ async function ensureDevServer(timeoutMs = 20000) {
         }
         throw new Error(`dev-сервер не поднялся за ${timeoutMs} мс`);
     }
+
     return { base: BASE, spawned: true, pid: child.pid };
 }
 
 // Синхронно (пригоден для process.on('exit')) гасит ТОЛЬКО свой сервер.
 function releaseDevServer(server) {
-    if (!server || !server.spawned || !server.pid) return;
+    if (!server || !server.spawned || !server.pid) {
+        return;
+    }
+
     try {
         execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
     } catch (e) {

@@ -21,6 +21,7 @@ function readPixels(textures, key) {
     canvas.height = src.height;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(src, 0, 0);
+
     return { data: ctx.getImageData(0, 0, canvas.width, canvas.height).data, W: canvas.width, H: canvas.height };
 }
 
@@ -31,11 +32,15 @@ function largestComponent(data, W, H, trim) {
     for (let sy = 0; sy < H; sy++) {
         for (let sx = 0; sx < W; sx++) {
             const idx = sy * W + sx;
-            if (seen[idx] || data[idx * 4 + 3] <= ALPHA_VISIBLE) continue;
+            if (seen[idx] || data[idx * 4 + 3] <= ALPHA_VISIBLE) {
+                continue;
+            }
+
             if (trim.left !== undefined && sx < trim.left) {
                 seen[idx] = 1;
                 continue;
             }
+
             // BFS по прозрачности: собираем связную компоненту
             const queue = [idx];
             seen[idx] = 1;
@@ -49,24 +54,52 @@ function largestComponent(data, W, H, trim) {
                 const cxx = cur % W,
                     cyy = (cur - cxx) / W;
                 count++;
-                if (cxx < minX) minX = cxx;
-                if (cxx > maxX) maxX = cxx;
-                if (cyy < minY) minY = cyy;
-                if (cyy > maxY) maxY = cyy;
+                if (cxx < minX) {
+                    minX = cxx;
+                }
+
+                if (cxx > maxX) {
+                    maxX = cxx;
+                }
+
+                if (cyy < minY) {
+                    minY = cyy;
+                }
+
+                if (cyy > maxY) {
+                    maxY = cyy;
+                }
+
                 const nb = [cur - 1, cur + 1, cur - W, cur + W];
                 for (let n = 0; n < 4; n++) {
                     const nn = nb[n];
-                    if (nn < 0 || nn >= W * H || seen[nn]) continue;
-                    if (Math.abs((nn % W) - cxx) > 1) continue; // не через край строки
-                    if (trim.left !== undefined && nn % W < trim.left) continue; // обрезка действует и при расширении
-                    if (data[nn * 4 + 3] <= ALPHA_VISIBLE) continue;
+                    if (nn < 0 || nn >= W * H || seen[nn]) {
+                        continue;
+                    }
+
+                    if (Math.abs((nn % W) - cxx) > 1) {
+                        continue;
+                    } // не через край строки
+
+                    if (trim.left !== undefined && nn % W < trim.left) {
+                        continue;
+                    } // обрезка действует и при расширении
+
+                    if (data[nn * 4 + 3] <= ALPHA_VISIBLE) {
+                        continue;
+                    }
+
                     seen[nn] = 1;
                     queue.push(nn);
                 }
             }
-            if (count > best.count) best = { count, minX, minY, maxX, maxY };
+
+            if (count > best.count) {
+                best = { count, minX, minY, maxX, maxY };
+            }
         }
     }
+
     return best;
 }
 
@@ -77,6 +110,7 @@ export function measureIcon(textures, key) {
     const best = largestComponent(data, W, H, trim);
     const cropW = best.maxX - best.minX + 1;
     const cropH = best.maxY - best.minY + 1;
+
     return {
         cropX: best.minX,
         cropY: best.minY,

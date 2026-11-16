@@ -8,7 +8,9 @@ let failures = 0;
 function check(name, cond, detail = '') {
     const ok = Boolean(cond);
     console.log(`${ok ? 'OK  ' : 'FAIL'} ${name}${detail ? ' — ' + detail : ''}`);
-    if (!ok) failures++;
+    if (!ok) {
+        failures++;
+    }
 }
 
 const state = await import('../src/state.js');
@@ -180,8 +182,10 @@ check(
             e.durMs !== undefined &&
             e.durMs > 0 &&
             (e.bossMult || e.miningMult || e.veinForce || e.autoMult || e.critAdd)
-        )
+        ) {
             return true;
+        }
+
         return e.instantSec !== undefined && e.durMs === undefined;
     })
 );
@@ -214,6 +218,7 @@ check(
     'рецепты: cost предмета совпадает с ITEMS.cost',
     CRAFT_RECIPES.filter((r) => r.result.kind === 'item').every((r) => {
         const def = ITEMS.find((i) => i.id === r.result.id);
+
         return JSON.stringify(def.cost) === JSON.stringify(r.cost);
     })
 );
@@ -528,6 +533,7 @@ check(
         (() => {
             const d = { ...bossFightSave, bossFight: { bossId: 'boss_nope', hp: 10, elapsedMs: 1 } };
             applySave(d);
+
             return gameState.bossFight === null;
         })()
     );
@@ -537,8 +543,11 @@ check(
             let bad = 0;
             for (const hp of [0, -5, copperMax + 1]) {
                 applySave({ ...bossFightSave, bossFight: { bossId: 'boss_copper', hp, elapsedMs: 1 } });
-                if (gameState.bossFight !== null) bad++;
+                if (gameState.bossFight !== null) {
+                    bad++;
+                }
             }
+
             return bad === 0;
         })()
     );
@@ -787,6 +796,7 @@ function saveGameToString() {
         'каска: каталог — equipment, кап 25, эффект HP',
         (() => {
             const h = UPGRADES.find((u) => u.id === 'helmet');
+
             return !!h && h.tab === 'equipment' && h.maxLevel === 25 && /HP/i.test(h.effect);
         })()
     );

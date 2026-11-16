@@ -41,7 +41,10 @@ export const gearMethods = {
                 color: TEXT.white
             });
             buyBtn.on('pointerup', () => {
-                if (this._listDragging) return;
+                if (this._listDragging) {
+                    return;
+                }
+
                 if (buyItem(def.id)) {
                     playSfx(this, 'purchase');
                     this.refreshGearPanel(true);
@@ -58,13 +61,17 @@ export const gearMethods = {
                 depth: DEPTH.uiAbove
             });
             useBtn.on('pointerup', () => {
-                if (this._listDragging) return;
+                if (this._listDragging) {
+                    return;
+                }
+
                 if ((gameState.items[def.id] || 0) > 0 && useItem(def.id, true)) {
                     playSfx(this, 'purchase');
                     this.refreshGearPanel(true);
                 }
             });
             this.gearContent.add([card, icon, name, stock, desc, buyBtn, buyLbl, useBtn, useLbl]);
+
             return { def, card, icon, name, stock, desc, buyBtn, buyLbl, useBtn, useLbl, _key: null, _cardGeom: null };
         });
     },
@@ -74,14 +81,20 @@ export const gearMethods = {
     // должны ВЛЕЗАТЬ во вьюпорт без скролла (иначе «проваливались» — gearContent
     // рендерится main-камерой; обрезка — geometry-маска).
     layoutGearSection() {
-        if (!this.gearContent) return;
+        if (!this.gearContent) {
+            return;
+        }
+
         const vw = VIEWPORT;
         const g = this.L.gear;
         if (this.L.portrait) {
             // Портрет (спека редизайна): три карточки заполняют врезку целиком
             // — «серого пятна» под рядами нет; крупные кегли (FIT ~0.54),
             // у кнопок гарантированный отступ от описания (gapTop/padBottom).
-            if (this.gearTitle) this.gearTitle.setVisible(false);
+            if (this.gearTitle) {
+                this.gearTitle.setVisible(false);
+            }
+
             // Высота ряда от ЖИВОГО вьюпорта (босс-режим его поджимает) —
             // формула здесь: computeLayout не знает о поджатии.
             // 24 = врезка сверху/снизу (SPACE.xs * 2) + зазоры между рядами (SPACE.sm * 2)
@@ -98,6 +111,7 @@ export const gearMethods = {
                     row.card.lineStyle(2, 0x555860, 1);
                     row.card.strokeRoundedRect(vw.x + SPACE.xs, ry, w, rh, 10); // 10 — радиус скругления карточки // 10 — радиус скругления карточки
                 }
+
                 row._geom = { x: vw.x + SPACE.xs, y: ry, w, h: rh };
                 const iconCX = vw.x + SPACE.xs + g.iconInset;
                 row.icon.setPosition(iconCX, ry + g.iconDy);
@@ -142,9 +156,12 @@ export const gearMethods = {
                 );
                 ry += rh + SPACE.sm;
             }
+
             this.refreshGearPanel(true);
+
             return;
         }
+
         this.gearTitle.setPosition(vw.x + vw.w / 2, vw.y + g.titleDy);
         this.gearTitle.setFontSize(FONT_SIZE.buttonLg);
         const rh = g.rowH;
@@ -161,6 +178,7 @@ export const gearMethods = {
                 row.card.lineStyle(2, 0x555860, 1);
                 row.card.strokeRoundedRect(vw.x + SPACE.xs, ry, w, rh, 10); // 10 — радиус скругления карточки
             }
+
             row._geom = { x: vw.x + SPACE.xs, y: ry, w, h: rh };
             const iconCX = vw.x + SPACE.xs + g.iconInset;
             // Компактная строка (аудит боя): иконка поднята выше кнопок (низ 60
@@ -206,18 +224,25 @@ export const gearMethods = {
             );
             ry += rh + g.rowGap;
         }
+
         this.refreshGearPanel(true);
     },
 
     // Дифф-обновление рядов снаряжения: запас, цена (динамическая), доступность
     refreshGearPanel(force = false) {
-        if (!this.gearContent) return;
+        if (!this.gearContent) {
+            return;
+        }
+
         for (const row of this.gearRows) {
             const stock = gameState.items[row.def.id] || 0;
             const price = getItemPrice(row.def.id);
             const canBuy = canBuyItem(row.def.id);
             const key = `${stock}|${price}|${canBuy ? 'n' : 'g'}`;
-            if (!force && row._key === key) continue;
+            if (!force && row._key === key) {
+                continue;
+            }
+
             row._key = key;
             // Короткий бейдж «x N» (как в слотах боя): длинное «в запасе: N» при
             // широком имени печаталось прямо ПОВЕРХ него глифами (скриншот боя)

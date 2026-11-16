@@ -12,8 +12,11 @@ let passed = 0,
     failed = 0;
 function check(name, cond, detail = '') {
     console.log(`${cond ? 'OK  ' : 'FAIL'} ${name}${detail ? ' (' + detail + ')' : ''}`);
-    if (cond) passed++;
-    else failed++;
+    if (cond) {
+        passed++;
+    } else {
+        failed++;
+    }
 }
 
 // Сигнатура нарушения: цифры (координаты/размеры) выпадают — сравниваем классы
@@ -26,34 +29,60 @@ const sig = (v) => v.replace(/\d+(\.\d+)?/g, '#');
 async function auditLayout(page) {
     return page.evaluate(() => {
         const game = window.__GAME;
-        if (!game) return { violations: ['window.__GAME не найден'] };
+        if (!game) {
+            return { violations: ['window.__GAME не найден'] };
+        }
+
         const items = [];
         const ui = game.scene.getScene('UIScene');
         const listCam = ui ? ui.listCam : null;
         for (const scene of game.scene.getScenes(true)) {
             const inTree = (container, go) => {
-                if (container === go) return true;
-                if (!container.list) return false;
-                for (const ch of container.list) {
-                    if (ch === go || inTree(ch, go)) return true;
+                if (container === go) {
+                    return true;
                 }
+
+                if (!container.list) {
+                    return false;
+                }
+
+                for (const ch of container.list) {
+                    if (ch === go || inTree(ch, go)) {
+                        return true;
+                    }
+                }
+
                 return false;
             };
             const walk = (list, parentVisible) => {
                 for (const go of list) {
                     if (go.visible === false || parentVisible === false) {
-                        if (go.list) walk(go.list, false);
+                        if (go.list) {
+                            walk(go.list, false);
+                        }
+
                         continue;
                     }
+
                     if (go.list) {
                         walk(go.list, true);
                         continue;
                     }
-                    if (go.type === 'ParticleEmitter' || go.type === 'Graphics' || go.type === 'Rectangle') continue;
-                    if (go.alpha !== undefined && go.alpha < 0.05) continue;
+
+                    if (go.type === 'ParticleEmitter' || go.type === 'Graphics' || go.type === 'Rectangle') {
+                        continue;
+                    }
+
+                    if (go.alpha !== undefined && go.alpha < 0.05) {
+                        continue;
+                    }
+
                     try {
                         const b = go.getBounds();
-                        if (b.width <= 1 && b.height <= 1) continue;
+                        if (b.width <= 1 && b.height <= 1) {
+                            continue;
+                        }
+
                         let x = b.x,
                             y = b.y,
                             r = b.right,
@@ -64,35 +93,50 @@ async function auditLayout(page) {
                         if (scene.scene.key === 'UIScene' && ui && ui.listContent && inTree(ui.listContent, go)) {
                             inList = true;
                             const vy = y - listCam.scrollY + listCam.y;
-                            if (bt - listCam.scrollY + listCam.y < listCam.y - 2 || vy > listCam.y + listCam.height + 2)
+                            if (
+                                bt - listCam.scrollY + listCam.y < listCam.y - 2 ||
+                                vy > listCam.y + listCam.height + 2
+                            ) {
                                 continue;
+                            }
+
                             y = vy;
                             bt = bt - listCam.scrollY + listCam.y;
                             x = x - listCam.scrollX + listCam.x;
                             r = r - listCam.scrollX + listCam.x;
                         }
+
                         if (scene.scene.key === 'UIScene' && ui && ui.mapContent && inTree(ui.mapContent, go)) {
                             const cam = ui.mapCam;
                             const vy = y - cam.scrollY + cam.y;
-                            if (bt - cam.scrollY + cam.y < cam.y - 2 || vy > cam.y + cam.height + 2) continue;
+                            if (bt - cam.scrollY + cam.y < cam.y - 2 || vy > cam.y + cam.height + 2) {
+                                continue;
+                            }
+
                             y = vy;
                             bt = bt - cam.scrollY + cam.y;
                             x = x - cam.scrollX + cam.x;
                             r = r - cam.scrollX + cam.x;
                         }
+
                         if (scene.scene.key === 'UIScene' && ui && ui.craftContent && inTree(ui.craftContent, go)) {
                             const cam = ui.craftCam;
                             const vy = y - cam.scrollY + cam.y;
-                            if (bt - cam.scrollY + cam.y < cam.y - 2 || vy > cam.y + cam.height + 2) continue;
+                            if (bt - cam.scrollY + cam.y < cam.y - 2 || vy > cam.y + cam.height + 2) {
+                                continue;
+                            }
+
                             y = vy;
                             bt = bt - cam.scrollY + cam.y;
                             x = x - cam.scrollX + cam.x;
                             r = r - cam.scrollX + cam.x;
                         }
+
                         if (go.type === 'Text') {
                             y += 3;
                             bt -= 3;
                         }
+
                         items.push({
                             scene: scene.scene.key,
                             kind: go.type,
@@ -110,14 +154,21 @@ async function auditLayout(page) {
             };
             walk(scene.children.list, true);
         }
+
         const violations = [];
         const isContained = (a, b) => a.x >= b.x - 1 && a.y >= b.y - 1 && a.r <= b.r + 1 && a.b <= b.b + 1;
         for (let i = 0; i < items.length; i++) {
             for (let j = i + 1; j < items.length; j++) {
                 const a = items[i],
                     b = items[j];
-                if (a.scene !== b.scene) continue;
-                if (isContained(a, b) || isContained(b, a)) continue;
+                if (a.scene !== b.scene) {
+                    continue;
+                }
+
+                if (isContained(a, b) || isContained(b, a)) {
+                    continue;
+                }
+
                 const ox = Math.min(a.r, b.r) - Math.max(a.x, b.x);
                 const oy = Math.min(a.b, b.b) - Math.max(a.y, b.y);
                 if (ox > 1 && oy > 1) {
@@ -127,19 +178,32 @@ async function auditLayout(page) {
                 }
             }
         }
+
         if (ui && ui.listContent && listCam) {
             const cards = ui.listContent.list.filter((go) => go.texture && go.texture.key === 'upgrade_row_card_1');
             for (const card of cards) {
                 const cb = card.getBounds();
                 const csy = cb.y - listCam.scrollY + listCam.y;
                 const csby = cb.bottom - listCam.scrollY + listCam.y;
-                if (csby < listCam.y - 2 || csy > listCam.y + listCam.height + 2) continue;
+                if (csby < listCam.y - 2 || csy > listCam.y + listCam.height + 2) {
+                    continue;
+                }
+
                 const inner = { x: cb.x + 5, y: csy + 5, r: cb.right - 5, b: csby - 5 };
                 for (const go of ui.listContent.list) {
-                    if (go === card || go.type === 'Rectangle') continue;
+                    if (go === card || go.type === 'Rectangle') {
+                        continue;
+                    }
+
                     const gb = go.getBounds();
-                    if (!gb || gb.width === 0) continue;
-                    if (gb.bottom < cb.y || gb.y > cb.bottom) continue;
+                    if (!gb || gb.width === 0) {
+                        continue;
+                    }
+
+                    if (gb.bottom < cb.y || gb.y > cb.bottom) {
+                        continue;
+                    }
+
                     const gy = gb.y - listCam.scrollY + listCam.y,
                         gby = gb.bottom - listCam.scrollY + listCam.y;
                     const adj = go.type === 'Text' ? 3 : 0;
@@ -151,6 +215,7 @@ async function auditLayout(page) {
                 }
             }
         }
+
         return { violations };
     });
 }
@@ -206,6 +271,7 @@ const DEEP_SAVE = JSON.stringify({
             window.__rs = 7;
             Math.random = () => {
                 window.__rs = (window.__rs * 1103515245 + 12345) % 2147483648;
+
                 return 0.05 + (window.__rs / 2147483648) * 0.95;
             };
         });
@@ -218,15 +284,18 @@ const DEEP_SAVE = JSON.stringify({
                         .map((r) => r.name)
                         .find((n) => /\/src\/state\.js/.test(n)) || '/src/state.js';
                 const m = await import(u);
+
                 return new Function('m', 'return (' + e + ');')(m);
             }, expr);
         };
+
         return { page, state };
     };
 
     const uiState = (page) =>
         page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return {
                 mapOpen: ui._mapOpen,
                 craftOpen: ui._craftOpen,
@@ -249,6 +318,7 @@ const DEEP_SAVE = JSON.stringify({
     const ptOf = (page, expr) =>
         page.evaluate((e) => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return new Function('ui', 'return (' + e + ');')(ui);
         }, expr);
 
@@ -284,8 +354,11 @@ const DEEP_SAVE = JSON.stringify({
                 const lbl = a.kind === 'tier' ? a.name : a.status;
                 const from = a.root.y + lbl.y + lbl.height + Math.round(4 * sc);
                 const to = b.root.y - Math.round(9 * sc);
-                if (from + 6 > to) bad.push({ k, from: Math.round(from), to: Math.round(to) });
+                if (from + 6 > to) {
+                    bad.push({ k, from: Math.round(from), to: Math.round(to) });
+                }
             }
+
             return bad;
         });
         check(
@@ -297,6 +370,7 @@ const DEEP_SAVE = JSON.stringify({
 
         const states = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return ui.mapNodes.map((n) => ({
                 kind: n.kind,
                 tier: n.kind === 'tier' ? n.tier : null,
@@ -387,6 +461,7 @@ const DEEP_SAVE = JSON.stringify({
         );
         const banner = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return ui.mapRoot.list.some((o) => o.type === 'Text' && /Уровень 2: Медь!/.test(o.text));
         });
         check('C4: баннер прибытия «Уровень 2: Медь!»', banner);
@@ -445,6 +520,7 @@ const DEEP_SAVE = JSON.stringify({
         check('D1c: колесо докручивает (+100px)', Math.abs(wheelScroll - (d1 + 200)) < 1, `scrollY=${wheelScroll}`);
         const states = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return ui.mapNodes.map((n) => ({
                 kind: n.kind,
                 tier: n.tier || null,
@@ -506,6 +582,7 @@ const DEEP_SAVE = JSON.stringify({
         s = await uiState(page);
         const fightOn = await page.evaluate(() => {
             const gs = window.__GAME.scene.getScene('GameScene');
+
             return !!gs.boss && gs.boss.def.id === 'boss_silver' && window.__GAME.registry.get('bossActive');
         });
         check(
@@ -518,6 +595,7 @@ const DEEP_SAVE = JSON.stringify({
         await page.waitForTimeout(1500);
         const retreated = await page.evaluate(() => {
             const gs = window.__GAME.scene.getScene('GameScene');
+
             return !gs.boss && !window.__GAME.registry.get('bossActive') && gs.block.visible;
         });
         check('E2: ретрит вернул блок, lock снят', retreated);
@@ -556,6 +634,7 @@ const DEEP_SAVE = JSON.stringify({
         });
         const waiting = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return { pending: !!ui._pendingDaily, dailyVisible: ui.dailyModal.visible };
         });
         check('G1: дневная награда ждёт под открытой картой', waiting.pending && !waiting.dailyVisible);
@@ -571,6 +650,7 @@ const DEEP_SAVE = JSON.stringify({
         await page.waitForTimeout(300);
         const craft = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return {
                 open: ui._craftOpen,
                 root: ui.craftRoot.visible,
@@ -656,11 +736,13 @@ const DEEP_SAVE = JSON.stringify({
         const view = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             const v = ui._mapView;
+
             return { w: v.w, h: v.h, inGrid: v.w > 100 && v.h > 100 && v.y + v.h <= 1558 };
         });
         check('I3: вьюпорт карты в портрете адекватен', view.inGrid, JSON.stringify(view));
         const ip = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return {
                 s: ui._adaptiveScale,
                 board: ui.mapBoard.visible && ui.mapBoard.texture.key === 'map_board',
@@ -687,8 +769,11 @@ const DEEP_SAVE = JSON.stringify({
                 const lbl = a.kind === 'tier' ? a.name : a.status;
                 const from = a.root.y + lbl.y + lbl.height + Math.round(4 * sc);
                 const to = b.root.y - Math.round(9 * sc);
-                if (from + 6 > to) bad.push({ k, from: Math.round(from), to: Math.round(to) });
+                if (from + 6 > to) {
+                    bad.push({ k, from: Math.round(from), to: Math.round(to) });
+                }
             }
+
             return bad;
         });
         check(
@@ -713,6 +798,7 @@ const DEEP_SAVE = JSON.stringify({
         await page.waitForTimeout(400);
         const before = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return { cx: ui._nodeCX, trailCX: ui._trailCX, s: ui._adaptiveScale, open: ui._mapOpen };
         });
         check(
@@ -724,6 +810,7 @@ const DEEP_SAVE = JSON.stringify({
         await page.waitForTimeout(700);
         const after = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return {
                 cx: ui._nodeCX,
                 trailCX: ui._trailCX,

@@ -8,8 +8,11 @@ let passed = 0,
     failed = 0;
 function check(name, cond, detail = '') {
     console.log(`${cond ? 'OK  ' : 'FAIL'} ${name}${detail ? ' (' + detail + ')' : ''}`);
-    if (cond) passed++;
-    else failed++;
+    if (cond) {
+        passed++;
+    } else {
+        failed++;
+    }
 }
 
 const BG_KEYS = [
@@ -48,7 +51,9 @@ const BG_KEYS = [
     });
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { 'ore-rush-save': save }
     );
@@ -62,11 +67,14 @@ const BG_KEYS = [
                 .getEntriesByType('resource')
                 .map((r) => r.name)
                 .find((n) => /\/src\/state\.js/.test(n));
+
             return hit || '/src/state.js';
         });
+
         return page.evaluate(
             async ({ u, e }) => {
                 const m = await import(u);
+
                 return new Function('m', 'return (' + e + ');')(m);
             },
             { u, e: expr }
@@ -76,6 +84,7 @@ const BG_KEYS = [
     const bg = () =>
         page.evaluate(() => {
             const gs = window.__GAME.scene.getScene('GameScene');
+
             return {
                 exists: [
                     'bg_01_coal',
@@ -154,7 +163,12 @@ const BG_KEYS = [
     await page.waitForTimeout(1300);
     const shot4 = await page.screenshot({ clip });
     let diff = 0;
-    for (let i = 0; i < shot0.length; i++) if (shot0[i] !== shot4[i]) diff++;
+    for (let i = 0; i < shot0.length; i++) {
+        if (shot0[i] !== shot4[i]) {
+            diff++;
+        }
+    }
+
     check(
         'G1: фон реально меняется на экране (пиксели клипа различаются)',
         diff > shot0.length * 0.1,

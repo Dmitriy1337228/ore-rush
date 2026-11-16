@@ -6,7 +6,9 @@ let failures = 0;
 function check(name, cond, detail = '') {
     const ok = Boolean(cond);
     console.log(`${ok ? 'OK  ' : 'FAIL'} ${name}${detail ? ' — ' + detail : ''}`);
-    if (!ok) failures++;
+    if (!ok) {
+        failures++;
+    }
 }
 
 const state = await import('../src/state.js');

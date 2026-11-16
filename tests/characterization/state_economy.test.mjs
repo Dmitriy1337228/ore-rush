@@ -148,7 +148,9 @@ describe('цены улучшений и множители тиров', () => {
             10: 8984474.179112842,
             11: 26504198.828382887
         };
-        for (let t = 0; t <= 11; t++) assert.equal(S.unlockSecondsFor(t), want[t]);
+        for (let t = 0; t <= 11; t++) {
+            assert.equal(S.unlockSecondsFor(t), want[t]);
+        }
     });
     it('свежее состояние: доходы и цены', () => {
         assert.equal(S.getClickDamage(), 1);
@@ -288,7 +290,10 @@ describe('upgradeIncomeDelta / pickFreeUpgrade', () => {
             lantern: 0,
             warehouse: 0
         };
-        for (const [id, v] of Object.entries(want)) assert.equal(S.upgradeIncomeDelta(id), v, id);
+        for (const [id, v] of Object.entries(want)) {
+            assert.equal(S.upgradeIncomeDelta(id), v, id);
+        }
+
         // CHARACTERIZATION: current behavior, may be a bug — дельта pickaxe не зависит
         // от текущего уровня кирки (clickChain не включает base 1+lvl)
         S.gameState.levels.pickaxe = 10;

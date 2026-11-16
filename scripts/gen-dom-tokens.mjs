@@ -71,22 +71,33 @@ function build() {
 
     lines.push('');
     lines.push('    /* Цвета текста (TEXT) */');
-    for (const [k, v] of Object.entries(TEXT)) lines.push(`    --color-${kebab(k)}: ${v};`);
+    for (const [k, v] of Object.entries(TEXT)) {
+        lines.push(`    --color-${kebab(k)}: ${v};`);
+    }
 
     lines.push('');
     lines.push('    /* Отступы (SPACE), CSS px */');
-    for (const [k, v] of Object.entries(SPACE)) lines.push(`    --space-${kebab(k)}: ${v}px;`);
+    for (const [k, v] of Object.entries(SPACE)) {
+        lines.push(`    --space-${kebab(k)}: ${v}px;`);
+    }
 
     lines.push('');
     lines.push('    /* Кегли (FONT_SIZE), CSS px */');
-    for (const [k, v] of Object.entries(FONT_SIZE)) lines.push(`    --font-${kebab(k)}: ${v}px;`);
+    for (const [k, v] of Object.entries(FONT_SIZE)) {
+        lines.push(`    --font-${kebab(k)}: ${v}px;`);
+    }
 
     lines.push('');
     lines.push('    /* Пороги аудита (MIN) */');
-    for (const [k, v] of Object.entries(MIN.fontCss)) lines.push(`    --font-min-css-${kebab(k)}: ${v}px;`);
+    for (const [k, v] of Object.entries(MIN.fontCss)) {
+        lines.push(`    --font-min-css-${kebab(k)}: ${v}px;`);
+    }
+
     lines.push(`    --touch-min: ${MIN.touchCss.mobile}px;`);
     lines.push(`    --touch-min-desktop: ${MIN.touchCss.desktop}px;`);
-    for (const [k, v] of Object.entries(MIN.padding)) lines.push(`    --pad-min-${kebab(k)}: ${v}px;`);
+    for (const [k, v] of Object.entries(MIN.padding)) {
+        lines.push(`    --pad-min-${kebab(k)}: ${v}px;`);
+    }
 
     lines.push('');
     lines.push('    /* Кадры 9-slice текстур (CARD/HIT), координаты исходника */');
@@ -101,9 +112,12 @@ function build() {
 
     lines.push('');
     lines.push('    /* Геометрия DOM-слоя (нет в Phaser-теме; обоснование — DOM_EXTRA в генераторе) */');
-    for (const [k, v] of DOM_EXTRA) lines.push(`    ${k}: ${v};`);
+    for (const [k, v] of DOM_EXTRA) {
+        lines.push(`    ${k}: ${v};`);
+    }
 
     lines.push('}');
+
     return lines.join('\n') + '\n';
 }
 
@@ -117,6 +131,7 @@ if (process.argv.includes('--check')) {
         console.log('dom:tokens — ок: src/dom/tokens.css соответствует src/ui/theme.js');
         process.exit(0);
     }
+
     console.error('dom:tokens — ДРЕЙФ: src/dom/tokens.css устарел. Запустите npm run dom:tokens.');
     if (prev) {
         const a = (prev || '').split('\n');
@@ -130,6 +145,7 @@ if (process.argv.includes('--check')) {
             }
         }
     }
+
     process.exit(1);
 }
 

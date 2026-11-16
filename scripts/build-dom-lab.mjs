@@ -13,12 +13,14 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
 const opt = (n, d = null) => {
     const i = argv.indexOf(`--${n}`);
+
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
 };
 const OUT = path.resolve(opt('out', 'shots/pilot-gates/dom-lab.html'));
 
 const dataUri = (name) => {
     const file = path.join(ROOT, 'assets', 'ui', name);
+
     return `data:image/png;base64,${fs.readFileSync(file).toString('base64')}`;
 };
 

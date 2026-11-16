@@ -10,7 +10,9 @@ const LANDSCAPE_CLASS = 'landscape';
 
 export function ensureUiRoot(game) {
     const canvas = game.canvas;
-    if (!canvas) throw new Error('ensureUiRoot: у game нет canvas');
+    if (!canvas) {
+        throw new Error('ensureUiRoot: у game нет canvas');
+    }
 
     let root = document.getElementById(ROOT_ID);
     if (!root) {
@@ -24,7 +26,10 @@ export function ensureUiRoot(game) {
     const sync = () => {
         const r = canvas.getBoundingClientRect();
         const key = `${r.left}|${r.top}|${r.width}|${r.height}`;
-        if (key === last) return;
+        if (key === last) {
+            return;
+        }
+
         last = key;
         root.style.left = `${r.left}px`;
         root.style.top = `${r.top}px`;

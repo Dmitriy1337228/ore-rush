@@ -51,6 +51,7 @@ export class UIScene extends Phaser.Scene {
             window.__fmt = fmt; // хук для автопроверок
             window.__ec = { getUpgradeCost, getBulkCost, getAffordableBulk }; // хук для verify-rebalance
         }
+
         this.L = computeLayout(this.scale.gameSize.width, this.scale.gameSize.height);
         this.buildHud();
         this.buildPanel();
@@ -110,7 +111,10 @@ export class UIScene extends Phaser.Scene {
         // Офлайн-модалка по событию: симуляция из DevPanel и реальный возврат
         // во вкладку идут по одному пути (registry.offlineInfo + offline-applied)
         this.game.events.on(EVENTS.offlineApplied, (info) => {
-            if (this.offlineModal.visible) return;
+            if (this.offlineModal.visible) {
+                return;
+            }
+
             this.showOfflineModal(info);
         });
 
@@ -129,12 +133,16 @@ export class UIScene extends Phaser.Scene {
         if (this.registry.get(REG.dailyInfo)) {
             // после офлайн-модалки, если та тоже пришла при загрузке (delayedCall офлайна 400)
             this.time.delayedCall(900, () => {
-                if (!this.registry.get(REG.dailyInfo)) return;
+                if (!this.registry.get(REG.dailyInfo)) {
+                    return;
+                }
+
                 this._pendingDaily = this.registry.get(REG.dailyInfo);
                 this.registry.set(REG.dailyInfo, null);
                 this.tryShowDailyModal();
             });
         }
+
         // Порядок первого запуска: окно дневной награды показывается ПЕРЕД
         // обучением — иначе учебные подсказки стартовали сразу, а награда
         // вылезала поверх и перекрывала всю игру (скриншот игрока). Если награда
@@ -165,20 +173,32 @@ export class UIScene extends Phaser.Scene {
     // Открытие мастерской: единственная точка входа (HUD-кнопка, горячие клавиши).
     // Блокировка общая с остальными модалками; DOM-панель сама ставит _craftOpen.
     openCraft() {
-        if (this._craftOpen) return;
-        if (this.registry.get(REG.blockLocked)) return;
-        if (this.domCraft) {
-            this.domCraft.open();
+        if (this._craftOpen) {
             return;
         }
+
+        if (this.registry.get(REG.blockLocked)) {
+            return;
+        }
+
+        if (this.domCraft) {
+            this.domCraft.open();
+
+            return;
+        }
+
         // Первый тап до готовности чанка: открываем, как только контроллер смонтирован
         this._domCraftReady?.then(() => {
-            if (!this._craftOpen && !this.registry.get(REG.blockLocked)) this.domCraft?.open();
+            if (!this._craftOpen && !this.registry.get(REG.blockLocked)) {
+                this.domCraft?.open();
+            }
         });
     }
 
     closeCraft() {
-        if (this.domCraft && this.domCraft.isOpen()) this.domCraft.close();
+        if (this.domCraft && this.domCraft.isOpen()) {
+            this.domCraft.close();
+        }
     }
 
     // Единственный владелец registry 'blockLocked' и видимости listContent:
@@ -199,6 +219,7 @@ export class UIScene extends Phaser.Scene {
             this._blockLocked = locked;
             this.registry.set(REG.blockLocked, locked);
         }
+
         const bossNow = !!this.registry.get(REG.bossActive);
         // Учебные слои гасятся под любой модалкой и боем: бабл «Кликай по
         // кубику…» торчал из-за модалки настроек с обрезанным текстом
@@ -226,11 +247,15 @@ export class UIScene extends Phaser.Scene {
                 } else if (this.tutorialStep === 3) {
                     this.showTutorialFinal();
                 } else {
-                    for (const o of layers) o.setVisible(o._tutVis !== false);
+                    for (const o of layers) {
+                        o.setVisible(o._tutVis !== false);
+                    }
+
                     this.layoutTutorial();
                 }
             }
         }
+
         // В бою панель показывает «Снаряжение» вместо списка улучшений
         this.listContent.setVisible(!locked && !bossNow);
         if (this.gearContent) {
@@ -238,6 +263,7 @@ export class UIScene extends Phaser.Scene {
             this.gearContent.setVisible(gearVis);
             this.refreshGearPanel();
         }
+
         // Портрет: панель целиком под оверлеем (applyPanelVisibility)
         this.applyPanelVisibility();
         if (this.mapRoot) {
@@ -262,6 +288,7 @@ export class UIScene extends Phaser.Scene {
             this.domCraft.hideForOverlays();
             this.domCraft.tick();
         }
+
         this.stepTutorial();
         this.refreshUi();
     }

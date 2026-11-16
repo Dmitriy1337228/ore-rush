@@ -11,7 +11,10 @@ const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог ск�
     const origLog = console.log;
     console.log = (...args) => {
         const s = args.map(String).join(' ');
-        if (s.includes('FAIL')) failed++;
+        if (s.includes('FAIL')) {
+            failed++;
+        }
+
         origLog(...args);
     };
     const b = await chromium.launch();
@@ -24,6 +27,7 @@ const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог ск�
     const panelVisible = () =>
         page.evaluate(() => {
             const p = document.getElementById('dev-admin-panel');
+
             return p ? p.style.display !== 'none' : false;
         });
     const panelState = () =>
@@ -98,6 +102,7 @@ const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог ск�
         const t = document.querySelector('#dev-admin-panel .dev-state').textContent;
         try {
             const o = JSON.parse(t);
+
             return typeof o.ore === 'number' && typeof o.levels === 'object';
         } catch (e) {
             return false;
@@ -116,7 +121,10 @@ const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог ск�
     console.log('10. click zone opens:', (await panelVisible()) ? 'OK' : 'FAIL');
     await page.screenshot({ path: `${OUT_DIR}/03_panel_state.png` });
 
-    if (errors.length) failed++;
+    if (errors.length) {
+        failed++;
+    }
+
     console.log('page errors:', errors.length ? errors.join(' | ') : '0');
     console.log(`done, failures: ${failed}`);
     await b.close();

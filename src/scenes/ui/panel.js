@@ -97,6 +97,7 @@ export const panelMethods = {
         c.add([bg, lbl]);
         setHitRect(c, w, h, true);
         c.on('pointerdown', () => this.switchTab(tab.id));
+
         return { tab, c, bg, lbl };
     },
 
@@ -115,6 +116,7 @@ export const panelMethods = {
             this.amountLbl.setText(this.buyAmount === 'max' ? 'МАКС' : 'x' + this.buyAmount);
             this.refreshUi();
         });
+
         return { c, bg };
     },
 
@@ -128,7 +130,10 @@ export const panelMethods = {
             p.y >= VIEWPORT.y - 6 &&
             p.y <= VIEWPORT.y + VIEWPORT.h + 6;
         this.input.on('pointerdown', (p) => {
-            if (this.registry.get(REG.blockLocked) || !inViewport(p)) return;
+            if (this.registry.get(REG.blockLocked) || !inViewport(p)) {
+                return;
+            }
+
             this._dragId = p.id;
             this._dragStartY = p.y;
             this._dragStartScroll = this.scrollPos;
@@ -136,16 +141,25 @@ export const panelMethods = {
             this._listTapSlop = tapSlopPx(this, this.L.W);
         });
         this.input.on('pointermove', (p) => {
-            if (p.id !== this._dragId || !p.isDown) return;
+            if (p.id !== this._dragId || !p.isDown) {
+                return;
+            }
+
             const delta = this._dragStartY - p.y;
-            if (!this._listDragging && Math.abs(delta) > this._listTapSlop) this._listDragging = true;
+            if (!this._listDragging && Math.abs(delta) > this._listTapSlop) {
+                this._listDragging = true;
+            }
+
             if (this._listDragging) {
                 this.scrollPos = Phaser.Math.Clamp(this._dragStartScroll + delta, 0, this.maxScroll);
                 this.updateScroll();
             }
         });
         const endDrag = (p) => {
-            if (p && p.id !== this._dragId) return;
+            if (p && p.id !== this._dragId) {
+                return;
+            }
+
             this._dragId = null;
             // флаг сбрасываем в следующем кадре: pointerup на кнопке срабатывает
             // раньше scene pointerup — покупка после лёгкого сдвига (<6px) валидна
@@ -159,7 +173,10 @@ export const panelMethods = {
 
     // Ряды строятся шириной с вьюпорт; при смене ориентации (296 <-> ~596) — пересборка
     rebuildRows() {
-        for (const row of this.rows) row.rc.destroy();
+        for (const row of this.rows) {
+            row.rc.destroy();
+        }
+
         this.rows = UPGRADES.map((def) => this.buildRow(def));
         this._rowsBuiltW = VIEWPORT.w;
         this._rowsBuiltS = this._adaptiveScale;
@@ -167,7 +184,10 @@ export const panelMethods = {
     },
 
     switchTab(tab) {
-        if (this.activeTab === tab) return;
+        if (this.activeTab === tab) {
+            return;
+        }
+
         this.activeTab = tab;
         this.scrollPos = 0;
         this.refreshUi();
@@ -178,7 +198,10 @@ export const panelMethods = {
     // Ландшафтные значения = исторические константы ROW (296x96) 1:1.
     rowGeom() {
         const key = `${this.L.portrait ? 'p' : 'l'}|${this._adaptiveScale}`;
-        if (this._rowGeomKey === key) return this._rowGeomCache;
+        if (this._rowGeomKey === key) {
+            return this._rowGeomCache;
+        }
+
         this._rowGeomKey = key;
         if (this.L.portrait) {
             const s = this._adaptiveScale;
@@ -190,7 +213,10 @@ export const panelMethods = {
             // против nameMaxW 277 — Monocraft advance ~0.667em (аудит NAME-TOO-LONG)
             const nameMin = Math.round(12 * Math.min(s, 1.5));
             const nameSizes = [];
-            for (let v = nameSize; v >= nameMin; v--) nameSizes.push(v);
+            for (let v = nameSize; v >= nameMin; v--) {
+                nameSizes.push(v);
+            }
+
             const descSize = Math.round(14 * Math.min(s, 1.5));
             const descY = Math.max(34, Math.round(10 + nameSize * 1.2 + 3));
             const geom = {
@@ -214,8 +240,10 @@ export const panelMethods = {
                 lockSize: Math.round(13 * Math.min(s, 1.3))
             };
             this._rowGeomCache = geom;
+
             return geom;
         }
+
         const geom = {
             h: ROW_H,
             iconCY: ROW.iconY,
@@ -237,6 +265,7 @@ export const panelMethods = {
             lockSize: 11
         };
         this._rowGeomCache = geom;
+
         return geom;
     },
 
@@ -282,13 +311,19 @@ export const panelMethods = {
         // кеглем под всю ширину карточки — раньше они наезжали на «ур. N» и край.
         for (const size of g.nameSizes) {
             nameText.setFontSize(size);
-            if (nameText.width <= nameMaxW) break;
+            if (nameText.width <= nameMaxW) {
+                break;
+            }
         }
+
         const descText = makeLabel(this, textX, g.descY, def.effect, g.descSize, '#cfcfcf', {
             wordWrap: { width: descWrap }
         });
         descText.setOrigin(0, 0);
-        if (this.L.portrait) fitOneLine(descText, g.descSize, 11);
+        if (this.L.portrait) {
+            fitOneLine(descText, g.descSize, 11);
+        }
+
         const priceIcon = this.add.image(0, 0, 'coal_nugget');
         this.placeIcon(priceIcon, 'coal_nugget', textX + 6, g.priceY, g.priceIconSize);
         const priceCX = textX + 6;
@@ -345,7 +380,10 @@ export const panelMethods = {
         // Покупка на pointerup (а не pointerdown): драг списка, начатый на кнопке,
         // не должен покупать; тап = down+up на кнопке.
         btn.on('pointerup', () => {
-            if (this._listDragging) return;
+            if (this._listDragging) {
+                return;
+            }
+
             if (buyBulk(def.id, this.buyAmount)) {
                 playSfx(this, 'purchase');
                 this.tweens.add({
@@ -359,10 +397,14 @@ export const panelMethods = {
             }
         });
         btn.on('pointerover', () => {
-            if (canBuy(def.id)) btn.setTexture(TEX.buttonHover);
+            if (canBuy(def.id)) {
+                btn.setTexture(TEX.buttonHover);
+            }
         });
         btn.on('pointerout', () => {
-            if (canBuy(def.id)) btn.setTexture(TEX.button);
+            if (canBuy(def.id)) {
+                btn.setTexture(TEX.button);
+            }
         });
 
         return row;
@@ -390,10 +432,22 @@ export const panelMethods = {
     // (иначе списки и карта рисуют сдвинутые копии внутри своих вьюпортов)
     spawnFloat(x, y, text, size, color, extra = {}) {
         const float = makeLabel(this, x, y, text, size, color, extra);
-        if (this.listCam) float.cameraFilter |= this.listCam.id;
-        if (this.mapCam) float.cameraFilter |= this.mapCam.id;
-        if (this.craftCam) float.cameraFilter |= this.craftCam.id;
-        if (this.tutCam) float.cameraFilter |= this.tutCam.id;
+        if (this.listCam) {
+            float.cameraFilter |= this.listCam.id;
+        }
+
+        if (this.mapCam) {
+            float.cameraFilter |= this.mapCam.id;
+        }
+
+        if (this.craftCam) {
+            float.cameraFilter |= this.craftCam.id;
+        }
+
+        if (this.tutCam) {
+            float.cameraFilter |= this.tutCam.id;
+        }
+
         return float;
     },
 
@@ -412,8 +466,14 @@ export const panelMethods = {
         this.unlockText = makeLabel(this, u.cx, y + h / 2, '', u.textSize, TEXT.white, { align: 'center' });
         this.unlockText.setOrigin(0.5).setDepth(DEPTH.unlockText);
         this.unlockBtn.on('pointerdown', () => {
-            if (!canUnlockTier()) return;
-            if (this.registry.get(REG.bossActive)) return;
+            if (!canUnlockTier()) {
+                return;
+            }
+
+            if (this.registry.get(REG.bossActive)) {
+                return;
+            }
+
             const next = getNextTier();
             unlockTier();
             playSfx(this, 'tier');
@@ -452,11 +512,16 @@ export const panelMethods = {
         this.panelTitle.setFontSize(p.titleSize);
         // В портрете звёзды на планке заголовка панели у правого края;
         // в ландшафте — под HUD-баром слева от панели
-        if (L.portrait) this.starsText.setPosition(h.starsRight, h.starsY);
+        if (L.portrait) {
+            this.starsText.setPosition(h.starsRight, h.starsY);
+        }
         // Ландшафт: звёзды ПОД HUD-баром, строкой бафов, СЛЕВА от панели —
         // прежний якорь «правый край бара» (x≈1256) ложился на верхнюю фаску
         // деревянной панели (900..1264, верх 124): звёзды резались о заклёпки
-        else this.starsText.setPosition(p.px - SPACE.md, h.barY + h.barH + 10);
+        else {
+            this.starsText.setPosition(p.px - SPACE.md, h.barY + h.barH + 10);
+        }
+
         // Вкладки: ширина из раскладки (ландшафт 145, портрет — половина списка)
         const tabGap = SPACE.sm;
         const tabW = p.tabW;
@@ -473,17 +538,34 @@ export const panelMethods = {
         // сам становится «Снаряжение» (отдельный gearTitle врезку не тратит)
         const chromeHidden = !!this.registry.get(REG.bossActive);
         if (L.portrait && chromeHidden) {
-            if (this.panelTitle.text !== 'Снаряжение') this.panelTitle.setText('Снаряжение');
+            if (this.panelTitle.text !== 'Снаряжение') {
+                this.panelTitle.setText('Снаряжение');
+            }
+
             this.panelTitle.setVisible(true);
-            if (this.gearTitle) this.gearTitle.setVisible(false);
+            if (this.gearTitle) {
+                this.gearTitle.setVisible(false);
+            }
         } else {
-            if (this.panelTitle.text === 'Снаряжение') this.panelTitle.setText('Улучшения');
+            if (this.panelTitle.text === 'Снаряжение') {
+                this.panelTitle.setText('Улучшения');
+            }
+
             this.panelTitle.setVisible(!chromeHidden);
-            if (this.gearTitle) this.gearTitle.setVisible(true);
+            if (this.gearTitle) {
+                this.gearTitle.setVisible(true);
+            }
         }
-        for (const t of this.tabBtns) t.c.setVisible(!chromeHidden);
+
+        for (const t of this.tabBtns) {
+            t.c.setVisible(!chromeHidden);
+        }
+
         this.tierLabel.setVisible(!chromeHidden);
-        if (this.amountC) this.amountC.setVisible(!chromeHidden);
+        if (this.amountC) {
+            this.amountC.setVisible(!chromeHidden);
+        }
+
         this.tierLabel.setPosition(L.viewport.x + p.tierInset, p.py + p.tierCY);
         this.tierLabel.setFontSize(p.tierLabelSize);
         this._tierText = null; // кегль ужинается в refreshUi под новую ширину
@@ -496,10 +578,14 @@ export const panelMethods = {
 
         // Список: камера клиппинга следует за вьюпортом; смена ширины или
         // портретного масштаба — пересборка рядов (rowGeom зависит от s)
-        if (this.listCam) this.listCam.setViewport(L.viewport.x, L.viewport.y, L.viewport.w, L.viewport.h);
+        if (this.listCam) {
+            this.listCam.setViewport(L.viewport.x, L.viewport.y, L.viewport.w, L.viewport.h);
+        }
+
         if (this.rows && this.rows.length && (this._rowsBuiltW !== VIEWPORT.w || this._rowsBuiltS !== s)) {
             this.rebuildRows();
         }
+
         this._rowsBuiltW = VIEWPORT.w;
         this._rowsBuiltS = s;
     },
@@ -523,6 +609,7 @@ export const panelMethods = {
         } else {
             this.unlockText.setFontSize(u.textSize);
         }
+
         this.hint.setPosition(u.cx, u.hintY);
         this.hint.setFontSize(u.hintSize);
         // В бою спуск скрыт целиком (заблокирован; серая кнопка рядом с боссом
@@ -573,6 +660,7 @@ export const panelMethods = {
                     this.unlockBtn.setAlpha(1);
                 }
             }
+
             // Пока спуск не доступен — показываем ETA: цена-снапшот постоянна,
             // каждая покупка сокращает время на глазах.
             let hintTxt;
@@ -581,10 +669,12 @@ export const panelMethods = {
             } else {
                 hintTxt = `оплата рудой текущего уровня`;
             }
+
             if (hintTxt !== this._hintText) {
                 this.hint.setText(hintTxt);
                 this._hintText = hintTxt;
             }
+
             this.hint.setVisible(!this.L.portrait && !hideUnlock && !this._panelHidden);
         } else {
             this.unlockBtn.setVisible(false);
@@ -594,6 +684,7 @@ export const panelMethods = {
                 this.hint.setText(idleTxt);
                 this._hintText = idleTxt;
             }
+
             this.hint.setVisible(!this.L.portrait && !this._panelHidden && !this.registry.get(REG.blockLocked));
         }
     },
@@ -618,7 +709,10 @@ export const panelMethods = {
             const def = row.def;
             const show = def.tab === this.activeTab && isUpgradeVisible(def.id);
             row.rc.setVisible(show);
-            if (!show) continue;
+            if (!show) {
+                continue;
+            }
+
             row.rc.setY(y);
             y += rowH + ROW_GAP;
 
@@ -658,6 +752,7 @@ export const panelMethods = {
                     lockSize -= 1;
                     row.lockText.setFontSize(lockSize);
                 }
+
                 row.priceIcon.setVisible(false);
                 row.priceText.setVisible(false);
             } else if (maxed) {
@@ -696,6 +791,7 @@ export const panelMethods = {
                 row.priceText.setText(priceStr).setColor(TEXT.gold);
             }
         }
+
         this.maxScroll = Math.max(0, y - VIEWPORT.h + ROW_GAP);
         this.scrollPos = Phaser.Math.Clamp(this.scrollPos, 0, this.maxScroll);
         this.updateScroll();

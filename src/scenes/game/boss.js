@@ -47,6 +47,7 @@ import {
 // Сколько секунд осталось у боевого бафа предмета (0 — баф не активен)
 function buffSecondsLeft(itemId) {
     const until = gameState[BOSS_ITEM_BUFF_FIELD[itemId]] || 0;
+
     return Math.max(0, Math.ceil((until - Date.now()) / SECOND_MS));
 }
 
@@ -65,9 +66,15 @@ export const bossMethods = {
     // сбрасывается. Готовность к бою: каска (HP) и снаряжение (убить быстрее).
     // HP босса/шахтёра и время персистятся в сейве (bossFight): F5 продолжает бой.
     startBossFight(bossId, restore = null) {
-        if (this.boss || this.registry.get(REG.blockLocked)) return;
+        if (this.boss || this.registry.get(REG.blockLocked)) {
+            return;
+        }
+
         const def = BOSSES.find((b) => b.id === bossId);
-        if (!def) return;
+        if (!def) {
+            return;
+        }
+
         const maxHp = bossHpFor(def);
         const hp = restore ? Math.min(Math.max(1, Math.ceil(restore.hp)), maxHp) : maxHp;
         const elapsedMs = restore ? Math.max(0, Math.floor(restore.elapsedMs) || 0) : 0;
@@ -96,6 +103,7 @@ export const bossMethods = {
             this.streakTimer.remove();
             this.streakTimer = null;
         }
+
         this.tweens.killTweensOf(this.block);
         this.block.setVisible(false).disableInteractive();
         this.blockGen = (this.blockGen || 0) + 1;
@@ -153,7 +161,10 @@ export const bossMethods = {
         this.bossHpText = makeLabel(this, bx, by + ui.hpText.dy, '', bossFontSize(ui.hpText, ps), TEXT.white).setOrigin(
             0.5
         );
-        if (ui.hpText.stroke) this.bossHpText.setStroke(BOSS_HP_STROKE.color, BOSS_HP_STROKE.width);
+        if (ui.hpText.stroke) {
+            this.bossHpText.setStroke(BOSS_HP_STROKE.color, BOSS_HP_STROKE.width);
+        }
+
         this.bossTime = makeLabel(
             this,
             bx + ui.time.dx,
@@ -187,15 +198,24 @@ export const bossMethods = {
             );
             const buyLbl = makeLabel(this, cx, slotY, '', bossFontSize(slot.buy, ps), TEXT.white).setOrigin(0.5);
             btn.on('pointerdown', () => {
-                if (!this.boss || this.boss.busy) return;
-                if (Date.now() < gameState.bossBuffUntil) return; // баф уже активен — покупка впустую
+                if (!this.boss || this.boss.busy) {
+                    return;
+                }
+
+                if (Date.now() < gameState.bossBuffUntil) {
+                    return;
+                } // баф уже активен — покупка впустую
+
                 const stock = gameState.items[it.id] || 0;
                 if (stock > 0) {
-                    if (useItem(it.id, true)) playSfx(this, 'purchase');
+                    if (useItem(it.id, true)) {
+                        playSfx(this, 'purchase');
+                    }
                 } else if (buyItem(it.id)) {
                     playSfx(this, 'purchase');
                     useItem(it.id, true);
                 }
+
                 this.refreshBossItems();
                 this.refreshTick();
             });
@@ -233,6 +253,7 @@ export const bossMethods = {
     // Геометрия оверлея по текущей ориентации экрана
     bossUiSpec() {
         const portrait = this.scale.gameSize.height > this.scale.gameSize.width;
+
         return portrait ? BOSS_UI.portrait : BOSS_UI.landscape;
     },
 
@@ -251,7 +272,10 @@ export const bossMethods = {
     },
 
     drawBossBar() {
-        if (!this.boss || !this.bossBar) return;
+        if (!this.boss || !this.bossBar) {
+            return;
+        }
+
         // Портрет (спека): бар 380x24 в стэке над слотами; ландшафт — 340x20
         const bar = this.bossUiSpec().hpBar;
         const x = this.blockX - bar.w / 2,
@@ -264,7 +288,10 @@ export const bossMethods = {
 
     // Полоса живучести шахтёра: оранжевая, под баром босса; подпись HP справа
     drawPlayerBar() {
-        if (!this.boss || !this.playerBar) return;
+        if (!this.boss || !this.playerBar) {
+            return;
+        }
+
         const bar = this.bossUiSpec().playerBar;
         const x = this.blockX - bar.w / 2,
             y = (this._bossBy || this.blockY) + bar.dy;
@@ -279,7 +306,10 @@ export const bossMethods = {
     // флоат у полосы шахтёра. HP <= 0 -> bossDown.
     bossStrike() {
         const b = this.boss;
-        if (!b || b.busy) return;
+        if (!b || b.busy) {
+            return;
+        }
+
         const dmg = bossAttackPower(b.def);
         b.playerHp = Math.max(0, b.playerHp - dmg);
         this.cancelBossWindup();
@@ -305,14 +335,19 @@ export const bossMethods = {
             ease: 'Cubic.easeOut'
         });
         this.drawPlayerBar();
-        if (b.playerHp <= 0) this.bossDown(b);
+        if (b.playerHp <= 0) {
+            this.bossDown(b);
+        }
     },
 
     // Шахтёр вырублен: принудительный откат в шахту. Босс сбрасывается,
     // награды нет, боевые бафы гасятся — смысл: копи руду, прокачай каску и
     // снаряжение, возвращайся сильнее.
     bossDown(b) {
-        if (!b) return;
+        if (!b) {
+            return;
+        }
+
         b.busy = true;
         clearBossFight();
         this.leaveBossFight();
@@ -335,7 +370,10 @@ export const bossMethods = {
     // кладёт предмет в стак и активирует). Кеш-ключ на слот: performBossHit
     // зовёт это на каждый удар; таймер бафа тикает из update().
     refreshBossItems() {
-        if (!this.bossItems) return;
+        if (!this.bossItems) {
+            return;
+        }
+
         // Своё состояние бафа у каждого предмета: бомба -> bossBuff, рама ->
         // rigBuff, точило -> oilBuff (общий bossBuffUntil для всех слотов —
         // прежний баг: слоты рамы/точила показывали чужой таймер).
@@ -348,7 +386,10 @@ export const bossMethods = {
             const buffLeft = buffSecondsLeft(slot.id);
             if (buffLeft > 0) {
                 const key = `a${buffLeft}`;
-                if (slot._key === key) continue;
+                if (slot._key === key) {
+                    continue;
+                }
+
                 slot._key = key;
                 this.showFilledSlot(
                     slot,
@@ -357,14 +398,20 @@ export const bossMethods = {
                 );
             } else if (stock > 0) {
                 const key = `x${stock}`;
-                if (slot._key === key) continue;
+                if (slot._key === key) {
+                    continue;
+                }
+
                 slot._key = key;
                 this.showFilledSlot(slot, spec, `x${stock}`);
             } else {
                 const price = getItemPrice(slot.id);
                 const affordable = gameState.ore >= price;
                 const key = `b${price}|${affordable ? 'n' : 'g'}`;
-                if (slot._key === key) continue;
+                if (slot._key === key) {
+                    continue;
+                }
+
                 slot._key = key;
                 slot.btn
                     .setDisplaySize(spec.emptyW, spec.h)
@@ -393,7 +440,10 @@ export const bossMethods = {
     // Удар по боссу: флоат/частицы/звук по образцу performMine, но без addOre —
     // урон идёт в HP босса, награда только за убийство (grantBossKill).
     performBossHit(px, py, isAuto) {
-        if (!this.boss || this.boss.busy) return;
+        if (!this.boss || this.boss.busy) {
+            return;
+        }
+
         const { gain, crit, lucky } = rollBossHit();
         // «Робо-рама»: множитель только для АВТО-ударов (робо-рука)
         const total = isAuto ? gain * getRigBuffMult() : gain;
@@ -402,19 +452,31 @@ export const bossMethods = {
             // Удар по боссу звучит заметно тише рудных кликов: тяжёлый удар
             // на каждый клик на полной громкости утомлял (замечание игрока)
             playSfx(this, 'boss_hit', 3, 1, 0.4);
-            if (crit || lucky) playSfx(this, 'crit');
-            if (crit || lucky) this.cameras.main.shake(120, 0.004);
+            if (crit || lucky) {
+                playSfx(this, 'crit');
+            }
+
+            if (crit || lucky) {
+                this.cameras.main.shake(120, 0.004);
+            }
         }
+
         showHitFeedback(this, px, py, total, { crit, lucky, isAuto }, GAME_DEPTH.bossFloat);
         this.drawBossBar();
         this.refreshBossItems();
-        if (this.boss.hp <= 0) this.killBoss();
+        if (this.boss.hp <= 0) {
+            this.killBoss();
+        }
+
         this.refreshTick();
     },
 
     killBoss() {
         const b = this.boss;
-        if (!b || b.busy) return;
+        if (!b || b.busy) {
+            return;
+        }
+
         b.busy = true;
         this.tweens.killTweensOf(this.bossSprite);
         this.debrisEmitter.explode(40, this.blockX, this._bossBy || this.blockY);
@@ -432,7 +494,9 @@ export const bossMethods = {
                 const reward = grantBossKill(b.def.id, this.time.now - b.startedAt);
                 this.leaveBossFight();
                 this.game.events.emit(EVENTS.bossChanged);
-                if (reward) this.game.events.emit(EVENTS.bossDefeated, { bossId: b.def.id, ...reward });
+                if (reward) {
+                    this.game.events.emit(EVENTS.bossDefeated, { bossId: b.def.id, ...reward });
+                }
             }
         });
     },
@@ -442,7 +506,10 @@ export const bossMethods = {
     // для shutdown/DevPanel.
     retreatBoss() {
         const b = this.boss;
-        if (!b || b.busy) return;
+        if (!b || b.busy) {
+            return;
+        }
+
         b.busy = true;
         this.cancelBossWindup();
         this.bossSprite.clearTint();
@@ -477,8 +544,14 @@ export const bossMethods = {
     },
 
     destroyBossOverlay() {
-        if (!this.bossUi) return;
-        for (const ch of this.bossUi.list.slice()) this.tweens.killTweensOf(ch);
+        if (!this.bossUi) {
+            return;
+        }
+
+        for (const ch of this.bossUi.list.slice()) {
+            this.tweens.killTweensOf(ch);
+        }
+
         this.bossUi.destroy();
         this.bossUi = null;
         this.bossSprite = null;
@@ -491,7 +564,10 @@ export const bossMethods = {
 
     // Тик боя: таймер, персист, бафы слотов, цикл атак босса
     tickBoss() {
-        if (!(this.boss && this.bossTime)) return;
+        if (!(this.boss && this.bossTime)) {
+            return;
+        }
+
         const elapsedMs = this.time.now - this.boss.startedAt;
         const secs = Math.max(0, Math.floor(elapsedMs / SECOND_MS));
         this.bossTime.setText(`${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`);
@@ -502,9 +578,13 @@ export const bossMethods = {
             this._bossSaveAt = this.time.now + BOSS_SAVE_THROTTLE_MS;
             saveGame();
         }
+
         // Таймеры боевых слотов тикают и без кликов игрока (любой из бафов)
         const now = Date.now();
-        if (Object.values(BOSS_ITEM_BUFF_FIELD).some((field) => now < gameState[field])) this.refreshBossItems();
+        if (Object.values(BOSS_ITEM_BUFF_FIELD).some((field) => now < gameState[field])) {
+            this.refreshBossItems();
+        }
+
         this.tickBossAttack();
     },
 
@@ -513,7 +593,10 @@ export const bossMethods = {
     tickBossAttack() {
         const now = this.time.now;
         const b = this.boss;
-        if (b.busy) return;
+        if (b.busy) {
+            return;
+        }
+
         if (!b.attacking && now >= b.nextAttackAt - BOSS_ATTACK_WINDUP_MS) {
             b.attacking = true;
             // Телеграф: красный тинт + горизонтальная дрожь спрайта
@@ -526,6 +609,7 @@ export const bossMethods = {
                 repeat: Math.ceil(BOSS_ATTACK_WINDUP_MS / BOSS_WINDUP_SHAKE_STEP_MS) - 1
             });
         }
+
         if (b.attacking && now >= b.nextAttackAt) {
             this.bossStrike();
         }

@@ -8,8 +8,11 @@ let passed = 0,
     failed = 0;
 function check(name, cond, detail = '') {
     console.log(`${cond ? 'OK  ' : 'FAIL'} ${name}${detail ? ' (' + detail + ')' : ''}`);
-    if (cond) passed++;
-    else failed++;
+    if (cond) {
+        passed++;
+    } else {
+        failed++;
+    }
 }
 
 (async () => {
@@ -33,7 +36,9 @@ function check(name, cond, detail = '') {
     });
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { 'ore-rush-save': save }
     );
@@ -58,6 +63,7 @@ function check(name, cond, detail = '') {
     const gsState = () =>
         page.evaluate(() => {
             const gs = window.__GAME.scene.getScene('GameScene');
+
             return {
                 mutation: gs.mutation ? gs.mutation.id : null,
                 stage: gs.blockStage,
@@ -80,13 +86,16 @@ function check(name, cond, detail = '') {
                 .getEntriesByType('resource')
                 .map((r) => r.name)
                 .find((n) => /\/src\/state\.js/.test(n));
+
             return hit || '/src/state.js';
         });
     const state = async (expr) => {
         const u = await stateUrl();
+
         return page.evaluate(
             async ({ u, e }) => {
                 const m = await import(u);
+
                 return new Function('m', 'return (' + e + ');')(m);
             },
             { u, e: expr }
@@ -101,8 +110,10 @@ function check(name, cond, detail = '') {
                 let t = 0;
                 t < 40 && (await page.evaluate(() => window.__GAME.scene.getScene('GameScene').blockBusy));
                 t++
-            )
+            ) {
                 await page.waitForTimeout(150);
+            }
+
             await page.mouse.click(400, 400);
             await page.waitForTimeout(gap);
         }
@@ -121,6 +132,7 @@ function check(name, cond, detail = '') {
         window.__rs = 1;
         Math.random = () => {
             window.__rs = (window.__rs * 1103515245 + 12345) % 2147483648;
+
             return 0.05 + (window.__rs / 2147483648) * 0.95;
         };
     });

@@ -20,6 +20,7 @@ const argv = process.argv.slice(2);
 const flag = (n) => argv.includes(`--${n}`);
 const opt = (n, d = null) => {
     const i = argv.indexOf(`--${n}`);
+
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
 };
 
@@ -40,11 +41,15 @@ try {
     const consoleErrors = [];
     page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e}`));
     page.on('console', (m) => {
-        if (m.type() === 'error') consoleErrors.push(`console: ${m.text()}`);
+        if (m.type() === 'error') {
+            consoleErrors.push(`console: ${m.text()}`);
+        }
     });
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { [SAVE_KEY]: JSON.stringify(craftState.seed) }
     );
@@ -55,6 +60,7 @@ try {
         () => {
             const g = window.__GAME;
             const ui = g && g.scene.getScene('UIScene');
+
             return !!(ui && ui.L && document.fonts.status === 'loaded');
         },
         null,
@@ -69,7 +75,9 @@ try {
             const ui = window.__GAME.scene.getScene('UIScene');
             ui._pendingDaily = null;
             ui.registry.set('dailyInfo', null);
-            if (ui._dailyOpen) ui.hideDailyModal();
+            if (ui._dailyOpen) {
+                ui.hideDailyModal();
+            }
         });
         await page.waitForTimeout(350);
         await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
@@ -77,9 +85,11 @@ try {
     } else {
         await craftState.setup(page);
     }
+
     await page.waitForTimeout(800);
     const open = await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
+
         return { craftOpen: !!ui._craftOpen, domRoot: !!document.getElementById('ui-root') };
     });
 
@@ -97,8 +107,11 @@ try {
                         const tick = (now) => {
                             deltas.push(now - last);
                             last = now;
-                            if (now - start < ms) requestAnimationFrame(tick);
-                            else resolve(deltas);
+                            if (now - start < ms) {
+                                requestAnimationFrame(tick);
+                            } else {
+                                resolve(deltas);
+                            }
                         };
                         requestAnimationFrame(tick);
                     }),
@@ -110,6 +123,7 @@ try {
     const stats = (d) => {
         const arr = d.slice().sort((a, b) => a - b);
         const p = (q) => arr[Math.min(arr.length - 1, Math.floor(q * (arr.length - 1)))];
+
         return {
             frames: arr.length,
             meanMs: Number((arr.reduce((s, x) => s + x, 0) / arr.length).toFixed(2)),

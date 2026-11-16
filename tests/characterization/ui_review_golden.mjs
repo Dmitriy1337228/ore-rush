@@ -103,7 +103,10 @@ describe('scripts/ui-review.mjs: полный golden-прогон (медлен�
     });
 
     it('txt-артефакты байт-в-байт (console_errors + 9 layout_audit)', (t) => {
-        if (!result.ok) t.skip('прогон не удался');
+        if (!result.ok) {
+            t.skip('прогон не удался');
+        }
+
         for (const f of ['console_errors.txt', ...AUDIT_FILES]) {
             const got = normalizeText(fs.readFileSync(path.join(result.outDir, f), 'utf8'));
             const want = normalizeText(fs.readFileSync(path.join(GOLDEN_UI, f), 'utf8'));
@@ -112,7 +115,10 @@ describe('scripts/ui-review.mjs: полный golden-прогон (медлен�
     });
 
     it('stdout как в golden (с нормализацией таймера бафа)', (t) => {
-        if (!result.ok) t.skip('прогон не удался');
+        if (!result.ok) {
+            t.skip('прогон не удался');
+        }
+
         assert.equal(
             normalizeStdout(result.stdout),
             normalizeStdout(fs.readFileSync(path.join(GOLDEN_UI, 'run.stdout.txt'), 'utf8'))
@@ -120,7 +126,10 @@ describe('scripts/ui-review.mjs: полный golden-прогон (медлен�
     });
 
     it('скриншоты: pixel-diff в допуске (или размеры для 17_map_open)', (t) => {
-        if (!result.ok) t.skip('прогон не удался');
+        if (!result.ok) {
+            t.skip('прогон не удался');
+        }
+
         const shots = Object.keys(SHOT_THRESHOLDS);
         assert.deepEqual(
             fs
@@ -138,14 +147,19 @@ describe('scripts/ui-review.mjs: полный golden-прогон (медлен�
                 problems.push(`${shot}: нет golden`);
                 continue;
             }
+
             const A = decodePng(fs.readFileSync(goldenPath));
             const B = decodePng(fs.readFileSync(gotPath));
             if (A.w !== B.w || A.h !== B.h) {
                 problems.push(`${shot}: размер ${B.w}x${B.h} != golden ${A.w}x${A.h}`);
                 continue;
             }
+
             const th = SHOT_THRESHOLDS[shot];
-            if (!th) continue; // dims-only
+            if (!th) {
+                continue;
+            } // dims-only
+
             const [tol, maxRatio] = th;
             const ratio = diffRatio(A, B, tol);
             if (ratio > maxRatio) {
@@ -154,6 +168,7 @@ describe('scripts/ui-review.mjs: полный golden-прогон (медлен�
                 );
             }
         }
+
         assert.deepEqual(problems, []);
     });
 });

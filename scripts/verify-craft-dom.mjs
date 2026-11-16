@@ -16,6 +16,7 @@ const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('./
 const argv = process.argv.slice(2);
 const opt = (n, d = null) => {
     const i = argv.indexOf(`--${n}`);
+
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
 };
 const OUT = path.resolve(opt('out', 'shots/pilot-gates'));
@@ -33,12 +34,19 @@ async function openPage({ dom }) {
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
     page.on('console', (m) => {
-        if (m.type() === 'error') errors.push(m.text());
+        if (m.type() === 'error') {
+            errors.push(m.text());
+        }
     });
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
-            if (!s.domUi) localStorage.removeItem('domUi');
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
+
+            if (!s.domUi) {
+                localStorage.removeItem('domUi');
+            }
         },
         { [SAVE_KEY]: JSON.stringify(SEEDS.mid), ...(dom ? { domUi: '1' } : {}) }
     );
@@ -46,12 +54,16 @@ async function openPage({ dom }) {
     await page.waitForFunction(
         () => {
             const ui = window.__GAME && window.__GAME.scene.getScene('UIScene');
+
             return !!(ui && ui.L);
         },
         null,
         { timeout: 30000 }
     );
-    if (dom) await page.waitForFunction(() => !!window.__DOM_CRAFT, null, { timeout: 30000 });
+    if (dom) {
+        await page.waitForFunction(() => !!window.__DOM_CRAFT, null, { timeout: 30000 });
+    }
+
     await page.waitForTimeout(1250);
     // Сейв mid может принести отложенную ежедневную награду (delayedCall 900 мс) —
     // убираем её из очереди, чтобы сценарии начинались с чистого экрана.
@@ -59,12 +71,29 @@ async function openPage({ dom }) {
         const ui = window.__GAME.scene.getScene('UIScene');
         ui._pendingDaily = null;
         ui.registry.set('dailyInfo', null);
-        if (ui._dailyOpen) ui.hideDailyModal();
-        if (ui._offlineOpen) ui.hideOfflineModal();
-        if (ui._settingsOpen && ui.closeModal) ui.closeModal();
-        if (ui._mapOpen) ui.closeMap();
-        if (ui._bossRewardOpen && ui.hideBossRewardModal) ui.hideBossRewardModal();
-        if (ui._playerDownOpen) ui.hidePlayerDownModal();
+        if (ui._dailyOpen) {
+            ui.hideDailyModal();
+        }
+
+        if (ui._offlineOpen) {
+            ui.hideOfflineModal();
+        }
+
+        if (ui._settingsOpen && ui.closeModal) {
+            ui.closeModal();
+        }
+
+        if (ui._mapOpen) {
+            ui.closeMap();
+        }
+
+        if (ui._bossRewardOpen && ui.hideBossRewardModal) {
+            ui.hideBossRewardModal();
+        }
+
+        if (ui._playerDownOpen) {
+            ui.hidePlayerDownModal();
+        }
     });
     await page.waitForTimeout(250);
     // Нулевая пассивная добыча: иначе руда растёт сама и проверка «клик не прошёл»
@@ -75,9 +104,12 @@ async function openPage({ dom }) {
             .map((r) => r.name)
             .find((u) => u.includes('/src/state.js'));
         const m = await import(url);
-        for (const id of Object.keys(m.gameState.levels)) m.gameState.levels[id] = 0;
+        for (const id of Object.keys(m.gameState.levels)) {
+            m.gameState.levels[id] = 0;
+        }
     });
     await page.waitForTimeout(150);
+
     return { ctx, page, errors };
 }
 
@@ -101,6 +133,7 @@ const check = (name, ok, details = {}) => {
                 .map((r) => r.name)
                 .find((u) => u.includes('/src/state.js'));
             const m = await import(url);
+
             return m.gameState.ore;
         });
 
@@ -115,7 +148,7 @@ const check = (name, ok, details = {}) => {
     const st = (code) =>
         page.evaluate((c) => {
             const m = window.__ST;
-            // eslint-disable-next-line no-eval
+
             return eval(c);
         }, code);
     const wait = (ms = 350) => page.waitForTimeout(ms);
@@ -192,6 +225,7 @@ const check = (name, ok, details = {}) => {
     await page.waitForTimeout(200);
     const craftBtn = await page.evaluate(() => {
         const b = window.__GAME.scene.getScene('UIScene').craftBtn.getBounds();
+
         return { x: Math.round(b.centerX), y: Math.round(b.centerY) };
     });
     await page.mouse.click(craftBtn.x, craftBtn.y);
@@ -211,6 +245,7 @@ const check = (name, ok, details = {}) => {
         await page.mouse.click(400, 390);
         await page.waitForTimeout(100);
     }
+
     const orePassAfter = await ore();
     const passPd = await page.evaluate(() => window.__CANVAS_PD);
     check('после закрытия клик по шахте добывает', orePassAfter > orePassBefore && passPd >= 3, {
@@ -346,6 +381,7 @@ const check = (name, ok, details = {}) => {
         await openCraft();
         await closeCraft();
     }
+
     const s8 = await page.evaluate(() => ({
         panels: document.querySelectorAll('[data-dom-panel]').length,
         roots: document.querySelectorAll('#ui-root').length
@@ -386,44 +422,75 @@ const check = (name, ok, details = {}) => {
             recipes: document.querySelectorAll('[data-dom-list="recipes"] [data-row]').length,
             artifacts: document.querySelectorAll('[data-dom-list="artifacts"] [data-art]').length
         };
-        if (counts.items !== snap.items.length) mism.push(`items ${counts.items}/${snap.items.length}`);
-        if (counts.recipes !== snap.recipes.length) mism.push(`recipes ${counts.recipes}/${snap.recipes.length}`);
-        if (counts.artifacts !== snap.artifacts.length)
+        if (counts.items !== snap.items.length) {
+            mism.push(`items ${counts.items}/${snap.items.length}`);
+        }
+
+        if (counts.recipes !== snap.recipes.length) {
+            mism.push(`recipes ${counts.recipes}/${snap.recipes.length}`);
+        }
+
+        if (counts.artifacts !== snap.artifacts.length) {
             mism.push(`artifacts ${counts.artifacts}/${snap.artifacts.length}`);
+        }
+
         for (const it of snap.items) {
             const row = document.querySelector(`[data-row="${it.id}"]`);
             if (!row) {
                 mism.push(`нет ряда ${it.id}`);
                 continue;
             }
-            if (text(row.querySelector('.dom-name')) !== it.name) mism.push(`имя ${it.id}`);
+
+            if (text(row.querySelector('.dom-name')) !== it.name) {
+                mism.push(`имя ${it.id}`);
+            }
+
             const hint = row.querySelector('.dom-error') || row.querySelector('.dom-stock');
-            if (text(hint) !== it.hint) mism.push(`hint ${it.id}: ${text(hint)} != ${it.hint}`);
+            if (text(hint) !== it.hint) {
+                mism.push(`hint ${it.id}: ${text(hint)} != ${it.hint}`);
+            }
         }
+
         for (const r of snap.recipes) {
             const row = document.querySelector(`[data-row="${r.id}"]`);
             if (!row) {
                 mism.push(`нет рецепта ${r.id}`);
                 continue;
             }
-            if (text(row.querySelector('.dom-name')) !== r.name) mism.push(`имя рецепта ${r.id}`);
+
+            if (text(row.querySelector('.dom-name')) !== r.name) {
+                mism.push(`имя рецепта ${r.id}`);
+            }
+
             const status = text(row.querySelector('.dom-status')) || '';
-            if (status !== r.status) mism.push(`статус ${r.id}: "${status}" != "${r.status}"`);
+            if (status !== r.status) {
+                mism.push(`статус ${r.id}: "${status}" != "${r.status}"`);
+            }
+
             if (!(r.mine && !r.ready)) {
                 const lbl = text(row.querySelector('.dom-btn-craft'));
-                if (lbl !== r.button) mism.push(`кнопка ${r.id}: "${lbl}" != "${r.button}"`);
+                if (lbl !== r.button) {
+                    mism.push(`кнопка ${r.id}: "${lbl}" != "${r.button}"`);
+                }
             }
         }
+
         for (const a of snap.artifacts) {
             const row = document.querySelector(`[data-art="${a.id}"]`);
             if (!row) {
                 mism.push(`нет артефакта ${a.id}`);
                 continue;
             }
-            if (text(row.querySelector('.dom-name')) !== a.name) mism.push(`имя артефакта ${a.id}`);
-            if (text(row.querySelector('.dom-line') || row.querySelector('.dom-error')) !== a.line)
+
+            if (text(row.querySelector('.dom-name')) !== a.name) {
+                mism.push(`имя артефакта ${a.id}`);
+            }
+
+            if (text(row.querySelector('.dom-line') || row.querySelector('.dom-error')) !== a.line) {
                 mism.push(`строка ${a.id}`);
+            }
         }
+
         return { mism, counts };
     });
     check('S10: паритет DOM и данных', parity.mism.length === 0, parity);
@@ -442,6 +509,7 @@ const check = (name, ok, details = {}) => {
     const adClosed = await page.evaluate(() => {
         const root = document.getElementById('ui-root').getBoundingClientRect();
         const canvas = document.querySelector('#game canvas').getBoundingClientRect();
+
         return {
             open: window.__DOM_CRAFT.isOpen(),
             sceneOpen: window.__GAME.scene.getScene('UIScene')._craftOpen,
@@ -479,6 +547,7 @@ const check = (name, ok, details = {}) => {
         const st = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             const top = document.elementFromPoint(Math.round(innerWidth / 2), Math.round(innerHeight / 2));
+
             return {
                 domOpen: window.__DOM_CRAFT.isOpen(),
                 daily: ui._dailyOpen,
@@ -497,6 +566,7 @@ const check = (name, ok, details = {}) => {
             const after = await page.evaluate(() => {
                 const ui = window.__GAME.scene.getScene('UIScene');
                 const top = document.elementFromPoint(Math.round(innerWidth / 2), Math.round(innerHeight / 2));
+
                 return {
                     domOpen: window.__DOM_CRAFT.isOpen(),
                     daily: ui._dailyOpen,
@@ -508,6 +578,7 @@ const check = (name, ok, details = {}) => {
             await page.waitForTimeout(200);
             continue;
         }
+
         check(`D3: ${name} закрывает DOM и виден`, !st.domOpen && flag && !st.topIsDom, st);
         await page.evaluate(`(() => { const ui = window.__GAME.scene.getScene('UIScene'); ${closeCode} })()`);
         await page.waitForTimeout(200);
@@ -530,11 +601,15 @@ const check = (name, ok, details = {}) => {
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
     page.on('console', (m) => {
-        if (m.type() === 'error') errors.push(m.text());
+        if (m.type() === 'error') {
+            errors.push(m.text());
+        }
     });
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
     );
@@ -545,13 +620,19 @@ const check = (name, ok, details = {}) => {
         const ui = window.__GAME.scene.getScene('UIScene');
         ui._pendingDaily = null;
         ui.registry.set('dailyInfo', null);
-        if (ui._dailyOpen) ui.hideDailyModal();
+        if (ui._dailyOpen) {
+            ui.hideDailyModal();
+        }
+
         const url = performance
             .getEntriesByType('resource')
             .map((r) => r.name)
             .find((u) => u.includes('/src/state.js'));
         window.__ST = await import(url);
-        for (const id of Object.keys(window.__ST.gameState.levels)) window.__ST.gameState.levels[id] = 0;
+        for (const id of Object.keys(window.__ST.gameState.levels)) {
+            window.__ST.gameState.levels[id] = 0;
+        }
+
         window.__ST.gameState.ore = 1e6;
         window.__ST.gameState.items.item_bomb = 0;
     });
@@ -562,6 +643,7 @@ const check = (name, ok, details = {}) => {
     const st = (code) =>
         page.evaluate((c) => {
             const m = window.__ST;
+
             return eval(c);
         }, code);
     const wait = (ms = 400) => page.waitForTimeout(ms);
@@ -605,6 +687,7 @@ const check = (name, ok, details = {}) => {
     for (let i = 1; i <= 10; i++) {
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: sx, y: sy - i * 22 }] });
     }
+
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await wait(500);
     const scrollAfter = await page.evaluate(() => document.querySelector('[data-dom-scroll]').scrollTop);
@@ -625,12 +708,16 @@ const check = (name, ok, details = {}) => {
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
     page.on('console', (m) => {
-        if (m.type() === 'error') errors.push(m.text());
+        if (m.type() === 'error') {
+            errors.push(m.text());
+        }
     });
     const save = { ...SEEDS.mid, tutorialDone: false, clicks: 0 };
     await page.addInitScript(
         (s) => {
-            for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+            for (const [k, v] of Object.entries(s)) {
+                localStorage.setItem(k, v);
+            }
         },
         { [SAVE_KEY]: JSON.stringify(save), domUi: '1' }
     );
@@ -638,6 +725,7 @@ const check = (name, ok, details = {}) => {
     await page.waitForFunction(
         () => {
             const ui = window.__GAME && window.__GAME.scene.getScene('UIScene');
+
             return !!(ui && ui.L && window.__DOM_CRAFT);
         },
         null,
@@ -649,11 +737,14 @@ const check = (name, ok, details = {}) => {
         const ui = window.__GAME.scene.getScene('UIScene');
         ui._pendingDaily = null;
         ui.registry.set('dailyInfo', null);
-        if (ui._dailyOpen) ui.hideDailyModal();
+        if (ui._dailyOpen) {
+            ui.hideDailyModal();
+        }
     });
     await page.waitForFunction(
         () => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return !!ui.tutDim;
         },
         null,
@@ -662,12 +753,14 @@ const check = (name, ok, details = {}) => {
     await page.waitForTimeout(300); // updateBlockLock снимает блокировку после награды
     const started = await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
+
         return { step: ui.tutorialStep, dim: !!ui.tutDim };
     });
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
     await page.waitForTimeout(300);
     const during = await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
+
         return { open: window.__DOM_CRAFT.isOpen(), step: ui.tutorialStep, dim: !!ui.tutDim };
     });
     await page.evaluate(() => window.__DOM_CRAFT.close({ notify: false }));
@@ -692,6 +785,7 @@ const check = (name, ok, details = {}) => {
         steps.push(ui.tutorialStep);
         ui.tutBtn.emit('pointerdown');
         await new Promise((r) => setTimeout(r, 200));
+
         return { steps, done: m.gameState.tutorialDone, dim: !!ui.tutDim };
     });
     check(

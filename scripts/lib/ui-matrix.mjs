@@ -120,7 +120,7 @@ const withState = (page, body) =>
             .map((r) => r.name)
             .find((u) => u.includes('/src/state.js'));
         const m = await import(url);
-        // eslint-disable-next-line no-new-func
+
         return new Function('m', `return (${b})(m);`)(m);
     }, body);
 
@@ -287,12 +287,21 @@ export const STATES = [
 export async function applyScreens(page, screens = [], listScroll = 0) {
     await hideDaily(page).catch(() => {});
     await wait(page, 300);
-    if (listScroll) await ui(page, `ui.scrollPos = ${Number(listScroll) || 0}; ui.updateScroll();`);
+    if (listScroll) {
+        await ui(page, `ui.scrollPos = ${Number(listScroll) || 0}; ui.updateScroll();`);
+    }
+
     for (const s of screens) {
-        if (s === 'map') await ui(page, 'ui.openMap();');
-        else if (s === 'craft') await ui(page, 'ui.openCraft();');
-        else if (s === 'settings') await ui(page, 'ui.settingsBtn.emit("pointerdown");');
-        else if (s.startsWith('boss:')) await ui(page, `gs.startBossFight(${JSON.stringify(s.slice(5))});`);
+        if (s === 'map') {
+            await ui(page, 'ui.openMap();');
+        } else if (s === 'craft') {
+            await ui(page, 'ui.openCraft();');
+        } else if (s === 'settings') {
+            await ui(page, 'ui.settingsBtn.emit("pointerdown");');
+        } else if (s.startsWith('boss:')) {
+            await ui(page, `gs.startBossFight(${JSON.stringify(s.slice(5))});`);
+        }
+
         await wait(page, 500);
     }
 }

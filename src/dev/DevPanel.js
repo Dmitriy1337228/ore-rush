@@ -33,12 +33,17 @@ let grantLevel = null;
 let visible = false;
 
 function log(msg) {
-    if (statusLine) statusLine.textContent = msg;
+    if (statusLine) {
+        statusLine.textContent = msg;
+    }
+
     console.info('[DevPanel] ' + msg);
 }
 
 function refreshState() {
-    if (statePre) statePre.textContent = JSON.stringify(gameState, (k, v) => v, 2);
+    if (statePre) {
+        statePre.textContent = JSON.stringify(gameState, (k, v) => v, 2);
+    }
 }
 
 function after(refreshTierVisuals = false) {
@@ -46,8 +51,11 @@ function after(refreshTierVisuals = false) {
     const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
     if (gs) {
         gs.refreshTick();
-        if (refreshTierVisuals) window.__GAME.events.emit('tier-changed');
+        if (refreshTierVisuals) {
+            window.__GAME.events.emit('tier-changed');
+        }
     }
+
     refreshState();
 }
 
@@ -67,6 +75,7 @@ function maxAll() {
     for (const def of UPGRADES) {
         gameState.levels[def.id] = def.maxLevel !== null ? def.maxLevel : 50;
     }
+
     log('все улучшения выставлены на максимум (бесконечные -> 50)');
     after();
 }
@@ -85,8 +94,10 @@ function grantUpgrade() {
 function forceTier() {
     if (!forceNextTier()) {
         log('уже максимальный тир (Алмаз)');
+
         return;
     }
+
     log(`принудительный переход на тир ${gameState.tier + 1} (${TIERS[gameState.tier].name})`);
     after(true);
 }
@@ -96,8 +107,10 @@ function applyMutation(typeId) {
     const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
     if (!gs) {
         log('GameScene ещё не готов');
+
         return;
     }
+
     gs.startMutation(typeId);
     log(`мутация: ${MUTATIONS[typeId].name} (${MUTATIONS[typeId].desc})`);
     after();
@@ -107,8 +120,10 @@ function removeMutation() {
     const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
     if (!gs || !gs.mutation) {
         log('активной мутации нет');
+
         return;
     }
+
     gs.clearMutation(true);
     log('мутация снята');
     after();
@@ -121,8 +136,10 @@ function dailyNextDay() {
     const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
     if (!gs) {
         log('GameScene ещё не готов');
+
         return;
     }
+
     gameState.lastDailyDay = Math.max(0, getDailyDay() - 1); // «завтра» наступило
     saveGame();
     gs.claimDaily();
@@ -133,8 +150,10 @@ function dailyResetStreak() {
     const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
     if (!gs) {
         log('GameScene ещё не готов');
+
         return;
     }
+
     gameState.dailyStreak = 0;
     gameState.lastDailyDay = 0;
     saveGame();
@@ -148,17 +167,23 @@ function startBoss(bossId) {
     const gs = window.__GAME && window.__GAME.scene.getScene('GameScene');
     if (!gs) {
         log('GameScene ещё не готов');
+
         return;
     }
+
     if (gs.boss) {
         log('бой уже идёт — завершите его (уход/победа) перед следующим');
+
         return;
     }
+
     const def = BOSSES.find((b) => b.id === bossId);
     if (!def) {
         log('неизвестный босс: ' + bossId);
+
         return;
     }
+
     gs.startBossFight(bossId);
     log(gs.boss ? `бой: ${def.name} (HP ${gs.boss.maxHp})` : `${def.name}: бой не стартовал — открыт экран/модалка`);
     after();
@@ -169,6 +194,7 @@ function grantComponents() {
     for (const def of COMPONENTS) {
         gameState.components[def.id] = (gameState.components[def.id] || 0) + 100;
     }
+
     log('+100 всех компонентов крафта');
     after();
 }
@@ -177,7 +203,10 @@ function grantComponents() {
 // только id из каталога, без дублей), без баунти/дропов grantBossKill
 function grantAllArtifacts() {
     const owned = new Set(gameState.artifacts);
-    for (const def of ARTIFACTS) owned.add(def.id);
+    for (const def of ARTIFACTS) {
+        owned.add(def.id);
+    }
+
     gameState.artifacts = [...owned].filter((id) => ARTIFACTS.some((a) => a.id === id));
     log(`артефакты: выданы все — ${gameState.artifacts.length}/${ARTIFACTS.length}`);
     after();
@@ -195,8 +224,10 @@ function grantItem(id, n) {
     const def = ITEMS.find((i) => i.id === id);
     if (!def) {
         log('неизвестный предмет: ' + id);
+
         return;
     }
+
     gameState.items[id] = (gameState.items[id] || 0) + n;
     log(`${def.name}: +${n} (запас ${gameState.items[id]})`);
     after();
@@ -209,13 +240,17 @@ function simulateOffline(hours) {
     const gs = game && game.scene.getScene('GameScene');
     if (!gs) {
         log('GameScene ещё не готов');
+
         return;
     }
+
     const info = computeOfflineReward(Date.now() - hours * 3600 * 1000);
     if (!info) {
         log('пассивный доход = 0 — симулировать нечего');
+
         return;
     }
+
     addOre(info.reward);
     gs.registry.set('offlineInfo', info);
     saveGame();
@@ -250,15 +285,26 @@ function fullReset() {
         ui.closeCraft();
         ui.hideBossRewardModal();
     }
+
     if (gs) {
-        if (gs.boss) gs.retreatBoss(); // активный бой не переживает полный сброс
-        if (gs.mutation) gs.clearMutation(false);
+        if (gs.boss) {
+            gs.retreatBoss();
+        } // активный бой не переживает полный сброс
+
+        if (gs.mutation) {
+            gs.clearMutation(false);
+        }
+
         gs.registry.set('offlineInfo', null);
         gs.blockBusy = false;
         gs.blockStage = 0;
     }
+
     game.events.emit('tier-changed');
-    if (ui) ui.maybeRebuildTutorial(); // обучение показывается заново в текущей сессии
+    if (ui) {
+        ui.maybeRebuildTutorial();
+    } // обучение показывается заново в текущей сессии
+
     log('полный сброс: игра как при первом запуске');
     after();
 }
@@ -268,6 +314,7 @@ function makeButton(label, onClick) {
     b.type = 'button';
     b.textContent = label;
     b.addEventListener('click', onClick);
+
     return b;
 }
 
@@ -302,6 +349,7 @@ function buildPanel(game) {
     for (const id of Object.keys(MUTATIONS)) {
         grid.appendChild(makeButton(MUTATIONS[id].name, () => applyMutation(id)));
     }
+
     grid.appendChild(makeButton('Убрать мутацию', removeMutation));
 
     // Ежедневные награды (Этап 6): приход «завтра» и сброс серии
@@ -313,6 +361,7 @@ function buildPanel(game) {
     for (const def of BOSSES) {
         grid.appendChild(makeButton(`Босс: ${def.name}`, () => startBoss(def.id)));
     }
+
     grid.appendChild(makeButton('Все компоненты +100', grantComponents));
     grid.appendChild(makeButton('Артефакты: все', grantAllArtifacts));
     grid.appendChild(makeButton('Верстак: сброс', resetCrafting));
@@ -349,6 +398,7 @@ function buildPanel(game) {
         opt.textContent = `${def.tab === 'equipment' ? 'Оборуд' : 'Усилен'}: ${def.name}`;
         grantSelect.appendChild(opt);
     }
+
     grantLevel = document.createElement('input');
     grantLevel.type = 'number';
     grantLevel.min = '0';
@@ -432,7 +482,10 @@ function toggle() {
 }
 
 export function initDevPanel(game) {
-    if (panel) return; // защита от двойной инициализации
+    if (panel) {
+        return;
+    } // защита от двойной инициализации
+
     buildPanel(game);
     panel.style.display = 'none';
 

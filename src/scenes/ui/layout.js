@@ -28,6 +28,7 @@ export const layoutMethods = {
                 h: L.dock.h
             };
         }
+
         Object.assign(VIEWPORT, L.viewport);
         // Портретный масштаб кеглей: 390px -> 1.8, 720px -> 1.0 (FIT-даунскейл
         // съедает мелкий шрифт на телефонах — замечание игрока R7-R9)
@@ -47,10 +48,17 @@ export const layoutMethods = {
 
         if (this.tutDim) {
             this.tutDim.setPosition(L.modal.cx, L.modal.cy).setSize(L.W, L.H);
-            if (this.tutCam) this.tutCam.setViewport(0, 0, L.W, L.H);
+            if (this.tutCam) {
+                this.tutCam.setViewport(0, 0, L.W, L.H);
+            }
+
             this.layoutTutorial();
         }
-        if (this.tutorialStep === 3 && this.tutFinal) this.showTutorialFinal();
+
+        if (this.tutorialStep === 3 && this.tutFinal) {
+            this.showTutorialFinal();
+        }
+
         // Политика видимости панели — ПОСЛЕДНИМ шагом: перекрывает всё, что
         // раскладка выше выставила видимым, пока открыт оверлей
         this.applyPanelVisibility();
@@ -62,7 +70,10 @@ export const layoutMethods = {
     // который заново выставляет легитимные видимости (chromeHidden и пр.)
     applyPanelVisibility() {
         const hide = !!(this.L && this.L.portrait && this._blockLocked);
-        if (hide === this._panelHidden) return;
+        if (hide === this._panelHidden) {
+            return;
+        }
+
         this._panelHidden = hide;
         const els = [
             this.panelImg,
@@ -79,18 +90,38 @@ export const layoutMethods = {
             this.unlockBtn,
             this.unlockText
         ];
-        for (const t of this.tabBtns) els.push(t.c);
+        for (const t of this.tabBtns) {
+            els.push(t.c);
+        }
+
         if (!hide) {
             // Восстановление ЯВНОЕ: applyLayout не пере-показывает mapBtn/
             // starsText/viewportBg (у них нет пер-кадровых setVisible) —
             // сначала всё видно, затем applyLayout откатит state-зависимое
             // (в бою хром скрыт, hint в портрете всегда скрыт — refreshUi)
-            for (const o of els) if (o) o.setVisible(true);
+            for (const o of els) {
+                if (o) {
+                    o.setVisible(true);
+                }
+            }
+
             this.applyLayout();
+
             return;
         }
-        for (const o of els) if (o) o.setVisible(false);
-        if (this.listContent) this.listContent.setVisible(false);
-        if (this.gearContent) this.gearContent.setVisible(false);
+
+        for (const o of els) {
+            if (o) {
+                o.setVisible(false);
+            }
+        }
+
+        if (this.listContent) {
+            this.listContent.setVisible(false);
+        }
+
+        if (this.gearContent) {
+            this.gearContent.setVisible(false);
+        }
     }
 };

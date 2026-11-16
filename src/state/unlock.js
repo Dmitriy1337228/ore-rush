@@ -37,15 +37,20 @@ function getTierAnchorRate() {
     if (!(a > 0) || !isFinite(a)) {
         gameState.tierAnchorRate = Math.max(getEarningRate(), MIN_RATE);
     }
+
     return gameState.tierAnchorRate;
 }
 
 // Цена спуска из тира `tier` в `tier + 1`; null для последнего тира.
 // Снапшот от якоря (доход при входе): см. описание модуля.
 export function computeNextUnlockPrice(tier) {
-    if (isLastTier(tier)) return null;
+    if (isLastTier(tier)) {
+        return null;
+    }
+
     const anchor = getTierAnchorRate();
     const byRate = unlockSecondsFor(tier) * anchor;
+
     return Math.ceil(Math.max(UNLOCK_FLOOR * getPrestigeMult(), byRate));
 }
 
@@ -57,9 +62,13 @@ export function getNextUnlockPrice() {
 // Время до спуска при текущей ставке добычи, сек (оценка для активного игрока).
 // Используется для ETA на кнопке спуска и фильтра «окупаемость» в симуляторе.
 export function getUnlockEtaSeconds() {
-    if (isLastTier(gameState.tier)) return null;
+    if (isLastTier(gameState.tier)) {
+        return null;
+    }
+
     const price = getNextUnlockPrice();
     const deficit = Math.max(0, price - gameState.ore);
+
     return deficit / Math.max(getEarningRate(), MIN_RATE);
 }
 
@@ -72,18 +81,26 @@ export function canUnlockTier() {
 }
 
 export function unlockTier() {
-    if (!canUnlockTier()) return false;
+    if (!canUnlockTier()) {
+        return false;
+    }
+
     gameState.ore -= getNextUnlockPrice();
     gameState.tier += 1;
     resetTierAnchor(); // якорь нового тира зафиксируется от дохода уже с множителем x3
+
     return true;
 }
 
 // Принудительный переход без оплаты (DevPanel).
 export function forceNextTier() {
-    if (isLastTier(gameState.tier)) return false;
+    if (isLastTier(gameState.tier)) {
+        return false;
+    }
+
     gameState.tier += 1;
     gameState.ore = 0;
     resetTierAnchor();
+
     return true;
 }

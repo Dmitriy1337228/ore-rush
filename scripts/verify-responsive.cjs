@@ -8,8 +8,11 @@ let passed = 0,
     failed = 0;
 function check(name, cond, detail = '') {
     console.log(`${cond ? 'OK  ' : 'FAIL'} ${name}${detail ? ' (' + detail + ')' : ''}`);
-    if (cond) passed++;
-    else failed++;
+    if (cond) {
+        passed++;
+    } else {
+        failed++;
+    }
 }
 
 (async () => {
@@ -24,11 +27,14 @@ function check(name, cond, detail = '') {
                 .getEntriesByType('resource')
                 .map((r) => r.name)
                 .find((n) => /\/src\/state\.js/.test(n));
+
             return hit || '/src/state.js';
         });
+
         return page.evaluate(
             async ({ u, e }) => {
                 const m = await import(u);
+
                 return new Function('m', 'return (' + e + ');')(m);
             },
             { u, e: expr }
@@ -50,11 +56,15 @@ function check(name, cond, detail = '') {
         const page = await ctx.newPage();
         page.on('pageerror', (e) => errors.push(String(e)));
         page.on('console', (m) => {
-            if (m.type() === 'error') errors.push(m.text());
+            if (m.type() === 'error') {
+                errors.push(m.text());
+            }
         });
         await page.addInitScript(
             (s) => {
-                for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+                for (const [k, v] of Object.entries(s)) {
+                    localStorage.setItem(k, v);
+                }
             },
             { 'ore-rush-save': freshSave }
         );
@@ -64,6 +74,7 @@ function check(name, cond, detail = '') {
         // закрываем, награда уже применена
         await page.evaluate(() => window.__GAME.scene.getScene('UIScene').hideDailyModal());
         await page.waitForTimeout(300);
+
         return { ctx, page };
     };
 
@@ -74,6 +85,7 @@ function check(name, cond, detail = '') {
             ([wx, wy]) => {
                 const rect = window.__GAME.canvas.getBoundingClientRect();
                 const ds = window.__GAME.scale.displayScale;
+
                 return { x: rect.left + wx / ds.x, y: rect.top + wy / ds.y };
             },
             [wx, wy]
@@ -87,8 +99,12 @@ function check(name, cond, detail = '') {
             // Image с setDisplaySize: реальные размеры — displayWidth/displayHeight;
             // контейнеры (width=0) — через getBounds
             const r = (o) => {
-                if (!o) return null;
+                if (!o) {
+                    return null;
+                }
+
                 const b = o.getBounds ? o.getBounds() : null;
+
                 return {
                     x: Math.round(o.x),
                     y: Math.round(o.y),
@@ -97,6 +113,7 @@ function check(name, cond, detail = '') {
                 };
             };
             const row0 = ui.rows.find((x) => x.def.id === 'pickaxe');
+
             return {
                 gameSize: { w: g.scale.gameSize.width, h: g.scale.gameSize.height },
                 portrait: ui.L.portrait,
@@ -247,6 +264,7 @@ function check(name, cond, detail = '') {
             const row = ui.rows.find(
                 (r) => r.rc.visible && r.rc.y >= s && r.rc.y + ui.rowGeom().h <= s + ui.listCam.height
             );
+
             return { x: ui.listCam.x + row.btn.x, y: ui.listCam.y + row.rc.y + row.btn.y - s };
         });
         const bs = await toScreen(page, btnCanvas.x, btnCanvas.y);
@@ -272,6 +290,7 @@ function check(name, cond, detail = '') {
                     r.rc.y >= s &&
                     r.rc.y + ui.rowGeom().h <= s + ui.listCam.height
             );
+
             return { x: ui.listCam.x + row.btn.x, y: ui.listCam.y + row.rc.y + row.btn.y - s };
         });
         const ts = await toScreen(page, tapCanvas.x, tapCanvas.y);
@@ -285,6 +304,7 @@ function check(name, cond, detail = '') {
         await page.waitForTimeout(300);
         const modalOpen = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return {
                 visible: ui.modal.visible,
                 x: Math.round(ui.modal.x),
@@ -378,6 +398,7 @@ function check(name, cond, detail = '') {
         const h = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             const f = (o) => parseFloat(o.style.fontSize);
+
             return {
                 s: ui._adaptiveScale,
                 mapLbl: f(ui.mapLbl),
@@ -442,6 +463,7 @@ function check(name, cond, detail = '') {
         const h = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
             const f = (o) => parseFloat(o.style.fontSize);
+
             return {
                 s: ui._adaptiveScale,
                 gpsSize: f(ui.gpsText),
@@ -488,6 +510,7 @@ function check(name, cond, detail = '') {
             const f = (o) => parseFloat(o.style.fontSize);
             const row = ui.rows.find((r) => r.def.id === 'pickaxe');
             const g = ui.rowGeom();
+
             return {
                 s: ui._adaptiveScale,
                 rowsS: ui._rowsBuiltS,
@@ -553,6 +576,7 @@ function check(name, cond, detail = '') {
                 ringX: n.ring ? n.ring.x : null,
                 ringY: n.ring ? n.ring.y : null
             }));
+
             return {
                 s: ui._adaptiveScale,
                 mapS: ui._mapS,
@@ -628,11 +652,17 @@ function check(name, cond, detail = '') {
             const texts = [];
             const walk = (list) => {
                 for (const o of list) {
-                    if (o.type === 'Text') texts.push(o);
-                    if (o.list) walk(o.list);
+                    if (o.type === 'Text') {
+                        texts.push(o);
+                    }
+
+                    if (o.list) {
+                        walk(o.list);
+                    }
                 }
             };
             walk(ui.craftContent.list);
+
             return {
                 s: ui._adaptiveScale,
                 rowsS: ui._craftRowsS,
@@ -681,6 +711,7 @@ function check(name, cond, detail = '') {
             const byF = Math.max(L.block.y, 386);
             const hintBottom = gs.bossHint ? gs.bossHint.y + gs.bossHint.height / 2 : 0;
             const card = ui.gearRows[0]._geom;
+
             return {
                 py: L.panel.py,
                 fightPyExpected: byF + 224,
@@ -719,6 +750,7 @@ function check(name, cond, detail = '') {
         await page.waitForTimeout(600);
         const after = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+
             return {
                 gear: ui.gearContent.visible,
                 list: ui.listContent.visible,

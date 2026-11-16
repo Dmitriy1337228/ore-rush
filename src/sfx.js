@@ -11,11 +11,20 @@ const PITCH_SPREAD = 0.12;
 const lastPlayed = new Map();
 
 export function playSfx(scene, base, variants = 2, rate = 1, volume = DEFAULT_VOLUME) {
-    if (!gameState.soundOn) return;
-    if (!scene.cache?.audio?.exists(`${base}_1`)) return;
+    if (!gameState.soundOn) {
+        return;
+    }
+
+    if (!scene.cache?.audio?.exists(`${base}_1`)) {
+        return;
+    }
+
     const now = performance.now();
     const prev = lastPlayed.get(base) || 0;
-    if (now - prev < MIN_INTERVAL_MS) return;
+    if (now - prev < MIN_INTERVAL_MS) {
+        return;
+    }
+
     lastPlayed.set(base, now);
     const key = `${base}_${Math.floor(Math.random() * variants) + 1}`;
     scene.sound.play(key, { rate: rate * (PITCH_MIN + Math.random() * PITCH_SPREAD), volume });

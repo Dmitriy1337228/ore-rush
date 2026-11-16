@@ -62,6 +62,7 @@ const IMAGE_TYPES = new Set(['Image', 'Sprite', 'NineSlice']);
 function transformScale(go) {
     try {
         const m = go.getWorldTransformMatrix();
+
         return Math.abs(m.scaleY) || 1;
     } catch (e) {
         return Math.abs(go.scaleY) || 1;
@@ -81,15 +82,22 @@ function normalizeLabelText(text) {
 function hitSize(go, axis) {
     try {
         const input = go.input;
-        if (!input || !input.enabled || !input.customHitArea) return null;
+        if (!input || !input.enabled || !input.customHitArea) {
+            return null;
+        }
+
         const ha = input.hitArea;
-        if (!ha || typeof ha.width !== 'number') return null;
+        if (!ha || typeof ha.width !== 'number') {
+            return null;
+        }
+
         let scale = Math.abs(axis === 'x' ? go.scaleX || 1 : go.scaleY || 1);
         let p = go.parentContainer;
         while (p) {
             scale *= Math.abs(axis === 'x' ? p.scaleX || 1 : p.scaleY || 1);
             p = p.parentContainer;
         }
+
         return (axis === 'x' ? ha.width : ha.height) * scale;
     } catch (e) {
         return null;
@@ -113,10 +121,13 @@ function ancestorHitSize(go) {
                     wy *= Math.abs(q.scaleY || 1);
                     q = q.parentContainer;
                 }
+
                 return Math.min(pa.hitArea.width * wx, pa.hitArea.height * wy);
             }
+
             p = p.parentContainer;
         }
+
         return null;
     } catch (e) {
         return null;
@@ -140,29 +151,46 @@ export function collectItems(game, cssScale = 1) {
         const sceneKey = scene.scene.key;
         // order: [сцена, слой(0 main / 1 скролл-камера), depth корня, индекс корня, индексы вложенности...]
         const visit = (go, parentAlpha, layer, order, rootDepth) => {
-            if (go.visible === false) return;
+            if (go.visible === false) {
+                return;
+            }
+
             const alpha = parentAlpha * (go.alpha === undefined ? 1 : go.alpha);
             let curLayer = layer;
             if (sceneKey === 'UIScene') {
                 const found = layers.find((l) => l.root === go);
-                if (found) curLayer = found;
+                if (found) {
+                    curLayer = found;
+                }
             }
+
             if (go.list) {
                 go.list.forEach((child, i) => visit(child, alpha, curLayer, order.concat(i), rootDepth));
+
                 return;
             }
+
             // Rectangle: реальная плотность заливки = alpha * fillAlpha (невидимые hit-зоны не считаются)
             const opacity = go.type === 'Rectangle' ? alpha * (go.fillAlpha === undefined ? 1 : go.fillAlpha) : alpha;
-            if (SKIP_TYPES.has(go.type) || opacity < 0.05) return;
+            if (SKIP_TYPES.has(go.type) || opacity < 0.05) {
+                return;
+            }
+
             // транзитные объекты: подписи/частицы-подобные в GameScene и любые анимируемые тексты
-            if ((go.type === 'Text' || sceneKey === 'GameScene') && isTweening(go)) return;
+            if ((go.type === 'Text' || sceneKey === 'GameScene') && isTweening(go)) {
+                return;
+            }
+
             let b;
             try {
                 b = go.getBounds();
             } catch (e) {
                 return;
             }
-            if (!b || (b.width <= 1 && b.height <= 1)) return;
+            if (!b || (b.width <= 1 && b.height <= 1)) {
+                return;
+            }
+
             let x = b.x,
                 y = b.y,
                 r = b.right,
@@ -170,19 +198,26 @@ export function collectItems(game, cssScale = 1) {
             if (curLayer) {
                 // Контент скролл-камеры (ряды, карта, мастерская): в экранные координаты
                 // и только то, что попадает в видимую полосу камеры
-                if (!curLayer.active() || !curLayer.cam) return;
+                if (!curLayer.active() || !curLayer.cam) {
+                    return;
+                }
+
                 const cam = curLayer.cam;
                 x = x - cam.scrollX + cam.x;
                 r = r - cam.scrollX + cam.x;
                 y = y - cam.scrollY + cam.y;
                 bt = bt - cam.scrollY + cam.y;
-                if (bt < cam.y - 2 || y > cam.y + cam.height + 2 || r < cam.x - 2 || x > cam.x + cam.width + 2) return;
+                if (bt < cam.y - 2 || y > cam.y + cam.height + 2 || r < cam.x - 2 || x > cam.x + cam.width + 2) {
+                    return;
+                }
             }
+
             const isText = go.type === 'Text';
             if (isText) {
                 y += UI_RULES.textGlyphTrim;
                 bt -= UI_RULES.textGlyphTrim;
             }
+
             const w = r - x,
                 h = bt - y;
             const tex = (go.texture && go.texture.key) || '';
@@ -230,6 +265,7 @@ export function collectItems(game, cssScale = 1) {
         };
         scene.children.list.forEach((go, idx) => visit(go, 1, null, [sceneIdx, go.depth || 0, idx], go.depth || 0));
     });
+
     return { items, W, H, ui };
 }
 
@@ -237,8 +273,11 @@ export function collectItems(game, cssScale = 1) {
 function compareOrder(a, b) {
     const n = Math.min(a.order.length, b.order.length);
     for (let i = 0; i < n; i++) {
-        if (a.order[i] !== b.order[i]) return a.order[i] - b.order[i];
+        if (a.order[i] !== b.order[i]) {
+            return a.order[i] - b.order[i];
+        }
     }
+
     return a.order.length - b.order.length;
 }
 
@@ -248,12 +287,14 @@ const area = (i) => Math.max(0, i.w) * Math.max(0, i.h);
 function intersectionArea(a, b) {
     const ox = Math.min(a.r, b.r) - Math.max(a.x, b.x);
     const oy = Math.min(a.b, b.b) - Math.max(a.y, b.y);
+
     return ox > 0 && oy > 0 ? ox * oy : 0;
 }
 const share = (inner, outer) => (area(inner) > 0 ? intersectionArea(inner, outer) / area(inner) : 0);
 const centerInside = (inner, outer) => {
     const cx = (inner.x + inner.r) / 2,
         cy = (inner.y + inner.b) / 2;
+
     return cx >= outer.x && cx <= outer.r && cy >= outer.y && cy <= outer.b;
 };
 const isContained = (a, b, tol = 1) => a.x >= b.x - tol && a.y >= b.y - tol && a.r <= b.r + tol && a.b <= b.b + tol;
@@ -278,12 +319,24 @@ export function auditItems({ items, W, H, ui }, cssScale) {
     // OVERLAP: пересечение без вложенности (Rectangle — подложки/затемнения — не участвуют)
     for (let i = 0; i < items.length; i++) {
         const a = items[i];
-        if (a.kind === 'Rectangle') continue;
+        if (a.kind === 'Rectangle') {
+            continue;
+        }
+
         for (let j = i + 1; j < items.length; j++) {
             const b = items[j];
-            if (b.kind === 'Rectangle' || !sameLayer(a, b)) continue;
-            if (isContained(a, b) || isContained(b, a)) continue;
-            if (overlayVsBelow(a, b)) continue;
+            if (b.kind === 'Rectangle' || !sameLayer(a, b)) {
+                continue;
+            }
+
+            if (isContained(a, b) || isContained(b, a)) {
+                continue;
+            }
+
+            if (overlayVsBelow(a, b)) {
+                continue;
+            }
+
             const ox = Math.min(a.r, b.r) - Math.max(a.x, b.x);
             const oy = Math.min(a.b, b.b) - Math.max(a.y, b.y);
             if (ox > R.overlapTolerance && oy > R.overlapTolerance) {
@@ -304,23 +357,50 @@ export function auditItems({ items, W, H, ui }, cssScale) {
     const hostOf = (it) => {
         let best = null;
         for (const h of hosts) {
-            if (h === it || !sameLayer(it, h)) continue;
-            if (area(h) < area(it)) continue;
-            if (!centerInside(it, h)) continue;
-            if (share(it, h) < R.hostMinShare) continue;
-            if (compareOrder(h, it) > 0) continue; // фон выше — отдельное правило TEXT-COVERED
-            if (overlayVsBelow(it, h)) continue; // фон из другого слоя (например, шапка под окном)
+            if (h === it || !sameLayer(it, h)) {
+                continue;
+            }
+
+            if (area(h) < area(it)) {
+                continue;
+            }
+
+            if (!centerInside(it, h)) {
+                continue;
+            }
+
+            if (share(it, h) < R.hostMinShare) {
+                continue;
+            }
+
+            if (compareOrder(h, it) > 0) {
+                continue;
+            } // фон выше — отдельное правило TEXT-COVERED
+
+            if (overlayVsBelow(it, h)) {
+                continue;
+            } // фон из другого слоя (например, шапка под окном)
+
             // Фоном считается ближайший снизу в порядке отрисовки: кнопка на панели -> кнопка
-            if (!best || compareOrder(h, best) > 0) best = h;
+            if (!best || compareOrder(h, best) > 0) {
+                best = h;
+            }
         }
+
         return best;
     };
 
     for (const it of items) {
-        if (it.host || it.fullscreen) continue;
+        if (it.host || it.fullscreen) {
+            continue;
+        }
+
         const isText = it.kind === 'Text' && it.text.trim() !== '';
         const isElement = it.interactive || IMAGE_TYPES.has(it.kind);
-        if (!isText && !isElement) continue;
+        if (!isText && !isElement) {
+            continue;
+        }
+
         const host = hostOf(it);
         if (host) {
             const overflow = Math.max(host.x - it.x, it.r - host.r, host.y - it.y, it.b - host.b);
@@ -352,14 +432,35 @@ export function auditItems({ items, W, H, ui }, cssScale) {
 
     // TEXT-COVERED: фон, содержащий текст, отрисован ПОЗЖЕ текста
     for (const t of items) {
-        if (t.kind !== 'Text' || !t.text.trim()) continue;
+        if (t.kind !== 'Text' || !t.text.trim()) {
+            continue;
+        }
+
         for (const h of items) {
-            if (h === t || h.kind === 'Text' || h.fullscreen || !sameLayer(t, h)) continue;
-            if (!(IMAGE_TYPES.has(h.kind) || h.kind === 'Rectangle')) continue;
-            if (h.alpha < 0.5 || area(h) < area(t)) continue;
-            if (share(t, h) < 0.8) continue;
-            if (compareOrder(h, t) <= 0) continue;
-            if (overlayVsBelow(t, h)) continue;
+            if (h === t || h.kind === 'Text' || h.fullscreen || !sameLayer(t, h)) {
+                continue;
+            }
+
+            if (!(IMAGE_TYPES.has(h.kind) || h.kind === 'Rectangle')) {
+                continue;
+            }
+
+            if (h.alpha < 0.5 || area(h) < area(t)) {
+                continue;
+            }
+
+            if (share(t, h) < 0.8) {
+                continue;
+            }
+
+            if (compareOrder(h, t) <= 0) {
+                continue;
+            }
+
+            if (overlayVsBelow(t, h)) {
+                continue;
+            }
+
             add(
                 'TEXT-COVERED',
                 'error',
@@ -375,7 +476,9 @@ export function auditItems({ items, W, H, ui }, cssScale) {
     for (const it of items) {
         const isText = it.kind === 'Text' && it.text.trim() !== '';
         const isTarget = isText || it.interactive;
-        if (it.fullscreen) continue;
+        if (it.fullscreen) {
+            continue;
+        }
 
         if (isText) {
             if (it.fontCss > 0 && it.fontCss < R.minFontCss.warn) {
@@ -466,7 +569,10 @@ export function auditItems({ items, W, H, ui }, cssScale) {
         for (let j = i + 1; j < buttons.length; j++) {
             const a = buttons[i],
                 b = buttons[j];
-            if (!sameLayer(a, b) || isContained(a, b) || isContained(b, a) || overlayVsBelow(a, b)) continue;
+            if (!sameLayer(a, b) || isContained(a, b) || isContained(b, a) || overlayVsBelow(a, b)) {
+                continue;
+            }
+
             const gapX = Math.max(a.x, b.x) - Math.min(a.r, b.r);
             const gapY = Math.max(a.y, b.y) - Math.min(a.b, b.b);
             const overlapY = Math.min(a.b, b.b) - Math.max(a.y, b.y);
@@ -494,6 +600,7 @@ export function auditItems({ items, W, H, ui }, cssScale) {
                     [a.label, b.label].sort()
                 );
             }
+
             const sameSize = Math.abs(a.w - b.w) <= 1 && Math.abs(a.h - b.h) <= 1;
             if (sameSize) {
                 const dy = Math.abs((a.y + a.b) / 2 - (b.y + b.b) / 2);
@@ -524,7 +631,10 @@ export function auditItems({ items, W, H, ui }, cssScale) {
     // ROW-NAME: имя ряда улучшений не шире своего лимита (независимо от видимости ряда)
     if (ui && ui.rows) {
         for (const row of ui.rows) {
-            if (!row.nameText || !row.nameText.width) continue;
+            if (!row.nameText || !row.nameText.width) {
+                continue;
+            }
+
             if (row.nameText.width > row.nameMaxW + 1) {
                 add(
                     'ROW-NAME',
@@ -546,6 +656,7 @@ export function auditItems({ items, W, H, ui }, cssScale) {
 // cssScale — CSS-пикселей на один пиксель игровой сетки (FIT-масштаб)
 export function getCssScale(game) {
     const rect = game.canvas.getBoundingClientRect();
+
     return rect.width / game.scale.gameSize.width;
 }
 
@@ -553,6 +664,7 @@ export function auditUi(game) {
     const cssScale = getCssScale(game);
     const data = collectItems(game, cssScale);
     const violations = auditItems(data, cssScale);
+
     return {
         cssScale,
         viewport: { w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio || 1 },
@@ -587,7 +699,9 @@ const COLORS = { error: '#ff2d2d', warn: '#ff9f1a' };
 
 export function hideOverlay() {
     const el = document.getElementById(OVERLAY_ID);
-    if (el) el.remove();
+    if (el) {
+        el.remove();
+    }
 }
 
 // Рисует рамки нарушений поверх канваса; номер = индекс в списке violations.
@@ -630,21 +744,49 @@ function openScreens(game) {
     const ui = game.scene.getScene('UIScene');
     const gs = game.scene.getScene('GameScene');
     const open = [];
-    if (!ui) return open;
-    if (ui._mapOpen) open.push('map');
-    if (ui._craftOpen) open.push('craft');
-    if (ui.modal && ui.modal.visible) open.push('settings');
-    if (ui._offlineOpen) open.push('offline');
-    if (ui._dailyOpen) open.push('daily');
-    if (ui._bossRewardOpen) open.push('bossReward');
-    if (ui._playerDownOpen) open.push('playerDown');
-    if (gs && gs.boss) open.push(`boss:${gs.boss.def.id}`);
+    if (!ui) {
+        return open;
+    }
+
+    if (ui._mapOpen) {
+        open.push('map');
+    }
+
+    if (ui._craftOpen) {
+        open.push('craft');
+    }
+
+    if (ui.modal && ui.modal.visible) {
+        open.push('settings');
+    }
+
+    if (ui._offlineOpen) {
+        open.push('offline');
+    }
+
+    if (ui._dailyOpen) {
+        open.push('daily');
+    }
+
+    if (ui._bossRewardOpen) {
+        open.push('bossReward');
+    }
+
+    if (ui._playerDownOpen) {
+        open.push('playerDown');
+    }
+
+    if (gs && gs.boss) {
+        open.push(`boss:${gs.boss.def.id}`);
+    }
+
     return open;
 }
 
 export function buildReport(game) {
     const audit = auditUi(game);
     const ui = game.scene.getScene('UIScene');
+
     return {
         kind: 'ui-report',
         createdAt: new Date().toISOString(),
@@ -688,12 +830,15 @@ export function downloadReport(game) {
                 ctx.lineWidth = bi === 0 ? 2 * k : k;
                 ctx.setLineDash(bi === 0 ? [] : [4 * k, 3 * k]);
                 ctx.strokeRect(b.x * k, b.y * k, b.w * k, b.h * k);
-                if (bi === 0) ctx.fillText(String(idx + 1), b.x * k, Math.max(10 * k, b.y * k - 3 * k));
+                if (bi === 0) {
+                    ctx.fillText(String(idx + 1), b.x * k, Math.max(10 * k, b.y * k - 3 * k));
+                }
             });
         });
         c.toBlob((blob) => download(`ui-report-${stamp}.png`, blob), 'image/png');
     });
     console.info(`[ui-audit] репорт: ошибок ${report.counts.error}, предупреждений ${report.counts.warn}`);
+
     return report;
 }
 
@@ -715,8 +860,10 @@ export function installUiAuditTools(game) {
                 timer = null;
                 hideOverlay();
                 console.info('[ui-audit] overlay выкл');
+
                 return;
             }
+
             tick();
             timer = setInterval(tick, 500);
             console.info('[ui-audit] overlay вкл (F8 — выкл, F9 — репорт)');
