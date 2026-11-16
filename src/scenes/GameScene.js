@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import {
-    gameState, TIERS, addOre, loadGame, readLastExit, computeOfflineReward, canClaimDaily, claimDailyReward
+    gameState, TIERS, addOre, loadGame, readLastExit, computeOfflineReward, saveLastExit, canClaimDaily, claimDailyReward
 } from '../state.js';
 import { YandexSDKStub } from '../sdk-stub.js';
 import { computeLayout } from '../layout.js';
@@ -49,6 +49,11 @@ export class GameScene extends Phaser.Scene {
                 this.registry.set(REG.offlineInfo, info);
             }
         }
+        // Счётчик отсутствия перезапускается при КАЖДОЙ загрузке: штамп от
+        // прошлого сеанса (мобильный вебвью/kill процесса не дают hidden/
+        // beforeunload) иначе используется повторно — повторное начисление
+        // и «72 ч» вместо реальных минут отсутствия
+        saveLastExit();
 
         this.buildWorld();
         this.buildBlock();
@@ -148,12 +153,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     setupTimers() {
+
         this.setupPassiveIncomeTimer();
         this.setupMutationTimer();
         this.setupAutoMineTimer();
         this.setupAutosaveTimer();
         this.setupVisibilityHandlers();
         this.setupShutdownHandler();
+
     }
 
     update() {

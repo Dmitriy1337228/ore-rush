@@ -110,7 +110,17 @@ export const timersMethods = {
         this.saveTimer = this.time.addEvent({
             delay: AUTOSAVE_MS,
             loop: true,
-            callback: () => saveGame()
+            callback: () => {
+                saveGame();
+                // Heartbeat счётчика офлайна: hidden/beforeunload на мобильном
+                // вебвью и при kill процесса не срабатывают — без heartbeat штамп
+                // оставался со старого сеанса и офлайн показывал дни вместо минут.
+                // Пока вкладка видима, штамп живой; при freeze/kill замирает на
+                // моменте последнего видимого тика = честное время отсутствия.
+                // rAF-таймер на hidden замирает сам, поверх финальной записи
+                // из setupVisibilityHandlers ничего не пишет.
+                saveLastExit();
+            }
         });
     },
 
