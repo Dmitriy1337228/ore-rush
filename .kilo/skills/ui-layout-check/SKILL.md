@@ -1,6 +1,6 @@
 ---
 name: ui-layout-check
-description: "Use when changing or reviewing any UI layout in this game: HUD, panels, rows, modals, map, craft, boss overlay, buttons, text sizes, adaptive/portrait layout, DOM-слой (src/dom). Runs the measurable layout audit (npm run ui:check / ui:check:dom), reads annotated screenshots and the report. Triggers on: вёрстка, layout, наезжает, перекрывается, отступы, кнопки, адаптив, портрет, ui:check, DOM-слой, src/dom."
+description: "Use when changing or reviewing any UI layout in this game: HUD, panels, rows, modals, map, craft, boss overlay, buttons, text sizes, adaptive/portrait layout, DOM-слой (src/ui/dom). Runs the measurable layout audit (npm run ui:check / ui:check:dom), reads annotated screenshots and the report. Triggers on: вёрстка, layout, наезжает, перекрывается, отступы, кнопки, адаптив, портрет, ui:check, DOM-слой, src/ui/dom."
 ---
 
 # UI layout check
@@ -35,9 +35,9 @@ description: "Use when changing or reviewing any UI layout in this game: HUD, pa
 Правила: OVERLAP, OVERFLOW, TEXT-COVERED, OFFSCREEN, MIN-FONT, ROW-NAME, PADDING, TOUCH-TARGET,
 BUTTON-GAP, MISALIGNED, EDGE (таблица в `docs/UI_LAYOUT.md`).
 
-## DOM-слой (`src/dom`, экран мастерской — по умолчанию в проде и dev)
+## DOM-слой (`src/ui/dom`, экран мастерской — по умолчанию в проде и dev)
 
-С пилота DOM (G3 = go) мастерская живёт в `src/dom/*`, Phaser-экран удалён. Для правок действует дополнительный цикл:
+С пилота DOM (G3 = go) мастерская живёт в `src/ui/dom/*`, Phaser-экран удалён. Для правок действует дополнительный цикл:
 
 1. Размеры — **только токены**: `npm run dom:tokens` (генерация из `src/ui/shared/theme.js`),
    `npm run dom:tokens -- --check` (дрейф), `npm run ui:tokens:css` (голые px/rem/em вне
@@ -49,5 +49,5 @@ BUTTON-GAP, MISALIGNED, EDGE (таблица в `docs/UI_LAYOUT.md`).
 4. Полный прогон UI = `npm run ui:check` **и** `npm run ui:check:dom`; плюс `npm test`, `test:ui`,
    `npm run format:check`, `npm run lint`.
 5. Бизнес-правила — только в `src/state.js`, тексты ошибок — `src/state/craftMessages.js`;
-   `src/dom/*` не пишет в `gameState`, только читает через `bridge.js`.
+   `src/ui/dom/*` не пишет в `gameState`, только читает через `bridge.js`.
 6. Фикстуры/стенды (`fixtures*.js`, `lab.js`, `build-dom-*.mjs`) — не прод-код и вне метрики LOC.

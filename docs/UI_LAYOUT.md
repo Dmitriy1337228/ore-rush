@@ -95,9 +95,9 @@ Replay открывает те же вьюпорт, сохранение и эк
 (Prettier/ESLint; см. `AGENTS.md`, раздел «Стиль кода»).
 Список дальнейших улучшений — `docs/UI_LAYOUT_TODO.md`.
 
-## DOM-слой (`src/dom/`, пилот мастерской)
+## DOM-слой (`src/ui/dom/`, пилот мастерской)
 
-Мастерская рисуется обычным DOM (`src/dom/`) поверх канваса и включена по умолчанию
+Мастерская рисуется обычным DOM (`src/ui/dom/`) поверх канваса и включена по умолчанию
 в проде и dev; Phaser-экран удалён после пилота (G3 = go). Для неё действуют свои гейты:
 
 ```
@@ -113,7 +113,7 @@ npm run test:dom-golden                 # tolerant-diff эталона DOM-па�
 входят в проверку. Размеченные PNG — `shots/ui-check/<viewport>__craft-dom.png`,
 JSON-отчёт — `shots/ui-check-dom/report.json`; код выхода ≠ 0 при новых ошибках.
 
-Размеры DOM — только токены: `npm run dom:tokens` генерирует `src/dom/tokens.css` из
+Размеры DOM — только токены: `npm run dom:tokens` генерирует `src/ui/dom/tokens.css` из
 `src/ui/shared/theme.js` (+ `DOM_EXTRA` в `scripts/gates/gen-dom-tokens.mjs`), проверка дрейфа —
 `npm run dom:tokens -- --check`. Ручные правки `tokens.css` запрещены.
 

@@ -11,7 +11,7 @@
 
 ## Стиль кода (Prettier + ESLint — обязательный гейт)
 - Форматирование — Prettier (`.prettierrc`), линт — ESLint flat-конфиг (`eslint.config.js`): только стилистические правила (`curly: all`, пустая строка перед `return` и после `if/for/while`), без смысловых `no-*`.
-- Команды: `npm run format`, `npm run format:check`, `npm run lint`, `npm run lint:fix`. Охват — `src/`, `scripts/`, `tests/` (`*.js/*.mjs/*.cjs`) и `vite.config.js`. Не форматируются: `docs/`, `shots/`, `dist/`, `assets/`, `.kilo/`, `*.css` (в т.ч. генерируемый `src/dom/tokens.css`), `*.html`, `*.md`, `*.json` (в т.ч. `tests/ui-check/baseline.json`), golden и `*.out` — защита в `.prettierignore` и `ignores` ESLint.
+- Команды: `npm run format`, `npm run format:check`, `npm run lint`, `npm run lint:fix`. Охват — `src/`, `scripts/`, `tests/` (`*.js/*.mjs/*.cjs`) и `vite.config.js`. Не форматируются: `docs/`, `shots/`, `dist/`, `assets/`, `.kilo/`, `*.css` (в т.ч. генерируемый `src/ui/dom/tokens.css`), `*.html`, `*.md`, `*.json` (в т.ч. `tests/ui-check/baseline.json`), golden и `*.out` — защита в `.prettierignore` и `ignores` ESLint.
 - Перед сдачей любой правки кода — `npm run format:check` и `npm run lint` с кодом 0; обе команды входят в «полный набор гейтов» вместе с `npm test`, `npm run test:ui`, токен-гейтами и `npm run build`.
 - `embeddedLanguageFormatting: "off"`: HTML-шаблоны внутри шаблонных литералов Prettier не переформатирует (иначе меняется разметка DOM и расходится dist-бандл).
 - Комментарии: обоснования голых чисел обязательны (`ui:tokens`); боковой `//` допустимо переносить на строку над стейтментом, но не удалять; новые боковые комментарии не добавлять.
@@ -39,11 +39,11 @@
 - Любая правка экрана проверяется минимум в двух вьюпортах: десктоп (1280x720) и
   мобилка (390x844) — скриншоты прикладываются к апруву вместе с аудитом.
 
-## DOM-слой UI (`src/dom/`, мастерская — основной экран с G3 = go)
-- Мастерская собирается в `src/dom/` и **включена по умолчанию** в проде и dev (Phaser-экран удалён). Контроллер грузится отдельным чанком при старте UIScene; `openCraft()` ждёт готовности.
-- Размеры — только токены: `npm run dom:tokens` генерирует `src/dom/tokens.css` из `src/ui/shared/theme.js`; дрейф — `npm run dom:tokens -- --check`; голые `px/rem/em` вне `tokens.css` запрещены (`npm run ui:tokens:css`, 1px — только с комментарием-причиной).
+## DOM-слой UI (`src/ui/dom/`, мастерская — основной экран с G3 = go)
+- Мастерская собирается в `src/ui/dom/` и **включена по умолчанию** в проде и dev (Phaser-экран удалён). Контроллер грузится отдельным чанком при старте UIScene; `openCraft()` ждёт готовности.
+- Размеры — только токены: `npm run dom:tokens` генерирует `src/ui/dom/tokens.css` из `src/ui/shared/theme.js`; дрейф — `npm run dom:tokens -- --check`; голые `px/rem/em` вне `tokens.css` запрещены (`npm run ui:tokens:css`, 1px — только с комментарием-причиной).
 - Гейты: `npm run ui:check:dom` (7 вьюпортов × 26 рядов, PNG в `shots/ui-check/<vp>__craft-dom.png`) и `npm run test:dom-golden` (tolerant-diff, порог 0.5%). **Полный UI-прогон = `npm run ui:check` + `npm run ui:check:dom`** + `npm test`, `npm run test:ui`, `npm run format:check`, `npm run lint`.
-- Бизнес-правила и запись состояния — только в `src/state.js`; `src/dom/*` читает через `bridge.js`, тексты ошибок — `src/state/craftMessages.js` (без копий).
+- Бизнес-правила и запись состояния — только в `src/state.js`; `src/ui/dom/*` читает через `bridge.js`, тексты ошибок — `src/state/craftMessages.js` (без копий).
 - Фикстуры и стенды (`fixtures*.js`, `lab.js`, `scripts/stands/build-dom-*.mjs`) — не прод-код; для проверки на телефоне без сети: `shots/pilot-gates/dom-craft-phone.html` / `dom-lab.html`.
 - Фаза 2 (перенос других форм на DOM) — только отдельным документом с таймбоксом; HUD/бой/босс/шахта остаются в Phaser.
 
