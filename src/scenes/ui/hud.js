@@ -3,6 +3,7 @@ import {
     gameState, TIERS, getClickDamage, getOrePerSecond, getSynergyGain, getCritChance, getPrestigeMult, fmt
 } from '../../state.js';
 import { addImg, makeLabel, fitFontSize, setHitRect } from '../../ui/uiKit.js';
+import { addButton } from '../../ui/button.js';
 import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { measureIcon } from '../../ui/iconMetrics.js';
 
@@ -58,17 +59,26 @@ export const hudMethods = {
         this.settingsBtn.on('pointerover', () => this.settingsBtn.setAlpha(0.9));
         this.settingsBtn.on('pointerout', () => this.settingsBtn.setAlpha(1));
 
-        // Кнопки «Карта» и «Крафт» слева от «Настройки» (позиции из L.hud в applyLayout)
-        this.mapBtn = addImg(this, 830, 38, TEX.button, 110, 48, 11);
-        setHitRect(this.mapBtn, ...HIT.button);
-        this.mapLbl = makeLabel(this, 885, 62, 'Карта', FONT_SIZE.label, TEXT.white).setOrigin(0.5).setDepth(DEPTH.uiAbove);
+        // Кнопки «Карта» и «Крафт» слева от «Настройки» (позиции из L.hud в
+        // applyLayout). Button (kind image): addImg центрирует — центры
+        // (885/1007, 62); hit — кадр текстуры, как раньше. settingsBtn не
+        // мигрирует: подпись origin (0, 0.5) на своём смещении, hit 260x133.
+        ({ bg: this.mapBtn, label: this.mapLbl } = addButton(this, 885, 62, {
+            kind: 'image', w: 110, h: 48, key: TEX.button, depth: 11,
+            text: 'Карта', fontSize: FONT_SIZE.label, color: TEXT.white,
+            hitW: HIT.button[0], hitH: HIT.button[1]
+        }));
+        this.mapLbl.setDepth(DEPTH.uiAbove);
         this.mapBtn.on('pointerdown', () => this.openMap());
         this.mapBtn.on('pointerover', () => this.mapBtn.setAlpha(0.9));
         this.mapBtn.on('pointerout', () => this.mapBtn.setAlpha(1));
 
-        this.craftBtn = addImg(this, 952, 38, TEX.button, 110, 48, 11);
-        setHitRect(this.craftBtn, ...HIT.button);
-        this.craftLbl = makeLabel(this, 1007, 62, 'Крафт', FONT_SIZE.label, TEXT.white).setOrigin(0.5).setDepth(DEPTH.uiAbove);
+        ({ bg: this.craftBtn, label: this.craftLbl } = addButton(this, 1007, 62, {
+            kind: 'image', w: 110, h: 48, key: TEX.button, depth: 11,
+            text: 'Крафт', fontSize: FONT_SIZE.label, color: TEXT.white,
+            hitW: HIT.button[0], hitH: HIT.button[1]
+        }));
+        this.craftLbl.setDepth(DEPTH.uiAbove);
         this.craftBtn.on('pointerdown', () => this.openCraft());
         this.craftBtn.on('pointerover', () => this.craftBtn.setAlpha(0.9));
         this.craftBtn.on('pointerout', () => this.craftBtn.setAlpha(1));
