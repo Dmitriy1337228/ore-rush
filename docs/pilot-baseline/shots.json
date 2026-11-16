@@ -1,0 +1,42 @@
+{
+  "createdAt": "2026-11-16T16:05:40.771Z",
+  "base": "http://localhost:5174",
+  "shots": [
+    {
+      "id": "d1280",
+      "viewport": "1280x720",
+      "file": "docs\\pilot-baseline\\craft-1280x720.png",
+      "errors": []
+    },
+    {
+      "id": "l844",
+      "viewport": "844x390",
+      "file": "docs\\pilot-baseline\\craft-844x390.png",
+      "errors": []
+    },
+    {
+      "id": "t768",
+      "viewport": "768x1024",
+      "file": "docs\\pilot-baseline\\craft-768x1024.png",
+      "errors": []
+    },
+    {
+      "id": "p412",
+      "viewport": "412x915",
+      "file": "docs\\pilot-baseline\\craft-412x915.png",
+      "errors": []
+    },
+    {
+      "id": "p390",
+      "viewport": "390x844",
+      "file": "docs\\pilot-baseline\\craft-390x844.png",
+      "errors": []
+    },
+    {
+      "id": "p360",
+      "viewport": "360x640",
+      "file": "docs\\pilot-baseline\\craft-360x640.png",
+      "errors": []
+    }
+  ]
+}
