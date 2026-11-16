@@ -205,7 +205,12 @@ export const craftScreenMethods = {
                 desc.setStyle({ wordWrap: { width: textMaxW } });
                 desc.setFontSize(subSize);
                 extraH = Math.max(0, this.craftTextH(desc) - this.craftMeasureLH(subSize));
+                // Рост ВНИЗ: addImg-карточка (origin 0.5) при setDisplaySize растёт от
+                // центра — верх вылезал над рядом, а нижняя кромка обрезала фут
+                // («крафт» выпадал из карточки, скриншот игрока). Сдвигаем центр вниз
+                // на extraH/2: верх на месте, низ = rowH + extraH.
                 card.setDisplaySize(w, rowH + extraH);
+                card.y = (rowH + extraH) / 2;
             }
             const costY = Math.round(54 * s) + extraH;
             const needLbl = makeLabel(this, textX, costY, 'Нужно:', Math.max(9, Math.round(FONT_SIZE.captionSm * s)), TEXT.soft).setOrigin(0, 0.5);
