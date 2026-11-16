@@ -5,7 +5,7 @@ import {
 import { addImgC, makeLabel, fitFontSize, addScreenDim, DIM_ALPHA, addModalContainer, tapSlopPx } from '../../ui/uiKit.js';
 import { MAP_NODE_H, MAP_HEAD, MAP_TAIL, MAP_R_TIER, MAP_R_BOSS } from '../../ui/listGeometry.js';
 import { createPanel } from '../../ui/panel.js';
-import { TEXT, DEPTH, REG, FONT_SIZE } from '../../ui/theme.js';
+import { TEXT, DEPTH, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 
 export const mapScreenMethods = {
     buildMapScreen() {
@@ -431,11 +431,17 @@ if (this.L.portrait) { name.setStroke('#14161a', 4); status.setStroke('#14161a',
         this.mapPanel.setDisplaySize(mpw, mph);
         this.mapTitle.setPosition(0, -mph / 2 + 64);
         this.mapTitle.setFontSize(L.portrait ? FONT_SIZE.title : FONT_SIZE.display);
-            this.mapClose.setPosition(mpw / 2 - 48, -mph / 2 + 72);
-            this.mapClose.setDisplaySize(L.portrait ? 64 : 44, L.portrait ? 64 : 44);
-        // Внутренняя область врезки (contentRect): поля 40 по бокам, 96 сверху,
-        // 60 снизу — в контейнерных координатах, в мир переводит сдвиг на центр
-        const board = this.mapWin.contentRect({ left: 40, right: 40, top: 96, bottom: 60 });
+        // Крестик: центр на 72 ниже верха панели (прежняя геометрия), 48 от правого края
+        const closeSize = L.portrait ? 64 : 44;
+        const closeCY = 72;
+        this.mapClose.setPosition(mpw / 2 - 48, -mph / 2 + closeCY);
+        this.mapClose.setDisplaySize(closeSize, closeSize);
+        // Внутренняя область врезки (contentRect): поля 40 по бокам, 60 снизу,
+        // сверху — 96 (ландшафт) или низ крестика + SPACE.sm (портрет: крестик 64
+        // заходил на доску на 8px) — в контейнерных координатах, в мир переводит
+        // сдвиг на центр
+        const boardTop = L.portrait ? closeCY + closeSize / 2 + SPACE.sm : 96;
+        const board = this.mapWin.contentRect({ left: 40, right: 40, top: boardTop, bottom: 60 });
         const mvx = L.modal.cx + board.x;
         const mvy = mcy + board.y;
         this.mapCam.setViewport(mvx, mvy, board.w, board.h);

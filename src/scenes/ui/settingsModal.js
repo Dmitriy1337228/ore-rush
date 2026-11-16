@@ -303,7 +303,12 @@ export const settingsModalMethods = {
             } else {
                 this.prestigeInfo.setY(82);
                 const have = gameState.tierEarned[DIAMOND_INDEX];
-                this.prestigeInfo.setText(`Для rebirth нужно добыть ${fmt(PRESTIGE_REQUIREMENT)} алмазов за забег.\nУ вас: ${fmt(have)} (${Math.floor(have / PRESTIGE_REQUIREMENT * 100)}%).`);
+                // Портрет: короткая формулировка — «Для rebirth нужно добыть …» переносилась
+                // на 3 строки и наезжала на кнопку престижа (аудит settings, p390/t768)
+                const need = this.L.portrait
+                    ? `Нужно добыть ${fmt(PRESTIGE_REQUIREMENT)} алмазов за забег.`
+                    : `Для rebirth нужно добыть ${fmt(PRESTIGE_REQUIREMENT)} алмазов за забег.`;
+                this.prestigeInfo.setText(`${need}\nУ вас: ${fmt(have)} (${Math.floor(have / PRESTIGE_REQUIREMENT * 100)}%).`);
                 this.prestigeBtn.setTexture(TEX.buttonDisabled);
                 this.prestigeText.setColor(TEXT.muted);
             }

@@ -415,7 +415,6 @@
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|map": {
-      "OVERLAP|UIScene|[close_button_square]|[map_board]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
@@ -441,7 +440,6 @@
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p360|settings": {
-      "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3,
@@ -449,7 +447,7 @@
       "MIN-FONT|UIScene|\"Музыка: вкл\"": 1,
       "MIN-FONT|UIScene|\"Громкость:\"": 1,
       "MIN-FONT|UIScene|\"#%\"": 1,
-      "MIN-FONT|UIScene|\"Для rebirth нужно добыть #\"": 1,
+      "MIN-FONT|UIScene|\"Нужно добыть #T алмазов за\"": 1,
       "MIN-FONT|UIScene|\"Сбросить весь прогресс\"": 1
     },
     "p360|settings-stress": {
@@ -504,7 +502,7 @@
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"#\"": 5,
       "MIN-FONT|UIScene|\"Активировать\"": 5,
-      "MIN-FONT|UIScene|\"Купить #K\"": 6
+      "MIN-FONT|UIScene|\"Купить #K\"": 5
     },
     "p390|daily": {
       "MIN-FONT|UIScene|\"уголь\"": 1,
@@ -523,7 +521,6 @@
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|map": {
-      "OVERLAP|UIScene|[close_button_square]|[map_board]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
@@ -549,7 +546,6 @@
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p390|settings": {
-      "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3
@@ -607,7 +603,6 @@
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|map": {
-      "OVERLAP|UIScene|[close_button_square]|[map_board]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
@@ -628,7 +623,6 @@
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
     },
     "p412|settings": {
-      "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 3
     },
@@ -648,13 +642,7 @@
     "p412|unlock-ready": {
       "MIN-FONT|UIScene|\"медь\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1
-    },
-    "t768|map": {
-      "OVERLAP|UIScene|[close_button_square]|[map_board]": 1
-    },
-    "t768|settings": {
-      "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1
     }
   },
-  "updatedAt": "2026-11-16T14:30:38.200Z"
+  "updatedAt": "2026-11-16T15:08:24.885Z"
 }
