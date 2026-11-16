@@ -82,6 +82,11 @@ export class GameScene extends Phaser.Scene {
                 this.registry.set('offlineInfo', info);
             }
         }
+        // Счётчик отсутствия перезапускается при КАЖДОЙ загрузке: штамп от
+        // прошлого сеанса (мобильный вебвью/kill процесса не дают hidden/
+        // beforeunload) иначе используется повторно — повторное начисление
+        // и «72 ч» вместо реальных минут отсутствия
+        saveLastExit();
 
         this.buildWorld();
         this.buildBlock();
@@ -442,7 +447,17 @@ export class GameScene extends Phaser.Scene {
         this.saveTimer = this.time.addEvent({
             delay: 5000,
             loop: true,
-            callback: () => saveGame()
+            callback: () => {
+                saveGame();
+                // Heartbeat счётчика офлайна: hidden/beforeunload на мобильном
+                // вебвью и при kill процесса не срабатывают — без heartbeat штамп
+                // оставался со старого сеанса и офлайн показывал дни вместо минут.
+                // Пока вкладка видима, штамп живой; при freeze/kill замирает на
+                // моменте последнего видимого тика = честное время отсутствия.
+                // rAF-таймер на hidden замирает сам, поверх финальной записи
+                // из onVisibility ничего не пишет.
+                saveLastExit();
+            }
         });
 
         // Офлайн: время выхода фиксируем при сворачивании/закрытии (один вызов setStats за событие)
