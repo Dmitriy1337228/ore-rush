@@ -42,6 +42,7 @@
         "audio:synth": "python scripts/audio/synth_sfx.py",
         "audio:trim": "python scripts/audio/trim_sfx.py",
         "scripts:check": "node scripts/gates/check-scripts-index.mjs",
+        "layers:check": "node scripts/gates/check-layers.mjs",
         "format": "prettier --write \"src/**/*.js\" \"scripts/**/*.{js,mjs,cjs}\" \"tests/**/*.{js,mjs,cjs}\" vite.config.js",
         "format:check": "prettier --check \"src/**/*.js\" \"scripts/**/*.{js,mjs,cjs}\" \"tests/**/*.{js,mjs,cjs}\" vite.config.js",
         "lint": "eslint src scripts tests vite.config.js",

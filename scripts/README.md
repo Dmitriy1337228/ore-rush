@@ -23,6 +23,7 @@
 | `scripts/gates/gen-dom-tokens.mjs` | Генерация `src/dom/tokens.css` из `src/ui/theme.js` (`--check` — дрейф) | `dom:tokens` | гейт | нет | активен |
 | `scripts/gates/dom-golden.mjs` | Tolerant-diff эталона DOM-панели (порог 0.5 %) | `test:dom-golden` | гейт | да | активен |
 | `scripts/gates/check-scripts-index.mjs` | Гард индекса скриптов (алиасы + README + существование файлов) | `scripts:check` | гейт | нет | активен |
+| `scripts/gates/check-layers.mjs` | Гард слоёв: ui/dom не тянет Phaser, ui/phaser не тянет DOM, shared и game изолированы, dev-фикстуры вне прода | `layers:check` | гейт | нет | активен |
 | `scripts/verify/verify-bg.cjs` | Фоны локаций: 12 пиксель-арт фонов, кроссфейд, сброс | `verify:bg` | verify | да | активен |
 | `scripts/verify/verify-boss.cjs` | Боссы: старт с карты, HP, клик-килл, награда, артефакт, робо-рука | `verify:boss` | verify | да | активен |
 | `scripts/verify/verify-bulkbuy.cjs` | Мультипокупка x1/x10/x100/max: экономика и UI | `verify:bulkbuy` | verify | да | активен |
