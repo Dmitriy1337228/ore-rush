@@ -2,11 +2,6 @@
   "version": 1,
   "combos": {
     "d1024|boss": {
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_bomb]": 1,
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_rig]": 1,
-      "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_disabled_gray]": 1,
-      "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_oil]": 1,
       "MIN-FONT|GameScene|\"ты: #M / #M · удар босса #\"": 1,
       "MIN-FONT|GameScene|\"Купить #B\"": 1,
       "MIN-FONT|GameScene|\"урон боссу x# на # сек · у\"": 1,
@@ -42,41 +37,15 @@
     "d1024|stress": {
       "MIN-FONT|UIScene|\"уровень шахты: # — Алмаз\"": 1
     },
-    "d1280|boss": {
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_bomb]": 1,
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_rig]": 1,
-      "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_disabled_gray]": 1,
-      "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_oil]": 1
-    },
     "d1280|craft": {
       "MIN-FONT|UIScene|\"Активировать\"": 3,
       "MIN-FONT|UIScene|\"Купить #K\"": 4
-    },
-    "d1366|boss": {
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_bomb]": 1,
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_rig]": 1,
-      "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_disabled_gray]": 1,
-      "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_oil]": 1
     },
     "d1366|craft": {
       "MIN-FONT|UIScene|\"Активировать\"": 3,
       "MIN-FONT|UIScene|\"Купить #K\"": 4
     },
-    "d1920|boss": {
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_bomb]": 1,
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_rig]": 1,
-      "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_disabled_gray]": 1,
-      "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_oil]": 1
-    },
     "l844|boss": {
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_bomb]": 1,
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_rig]": 1,
-      "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_disabled_gray]": 1,
-      "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_oil]": 1,
       "MIN-FONT|GameScene|\"ты: #M / #M · удар босса #\"": 1,
       "MIN-FONT|GameScene|\"#K / #K\"": 1,
       "MIN-FONT|GameScene|\"#:#\"": 1,
@@ -694,5 +663,5 @@
       "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1
     }
   },
-  "updatedAt": "2026-11-16T11:07:48.535Z"
+  "updatedAt": "2026-11-16T12:07:27.892Z"
 }

@@ -516,6 +516,7 @@ const V5_SEED = JSON.stringify({
             const c = (o) => ({ x: o.x, y: o.y, w: o.displayWidth, h: o.displayHeight, right: o.x + o.displayWidth / 2, bottom: o.y + o.displayHeight / 2, top: o.y - o.displayHeight / 2, left: o.x - o.displayWidth / 2 });
             return {
                 card: r._geom || { x: 0, y: 0, w: 0, h: 0 },
+                rowH: ui.L.gear.rowH,
                 name: { left: r.name.x, right: r.name.x + r.name.width },
                 stock: { left: r.stock.x - r.stock.width },
                 desc: { bottom: r.desc.y + r.desc.height },
@@ -545,7 +546,9 @@ const V5_SEED = JSON.stringify({
             scenarioFailures.push(`19_boss_fight: звёзды наезжают на строку бафов (${JSON.stringify({ starsLeft: g.starsLeft, buffRight: g.buffRight })})`);
         if (!g.playerBarVis || !/ты: [\d.KMB]+ \/ [\d.KMB]+/.test(g.playerBarText || ''))
             scenarioFailures.push(`19_boss_fight: полоса живучести шахтёра не видна (${g.playerBarText})`);
-        if (Math.abs(g.card.w - (g.vw.w - 8)) > 2 || Math.abs(g.card.h - 100) > 2)
+        // Высота карточки — из спеки раскладки (L.gear.rowH); ширина — врезка минус
+        // боковые врезки (cardInset * 2 = 8)
+        if (Math.abs(g.card.w - (g.vw.w - 8)) > 2 || Math.abs(g.card.h - g.rowH) > 2)
             scenarioFailures.push(`19_boss_fight: карточка снаряжения не на ширину вьюпорта (${JSON.stringify(g.card)})`);
         // Карточка центрирована во вьюпорте (сдвиг на полширины = вылезание за край)
         if (Math.abs((g.card.left + g.card.right) / 2 - (g.vw.x + g.vw.w / 2)) > 2)

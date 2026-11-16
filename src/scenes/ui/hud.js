@@ -18,20 +18,21 @@ export const hudMethods = {
         // в y 30..95 (центр 62.5). Пары текстов выровнены по нижней кромке (origin 0,1):
         // так совпадают базовые линии шрифтов разных размеров.
         // Позиции — ландшафтные; applyLayout переставляет под ориентацию.
-        this.hudBar = addImg(this, 16, 10, 'hud_bar_background', 1250, 112, 10);
+        const h = this.L.hud;
+        this.hudBar = addImg(this, h.barX, h.barY, 'hud_bar_background', h.barW, h.barH, 10);
 
-        this.oreIcon = this.add.image(78, 62, TIERS[gameState.tier].iconKey).setDepth(DEPTH.ui);
-        this.placeIcon(this.oreIcon, TIERS[gameState.tier].iconKey, 78, 62, 48);
-        this.coalText = makeLabel(this, 112, 76, '0', FONT_SIZE.display, TEXT.white);
+        this.oreIcon = this.add.image(h.iconX, h.centerY, TIERS[gameState.tier].iconKey).setDepth(DEPTH.ui);
+        this.placeIcon(this.oreIcon, TIERS[gameState.tier].iconKey, h.iconX, h.centerY, h.iconSize);
+        this.coalText = makeLabel(this, h.counterX, h.counterY, '0', FONT_SIZE.display, TEXT.white);
         this.coalText.setOrigin(0, 1).setDepth(DEPTH.ui);
-        this.oreName = makeLabel(this, 0, 76, TIERS[gameState.tier].name, FONT_SIZE.captionLg, TEXT.soft);
+        this.oreName = makeLabel(this, 0, h.counterY, TIERS[gameState.tier].name, FONT_SIZE.captionLg, TEXT.soft);
         this.oreName.setOrigin(0, 1).setDepth(DEPTH.ui); // x обновляется от ширины счётчика
 
-        this.gpsIcon = this.add.image(420, 62, TIERS[gameState.tier].iconKey).setDepth(DEPTH.ui);
-        this.placeIcon(this.gpsIcon, TIERS[gameState.tier].iconKey, 420, 62, 26);
-        this.gpsText = makeLabel(this, 450, 74, '', FONT_SIZE.accent, TEXT.income);
+        this.gpsIcon = this.add.image(h.gpsIconX, h.gpsIconY, TIERS[gameState.tier].iconKey).setDepth(DEPTH.ui);
+        this.placeIcon(this.gpsIcon, TIERS[gameState.tier].iconKey, h.gpsIconX, h.gpsIconY, h.gpsIconSize);
+        this.gpsText = makeLabel(this, h.gpsTextX, h.gpsTextY, '', FONT_SIZE.accent, TEXT.income);
         this.gpsText.setOrigin(0, 1).setDepth(DEPTH.ui);
-        this.statsLine = makeLabel(this, 0, 74, '', FONT_SIZE.label, TEXT.soft);
+        this.statsLine = makeLabel(this, 0, h.statsY, '', FONT_SIZE.label, TEXT.soft);
         this.statsLine.setOrigin(0, 1).setDepth(DEPTH.ui); // x обновляется от ширины gps
         // Кеш портретной сетки HUD: ключ пересчёта ставки/статов и поправки базовых линий
         this._hudKey = null;
@@ -39,15 +40,15 @@ export const hudMethods = {
         this._hudStatsSize = FONT_SIZE.stat;
         // Звёзды престижа: фиксированная зона ПЕРЕД кнопкой «Настройки» (правый край,
         // origin 1,0.5 — растут влево, не наезжают на кнопку). Зазор до кнопки 12px.
-        this.starsText = makeLabel(this, 1050, 62, '', FONT_SIZE.stat, TEXT.gold);
+        this.starsText = makeLabel(this, h.starsRight, h.starsY, '', FONT_SIZE.stat, TEXT.gold);
         this.starsText.setOrigin(1, 0.5).setDepth(DEPTH.ui);
 
-        // Кнопка «Настройки»: изображение 160x48, центр по врезке (62), внутри
-        // горизонтальной врезки бара (source face 47..1844 -> drawn 47..1234)
-        const btnW = 160;
-        const btnH = 48;
-        const btnX = 1234 - SPACE.sm - btnW;
-        const btnY = 62 - btnH / 2;
+        // Кнопка «Настройки»: изображение h.btnW x h.btnH, центр по врезке (centerY),
+        // внутри горизонтальной врезки бара (source face 47..1844 -> drawn 47..1234)
+        const btnW = h.btnW;
+        const btnH = h.btnH;
+        const btnX = 1234 - SPACE.sm - btnW; // 1234 — правый край врезки бара (face source)
+        const btnY = h.centerY - btnH / 2;
         this.settingsBtn = addImg(this, btnX, btnY, TEX.buttonDisabled, btnW, btnH, 11);
         // Hit-area в координатах кадра текстуры (origin 0.5 + setDisplaySize:
         // локальные координаты ввода — кадр 260x133, не отображаемый размер)
@@ -55,8 +56,8 @@ export const hudMethods = {
         // Шестерёнка + подпись: зазор 10px между иконкой и текстом. Иконка
         // нормируется setDisplaySize (текстуры разного разрешения), подпись —
         // с левым якорем: раньше она упиралась в шестерёнку вплотную (скрин игрока)
-        this.settingsGear = this.add.image(btnX + 29, 62, 'gear_icon').setDisplaySize(26, 26).setDepth(DEPTH.uiAbove);
-        this.settingsLbl = makeLabel(this, btnX + 52, 62, 'Настройки', FONT_SIZE.stat, TEXT.white).setOrigin(0, 0.5).setDepth(DEPTH.uiAbove);
+        this.settingsGear = this.add.image(btnX + h.gearDx, h.centerY, 'gear_icon').setDisplaySize(26, 26).setDepth(DEPTH.uiAbove); // 26 — диаметр шестерёнки в кнопке
+        this.settingsLbl = makeLabel(this, btnX + h.labelDx, h.centerY, 'Настройки', FONT_SIZE.stat, TEXT.white).setOrigin(0, 0.5).setDepth(DEPTH.uiAbove);
         this.settingsBtn.on('pointerdown', () => {
             this.openModal();
         });
@@ -65,10 +66,9 @@ export const hudMethods = {
 
         // Кнопки «Карта» и «Крафт» слева от «Настройки» (позиции из L.hud в
         // applyLayout). Button (kind image): addImg центрирует — центры
-        // (885/1007, 62); hit — кадр текстуры, как раньше. settingsBtn не
-        // мигрирует: подпись origin (0, 0.5) на своём смещении, hit 260x133.
-        ({ bg: this.mapBtn, label: this.mapLbl } = addButton(this, 885, 62, {
-            kind: 'image', w: 110, h: 48, key: TEX.button, depth: 11,
+        // (mapBtn/craftBtn.x + w/2, y + h/2); hit — кадр текстуры, как раньше.
+        ({ bg: this.mapBtn, label: this.mapLbl } = addButton(this, h.mapBtn.x + h.mapBtn.w / 2, h.mapBtn.y + h.mapBtn.h / 2, {
+            kind: 'image', w: h.mapBtn.w, h: h.mapBtn.h, key: TEX.button, depth: 11,
             text: 'Карта', fontSize: FONT_SIZE.label, color: TEXT.white,
             hitW: HIT.button[0], hitH: HIT.button[1]
         }));
@@ -77,8 +77,8 @@ export const hudMethods = {
         this.mapBtn.on('pointerover', () => this.mapBtn.setAlpha(0.9));
         this.mapBtn.on('pointerout', () => this.mapBtn.setAlpha(1));
 
-        ({ bg: this.craftBtn, label: this.craftLbl } = addButton(this, 1007, 62, {
-            kind: 'image', w: 110, h: 48, key: TEX.button, depth: 11,
+        ({ bg: this.craftBtn, label: this.craftLbl } = addButton(this, h.craftBtn.x + h.craftBtn.w / 2, h.craftBtn.y + h.craftBtn.h / 2, {
+            kind: 'image', w: h.craftBtn.w, h: h.craftBtn.h, key: TEX.button, depth: 11,
             text: 'Крафт', fontSize: FONT_SIZE.label, color: TEXT.white,
             hitW: HIT.button[0], hitH: HIT.button[1]
         }));
@@ -89,7 +89,7 @@ export const hudMethods = {
 
         // Активные дневные бафы с обратным отсчётом (под HUD-баром): «x2 9:59 · жила 1:59».
         // Пустая строка, когда бафов нет; setText только при смене строки.
-        this.buffLine = makeLabel(this, 16, 128, '', FONT_SIZE.captionLg, TEXT.gold);
+        this.buffLine = makeLabel(this, h.barX, h.barY + h.barH + 6, '', FONT_SIZE.captionLg, TEXT.gold); // 6 — зазор под баром
         this.buffLine.setOrigin(0, 0).setDepth(DEPTH.ui);
         this._buffLineText = '';
     },
@@ -141,7 +141,7 @@ export const hudMethods = {
         this.hudBar.setDisplaySize(h.barW, h.barH);
         // Строка бафов — сразу под нижней кромкой HUD-бара
         this.buffLine.setPosition(h.barX + 10, h.barY + h.barH + 6);
-        this.placeIcon(this.oreIcon, tierIcon, h.iconX, h.centerY, 48);
+        this.placeIcon(this.oreIcon, tierIcon, h.iconX, h.centerY, h.iconSize);
         if (L.portrait) {
             // Кегли портрета не ужимаются ниже читаемых (min: счётчик 30, имя 14, статы 16)
             const coalSize = Phaser.Math.Clamp(Math.round(FONT_SIZE.display * s), 30, 36);
@@ -168,7 +168,7 @@ export const hudMethods = {
             this.coalText.setPosition(h.counterX, h.counterY);
             this.oreName.setPosition(h.counterX, h.counterY);
             // Доход и клик/крит — в ландшафте в одну строку
-            this.placeIcon(this.gpsIcon, tierIcon, h.gpsIconX, h.gpsIconY, 26);
+            this.placeIcon(this.gpsIcon, tierIcon, h.gpsIconX, h.gpsIconY, h.gpsIconSize);
             this.gpsText.setOrigin(0, 1).setPosition(h.gpsTextX, h.gpsTextY);
             this.gpsText.setFontSize(h.gpsSize);
             this.statsLine.setOrigin(0, 1).setPosition(h.statsXBase, h.statsY);
@@ -206,7 +206,7 @@ export const hudMethods = {
             this.settingsBtn.setPosition(btnX + h.btnW / 2, h.centerY);
             this.settingsBtn.setDisplaySize(h.btnW, h.btnH);
             this.settingsGear.setPosition(btnX + h.gearDx, h.centerY);
-            this.settingsGear.setDisplaySize(26, 26);
+            this.settingsGear.setDisplaySize(26, 26); // 26 — диаметр шестерёнки в кнопке
             this.settingsLbl.setPosition(btnX + h.labelDx, h.centerY);
             this.settingsLbl.setFontSize(FONT_SIZE.stat);
         }
@@ -232,7 +232,7 @@ export const hudMethods = {
         const h = this.L.hud;
 
         this.coalText.setText(fmt(gameState.ore));
-        if (this.oreIcon.texture.key !== tier.iconKey) this.placeIcon(this.oreIcon, tier.iconKey, h.iconX, h.centerY, 48);
+        if (this.oreIcon.texture.key !== tier.iconKey) this.placeIcon(this.oreIcon, tier.iconKey, h.iconX, h.centerY, h.iconSize);
         this.oreName.setText(tier.name.toLowerCase());
         this.oreName.x = h.counterX + this.coalText.width + (this.L.portrait ? h.nameGap : 10);
         // Ставка = фактическая фоновая добыча (пассив × множитель мутации)
@@ -280,7 +280,7 @@ export const hudMethods = {
             // ужина (10px) — короткая «+N/сек»; иначе статы наезжали на кнопку
             // «Карта» при больших числах (аудит stress/settings-stress)
             const gx = Math.max(h.gpsIconX, this.oreName.x + this.oreName.width + 14);
-            if (this.gpsIcon.texture.key !== tier.iconKey) this.placeIcon(this.gpsIcon, tier.iconKey, gx, h.centerY, 26);
+            if (this.gpsIcon.texture.key !== tier.iconKey) this.placeIcon(this.gpsIcon, tier.iconKey, gx, h.centerY, h.gpsIconSize);
             else this.gpsIcon.x = gx;
             const limitR = h.mapBtn.x - SPACE.sm;
             const statsTxt = `клик: ${clickTxt} · крит: ${critPct}%`;

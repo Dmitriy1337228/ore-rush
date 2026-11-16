@@ -33,8 +33,9 @@ describe('computeLayout(1280, 720): ландшафт (golden)', () => {
             portrait: false, W: 1280, H: 720,
             hud: {
                 barX: 16, barY: 10, barW: 1250, barH: 112, centerY: 62,
-                iconX: 78, counterX: 112, counterY: 76,
+                iconX: 78, counterX: 112, counterY: 76, iconSize: 48,
                 gpsIconX: 420, gpsIconY: 62, gpsTextX: 450, gpsTextY: 74, gpsSize: 20,
+                gpsIconSize: 26,
                 statsVisible: true, statsXBase: 450, statsY: 74, statsSize: 14,
                 starsRight: 818, starsY: 62,
                 btnW: 160, btnH: 48, btnX: 1066, gearDx: 29, labelDx: 52,
@@ -49,6 +50,13 @@ describe('computeLayout(1280, 720): ландшафт (golden)', () => {
                 amountW: 76, amountH: 24, amountSize: 14, amountPadRight: 0
             },
             viewport: { x: 934, y: 270, w: 296, h: 392 },
+            gear: {
+                rowH: 114, rowGap: 10, startDy: 30, titleDy: 16,
+                iconInset: 30, iconSize: 44, iconDy: 38, textGap: 12,
+                nameDy: 16, descDy: 37,
+                sideInset: 14, btnH: 28, btnHMin: 44, btnHMax: 88, btnInset: 10, hitPad: 5,
+                cardInset: 4
+            },
             unlock: { cx: 400, y: 604, w: 520, h: 52, hintY: 676, textSize: 18, hintSize: 14 },
             modal: { cx: 640, cy: 360 },
             block: { x: 400, y: 400 },
@@ -64,7 +72,7 @@ describe('computeLayout(720, 1558): портрет для 390x844 (golden)', () 
             portrait: true, W: 720, H: 1558,
             hud: {
                 barX: 8, barY: 10, barW: 704, barH: 112, centerY: 62,
-                iconX: 54, counterX: 88, counterY: 66,
+                iconX: 54, counterX: 88, counterY: 66, iconSize: 48,
                 row1Y: 66, row2Y: 92,
                 gapR: 12, nameGap: 10, midGap: 16,
                 gpsIconSize: 24, gpsIconGap: 6,
@@ -88,6 +96,13 @@ describe('computeLayout(720, 1558): портрет для 390x844 (golden)', () 
             unlock: { cx: 363, y: 1405, w: 300, h: 92, hintY: 622, textSize: 20, hintSize: 14 },
             modal: { cx: 360, cy: 851, zoneTop: 160, zoneBot: 1542 },
             fight: { by: 404 },
+            gear: {
+                rowH: 0, rowGap: 8, startDy: 4, titleDy: 16,
+                iconInset: 40, iconSize: 48, iconDy: 34, textGap: 14,
+                nameDy: 34, descDy: 66,
+                sideInset: 14, btnH: 0, btnHMin: 44, btnHMax: 88, btnInset: 12, hitPad: 5,
+                cardInset: 4
+            },
             block: { x: 360, y: 399 },
             bgCoverToY: 658,
             tutorial: { finalY: 289, btnY: 369, tabBubble: 'below' }

@@ -68,113 +68,120 @@ export const gearMethods = {
     layoutGearSection() {
         if (!this.gearContent) return;
         const vw = VIEWPORT;
-        const s = this._adaptiveScale || 1;
-        const ts = this.L.portrait ? s : 1;
+        const g = this.L.gear;
         if (this.L.portrait) {
             // Портрет (спека редизайна): три карточки заполняют врезку целиком
             // — «серого пятна» под рядами нет; крупные кегли (FIT ~0.54),
             // у кнопок гарантированный отступ от описания (gapTop/padBottom).
-            // Иконка 48 внутри карточки (была 56 и вылезала за верхнюю рамку)
             if (this.gearTitle) this.gearTitle.setVisible(false);
-            const rh = Math.floor((vw.h - 24) / 3);
+            // Высота ряда от ЖИВОГО вьюпорта (босс-режим его поджимает) —
+            // формула здесь: computeLayout не знает о поджатии.
+            // 24 = врезка сверху/снизу (SPACE.xs * 2) + зазоры между рядами (SPACE.sm * 2)
+            const rh = Math.floor((vw.h - SPACE.xs * 2 - SPACE.sm * 2) / 3);
             let ry = vw.y + SPACE.xs;
             for (const row of this.gearRows) {
-                const w = vw.w - 8;
+                const w = vw.w - g.cardInset * 2;
                 const geom = `${w}|${rh}`;
                 if (row._cardGeom !== geom) {
                     row._cardGeom = geom;
                     row.card.clear();
                     row.card.fillStyle(0x2a2d31, 1);
-                    row.card.fillRoundedRect(vw.x + SPACE.xs, ry, w, rh, 10);
+                    row.card.fillRoundedRect(vw.x + SPACE.xs, ry, w, rh, 10); // 10 — радиус скругления карточки // 10 — радиус скругления карточки
                     row.card.lineStyle(2, 0x555860, 1);
-                    row.card.strokeRoundedRect(vw.x + SPACE.xs, ry, w, rh, 10);
+                    row.card.strokeRoundedRect(vw.x + SPACE.xs, ry, w, rh, 10); // 10 — радиус скругления карточки // 10 — радиус скругления карточки
                 }
                 row._geom = { x: vw.x + SPACE.xs, y: ry, w, h: rh };
-                const iconCX = vw.x + SPACE.xs + 40;
-                row.icon.setPosition(iconCX, ry + 34);
-                row.icon.setDisplaySize(48, 48);
-                const textX = iconCX + 24 + 14;
-                const textRight = vw.x + SPACE.xs + w - 14;
-                row.name.setPosition(textX, ry + 34);
+                const iconCX = vw.x + SPACE.xs + g.iconInset;
+                row.icon.setPosition(iconCX, ry + g.iconDy);
+                row.icon.setDisplaySize(g.iconSize, g.iconSize);
+                const textX = iconCX + g.iconSize / 2 + g.textGap;
+                const textRight = vw.x + SPACE.xs + w - g.sideInset;
+                row.name.setPosition(textX, ry + g.nameDy);
                 row.name.setFontSize(FONT_SIZE.cardTitle);
-                row.stock.setPosition(textRight, ry + 34);
+                row.stock.setPosition(textRight, ry + g.nameDy);
                 row.stock.setFontSize(FONT_SIZE.accent);
-                row.desc.setPosition(textX, ry + 66);
+                row.desc.setPosition(textX, ry + g.descDy);
                 row.desc.setFontSize(FONT_SIZE.accent);
                 // setStyle, а не присваивание .wordWrap: это не API Phaser
+                // 80 — минимальная ширина переноса на узких вьюпортах
                 row.desc.setStyle({ wordWrap: { width: Math.max(80, textRight - textX) } });
                 const gapTop = rh >= 160 ? SPACE.md : SPACE.sm;
                 const padBottom = gapTop;
-                const btnH = Phaser.Math.Clamp(rh - 92 - gapTop - padBottom, 44, 88);
+                // 92 = descDy (66) + высота двух строк описания — зона текста
+                const btnH = Phaser.Math.Clamp(rh - 92 - gapTop - padBottom, g.btnHMin, g.btnHMax);
                 const btnTop = rh - padBottom - btnH;
-                const btnW = Math.round((w - 28 - SPACE.md) / 2);
-                row.buyBtn.setPosition(vw.x + SPACE.xs + 14 + btnW / 2, ry + btnTop + btnH / 2);
+                const btnW = Math.round((w - g.sideInset * 2 - SPACE.md) / 2);
+                row.buyBtn.setPosition(vw.x + SPACE.xs + g.sideInset + btnW / 2, ry + btnTop + btnH / 2);
                 row.buyBtn.setDisplaySize(btnW, btnH);
                 row.buyLbl.setPosition(row.buyBtn.x, row.buyBtn.y);
                 row.buyLbl.setFontSize(FONT_SIZE.accent);
-                row.useBtn.setPosition(vw.x + SPACE.xs + 14 + btnW + SPACE.md + btnW / 2, ry + btnTop + btnH / 2);
+                row.useBtn.setPosition(vw.x + SPACE.xs + g.sideInset + btnW + SPACE.md + btnW / 2, ry + btnTop + btnH / 2);
                 row.useBtn.setDisplaySize(btnW, btnH);
                 row.useLbl.setPosition(row.useBtn.x, row.useBtn.y);
                 row.useLbl.setFontSize(FONT_SIZE.accent);
                 // Хит-колонки кнопок на всю высоту карточки (>= 40 CSS px);
                 // колонки не пересекаются (зазор SPACE.md между кнопками)
-                setHitWorldRect(row.buyBtn, vw.x + SPACE.xs + 14 - 5, ry, btnW + 10, rh);
-                setHitWorldRect(row.useBtn, vw.x + SPACE.xs + 14 + btnW + SPACE.md - 5, ry, btnW + 10, rh);
+                setHitWorldRect(row.buyBtn, vw.x + SPACE.xs + g.sideInset - g.hitPad, ry, btnW + g.hitPad * 2, rh);
+                setHitWorldRect(row.useBtn, vw.x + SPACE.xs + g.sideInset + btnW + SPACE.md - g.hitPad, ry, btnW + g.hitPad * 2, rh);
                 ry += rh + SPACE.sm;
             }
             this.refreshGearPanel(true);
             return;
         }
-        this.gearTitle.setPosition(vw.x + vw.w / 2, vw.y + 16);
-        this.gearTitle.setFontSize(Math.round(FONT_SIZE.buttonLg * ts));
-        const rh = Math.round(100 * ts);
-        let ry = vw.y + 30;
+        this.gearTitle.setPosition(vw.x + vw.w / 2, vw.y + g.titleDy);
+        this.gearTitle.setFontSize(FONT_SIZE.buttonLg);
+        const rh = g.rowH;
+        let ry = vw.y + g.startDy;
         for (const row of this.gearRows) {
-            const w = vw.w - 8;
+            const w = vw.w - g.cardInset * 2;
             // Карточка-графика: перерисовка при смене геометрии
             const geom = `${w}|${rh}`;
             if (row._cardGeom !== geom) {
                 row._cardGeom = geom;
                 row.card.clear();
                 row.card.fillStyle(0x2a2d31, 1);
-                row.card.fillRoundedRect(vw.x + SPACE.xs, ry, w, rh, 10);
+                row.card.fillRoundedRect(vw.x + SPACE.xs, ry, w, rh, 10); // 10 — радиус скругления карточки
                 row.card.lineStyle(2, 0x555860, 1);
-                row.card.strokeRoundedRect(vw.x + SPACE.xs, ry, w, rh, 10);
+                row.card.strokeRoundedRect(vw.x + SPACE.xs, ry, w, rh, 10); // 10 — радиус скругления карточки
             }
             row._geom = { x: vw.x + SPACE.xs, y: ry, w, h: rh };
-            const iconCX = vw.x + SPACE.xs + Math.round(30 * ts);
-            const iconSize = Math.round(44 * ts);
-            row.icon.setPosition(iconCX, ry + rh / 2);
+            const iconCX = vw.x + SPACE.xs + g.iconInset;
+            // Компактная строка (аудит боя): иконка поднята выше кнопок (низ 60
+            // при кнопках с 76) и описание поднято — двухстрочное описание и
+            // иконка наезжали на кнопки (oy=5..10)
+            const iconSize = g.iconSize;
+            row.icon.setPosition(iconCX, ry + g.iconDy);
             row.icon.setDisplaySize(iconSize, iconSize);
-            const textX = iconCX + iconSize / 2 + 12;
-            const textRight = vw.x + SPACE.xs + w - 14;
-            // Столбик: имя -> запас -> описание
-            row.name.setPosition(textX, ry + Math.round(20 * ts));
-            row.name.setFontSize(Math.round(FONT_SIZE.body * ts));
-            row.stock.setPosition(textRight, ry + Math.round(20 * ts));
-            row.stock.setFontSize(Math.round(FONT_SIZE.captionLg * ts));
-            row.desc.setPosition(textX, ry + Math.round(42 * ts));
-            row.desc.setFontSize(Math.round(FONT_SIZE.caption * ts));
+            const textX = iconCX + iconSize / 2 + g.textGap;
+            const textRight = vw.x + SPACE.xs + w - g.sideInset;
+            row.name.setPosition(textX, ry + g.nameDy);
+            row.name.setFontSize(FONT_SIZE.body);
+            row.stock.setPosition(textRight, ry + g.nameDy);
+            row.stock.setFontSize(FONT_SIZE.captionLg);
+            row.desc.setPosition(textX, ry + g.descDy);
+            row.desc.setFontSize(FONT_SIZE.caption);
             // setStyle, а не присваивание .wordWrap: это не API Phaser — перенос
             // оставался на зашитых 200px из конструктора и в портрете вторая
             // строка описания уезжала под кнопки (скриншот боя, мобилка)
+            // 80 — минимальная ширина переноса на узких вьюпортах
             row.desc.setStyle({ wordWrap: { width: Math.max(80, textRight - textX) } });
-            // Кнопки в нижнем ряду карточки: две по половине ширины с зазором 12
-            const btnW = Math.round((w - 28 - SPACE.md) / 2);
-            const btnH = Math.round(30 * ts);
-            const btnY = ry + rh - btnH - 8;
-            row.buyBtn.setPosition(vw.x + SPACE.xs + 14 + btnW / 2, btnY + btnH / 2);
+            // Кнопки в нижнем ряду карточки: две по половине ширины с зазором
+            // SPACE.md; нижний отступ g.btnInset (обводка не прилипает к кнопкам)
+            const btnW = Math.round((w - g.sideInset * 2 - SPACE.md) / 2);
+            const btnH = g.btnH;
+            const btnY = ry + rh - btnH - g.btnInset;
+            row.buyBtn.setPosition(vw.x + SPACE.xs + g.sideInset + btnW / 2, btnY + btnH / 2);
             row.buyBtn.setDisplaySize(btnW, btnH);
             row.buyLbl.setPosition(row.buyBtn.x, row.buyBtn.y);
-            row.buyLbl.setFontSize(Math.round(FONT_SIZE.caption * ts));
-            row.useBtn.setPosition(vw.x + SPACE.xs + 14 + btnW + SPACE.md + btnW / 2, btnY + btnH / 2);
+            row.buyLbl.setFontSize(FONT_SIZE.caption);
+            row.useBtn.setPosition(vw.x + SPACE.xs + g.sideInset + btnW + SPACE.md + btnW / 2, btnY + btnH / 2);
             row.useBtn.setDisplaySize(btnW, btnH);
             row.useLbl.setPosition(row.useBtn.x, row.useBtn.y);
-            row.useLbl.setFontSize(Math.round(FONT_SIZE.caption * ts));
+            row.useLbl.setFontSize(FONT_SIZE.caption);
             // Хит-колонки кнопок на всю высоту карточки (>= 40 CSS px)
-            setHitWorldRect(row.buyBtn, vw.x + SPACE.xs + 14 - 5, ry, btnW + 10, rh);
-            setHitWorldRect(row.useBtn, vw.x + SPACE.xs + 14 + btnW + SPACE.md - 5, ry, btnW + 10, rh);
-            ry += rh + 10;
+            setHitWorldRect(row.buyBtn, vw.x + SPACE.xs + g.sideInset - g.hitPad, ry, btnW + g.hitPad * 2, rh);
+            setHitWorldRect(row.useBtn, vw.x + SPACE.xs + g.sideInset + btnW + SPACE.md - g.hitPad, ry, btnW + g.hitPad * 2, rh);
+            ry += rh + g.rowGap;
         }
         this.refreshGearPanel(true);
     },
@@ -197,7 +204,8 @@ export const gearMethods = {
             row.useBtn.setTexture(stock > 0 ? TEX.button : TEX.buttonDisabled);
             // Имя ужинается до зазора перед бейджем запаса — гарантия от наезда
             // (портретный кегль снаряжения 22 — крупнее рядов списка)
-            const nameBase = this.L && this.L.portrait ? FONT_SIZE.cardTitle : Math.round(FONT_SIZE.body * (this._adaptiveScale || 1));
+            const nameBase = this.L.portrait ? FONT_SIZE.cardTitle : FONT_SIZE.body;
+            // 48 — минимальная ширина ужина: совсем узкое имя нечитаемо
             fitFontSize(row.name, nameBase, Math.max(48, row.stock.x - row.stock.width - 12 - row.name.x));
         }
     },

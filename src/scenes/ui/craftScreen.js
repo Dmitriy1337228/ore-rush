@@ -873,7 +873,7 @@ export const craftScreenMethods = {
             this.craftTitle.setPosition(0, -cph / 2 + 96);
             this.craftTitle.setFontSize(FONT_SIZE.title);
             this.craftClose.setPosition(cpw / 2 - 48, -cph / 2 + 72);
-            this.craftClose.setDisplaySize(64, 64);
+            this.craftClose.setDisplaySize(64, 64); // 64 — размер крестика в портрете
             if (this.craftHeader && this._headerS !== s) {
                 this._headerS = s;
                 this.buildCraftHeader();
@@ -883,7 +883,7 @@ export const craftScreenMethods = {
             this.craftTitle.setPosition(0, -cph / 2 + 68);
             this.craftTitle.setFontSize(FONT_SIZE.display);
             this.craftClose.setPosition(cpw / 2 - 60, -cph / 2 + 72);
-            this.craftClose.setDisplaySize(44, 44);
+            this.craftClose.setDisplaySize(44, 44); // 44 — размер крестика в ландшафте
             if (this.craftHeader && this._headerS !== s) {
                 this._headerS = s;
                 this.buildCraftHeader();

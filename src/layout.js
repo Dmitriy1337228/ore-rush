@@ -75,6 +75,8 @@ export function computeLayout(W, H) {
             barW: portrait ? W - 16 : 1250, barH: 112, centerY: 62,
             iconX: portrait ? 54 : 78, counterX: portrait ? 88 : 112,
             counterY: portrait ? 66 : 76,
+            iconSize: 48,
+            gpsIconSize: portrait ? 24 : 26,
             // Сетка текстов во врезке (y30..95): общий левый край counterX.
             // Строка 1 (низ бокса row1Y): счётчик + имя руды слева, ставка справа
             // до «Настроек». Строка 2 (низ бокса row2Y): клик · крит слева.
@@ -83,7 +85,7 @@ export function computeLayout(W, H) {
                 gapR: 12,          // зазор правого края ставки до кнопки «Настройки»
                 nameGap: 10,       // счётчик -> имя руды
                 midGap: 16,        // имя руды -> блок ставки
-                gpsIconSize: 24, gpsIconGap: 6
+                gpsIconGap: 6
             } : {}),
             gpsIconX: portrait ? 0 : 420, gpsIconY: portrait ? 54 : 62,
             gpsTextX: portrait ? 0 : 450, gpsTextY: portrait ? 66 : 74, gpsSize: 20,
@@ -140,6 +142,29 @@ export function computeLayout(W, H) {
             zoneTop: 160, zoneBot: H - 16
         } : { cx: 640, cy: 360 },
         ...(portrait ? { fight: { by: Math.max(Math.round((150 + py) / 2), 340) } } : {}),
+        gear: {
+            // Секция «Снаряжение» в бою (панель вместо списка улучшений).
+            // Ландшафт: три ряда 114 + зазоры 10 + планка 30 = ровно врезка 392.
+            // Портрет: высота ряда считается в layoutGearSection от ЖИВОГО
+            // вьюпорта (босс-режим его поджимает — computeLayout этого не знает).
+            rowH: portrait ? 0 : 114,
+            rowGap: portrait ? 8 : 10,
+            startDy: portrait ? 4 : 30,
+            titleDy: 16,
+            iconInset: portrait ? 40 : 30,
+            iconSize: portrait ? 48 : 44,
+            iconDy: portrait ? 34 : 38,
+            textGap: portrait ? 14 : 12,
+            nameDy: portrait ? 34 : 16,
+            descDy: portrait ? 66 : 37,
+            sideInset: 14,
+            btnH: portrait ? 0 : 28,
+            btnHMin: 44, btnHMax: 88,
+            btnInset: portrait ? 12 : 10,
+            hitPad: 5,
+            // cardInset — отступ с ОДНОЙ стороны (в коде умножается на 2)
+            cardInset: 4
+        },
         block: portrait
             ? { x: Math.round(W / 2), y: Math.round((156 + (py - 16)) / 2) }
             : { x: 400, y: 400 },
