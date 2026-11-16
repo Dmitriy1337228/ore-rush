@@ -52,7 +52,13 @@ try {
         return !!(ui && ui.L && document.fonts.status === 'loaded');
     }, null, { timeout: 30000 });
     await page.waitForTimeout(500);
-    await craftState.setup(page);
+    if (flag('dom')) {
+        // DOM-версия (этап 1): фикстурная панель уже смонтирована флагом ?dom=1.
+        await page.waitForFunction(() => !!window.__DOM_UI, null, { timeout: 30000 });
+        await page.evaluate(() => window.__DOM_UI.show());
+    } else {
+        await craftState.setup(page);
+    }
     await page.waitForTimeout(800);
     const open = await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');

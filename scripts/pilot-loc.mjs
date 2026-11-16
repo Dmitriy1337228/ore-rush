@@ -75,7 +75,8 @@ function measure(files) {
 const baselineFiles = BASELINE_FILES.filter((f) => fs.existsSync(path.join(ROOT, f)));
 const domFiles = [];
 for (const p of DOM_PATHS) walk(p, domFiles);
-const domUnique = Array.from(new Set(domFiles));
+// Windows: walk() отдаёт пути с '\', явный список — с '/'; приводим к одному виду.
+const domUnique = Array.from(new Set(domFiles.map((f) => f.replace(/\\/g, '/'))));
 
 const baseline = measure(baselineFiles);
 const dom = measure(domUnique);
