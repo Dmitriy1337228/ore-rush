@@ -65,8 +65,8 @@
     --hit-card-h: 218;
 
     /* Геометрия DOM-слоя (нет в Phaser-теме; обоснование — DOM_EXTRA в генераторе) */
-    --dom-panel-w: 560px;
-    --dom-panel-h: 600px;
+    --dom-panel-w: 640px;
+    --dom-panel-h: 660px;
     --dom-border-panel: 24px;
     --dom-border-card: 12px;
     --dom-border-btn: 10px;
@@ -74,7 +74,7 @@
     --dom-row-min-h: 96px;
     --dom-art-min-h: 96px;
     --dom-row-gap: 6px;
-    --dom-slot-size: 56px;
+    --dom-slot-size: 64px;
     --dom-icon-size: 40px;
     --dom-chip-icon: 22px;
     --dom-pair-icon: 16px;

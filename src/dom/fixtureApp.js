@@ -5,6 +5,7 @@
 import { ensureUiRoot } from './root.js';
 import { setHtml } from './html.js';
 import { markup } from './fixtureMarkup.js';
+import { fitIcons } from './iconFit.js';
 import './tokens.css';
 import './dom.css';
 
@@ -12,6 +13,7 @@ const fmtTimer = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2
 
 export function renderFixture(root) {
     setHtml(root, markup());
+    fitIcons(root);
 
     const panel = root.querySelector('[data-dom-panel]');
     const closeBtn = root.querySelector('.dom-close');

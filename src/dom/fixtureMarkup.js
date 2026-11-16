@@ -6,13 +6,13 @@ import { FIXTURES, assetUrl } from './fixtures.js';
 
 const componentChips = () => FIXTURES.components.map((c) => html`
     <span class="dom-chip" data-comp="${c.id}">
-        <img src="${assetUrl(c.icon)}" alt="">
+        <span class="dom-icon"><img src="${assetUrl(c.icon)}" alt=""></span>
         <span>${c.count}</span>
     </span>`);
 
 const itemRows = () => FIXTURES.items.map((it) => html`
     <article class="dom-row dom-item" data-row="${it.id}">
-        <span class="dom-slot"><img src="${assetUrl(it.icon)}" alt=""></span>
+        <span class="dom-slot"><span class="dom-icon"><img src="${assetUrl(it.icon)}" alt=""></span></span>
         <div class="dom-row-text">
             <div class="dom-name">${it.name}</div>
             <div class="dom-sub">эффект: ${it.desc}</div>
@@ -27,13 +27,13 @@ const itemRows = () => FIXTURES.items.map((it) => html`
 
 const recipeRows = () => FIXTURES.recipes.map((r) => html`
     <article class="dom-row dom-recipe" data-row="${r.id}">
-        <span class="dom-slot"><img src="${assetUrl(r.icon)}" alt=""></span>
+        <span class="dom-slot"><span class="dom-icon"><img src="${assetUrl(r.icon)}" alt=""></span></span>
         <div class="dom-row-text">
             <div class="dom-name">${r.name}</div>
             <div class="dom-desc">${r.desc}</div>
             <div class="dom-need">Нужно:
                 ${r.need.map(([comp, n]) => html`
-                    <span class="dom-pair"><img src="${assetUrl(`comp_${comp}`)}" alt=""><span>${n}</span></span>`)}
+                    <span class="dom-pair"><span class="dom-icon"><img src="${assetUrl(`comp_${comp}`)}" alt=""></span><span>${n}</span></span>`)}
             </div>
             <div class="dom-src">${r.source}</div>
             ${r.status ? html`<div class="dom-status">${r.status}</div>` : ''}
@@ -45,7 +45,7 @@ const recipeRows = () => FIXTURES.recipes.map((r) => html`
 
 const artifactCells = () => FIXTURES.artifacts.map((a) => html`
     <article class="dom-art${a.owned ? ' is-owned' : ''}" data-art="${a.id}">
-        <span class="dom-slot"><img src="${assetUrl(a.icon)}" alt=""></span>
+        <span class="dom-slot"><span class="dom-icon"><img src="${assetUrl(a.icon)}" alt=""></span></span>
         <div class="dom-row-text">
             <div class="dom-name">${a.name}</div>
             <div class="dom-line">${a.line}</div>

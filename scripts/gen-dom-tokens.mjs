@@ -20,9 +20,10 @@ const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/_/g, '-')
 // Единицы DOM (CSS px), которых нет в theme.js. Кегли/отступы/пороги — ТОЛЬКО из theme.js.
 // Здесь — геометрия DOM-слоя: то, что в Phaser задаётся раскладкой экрана (src/layout.js).
 const DOM_EXTRA = [
-    // Врезка мастерской: модуль-окно в Phaser 560x600 игровых px (craftScreen buildCraftScreen)
-    ['--dom-panel-w', '560px'],
-    ['--dom-panel-h', '600px'],
+    // Врезка мастерской: модуль-окно в Phaser 560x600 игровых px (craftScreen buildCraftScreen);
+    // DOM берёт 640 — больше ширины под текст (меньше переносов на десктопе)
+    ['--dom-panel-w', '640px'],
+    ['--dom-panel-h', '660px'],
     // Борта border-image: исходники 9-slice 60/30/40 px (spritecook-assets.json);
     // на экране — тоньше, чтобы врезка 560px не съедала контент
     ['--dom-border-panel', '24px'],
@@ -34,7 +35,7 @@ const DOM_EXTRA = [
     ['--dom-art-min-h', '96px'],
     ['--dom-row-gap', '6px'],
     // Слот иконки: иконка 40 игровых px (SP item iconSize) + борт слота
-    ['--dom-slot-size', '56px'],
+    ['--dom-slot-size', '64px'],
     ['--dom-icon-size', '40px'],
     // Иконки чипов шапки и пар «Нужно» (в Phaser: pairIcon 16, чипы 22 игровых px)
     ['--dom-chip-icon', '22px'],

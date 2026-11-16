@@ -29,6 +29,10 @@ const domCss = fs.readFileSync(path.join(ROOT, 'src/dom/dom.css'), 'utf8')
 const fontBase64 = fs.readFileSync(path.join(ROOT, 'assets/fonts/Monocraft.ttf')).toString('base64');
 const body = String(markup()).replace(/src="assets\/ui\/([^"]+)"/g, (m, name) => `src="${dataUri(name)}"`);
 
+// Центровка иконок по alpha-bbox: тот же код, что в src/dom/iconFit.js (единый источник),
+// с вырезанным export — стенд не использует модули.
+const iconFitSource = fs.readFileSync(path.join(ROOT, 'src/dom/iconFit.js'), 'utf8').replace(/\bexport\s+/g, '');
+
 // Inline-скрипт стенда: размеры #ui-root, класс ориентации, тикающий таймер, закрытие.
 const script = `
 const root = document.getElementById('ui-root');
@@ -69,7 +73,10 @@ ${domCss}
 </head>
 <body>
 <div id="ui-root" data-dom-root="1">${body}</div>
-<script>${script}</script>
+<script>${script}
+${iconFitSource}
+fitIcons(root);
+</script>
 </body>
 </html>
 `;

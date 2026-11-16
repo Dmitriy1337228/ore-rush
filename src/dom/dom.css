@@ -23,6 +23,23 @@
     image-rendering: pixelated;
 }
 
+/* Контейнер иконки: фиксированный слот, содержимое центруется по alpha-bbox
+   скриптом iconFit.js (в Phaser — measureIcon). img внутри позиционируется
+   абсолютно, поэтому слот не «разъезжается» от прозрачных полей PNG. */
+.dom-icon {
+    position: relative;
+    display: block;
+    width: var(--dom-icon-size);
+    height: var(--dom-icon-size);
+    overflow: hidden;
+}
+
+.dom-icon img {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
 /* ---------- Врезка (panel) ---------- */
 .dom-panel {
     position: absolute;
@@ -83,10 +100,9 @@
     color: var(--color-bright);
 }
 
-.dom-chip img {
+.dom-chip .dom-icon {
     width: var(--dom-chip-icon);
     height: var(--dom-chip-icon);
-    object-fit: contain;
 }
 
 .dom-hint {
@@ -104,6 +120,20 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     touch-action: pan-y;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-muted) transparent;
+}
+
+.dom-scroll::-webkit-scrollbar {
+    width: var(--space-xs);
+}
+
+.dom-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.dom-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-muted);
 }
 
 .dom-section {
@@ -134,9 +164,9 @@
     gap: var(--space-md);
     min-height: var(--dom-row-min-h);
     margin-bottom: var(--dom-row-gap);
-    padding: var(--space-sm);
+    padding: var(--space-md);
     border: var(--dom-border-card) solid transparent;
-    border-image: url('../../assets/ui/upgrade_row_card_1.png') 30 fill / var(--dom-border-card) stretch;
+    border-image: url('../../assets/ui/modal_panel_metal.png') 60 fill / var(--dom-border-card) stretch;
     image-rendering: pixelated;
 }
 
@@ -152,9 +182,7 @@
 }
 
 .dom-slot img {
-    width: var(--dom-icon-size);
-    height: var(--dom-icon-size);
-    object-fit: contain;
+    max-width: none;
 }
 
 .dom-row-text {
@@ -218,17 +246,16 @@
     gap: var(--space-xs);
 }
 
-.dom-pair img {
+.dom-pair .dom-icon {
     width: var(--dom-pair-icon);
     height: var(--dom-pair-icon);
-    object-fit: contain;
 }
 
 /* ---------- Кнопки (3 состояния) ---------- */
 .dom-actions {
     display: flex;
     flex-direction: column;
-    gap: var(--space-xs);
+    gap: var(--space-sm);
 }
 
 .dom-btn {
@@ -276,7 +303,7 @@
     min-height: var(--dom-art-min-h);
     padding: var(--space-sm);
     border: var(--dom-border-card) solid transparent;
-    border-image: url('../../assets/ui/upgrade_row_card_1.png') 30 fill / var(--dom-border-card) stretch;
+    border-image: url('../../assets/ui/modal_panel_metal.png') 60 fill / var(--dom-border-card) stretch;
     image-rendering: pixelated;
 }
 
@@ -306,6 +333,12 @@
 
 .portrait .dom-row .dom-actions .dom-btn {
     width: 100%;
+}
+
+/* Портрет: имя в одну строку — кегль ступенью ниже (в Phaser имя ужимается
+   fitFontSize до 22 игровых px); иначе «Шахтёрская бомба» рвётся на две строки */
+.portrait .dom-name {
+    font-size: var(--font-label);
 }
 
 .portrait .dom-recipe .dom-btn {
