@@ -111,7 +111,11 @@ export const statusModalsMethods = {
     tryShowDailyModal() {
         if (!this._pendingDaily) return;
         if (this.registry.get(REG.bossActive)) return;
-        if (this.offlineModal.visible || this.modal.visible || this.dailyModal.visible) return;
+        // Очередь: окно вырубления не проверялось — награда открывалась ОДНОВРЕМЕННО
+        // с ним (два модальных окна в кадре, аудит: 20+ OVERLAP на состояние; таймер
+        // выдачи награды стрелял позже hideDaily в сценарных прогонах)
+        if (this.offlineModal.visible || this.modal.visible || this.dailyModal.visible
+            || this.playerDownModal.visible) return;
         if (this.mapRoot.visible || this.craftRoot.visible || this._bossRewardOpen) return;
         const info = this._pendingDaily;
         this._pendingDaily = null;

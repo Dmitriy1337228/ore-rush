@@ -37,14 +37,9 @@
       "MIN-FONT|UIScene|\"уровень шахты: # — Изумруд\"": 1
     },
     "d1024|settings-stress": {
-      "OVERLAP|UIScene|\"клик: #e# · крит: #%\"|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"За текущий забег: +# ★ (по\"|[buy_button_normal]": 1,
-      "MIN-FONT|UIScene|\"клик: #e# · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"уровень шахты: # — Алмаз\"": 1
     },
     "d1024|stress": {
-      "OVERLAP|UIScene|\"клик: #e# · крит: #%\"|[buy_button_normal]": 1,
-      "MIN-FONT|UIScene|\"клик: #e# · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"уровень шахты: # — Алмаз\"": 1
     },
     "d1280|boss": {
@@ -58,13 +53,6 @@
       "MIN-FONT|UIScene|\"Активировать\"": 3,
       "MIN-FONT|UIScene|\"Купить #K\"": 4
     },
-    "d1280|settings-stress": {
-      "OVERLAP|UIScene|\"клик: #e# · крит: #%\"|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"За текущий забег: +# ★ (по\"|[buy_button_normal]": 1
-    },
-    "d1280|stress": {
-      "OVERLAP|UIScene|\"клик: #e# · крит: #%\"|[buy_button_normal]": 1
-    },
     "d1366|boss": {
       "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_bomb]": 1,
       "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_rig]": 1,
@@ -76,26 +64,12 @@
       "MIN-FONT|UIScene|\"Активировать\"": 3,
       "MIN-FONT|UIScene|\"Купить #K\"": 4
     },
-    "d1366|settings-stress": {
-      "OVERLAP|UIScene|\"клик: #e# · крит: #%\"|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"За текущий забег: +# ★ (по\"|[buy_button_normal]": 1
-    },
-    "d1366|stress": {
-      "OVERLAP|UIScene|\"клик: #e# · крит: #%\"|[buy_button_normal]": 1
-    },
     "d1920|boss": {
       "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_bomb]": 1,
       "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_rig]": 1,
       "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_disabled_gray]": 1,
       "OVERLAP|UIScene|\"урон робо-руки x# на # сек\"|[buy_button_normal]": 1,
       "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_oil]": 1
-    },
-    "d1920|settings-stress": {
-      "OVERLAP|UIScene|\"клик: #e# · крит: #%\"|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"За текущий забег: +# ★ (по\"|[buy_button_normal]": 1
-    },
-    "d1920|stress": {
-      "OVERLAP|UIScene|\"клик: #e# · крит: #%\"|[buy_button_normal]": 1
     },
     "l844|boss": {
       "OVERLAP|UIScene|[buy_button_disabled_gray]|[item_bomb]": 1,
@@ -313,26 +287,11 @@
       "MIN-FONT|UIScene|\"Забрать\"": 1
     },
     "l844|player-down": {
-      "OVERLAP|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|\"Серия: # день\"|\"Ты вырубился!\"": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_slot_frame]": 5,
-      "OVERLAP|UIScene|[buy_button_normal]|[gold_nugget]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_hammer]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_dyson]": 1,
-      "TEXT-COVERED|UIScene|\"Серия: # день\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Ускорение\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"x# к скорости добычи\nна # \"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Отлично!\"|[modal_panel_metal]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик: # · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 4,
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 3,
       "MIN-FONT|UIScene|\"x# #:#\"": 1,
       "MIN-FONT|UIScene|\"Оборудование\"": 1,
       "MIN-FONT|UIScene|\"Усиления\"": 1,
@@ -342,9 +301,6 @@
       "MIN-FONT|UIScene|\"Карта\"": 1,
       "MIN-FONT|UIScene|\"Крафт\"": 1,
       "MIN-FONT|UIScene|\"Спуск: Железо — #K меди\"": 1,
-      "MIN-FONT|UIScene|\"Серия: # день\"": 1,
-      "MIN-FONT|UIScene|\"x# к скорости добычи\nна # \"": 1,
-      "MIN-FONT|UIScene|\"Отлично!\"": 1,
       "MIN-FONT|UIScene|\"Алмазный владыка отбросил \"": 1,
       "MIN-FONT|UIScene|\"В шахту\"": 1
     },
@@ -374,8 +330,6 @@
       "MIN-FONT|UIScene|\"Сбросить весь прогресс\"": 1
     },
     "l844|settings-stress": {
-      "OVERLAP|UIScene|\"клик: #e# · крит: #%\"|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"За текущий забег: +# ★ (по\"|[buy_button_normal]": 1,
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "MIN-FONT|UIScene|\"клик: #e# · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
@@ -395,12 +349,11 @@
       "MIN-FONT|UIScene|\"Музыка: вкл\"": 1,
       "MIN-FONT|UIScene|\"Громкость:\"": 1,
       "MIN-FONT|UIScene|\"#%\"": 1,
-      "MIN-FONT|UIScene|\"За текущий забег: +# ★ (по\"": 1,
+      "MIN-FONT|UIScene|\"За текущий забег: +# ★\nСбр\"": 1,
       "MIN-FONT|UIScene|\"Сбросить шахту\"": 1,
       "MIN-FONT|UIScene|\"Сбросить весь прогресс\"": 1
     },
     "l844|stress": {
-      "OVERLAP|UIScene|\"клик: #e# · крит: #%\"|[buy_button_normal]": 1,
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "MIN-FONT|UIScene|\"клик: #e# · крит: #%\"": 1,
       "MIN-FONT|UIScene|\"★ # (x#)\"": 1,
@@ -475,10 +428,6 @@
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
     },
     "p360|craft": {
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_crystal]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_core]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_relic]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_essence]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 6,
@@ -533,32 +482,10 @@
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
     },
     "p360|player-down": {
-      "OVERLAP|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[pickaxe_iron]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[gold_nugget]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[gold_nugget]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_hammer]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_hammer]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_dyson]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_dyson]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_vein]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|\"Ты вырубился!\"": 1,
-      "TEXT-COVERED|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Серия: # день\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Ускорение\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"x# к скорости добычи\nна # \"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Отлично!\"|[modal_panel_metal]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
     },
     "p360|settings": {
       "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1,
@@ -575,7 +502,6 @@
       "MIN-FONT|UIScene|\"Сбросить весь прогресс\"": 1
     },
     "p360|settings-stress": {
-      "OVERLAP|UIScene|\"За текущий забег: +# ★ (по\"|[buy_button_normal]": 1,
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "MIN-FONT|UIScene|\"+#e#/сек\"": 1,
       "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1,
@@ -586,7 +512,7 @@
       "MIN-FONT|UIScene|\"Музыка: вкл\"": 1,
       "MIN-FONT|UIScene|\"Громкость:\"": 1,
       "MIN-FONT|UIScene|\"#%\"": 1,
-      "MIN-FONT|UIScene|\"За текущий забег: +# ★ (по\"": 1,
+      "MIN-FONT|UIScene|\"За текущий забег: +# ★\nСбр\"": 1,
       "MIN-FONT|UIScene|\"Сбросить весь прогресс\"": 1
     },
     "p360|stress": {
@@ -628,10 +554,6 @@
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
     },
     "p390|craft": {
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_crystal]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_core]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_relic]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_essence]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 9,
@@ -686,32 +608,10 @@
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
     },
     "p390|player-down": {
-      "OVERLAP|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[pickaxe_iron]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[gold_nugget]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[gold_nugget]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_hammer]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_hammer]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_dyson]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_dyson]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_vein]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|\"Ты вырубился!\"": 1,
-      "TEXT-COVERED|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Серия: # день\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Ускорение\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"x# к скорости добычи\nна # \"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Отлично!\"|[modal_panel_metal]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "MIN-FONT|UIScene|\"клик # · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
     },
     "p390|settings": {
       "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1,
@@ -722,7 +622,6 @@
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
     },
     "p390|settings-stress": {
-      "OVERLAP|UIScene|\"За текущий забег: +# ★ (по\"|[buy_button_normal]": 1,
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "MIN-FONT|UIScene|\"клик #e# · крит #%\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
@@ -764,10 +663,6 @@
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
     },
     "p412|craft": {
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_crystal]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_core]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_relic]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_essence]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 9,
       "TOUCH-TARGET|UIScene|[close_button_square]": 1,
@@ -811,31 +706,9 @@
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
     },
     "p412|player-down": {
-      "OVERLAP|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[pickaxe_iron]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[gold_nugget]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[gold_nugget]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_hammer]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_hammer]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_dyson]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_dyson]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_vein]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|\"Ты вырубился!\"": 1,
-      "TEXT-COVERED|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Серия: # день\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Ускорение\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"x# к скорости добычи\nна # \"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Отлично!\"|[modal_panel_metal]": 1,
       "MIN-FONT|UIScene|\"медь\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 1,
-      "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
+      "TOUCH-TARGET|UIScene|[buy_button_normal]": 1
     },
     "p412|settings": {
       "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1,
@@ -845,7 +718,6 @@
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
     },
     "p412|settings-stress": {
-      "OVERLAP|UIScene|\"За текущий забег: +# ★ (по\"|[buy_button_normal]": 1,
       "MIN-FONT|UIScene|\"алмаз\"": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 2,
       "TOUCH-TARGET|UIScene|[close_button_square]": 1,
@@ -871,115 +743,15 @@
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 2
     },
     "t768|craft": {
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_scrap]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_crystal]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_core]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_relic]": 1,
-      "OVERLAP|UIScene|\"компоненты падают с боссов\"|[comp_essence]": 1,
       "TOUCH-TARGET|UIScene|[buy_button_disabled_gray]": 6,
       "TOUCH-TARGET|UIScene|[buy_button_normal]": 4
     },
     "t768|map": {
       "OVERLAP|UIScene|[close_button_square]|[map_board]": 1
     },
-    "t768|player-down": {
-      "OVERLAP|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[pickaxe_iron]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[gold_nugget]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[gold_nugget]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_hammer]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_hammer]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_dyson]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_dyson]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_vein]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|\"Ты вырубился!\"": 1,
-      "TEXT-COVERED|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Серия: # день\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Ускорение\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"x# к скорости добычи\nна # \"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Отлично!\"|[modal_panel_metal]": 1
-    },
     "t768|settings": {
       "OVERLAP|UIScene|\"Для rebirth нужно добыть #\"|[buy_button_disabled_gray]": 1
-    },
-    "t768|settings-stress": {
-      "OVERLAP|UIScene|\"За текущий забег: +# ★ (по\"|[buy_button_normal]": 1
-    },
-    "d1024|player-down": {
-      "OVERLAP|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|\"Серия: # день\"|\"Ты вырубился!\"": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_slot_frame]": 5,
-      "OVERLAP|UIScene|[buy_button_normal]|[gold_nugget]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_hammer]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_dyson]": 1,
-      "TEXT-COVERED|UIScene|\"Серия: # день\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Ускорение\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"x# к скорости добычи\nна # \"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Отлично!\"|[modal_panel_metal]": 1
-    },
-    "d1280|player-down": {
-      "OVERLAP|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|\"Серия: # день\"|\"Ты вырубился!\"": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_slot_frame]": 5,
-      "OVERLAP|UIScene|[buy_button_normal]|[gold_nugget]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_hammer]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_dyson]": 1,
-      "TEXT-COVERED|UIScene|\"Серия: # день\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Ускорение\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"x# к скорости добычи\nна # \"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Отлично!\"|[modal_panel_metal]": 1
-    },
-    "d1366|player-down": {
-      "OVERLAP|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|\"Серия: # день\"|\"Ты вырубился!\"": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_slot_frame]": 5,
-      "OVERLAP|UIScene|[buy_button_normal]|[gold_nugget]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_hammer]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_dyson]": 1,
-      "TEXT-COVERED|UIScene|\"Серия: # день\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Ускорение\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"x# к скорости добычи\nна # \"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Отлично!\"|[modal_panel_metal]": 1
-    },
-    "d1920|player-down": {
-      "OVERLAP|UIScene|\"Ежедневная награда\"|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|\"Серия: # день\"|\"Ты вырубился!\"": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[modal_panel_metal]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[buy_button_normal]": 1,
-      "OVERLAP|UIScene|\"Алмазный владыка отбросил \"|[icon_slot_frame]": 7,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_slot_frame]": 5,
-      "OVERLAP|UIScene|[buy_button_normal]|[gold_nugget]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[dynamite_bundle]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_hammer]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[pickaxe_diamond]": 1,
-      "OVERLAP|UIScene|[buy_button_normal]|[icon_dyson]": 1,
-      "TEXT-COVERED|UIScene|\"Серия: # день\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Ускорение\"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"x# к скорости добычи\nна # \"|[modal_panel_metal]": 1,
-      "TEXT-COVERED|UIScene|\"Отлично!\"|[modal_panel_metal]": 1
     }
   },
-  "updatedAt": "2026-11-15T19:16:33.134Z"
+  "updatedAt": "2026-11-16T09:40:03.270Z"
 }

@@ -230,6 +230,10 @@ export const settingsModalMethods = {
             this.dailyModal.setScale(mk(520, 420));
             this.bossRewardModal.setScale(mk(480, 400));
             this.playerDownModal.setScale(mk(480, 330));
+            // Окно вырубления масштабируется x1.45 — первая строка тела цепляла
+            // нижний край заголовка «Ты вырубился!» (аудит, oy=2): опускаем
+            // тело на 6 локальных px (~9 экранных)
+            if (this.playerDownBody) this.playerDownBody.setY(-14);
         } else {
             this._modalScale = 1;
             this.modal.setScale(1);
@@ -237,6 +241,7 @@ export const settingsModalMethods = {
             this.dailyModal.setScale(1);
             this.bossRewardModal.setScale(1);
             this.playerDownModal.setScale(1);
+            if (this.playerDownBody) this.playerDownBody.setY(-20);
         }
     },
 
@@ -281,10 +286,16 @@ export const settingsModalMethods = {
             const gain = getStarsGain();
             const bossLocked = !!this.registry.get(REG.bossActive);
             if (canPrestige()) {
-                this.prestigeInfo.setText(`За текущий забег: +${gain} ★ (постоянно +${gain * 10}% к доходу)\nСброс: руда, уровень шахты и улучшения обнулятся.`);
+                // Компактные 2 строки (не 2+2 с переносом): при больших числах
+                // «(постоянно +N0% к доходу)» удлиняло блок до 4-5 строк — текст
+                // наезжал на кнопку престижа (аудит settings-stress). Бонус x10
+                // и так виден в статах окна («Звёзды … — множитель»)
+                this.prestigeInfo.setText(`За текущий забег: +${gain} ★\nСброс: руда, шахта и улучшения обнулятся.`);
+                this.prestigeInfo.setY(80); // низ 2 строк (~130) не задевает кнопку (верх 133)
                 this.prestigeBtn.setTexture(bossLocked ? TEX.buttonDisabled : TEX.button);
                 this.prestigeText.setColor(bossLocked ? TEXT.muted : TEXT.white);
             } else {
+                this.prestigeInfo.setY(82);
                 const have = gameState.tierEarned[DIAMOND_INDEX];
                 this.prestigeInfo.setText(`Для rebirth нужно добыть ${fmt(PRESTIGE_REQUIREMENT)} алмазов за забег.\nУ вас: ${fmt(have)} (${Math.floor(have / PRESTIGE_REQUIREMENT * 100)}%).`);
                 this.prestigeBtn.setTexture(TEX.buttonDisabled);

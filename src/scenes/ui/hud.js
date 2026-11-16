@@ -7,6 +7,10 @@ import { addButton } from '../../ui/button.js';
 import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE } from '../../ui/theme.js';
 import { measureIcon } from '../../ui/iconMetrics.js';
 
+// Пол ужина строки статов в ландшафте (min fitFontSize; измерительная строка
+// минимальной ширины статов — см. refreshHud)
+const STATS_MIN_SIZE = 10;
+
 export const hudMethods = {
     buildHud() {
         // Бар 1250x112 изображением (пропорции текстуры сохранены).
@@ -270,19 +274,36 @@ export const hudMethods = {
             }
             this.statsLine.x = h.statsXBase;
         } else {
-            // Ландшафт — прежняя логика без изменений
+            // Ландшафт: ставка и статы одной строкой; правый предел — левый край
+            // «Карты» минус зазор. Форма ставки двухступенчатая (как в портрете):
+            // если статы после полной «+N руды/сек» не влезают даже на минимуме
+            // ужина (10px) — короткая «+N/сек»; иначе статы наезжали на кнопку
+            // «Карта» при больших числах (аудит stress/settings-stress)
             const gx = Math.max(h.gpsIconX, this.oreName.x + this.oreName.width + 14);
             if (this.gpsIcon.texture.key !== tier.iconKey) this.placeIcon(this.gpsIcon, tier.iconKey, gx, h.centerY, 26);
             else this.gpsIcon.x = gx;
-            this.gpsText.setText(`+${rate} руды/сек`);
-            this.gpsText.x = gx + 20;
+            const limitR = h.mapBtn.x - SPACE.sm;
             const statsTxt = `клик: ${clickTxt} · крит: ${critPct}%`;
+            // Минимальная ширина статов — меряем внеэкранной строкой, не трогая
+            // боевую (её кегль/текст ставит key-guarded ужин ниже)
+            if (!this._hudMeasure) {
+                this._hudMeasure = makeLabel(this, 0, -2000, '', STATS_MIN_SIZE, '#ffffff').setVisible(false);
+            }
+            this._hudMeasure.setFontSize(STATS_MIN_SIZE).setText(statsTxt);
+            const statsMinW = Math.ceil(this._hudMeasure.width);
+            const gpsX = gx + 20;
+            this.gpsText.setText(`+${rate} руды/сек`);
+            this.gpsText.x = gpsX;
+            if (gpsX + this.gpsText.width + 26 + statsMinW > limitR) {
+                this.gpsText.setText(`+${rate}/сек`);
+                this.gpsText.x = gpsX;
+            }
             this.statsLine.x = this.gpsText.x + this.gpsText.width + 26;
             const statsKey = `${statsTxt}|${Math.round(this.statsLine.x)}`;
             if (statsKey !== this._statsFitKey) {
                 this._statsFitKey = statsKey;
                 this.statsLine.setText(statsTxt);
-                fitFontSize(this.statsLine, this.L.hud.statsSize, this.L.hud.mapBtn.x - SPACE.sm - this.statsLine.x, 10);
+                fitFontSize(this.statsLine, this.L.hud.statsSize, limitR - this.statsLine.x, STATS_MIN_SIZE);
             }
         }
         this.updateBuffLine();

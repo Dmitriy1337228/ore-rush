@@ -74,12 +74,16 @@ export const craftScreenMethods = {
         const slotW = Math.round(64 * k);
         const iconSize = Math.round(22 * k);
         const fSize = Math.max(11, Math.round(FONT_SIZE.captionLg * Math.min(s, 1.35)));
+        // Строка чипов: в портрете поднимается выше — двухстрочная подсказка
+        // (растёт от центра вниз и ВВЕРХ тоже) наезжала на нижний край иконок
+        // (аудит p390/p412/p360/t768|craft, oy=3)
+        const compRowY = this.L.portrait ? -16 : 0;
         const compRowStartX = -(COMPONENTS.length * slotW) / 2;
         COMPONENTS.forEach((def, i) => {
             const sx = compRowStartX + i * slotW;
             const icon = this.add.image(0, 0, def.icon);
-            this.placeIcon(icon, def.icon, sx + Math.round(11 * k), 0, iconSize);
-            const t = makeLabel(this, sx + Math.round(26 * k), 0, '0', fSize, TEXT.bright).setOrigin(0, 0.5);
+            this.placeIcon(icon, def.icon, sx + Math.round(11 * k), compRowY, iconSize);
+            const t = makeLabel(this, sx + Math.round(26 * k), compRowY, '0', fSize, TEXT.bright).setOrigin(0, 0.5);
             this.craftHeader.add([icon, t]);
             this.craftCompRow.push({ id: def.id, text: t });
         });
@@ -90,7 +94,12 @@ export const craftScreenMethods = {
             ? 'компоненты падают с боссов:\nКарта → «Сразиться!»'
             : 'компоненты падают с боссов: Карта → «Сразиться!»';
         const hintSize = this.L.portrait ? FONT_SIZE.section : Math.max(10, Math.round(FONT_SIZE.caption * Math.min(s, 1.35)));
-        const hint = makeLabel(this, 0, Math.round(26 * k), hintText, hintSize, '#d0d0d0', { align: 'center' }).setOrigin(0.5);
+        // Портрет: центр подсказки ниже чипов = низ строки + половина высоты
+        // двухстрочной подсказки (~30px при кегле 24) + зазор 4. Фиксированный
+        // офсет вместо замера: пересборка шапки не привязана к загрузке
+        // вебшрифта. Ландшафт — прежний 26k (golden 21_craft_open).
+        const hintY = this.L.portrait ? compRowY + iconSize / 2 + 34 : Math.round(26 * k);
+        const hint = makeLabel(this, 0, hintY, hintText, hintSize, '#d0d0d0', { align: 'center' }).setOrigin(0.5);
         this.craftHeader.add(hint);
     },
 
