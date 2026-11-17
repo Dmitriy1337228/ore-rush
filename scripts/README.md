@@ -28,6 +28,7 @@
 | `scripts/verify/verify-boss.cjs` | Боссы: старт с карты, HP, клик-килл, награда, артефакт, робо-рука | `verify:boss` | verify | да | активен |
 | `scripts/verify/verify-bulkbuy.cjs` | Мультипокупка x1/x10/x100/max: экономика и UI | `verify:bulkbuy` | verify | да | активен |
 | `scripts/verify/verify-craft-dom.mjs` | Приёмка DOM-мастерской: открытие/закрытие, блокировка, мост, слои | `verify:craft-dom` | verify | да | активен |
+| `scripts/verify/verify-settings-dom.mjs` | Приёмка DOM-настроек (ST1–ST14): тумблеры, громкость, престиж/сброс, очередь, блокировка | `verify:settings-dom` | verify | да | активен |
 | `scripts/verify/verify-daily.mjs` | Ежедневные награды: цикл, серия, бафы, DevPanel, модалка | `verify:daily` | verify | да | активен |
 | `scripts/verify/verify-devpanel.cjs` | DevPanel: активация, ресурсы, тиры, офлайн-симуляция, сброс | `verify:devpanel` | verify | да | активен |
 | `scripts/archive/verify-economy.mjs` | Экономика (node): 12 тиров, цена спуска, гейты, миграции v2→v4 | — | архив | нет | архив: полностью покрыт unit-тестами `state_economy`/`state_persist`; удалить после квартальной ревизии, если не понадобился |
@@ -47,7 +48,7 @@
 | `scripts/archive/pilot-dpr-shots.mjs` | Шрифт/рамки на DPR 1…3 (CSS px не «плывут») | — | архив | да | архив: разовый замер пилота, ассертов нет; вернуть из истории при смене шрифтов |
 | `scripts/metrics/pilot-baseline-shots.mjs` | Чистые скриншоты мастерской на наборе вьюпортов → `docs/pilot-baseline/` | `metrics:baseline-shots` | метрика | да | активен |
 | `scripts/stands/build-dom-lab.mjs` | Автономный стенд DOM-панели (один HTML, без сети) | `stand:dom-lab` | стенд | нет | активен |
-| `scripts/stands/build-dom-craft-snapshot.mjs` | Автономный снимок DOM-мастерской для телефона | `stand:craft-phone` | стенд | да | активен |
+| `scripts/stands/build-dom-form-snapshot.mjs` | Автономный снимок DOM-формы для телефона (`--form craft|settings`) | `stand:craft-phone` | стенд | нет | активен |
 | `scripts/data/balance-sim.mjs` | Симулятор баланса на реальной экономике `src/state.js` | `balance:sim` | данные | нет | активен |
 | `scripts/audio/gen_bgm.py` | Генерация BGM-кандидатов в `audio-src/` (нужен venv audio-studio) | `audio:bgm` | аудио | нет | активен |
 | `scripts/audio/gen_sfx.py` | Генерация SFX через audio-studio MCP → `assets/audio/` | `audio:sfx` | аудио | нет | активен |

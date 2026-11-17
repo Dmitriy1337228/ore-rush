@@ -30,9 +30,9 @@ const SECONDS = Number(opt('seconds', 10));
 const WARMUP_MS = 1000;
 const CPU_RATE = 4;
 const FORM = opt('form', 'craft');
-// Дом: craft уже только DOM; settings/daily — DOM по умолчанию, Phaser по --legacy.
+// DOM по умолчанию для всех форм; Phaser-путь — только `--legacy` (у craft его нет).
 const LEGACY = flag('legacy');
-const DOM = flag('dom') || (FORM === 'craft' && !LEGACY);
+const DOM = flag('dom') || !LEGACY;
 
 const TARGETS = {
     craft: {
@@ -58,7 +58,7 @@ const TARGETS = {
     settings: {
         seed: 'mid',
         dom: {
-            prepare: null,
+            prepare: `(() => { const ui = window.__GAME.scene.getScene('UIScene'); ui._pendingDaily = null; ui.registry.set('dailyInfo', null); if (ui._dailyOpen) ui.hideDailyModal(); })()`,
             open: "window.__GAME.scene.getScene('UIScene').openModal()",
             ready: '!!window.__DOM_SETTINGS && window.__DOM_SETTINGS.isOpen()',
             state: 'settingsOpen'
