@@ -45,6 +45,7 @@
 | .kilo/skills/spritecook-use-presets/SKILL.md | пресеты SpriteCook: поиск, применение, сохранение | тимлид |
 | .kilo/skills/spritecook-workflow-essentials/SKILL.md | базовые правила SpriteCook: кредиты, манифест, дефолты | тимлид |
 | .kilo/skills/refactoring-surgeon/SKILL.md | рефакторинг: code smell, техдолг, legacy, cleanup, extract method/class, DRY/SOLID (источник: NeverSight/learn-skills.dev; references/ и scripts/ из зеркала не поставляются) | dev, архитектор |
+| .kilo/skills/code-review-skill/SKILL.md | ревью кода: 4-фазный процесс, severity-метки (blocking/important/nit/…), security/performance/архитектура; справочники по языкам в reference/ (источник: awesome-skills/code-review-skill, MIT). Локальное дополнение: обязательная по-коммитная проверка реорганизационных/массовых веток и сверка журнала | тимлид, dev, архитектор |
 | .kilo/skills/ui-layout-check/SKILL.md | ЛЮБАЯ правка/ревью вёрстки UI: HUD, панели, ряды, модалки, карта, мастерская, кнопки, кегли, адаптив/портрет; наезды текста, отступы, `npm run ui:check` | dev, тестировщик, тимлид, ui |
 
 Примечания:
