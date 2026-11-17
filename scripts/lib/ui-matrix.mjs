@@ -215,6 +215,29 @@ export const STATES = [
         }
     },
     {
+        // DOM-настройки (фаза 2): ui:check снимает PNG, вёрстку меряет ui:check:dom
+        id: 'settings-dom',
+        seed: SEEDS.mid,
+        dom: true,
+        setup: async (p) => {
+            await p.waitForFunction(() => !!window.__DOM_SETTINGS, null, { timeout: 30000 });
+            await hideDaily(p);
+            await ui(p, 'ui.openModal();');
+            await wait(p, 600);
+        }
+    },
+    {
+        id: 'settings-stress-dom',
+        seed: SEEDS.stress,
+        dom: true,
+        setup: async (p) => {
+            await p.waitForFunction(() => !!window.__DOM_SETTINGS, null, { timeout: 30000 });
+            await hideDaily(p);
+            await ui(p, 'ui.openModal();');
+            await wait(p, 600);
+        }
+    },
+    {
         id: 'offline',
         seed: SEEDS.mid,
         offlineHours: 2,

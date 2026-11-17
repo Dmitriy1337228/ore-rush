@@ -39,10 +39,11 @@ export const panel = ({ title, head = '', children }) => html`
         <div class="dom-scroll" data-dom-scroll>${children}</div>
     </section>`;
 
-// Слайдер (громкость): тап-зона строки ≥ 40 CSS px, значение — data-value для аудита.
-export const rangeInput = ({ id, label = '', value = 0, min = 0, max = 100, step = 1 }) => html`
+// Слайдер (громкость): тап-зона строки ≥ 40 CSS px; значение — в .dom-range-value.
+export const rangeInput = ({ id, label = '', value = 0, min = 0, max = 100, step = 1, valueText = '' }) => html`
     <label class="dom-range" data-form-id="${id}">
         ${label ? html`<span class="dom-name">${label}</span>` : ''}
         <input class="dom-range-input" type="range" min="${min}" max="${max}" step="${step}"
             value="${value}" data-range="${id}" aria-label="${label || id}">
+        ${valueText ? html`<span class="dom-range-value">${valueText}</span>` : ''}
     </label>`;

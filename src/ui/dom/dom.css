@@ -393,6 +393,10 @@
     pointer-events: none;
 }
 
+.dom-modal-layer[hidden] {
+    display: none;
+}
+
 /* Порядок слоёв (D3): статус-модалки > настройки > мастерская (у неё z-index auto) */
 .dom-modal-layer[data-dom-modal-kind='settings'] {
     z-index: var(--dom-z-settings);
@@ -408,7 +412,7 @@
 
 .dom-modal {
     width: min(var(--dom-modal-w), calc(100% - 2 * var(--space-sm)));
-    height: auto;
+    height: fit-content;
     max-height: min(var(--dom-modal-max-h), calc(100% - 2 * var(--space-sm)));
     pointer-events: auto;
 }
@@ -431,11 +435,23 @@
 .dom-settings {
     display: flex;
     flex-direction: column;
-    gap: var(--dom-section-gap);
+    gap: var(--space-sm);
+}
+
+.dom-toggle-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+}
+
+.dom-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
 }
 
 .dom-stat {
-    font-size: var(--font-text);
+    font-size: var(--font-body);
     color: var(--color-pale);
 }
 
@@ -447,7 +463,7 @@
     background: none;
     color: var(--color-cream);
     font-family: var(--font-ui);
-    font-size: var(--font-text);
+    font-size: var(--font-body);
     cursor: pointer;
     pointer-events: auto;
     image-rendering: pixelated;
@@ -464,9 +480,13 @@
     min-height: var(--dom-slider-h);
 }
 
+.dom-range .dom-name {
+    white-space: nowrap;
+}
+
 .dom-range-input {
     flex: 1 1 auto;
-    height: var(--dom-slider-thumb);
+    height: var(--dom-slider-h);
     accent-color: var(--color-gold);
     pointer-events: auto;
 }
@@ -475,4 +495,22 @@
     min-width: var(--touch-min);
     text-align: right;
     color: var(--color-soft);
+}
+
+/* Портрет: настройки должны влезать без скролла на 360x640 и 390x844 (ST1):
+   плотнее ритм, строка статов — на шаг шкалы меньше, секция ближе к тексту. */
+.portrait .dom-settings {
+    gap: var(--space-xs);
+}
+
+.portrait .dom-settings .dom-line {
+    font-size: var(--font-label);
+}
+
+.portrait .dom-modal .dom-scroll {
+    margin-top: var(--space-xs);
+}
+
+.portrait .dom-modal .dom-section {
+    margin: var(--space-sm) 0 var(--space-xs);
 }

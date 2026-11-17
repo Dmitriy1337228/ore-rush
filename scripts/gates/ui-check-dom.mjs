@@ -164,7 +164,8 @@ if (active.length) {
             '.dom-line',
             '.dom-btn',
             '.dom-toggle',
-            '.dom-stat'
+            '.dom-stat',
+            '.dom-range-value'
         ].join(',');
         const clipToScroll = (rect) => {
             const left = Math.max(rect.left, scrollRect.left);
@@ -264,7 +265,7 @@ if (active.length) {
 
         const mobile = window.innerWidth <= rules.mobileMaxWidthCss;
         const touchMin = mobile ? rules.minTouchCss.mobile : rules.minTouchCss.desktop;
-        for (const el of panel.querySelectorAll('.dom-btn, .dom-close, .dom-toggle')) {
+        for (const el of panel.querySelectorAll('.dom-btn, .dom-close, .dom-toggle, .dom-range-input')) {
             if (!el.getClientRects().length || !visibleEl(el)) {
                 continue;
             }

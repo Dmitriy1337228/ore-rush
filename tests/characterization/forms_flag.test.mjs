@@ -2,7 +2,7 @@
 // неизвестные имена игнорируются.
 import assert from 'node:assert/strict';
 import { afterEach, describe, test } from 'node:test';
-import { DEFAULT_PHASER_FORMS, isPhaserForm, phaserForms } from '../../src/ui/dom/formsFlag.js';
+import { DEFAULT_PHASER_FORMS, isPhaserForm, phaserForms } from '../../src/ui/shared/formsFlag.js';
 
 function withWindow({ search = '', stored = null } = {}) {
     globalThis.window = {

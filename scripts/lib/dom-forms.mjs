@@ -66,20 +66,31 @@ export const FORMS = [
     {
         id: 'settings',
         label: 'Настройки',
-        pending: true,
+        pending: false,
         api: '__DOM_SETTINGS',
         seed: 'mid',
-        prepare: null,
+        prepare: `(() => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            ui._pendingDaily = null;
+            ui.registry.set('dailyInfo', null);
+            if (ui._dailyOpen) ui.hideDailyModal();
+        })()`,
         open: "window.__GAME.scene.getScene('UIScene').openModal()",
         close: "window.__GAME.scene.getScene('UIScene').closeModal()",
         isOpen: 'window.__DOM_SETTINGS.isOpen()',
         panel: '[data-dom-modal]',
-        scroll: null,
-        expected: () => [],
+        scroll: '[data-dom-scroll]',
+        expected: () => ['stats', 'sound', 'music', 'music-volume', 'prestige', 'reset'],
         states: ['settings-dom', 'settings-stress-dom'],
         golden: ['1280x720', '390x844'],
         files: {
-            screen: ['src/ui/dom/settingsScreen.js', 'src/ui/dom/modal.js', 'src/ui/dom/lock.js'],
+            screen: [
+                'src/ui/dom/settingsScreen.js',
+                'src/ui/dom/modal.js',
+                'src/ui/dom/lock.js',
+                'src/state/settings.js',
+                'src/state/settingsMessages.js'
+            ],
             checks: ['scripts/verify/verify-settings-dom.mjs'],
             fixtures: []
         }
