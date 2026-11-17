@@ -2,7 +2,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { gameState } from '../../src/state.js';
-import { snapshot } from '../../src/ui/dom/bridge.js';
+import { settingsSnapshot, snapshot } from '../../src/ui/dom/bridge.js';
 import { MSG } from '../../src/state/craftMessages.js';
 
 const reset = () => {
@@ -70,5 +70,44 @@ describe('dom bridge: snapshot', () => {
             hardpick.need.map((n) => n.enough),
             [false, false]
         );
+    });
+});
+
+describe('dom bridge: settingsSnapshot', () => {
+    beforeEach(reset);
+
+    it('читает настройки, статы и престиж без мутаций', () => {
+        gameState.soundOn = false;
+        gameState.musicOn = true;
+        gameState.musicVolume = 0.4;
+        gameState.stars = 12;
+        gameState.clicks = 120;
+        const before = JSON.stringify(gameState);
+        const snap = settingsSnapshot({ bossActive: false, portrait: false });
+        assert.equal(JSON.stringify(gameState), before, 'снимок не мутирует состояние');
+        assert.equal(snap.soundOn, false);
+        assert.equal(snap.musicOn, true);
+        assert.equal(snap.musicVolume, 0.4);
+        assert.equal(snap.volumeText, '40%');
+        assert.equal(snap.labels.sound, 'Звук: выкл');
+        assert.equal(snap.labels.music, 'Музыка: вкл');
+        assert.equal(snap.stats.length, 5);
+        assert.equal(snap.stats[1].startsWith('Звёзды: 12 '), true);
+        assert.equal(snap.prestigeLines.length, 2);
+        assert.equal(snap.bossLocked, false);
+    });
+
+    it('босс блокирует престиж и сброс (bossLocked)', () => {
+        const snap = settingsSnapshot({ bossActive: true });
+        assert.equal(snap.bossLocked, true);
+    });
+
+    it('портретная формулировка престижа при нехватке алмазов', () => {
+        gameState.stars = 0;
+        gameState.tierEarned = Array(12).fill(0);
+        const snap = settingsSnapshot({ portrait: true });
+        assert.equal(snap.canPrestige, false);
+        assert.match(snap.prestigeLines[0], /^Нужно добыть /);
+        assert.equal(snap.pct, 0);
     });
 });
