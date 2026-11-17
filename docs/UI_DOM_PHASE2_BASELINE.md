@@ -91,3 +91,15 @@
 - Вес — `npm run build`, gzip всех `dist/assets/*.js|*.css`.
 - p95 — `pilot-frame-p95.mjs --form <form>` (CPU ×4, 3×10 с), baseline дозаписывается в
   конце этапа 1 на Phaser-пути (`--legacy`).
+
+## 8. p95 baseline (Phaser-путь, после обобщения скрипта)
+
+metrics:p95 --form <form> --legacy, 1280×720, CPU ×4, 1 с прогрев + 3×10 с.
+
+| Форма | p95 | Контроль метода |
+|---|---|---|
+| settings (Phaser) | **33.3 мс** | --form settings --legacy |
+| daily (Phaser) | **16.8 мс** | --form daily --legacy |
+| craft (DOM, контроль) | 16.7 мс | --form craft, в пределах ±0.5 мс от записи пилота (16.8) |
+
+Критерий W3 этапа 4: p95 DOM-формы ≤ baseline + 2 мс (settings ≤ 35.3, daily ≤ 18.8).
