@@ -126,6 +126,8 @@ const withState = (page, body) =>
 
 const wait = (page, ms = 450) => page.waitForTimeout(ms);
 
+// Соглашение фазы 2: состояние `<name>-dom` помечается `dom: true` — ui:check для него
+// только снимает PNG, вёрстку меряет ui:check:dom (см. scripts/lib/dom-forms.mjs).
 export const STATES = [
     {
         id: 'fresh',

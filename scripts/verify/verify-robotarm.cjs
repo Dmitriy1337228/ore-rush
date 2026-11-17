@@ -1,6 +1,7 @@
 // Проверка Робо-руки: авто-клики дают доход и разрушают блок (этап 2 + фикс заживления)
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
+const { withLegacy } = require('../lib/forms-flag.mjs');
 (async () => {
     const server = await ensureDevServer();
     process.on('exit', () => releaseDevServer(server));
@@ -42,7 +43,7 @@ const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
         },
         { 'ore-rush-save': save }
     );
-    await page.goto('http://localhost:5174', { waitUntil: 'load' });
+    await page.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
     await page.waitForTimeout(3000);
     const read = () =>
         page.evaluate(() => {
@@ -99,7 +100,7 @@ const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
         },
         { 'ore-rush-save': save2 }
     );
-    await page2.goto('http://localhost:5174', { waitUntil: 'load' });
+    await page2.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
     await page2.waitForTimeout(3000);
     // Сэмплируем стадию блока каждые 150мс ~14с (5 авто-ударов по 2с = ~10с на блок)
     const samples = await page2.evaluate(

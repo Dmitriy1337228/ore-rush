@@ -7,6 +7,7 @@
 // поднимается сам (порт 5174) и гасится, если поднят этим скриптом.
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
+const { withLegacy } = require('../lib/forms-flag.mjs');
 
 let passed = 0,
     failed = 0;
@@ -259,7 +260,7 @@ const DEEP_SAVE = JSON.stringify({
         await page.addInitScript((s) => {
             localStorage.setItem('ore-rush-save', s);
         }, save);
-        await page.goto('http://localhost:5174', { waitUntil: 'load' });
+        await page.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
         await page.waitForTimeout(3000);
         // Свежий сейв выдаёт дневную награду — закрываем (lock снимается
         // updateBlockLock'ом в ближайшем кадре)

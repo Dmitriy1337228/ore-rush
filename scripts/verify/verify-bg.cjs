@@ -3,6 +3,7 @@
 // затемнение поверх фона, «Полный сброс» возвращает bg_01_coal, пиксельный чек смены фона.
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
+const { withLegacy } = require('../lib/forms-flag.mjs');
 
 let passed = 0,
     failed = 0;
@@ -57,7 +58,7 @@ const BG_KEYS = [
         },
         { 'ore-rush-save': save }
     );
-    await page.goto('http://localhost:5174', { waitUntil: 'load' });
+    await page.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
     await page.waitForTimeout(3000);
 
     // HMR-инвалидация: резолвим фактический URL state.js из resource entries

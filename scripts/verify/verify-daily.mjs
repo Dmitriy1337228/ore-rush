@@ -4,6 +4,7 @@
 // Dev-сервер поднимается сам и гасится после проверки.
 import { chromium } from 'playwright';
 import { createRequire } from 'node:module';
+import { withLegacy } from '../lib/forms-flag.mjs';
 const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 
 let passed = 0,

@@ -5,6 +5,7 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { withLegacy } from '../lib/forms-flag.mjs';
 
 const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 const BASE = process.env.BASE_URL || 'http://localhost:5174';
@@ -323,7 +324,7 @@ async function newPage({ viewport = { width: 1280, height: 720 }, seed = null, n
         }, seed);
     }
 
-    await page.goto(BASE, { waitUntil: 'load' });
+    await page.goto(withLegacy(BASE), { waitUntil: 'load' });
     await page.waitForTimeout(2800); // шрифты + boot + create
 
     return { ctx, page };
