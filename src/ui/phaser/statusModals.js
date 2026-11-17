@@ -158,7 +158,7 @@ export const statusModalsMethods = {
         // выдачи награды стрелял позже hideDaily в сценарных прогонах)
         if (
             this.offlineModal.visible ||
-            this.modal.visible ||
+            this._settingsOpen ||
             this.dailyModal.visible ||
             this.playerDownModal.visible
         ) {

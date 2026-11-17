@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { VIEWPORTS, STATES, SEEDS, SAVE_KEY, applyScreens } from '../lib/ui-matrix.mjs';
+import { withLegacy } from '../lib/forms-flag.mjs';
 
 const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 
@@ -93,7 +94,7 @@ async function openPage({ viewport, seed, extraStorage = {}, name }) {
             localStorage.setItem(k, v);
         }
     }, storage);
-    await page.goto(BASE, { waitUntil: 'load' });
+    await page.goto(withLegacy(BASE), { waitUntil: 'load' });
     await page.waitForFunction(
         () => {
             const g = window.__GAME;

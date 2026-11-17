@@ -7,6 +7,7 @@
 // Dev-сервер поднимается сам.
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
+const { withLegacy } = require('../lib/forms-flag.mjs');
 (async () => {
     const server = await ensureDevServer();
     process.on('exit', () => releaseDevServer(server));
@@ -23,7 +24,7 @@ const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
     const page = await b.newPage({ viewport: { width: 1280, height: 720 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
-    await page.goto('http://localhost:5174', { waitUntil: 'load' });
+    await page.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
     await page.waitForTimeout(3000);
 
     const stateUrl = await page.evaluate(() =>
@@ -112,7 +113,7 @@ const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
             mockStats: JSON.stringify({ lastExit: legacyExit })
         }
     );
-    await page2.goto('http://localhost:5174', { waitUntil: 'load' });
+    await page2.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
     await page2.waitForTimeout(3000);
     const mig = await page2.evaluate(async (url) => {
         const m = await import(url);
@@ -176,7 +177,7 @@ const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
             mockStats: JSON.stringify({ lastExit: ghostExit })
         }
     );
-    await page3.goto('http://localhost:5174', { waitUntil: 'load' });
+    await page3.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
     await page3.waitForTimeout(3000);
     const g1 = await page3.evaluate(async (url) => {
         const m = await import(url);

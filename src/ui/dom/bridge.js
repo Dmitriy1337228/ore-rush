@@ -16,9 +16,26 @@ import {
     CRAFT_RECIPES,
     ARTIFACTS,
     COMPONENTS,
-    BOSSES
+    BOSSES,
+    TIERS,
+    getOfflineRate,
+    getOfflineCapSeconds,
+    canPrestige,
+    getStarsGain,
+    getPrestigeMult,
+    PRESTIGE_REQUIREMENT,
+    DIAMOND_INDEX
 } from '../../state.js';
 import { itemStockHint, recipeStatus } from '../../state/craftMessages.js';
+import {
+    musicLabel,
+    prestigeIdle,
+    prestigeInfo,
+    resetIdle,
+    settingsStats,
+    soundLabel,
+    volumeText
+} from '../../state/settingsMessages.js';
 
 export const PUBLISH_MS = 150; // 100–250 мс по плану
 
@@ -206,5 +223,53 @@ export function createPublisher(emit, { intervalMs = PUBLISH_MS, getContext } = 
             last = null;
             lastAt = 0;
         }
+    };
+}
+
+// ---------- Настройки (фаза 2, шаг 2.3): только чтение, тексты — из settingsMessages ----------
+export function settingsSnapshot({ bossActive = false, portrait = false } = {}) {
+    const tier = TIERS[gameState.tier];
+    const mult = getPrestigeMult().toFixed(1);
+    const can = canPrestige();
+    const gain = getStarsGain();
+    const have = gameState.tierEarned[DIAMOND_INDEX];
+    const need = PRESTIGE_REQUIREMENT;
+    const volume = gameState.musicVolume;
+    const stats = settingsStats({
+        tierIndex: gameState.tier,
+        tierName: tier.name,
+        stars: gameState.stars,
+        mult,
+        clicks: gameState.clicks,
+        lifetime: gameState.lifetimeMined,
+        ratePct: Math.round(getOfflineRate() * 100),
+        capHours: getOfflineCapSeconds() / 3600
+    });
+
+    return {
+        tierIndex: gameState.tier,
+        tierName: tier.name,
+        stars: gameState.stars,
+        mult,
+        clicks: gameState.clicks,
+        lifetime: gameState.lifetimeMined,
+        stats,
+        soundOn: !!gameState.soundOn,
+        musicOn: !!gameState.musicOn,
+        musicVolume: volume,
+        volumeText: volumeText(volume),
+        labels: {
+            sound: soundLabel(!!gameState.soundOn),
+            music: musicLabel(!!gameState.musicOn),
+            prestige: prestigeIdle,
+            reset: resetIdle
+        },
+        canPrestige: can,
+        gain,
+        have,
+        need,
+        pct: Math.floor((have / need) * 100),
+        prestigeLines: prestigeInfo({ can, gain, have, need, portrait }),
+        bossLocked: !!bossActive
     };
 }

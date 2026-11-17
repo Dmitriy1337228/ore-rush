@@ -1,35 +1,69 @@
-// Пилот DOM (этап 0.4 / 6.1): метрика «экран целиком» — строки кода экрана.
+// Метрика «экран целиком» по форме (пилот DOM, этап 0.4; фаза 2 — шаг 1.4).
 // Считает по явному списку файлов (не эвристикой), чтобы baseline и DOM-версия
-// мерились одинаково. Что входит — см. docs/UI_DOM_PILOT_BASELINE.md.
+// мерились одинаково. Общие модули (theme/uiKit/panel/button/stack, uiAudit,
+// ui-matrix, golden-обвязка ui-review) НЕ входят: они одинаковы для обоих стеков.
 //
 // Строки кода = непустые строки без чисто-комментарных (//, /*, *, <!--, CSS /* ) строк.
-// Общие модули (uiKit/theme/panel/button/stack, uiAudit, ui-matrix, golden ui-review)
-// НЕ входят: они общие для всех экранов и одинаковы для обоих стеков.
 //
-// Запуск: node scripts/metrics/pilot-loc.mjs [--json]
+// Запуск: npm run metrics:loc [-- --form craft|settings|status] [--json]
 import fs from 'node:fs';
 import path from 'node:path';
+import { FORMS } from '../lib/dom-forms.mjs';
 
 const ROOT = process.cwd();
+const argv = process.argv.slice(2);
+const optIdx = argv.indexOf('--form');
+const FORM_ID = optIdx >= 0 && argv[optIdx + 1] && !argv[optIdx + 1].startsWith('--') ? argv[optIdx + 1] : 'craft';
 
-// Phaser-экран мастерской удалён вместе с пилотом DOM (G3 = go): числовой baseline
-// зафиксирован в docs/UI_DOM_PILOT_BASELINE.md, живых файлов для подсчёта нет.
-const BASELINE_FILES = [];
+// Списки файлов формы: baseline — Phaser-реализация (для settings/status живая),
+// dom — DOM-реализация и специфичные тесты, checks — обвязка гейтов формы.
+const SETS = {
+    craft: {
+        baseline: [], // Phaser-экран мастерской удалён вместе с пилотом (G3 = go)
+        dom: [
+            'src/ui/dom/craft.js',
+            'src/ui/dom/bridge.js',
+            'src/ui/dom/components.js',
+            'src/ui/dom/html.js',
+            'src/ui/dom/root.js',
+            'src/ui/dom/iconFit.js',
+            'src/ui/dom/dom.css',
+            'src/ui/dom/tokens.css',
+            'scripts/verify/verify-craft-dom.mjs'
+        ],
+        checks: ['scripts/gates/ui-check-dom.mjs', 'scripts/gates/ui-tokens-css.mjs', 'scripts/gates/dom-golden.mjs']
+    },
+    settings: {
+        baseline: ['src/ui/phaser/settingsModal.js'],
+        dom: [
+            'src/ui/dom/settingsScreen.js',
+            'src/ui/dom/modal.js',
+            'src/ui/dom/lock.js',
+            'src/state/settings.js',
+            'src/state/settingsMessages.js',
+            'scripts/verify/verify-settings-dom.mjs'
+        ],
+        checks: ['scripts/gates/ui-check-dom.mjs', 'scripts/gates/dom-golden.mjs']
+    },
+    status: {
+        baseline: ['src/ui/phaser/statusModals.js'],
+        dom: [
+            'src/ui/dom/statusModals.js',
+            'src/ui/dom/modal.js',
+            'src/state/statusMessages.js',
+            'scripts/verify/verify-status-dom.mjs'
+        ],
+        checks: ['scripts/gates/ui-check-dom.mjs', 'scripts/gates/dom-golden.mjs']
+    }
+};
 
-// DOM-версия: заполняется по мере этапов 1–5. Отсутствующие пути = 0 строк.
-const DOM_PATHS = [
-    'src/ui/dom', // слой: root, bridge, компоненты, экран, CSS
-    'scripts/gates/gen-dom-tokens.mjs', // генератор токенов (часть слоя)
-    'src/ui/dom/tokens.css', // сгенерированные токены
-    'scripts/verify/verify-craft-dom.mjs' // специфичные тесты экрана (S1–S10)
-];
+if (!SETS[FORM_ID]) {
+    console.error(`metrics:loc: неизвестная форма "${FORM_ID}" (есть: craft, settings, status)`);
+    process.exit(2);
+}
 
-// Инфраструктура проверок DOM-экрана (DoD этапа 5): аудит + CSS-гейт + golden-обвязка.
-const CHECK_PATHS = [
-    'scripts/gates/ui-check-dom.mjs',
-    'scripts/gates/ui-tokens-css.mjs',
-    'scripts/gates/dom-golden.mjs'
-];
+const form = FORMS.find((f) => f.id === FORM_ID);
+const set = SETS[FORM_ID];
 
 const COMMENT = [
     /^\s*\/\//, // // js
@@ -103,52 +137,52 @@ function measure(files) {
     return { total, code, blank, comments, perFile };
 }
 
-const baselineFiles = BASELINE_FILES.filter((f) => fs.existsSync(path.join(ROOT, f)));
-// Стенды/тулинг пилота не входят в «экран целиком»: это не код экрана, а разовые
-// инструменты (автономные HTML-снимки, фикстуры этапа 1).
-const SKIP_FILES = new Set(['fixtures.js', 'fixtureMarkup.js', 'fixtureApp.js', 'lab.js']);
-const SKIP_SCRIPTS = [/^scripts[\\/]build-dom-.*\.mjs$/];
-const domFiles = [];
-for (const p of DOM_PATHS) {
-    walk(p, domFiles);
-}
+const expand = (list) => {
+    const out = [];
+    for (const p of list) {
+        walk(p, out);
+    }
 
-// Windows: walk() отдаёт пути с '\', явный список — с '/'; приводим к одному виду.
-const domUnique = Array.from(new Set(domFiles.map((f) => f.replace(/\\/g, '/'))))
-    .filter((f) => !SKIP_FILES.has(path.basename(f)))
-    .filter((f) => !SKIP_SCRIPTS.some((re) => re.test(f)));
+    return Array.from(new Set(out.map((f) => f.replace(/\\/g, '/'))));
+};
+
+// Стенды/фикстуры и разовые тулинг-скрипты не входят в «экран целиком».
+const SKIP_FILES = new Set(['fixtures.js', 'fixtureMarkup.js', 'fixtureApp.js', 'lab.js']);
+const SKIP_SCRIPTS = [/^scripts[\\/]stands[\\/]build-dom-.*\.mjs$/];
+
+const baselineFiles = set.baseline.filter((f) => fs.existsSync(path.join(ROOT, f)));
+const domFiles = expand(set.dom).filter(
+    (f) => !SKIP_FILES.has(path.basename(f)) && !SKIP_SCRIPTS.some((re) => re.test(f))
+);
+const checkFiles = expand(set.checks);
 
 const baseline = measure(baselineFiles);
-const dom = measure(domUnique);
-const checkFiles = [];
-for (const p of CHECK_PATHS) {
-    walk(p, checkFiles);
-}
-
-const checks = measure(Array.from(new Set(checkFiles.map((f) => f.replace(/\\/g, '/')))));
+const dom = measure(domFiles);
+const checks = measure(checkFiles);
 
 const json = {
     createdAt: new Date().toISOString(),
+    form: FORM_ID,
     method: 'code = непустые строки без чисто-комментарных',
     baseline: { files: baselineFiles, ...baseline },
-    dom: { files: domUnique, ...dom },
+    dom: { files: domFiles, ...dom },
     checks: { files: checkFiles, ...checks }
 };
 
-if (process.argv.includes('--json')) {
+if (argv.includes('--json')) {
     console.log(JSON.stringify(json, null, 2));
 } else {
     const row = (label, m) => `| ${label} | ${m.code} | ${m.total} | ${m.perFile.length} |`;
-    console.log('Метрика «экран целиком» (строки кода, без комментариев и пустых)\n');
+    console.log(`Метрика «экран целиком» — форма ${FORM_ID} (${form ? form.label : '?'})\n`);
     console.log('| Группа | строк кода | строк всего | файлов |');
     console.log('|---|---|---|---|');
     console.log(row('Phaser (baseline)', baseline));
-    console.log(row('DOM (пилот)', dom));
-    console.log(row('Проверки DOM (аудит+CSS-гейт+golden)', checks));
+    console.log(row('DOM', dom));
+    console.log(row('Проверки формы (аудит + golden)', checks));
     for (const [label, m] of [
         ['Phaser (baseline)', baseline],
-        ['DOM (пилот)', dom],
-        ['Проверки DOM', checks]
+        ['DOM', dom],
+        ['Проверки формы', checks]
     ]) {
         if (!m.perFile.length) {
             continue;
@@ -160,8 +194,13 @@ if (process.argv.includes('--json')) {
         }
     }
 
-    const missing = DOM_PATHS.filter((p) => !fs.existsSync(path.join(ROOT, p)));
+    const missing = [...set.baseline, ...set.dom].filter((p) => !fs.existsSync(path.join(ROOT, p)));
     if (missing.length) {
         console.log(`\nещё не создано (0 строк): ${missing.join(', ')}`);
+    }
+
+    if (FORM_ID === 'craft' && !baselineFiles.length) {
+        console.log('\nPhaser-экран мастерской удалён (пилот DOM, G3 = go): baseline-число историческое,');
+        console.log('см. docs/UI_DOM_PILOT_BASELINE.md (1138 строк кода).');
     }
 }

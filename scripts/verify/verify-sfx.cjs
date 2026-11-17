@@ -5,6 +5,7 @@ const { chromium } = require('playwright');
 const fs = require('node:fs');
 const path = require('node:path');
 const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
+const { withLegacy } = require('../lib/forms-flag.mjs');
 const SFX = [
     ...new Set(
         fs
@@ -31,7 +32,7 @@ const SFX = [
     const page = await b.newPage({ viewport: { width: 1280, height: 720 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
-    await page.goto('http://localhost:5174', { waitUntil: 'load' });
+    await page.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
     await page.waitForTimeout(3000);
     // Свежий сейв выдаёт дневную награду — модалка с затемнением блокирует
     // canvas-клики (настройки/покупки); закрываем, награда уже применена

@@ -1,6 +1,7 @@
 // Проверка пересчёта цен в UI без перезагрузки сцены (ребаланс этапа 1)
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
+const { withLegacy } = require('../lib/forms-flag.mjs');
 (async () => {
     const server = await ensureDevServer();
     process.on('exit', () => releaseDevServer(server));
@@ -37,7 +38,7 @@ const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
         },
         { 'ore-rush-save': save }
     );
-    await page.goto('http://localhost:5174', { waitUntil: 'load' });
+    await page.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
     await page.waitForTimeout(3000);
     await page.keyboard.press('Backquote');
     await page.waitForTimeout(200);

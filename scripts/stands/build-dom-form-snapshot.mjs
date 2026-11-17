@@ -1,14 +1,15 @@
-// Автономный снимок боевой DOM-мастерской (этап 4.5): один HTML-файл с текущим
-// состоянием экрана — для проверки на телефоне там, где dev-сервер недоступен.
+// Автономный снимок DOM-формы (этап 4.5 пилота; фаза 2 — шаг 2.10): один HTML с текущим
+// состоянием экрана для проверки на телефоне там, где dev-сервер недоступен.
 // Внутрь вшиваются токены, CSS, иконки и Monocraft; кнопки инертны (это снимок).
 //
-// Запуск: node scripts/build-dom-craft-snapshot.mjs [--out shots/pilot-gates/dom-craft-phone.html]
+// Запуск: npm run stand:craft-phone [-- --form craft|settings] [--out <file.html>]
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { SAVE_KEY, SEEDS } from '../lib/ui-matrix.mjs';
+import { resolveForms } from '../lib/dom-forms.mjs';
 
 const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 
@@ -19,7 +20,15 @@ const opt = (n, d = null) => {
 
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d;
 };
-const OUT = path.resolve(opt('out', 'shots/pilot-gates/dom-craft-phone.html'));
+const FORM_ID = opt('form', 'craft');
+const forms = resolveForms(FORM_ID);
+const form = forms && forms.find((f) => !f.pending);
+if (!form) {
+    console.error(`stand:craft-phone: форма "${FORM_ID}" неизвестна или ещё не на DOM`);
+    process.exit(2);
+}
+
+const OUT = path.resolve(opt('out', `shots/pilot-gates/dom-${form.id}-phone.html`));
 const BASE = process.env.BASE_URL || 'http://localhost:5174';
 
 const dataUri = (name) =>
@@ -44,37 +53,21 @@ try {
                 localStorage.setItem(k, v);
             }
         },
-        { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
+        { [SAVE_KEY]: JSON.stringify(SEEDS[form.seed] || SEEDS.mid) }
     );
-    await page.goto(`${BASE}/?dom=1`, { waitUntil: 'load' });
-    await page.waitForFunction(() => !!window.__DOM_CRAFT && window.__GAME.scene.getScene('UIScene').L, null, {
+    await page.goto(BASE, { waitUntil: 'load' });
+    await page.waitForFunction((api) => !!window[api] && window.__GAME.scene.getScene('UIScene').L, form.api, {
         timeout: 30000
     });
     await page.waitForTimeout(1250);
-    await page.evaluate(async () => {
-        const ui = window.__GAME.scene.getScene('UIScene');
-        ui._pendingDaily = null;
-        ui.registry.set('dailyInfo', null);
-        if (ui._dailyOpen) {
-            ui.hideDailyModal();
-        }
+    if (form.prepare) {
+        await page.evaluate(form.prepare);
+    }
 
-        const url = performance
-            .getEntriesByType('resource')
-            .map((r) => r.name)
-            .find((u) => u.includes('/src/state.js'));
-        const m = await import(url);
-        for (const c of m.COMPONENTS) {
-            m.gameState.components[c.id] = 100;
-        }
-
-        for (const i of m.ITEMS) {
-            m.gameState.items[i.id] = 2;
-        }
-    });
     await page.waitForTimeout(350);
-    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
-    await page.waitForTimeout(700);
+    await page.evaluate(form.open);
+    await page.waitForFunction(form.isOpen, null, { timeout: 10000 });
+    await page.waitForTimeout(600);
     const snap = await page.evaluate(() => {
         const root = document.getElementById('ui-root');
 
@@ -82,7 +75,8 @@ try {
     });
     body = snap.body;
     cls = snap.cls;
-    await page.screenshot({ path: path.join(ROOT, 'shots/pilot-gates/dom-craft-phone-src.png') });
+    fs.mkdirSync(path.dirname(path.join(ROOT, 'shots/pilot-gates/x')), { recursive: true });
+    await page.screenshot({ path: path.join(ROOT, `shots/pilot-gates/dom-${form.id}-phone-src.png`) });
     await ctx.close();
 } finally {
     await browser.close();
@@ -95,6 +89,9 @@ const domCss = fs
 const fontBase64 = fs.readFileSync(path.join(ROOT, 'assets/fonts/Monocraft.ttf')).toString('base64');
 const markup = body.replace(/src="assets\/ui\/([^"]+)"/g, (m, name) => `src="${dataUri(name)}"`);
 
+// Снимок: крестик просто скрывает слой формы (игры и состояния здесь нет).
+const closeTarget =
+    form.id === 'craft' ? 'document.querySelector("[data-dom-panel]")' : 'document.querySelector(".dom-modal-layer")';
 const script = `
 const root = document.getElementById('ui-root');
 const sync = () => {
@@ -108,28 +105,28 @@ const sync = () => {
 sync();
 window.addEventListener('resize', sync);
 window.addEventListener('orientationchange', sync);
-// Снимок: действия выключены, крестик просто скрывает панель
 document.querySelector('.dom-close').addEventListener('click', () => {
-  document.querySelector('[data-dom-panel]').hidden = true;
-  document.querySelector('[data-dom-backdrop]').hidden = true;
+  const layer = ${closeTarget};
+  if (layer) layer.hidden = true;
 });
 `;
 
 const html = `<!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<title>DOM-мастерская — снимок (пилот)</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DOM ${form.label} — снимок</title>
 <style>
-@font-face { font-family: 'Monocraft'; src: url(data:font/ttf;base64,${fontBase64}) format('truetype'); font-display: block; }
-html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a1a1a; }
+@font-face { font-family: "Monocraft"; src: url(data:font/ttf;base64,${fontBase64}) format("truetype"); }
+html, body { margin: 0; padding: 0; height: 100%; background: #1a1c20; overflow: hidden; }
 ${tokens}
 ${domCss}
+#ui-root { position: absolute; }
 </style>
 </head>
 <body>
-<div id="ui-root" class="${cls}" data-dom-root="1">${markup}</div>
+<div id="ui-root" class="${cls}">${markup}</div>
 <script>${script}</script>
 </body>
 </html>
@@ -137,4 +134,4 @@ ${domCss}
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, html);
-console.log(`snapshot: ${path.relative(ROOT, OUT)} (${(html.length / 1024).toFixed(0)} KB)`);
+console.log(`stand: ${form.id} — ${path.relative(ROOT, OUT)} (${Math.round(html.length / 1024)} КБ)`);

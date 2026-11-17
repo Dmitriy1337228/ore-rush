@@ -130,6 +130,9 @@
     flex: 1 1 auto;
     min-height: 0;
     margin-top: var(--space-sm);
+    /* Формы скроллятся только вертикально; горизонтальное переполнение — дефект
+       (ловит H-SCROLL в ui:check:dom), а не повод показывать серую полосу */
+    overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     touch-action: pan-y;
@@ -378,4 +381,146 @@
 
 .portrait .dom-arts {
     grid-template-columns: 1fr;
+}
+
+/* ---------- Модалки форм (настройки, статус-модалки) ---------- */
+.dom-modal-host {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.dom-modal-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.dom-modal-layer[hidden] {
+    display: none;
+}
+
+/* Порядок слоёв (D3): статус-модалки > настройки > мастерская (у неё z-index auto) */
+.dom-modal-layer[data-dom-modal-kind='settings'] {
+    z-index: var(--dom-z-settings);
+}
+
+.dom-modal-layer[data-dom-modal-kind='status'] {
+    z-index: var(--dom-z-status);
+}
+
+.dom-modal-layer .dom-backdrop {
+    pointer-events: auto;
+}
+
+.dom-modal {
+    width: min(var(--dom-modal-w), calc(100% - 2 * var(--space-sm)));
+    height: fit-content;
+    max-height: min(var(--dom-modal-max-h), calc(100% - 2 * var(--space-sm)));
+    pointer-events: auto;
+}
+
+.dom-modal .dom-scroll {
+    flex: 1 1 auto;
+}
+
+/* Кнопки действия модалки: по центру, минимальная тап-зона — токен touch.
+   Скоуп — только модалки: .dom-actions есть и у рядов мастерской (колонка). */
+.dom-modal .dom-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding-top: var(--space-sm);
+}
+
+/* ---------- Настройки: строки, тумблеры, слайдер ---------- */
+.dom-settings {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.dom-toggle-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+}
+
+.dom-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.dom-stat {
+    font-size: var(--font-body);
+    color: var(--color-pale);
+}
+
+.dom-toggle {
+    min-height: var(--touch-min);
+    padding: 0 var(--space-sm);
+    border: var(--dom-border-btn) solid transparent;
+    border-image: url('../../../assets/ui/buy_button_normal.png') 30 fill / var(--dom-border-btn) stretch;
+    background: none;
+    color: var(--color-cream);
+    font-family: var(--font-ui);
+    font-size: var(--font-body);
+    cursor: pointer;
+    pointer-events: auto;
+    image-rendering: pixelated;
+}
+
+.dom-toggle[data-on='1'] {
+    border-image-source: url('../../../assets/ui/buy_button_hover.png');
+}
+
+.dom-range {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    min-height: var(--dom-slider-h);
+}
+
+.dom-range .dom-name {
+    white-space: nowrap;
+}
+
+.dom-range-input {
+    flex: 1 1 auto;
+    /* Нативный range имеет min-content ~129px и не сжимался: на 375/360 строка
+       переполняла скролл по горизонтали, «50%» уезжал за край (фикс игрока) */
+    min-width: 0;
+    height: var(--dom-slider-h);
+    accent-color: var(--color-gold);
+    pointer-events: auto;
+}
+
+.dom-range {
+    min-width: 0;
+}
+
+.dom-range-value {
+    min-width: var(--touch-min);
+    text-align: right;
+    color: var(--color-soft);
+}
+
+/* Портрет: настройки должны влезать без скролла на 360x640 и 390x844 (ST1):
+   плотнее ритм, строка статов — на шаг шкалы меньше, секция ближе к тексту. */
+.portrait .dom-settings {
+    gap: var(--space-xs);
+}
+
+.portrait .dom-settings .dom-line {
+    font-size: var(--font-label);
+}
+
+.portrait .dom-modal .dom-scroll {
+    margin-top: var(--space-xs);
+}
+
+.portrait .dom-modal .dom-section {
+    margin: var(--space-sm) 0 var(--space-xs);
 }

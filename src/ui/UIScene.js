@@ -11,6 +11,7 @@ import { settingsModalMethods } from './phaser/settingsModal.js';
 import { statusModalsMethods } from './phaser/statusModals.js';
 import { mapScreenMethods } from './phaser/mapScreen.js';
 import { tutorialMethods } from './phaser/tutorial.js';
+import { isPhaserForm } from './shared/formsFlag.js';
 
 // UIScene — оболочка интерфейса: владеет жизненным циклом, глобальной блокировкой
 // (updateBlockLock) и перерисовкой (refreshUi). Реализация разложена по фичам
@@ -168,6 +169,61 @@ export class UIScene extends Phaser.Scene {
             .catch((err) => {
                 console.error('[craft:dom] не загрузился:', err);
             });
+
+        // Настройки — DOM-форма фазы 2. Монтируем строго после мастерской: craft.js
+        // собирает каркас через setHtml(#ui-root), иначе host модалки затирается.
+        this._domSettingsReady = this._domCraftReady
+            .then(() => import('./dom/settingsScreen.js'))
+            .then(({ createDomSettings }) => {
+                this.domSettings = createDomSettings(this);
+            })
+            .catch((err) => {
+                console.error('[settings:dom] не загрузился:', err);
+            });
+    }
+
+    // Фасад настроек: одна точка входа для HUD/DevPanel/обучения. Выбор пути — по флагу
+    // отката (D5): по умолчанию DOM, `?phaserForms=settings` — прежний Phaser-экран.
+    async openModal() {
+        if (this._settingsOpen) {
+            return;
+        }
+
+        if (this.registry.get(REG.blockLocked)) {
+            return;
+        }
+
+        if (isPhaserForm('settings')) {
+            this.openSettingsPhaser();
+
+            return;
+        }
+
+        await this._domSettingsReady;
+        if (!this.domSettings) {
+            // Тихий отказ чанка/цепочки не должен оставлять «мёртвую» кнопку:
+            // диагностируем и отдаём управление готовому Phaser-пути (окно отката).
+            console.error('[settings:dom] контроллер не смонтирован — открываю Phaser-путь');
+            this.openSettingsPhaser();
+
+            return;
+        }
+
+        this.domSettings.open();
+    }
+
+    closeModal() {
+        if (!this._settingsOpen) {
+            return;
+        }
+
+        if (isPhaserForm('settings')) {
+            this.closeSettingsPhaser();
+
+            return;
+        }
+
+        this.domSettings?.close();
     }
 
     // Открытие мастерской: единственная точка входа (HUD-кнопка, горячие клавиши).
@@ -288,6 +344,8 @@ export class UIScene extends Phaser.Scene {
             this.domCraft.hideForOverlays();
             this.domCraft.tick();
         }
+
+        this.domSettings?.tick();
 
         this.stepTutorial();
         this.refreshUi();

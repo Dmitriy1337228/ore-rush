@@ -126,6 +126,8 @@ const withState = (page, body) =>
 
 const wait = (page, ms = 450) => page.waitForTimeout(ms);
 
+// Соглашение фазы 2: состояние `<name>-dom` помечается `dom: true` — ui:check для него
+// только снимает PNG, вёрстку меряет ui:check:dom (см. scripts/lib/dom-forms.mjs).
 export const STATES = [
     {
         id: 'fresh',
@@ -210,6 +212,29 @@ export const STATES = [
             await hideDaily(p);
             await ui(p, 'ui.settingsBtn.emit("pointerdown");');
             await wait(p, 500);
+        }
+    },
+    {
+        // DOM-настройки (фаза 2): ui:check снимает PNG, вёрстку меряет ui:check:dom
+        id: 'settings-dom',
+        seed: SEEDS.mid,
+        dom: true,
+        setup: async (p) => {
+            await p.waitForFunction(() => !!window.__DOM_SETTINGS, null, { timeout: 30000 });
+            await hideDaily(p);
+            await ui(p, 'ui.openModal();');
+            await wait(p, 600);
+        }
+    },
+    {
+        id: 'settings-stress-dom',
+        seed: SEEDS.stress,
+        dom: true,
+        setup: async (p) => {
+            await p.waitForFunction(() => !!window.__DOM_SETTINGS, null, { timeout: 30000 });
+            await hideDaily(p);
+            await ui(p, 'ui.openModal();');
+            await wait(p, 600);
         }
     },
     {

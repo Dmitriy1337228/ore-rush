@@ -3,6 +3,7 @@
 // Проверяется и чистая экономика state.js, и UI (цикл кнопки, текстуры, цены, клики).
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
+const { withLegacy } = require('../lib/forms-flag.mjs');
 
 let passed = 0,
     failed = 0;
@@ -42,7 +43,7 @@ function check(name, cond, detail = '') {
         },
         { 'ore-rush-save': save }
     );
-    await page.goto('http://localhost:5174', { waitUntil: 'load' });
+    await page.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
     await page.waitForTimeout(3000);
 
     // ВАЖНО: dev-сервер инвалидирует модули HMR-таймстампом — резолвим фактический URL

@@ -3,6 +3,7 @@
 // (клик по блоку, покупка, драг списка, модалка без пробития затемнения рядом).
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
+const { withLegacy } = require('../lib/forms-flag.mjs');
 
 let passed = 0,
     failed = 0;
@@ -68,7 +69,7 @@ function check(name, cond, detail = '') {
             },
             { 'ore-rush-save': freshSave }
         );
-        await page.goto('http://localhost:5174', { waitUntil: 'load' });
+        await page.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
         await page.waitForTimeout(3000);
         // Свежий сейв выдаёт дневную награду — модалка блокирует canvas-клики;
         // закрываем, награда уже применена

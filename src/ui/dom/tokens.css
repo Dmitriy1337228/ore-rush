@@ -83,4 +83,10 @@
     --dom-dim: 0.6;
     --dom-line: 1.35;
     --dom-section-gap: 16px;
+    --dom-modal-w: 560px;
+    --dom-modal-max-h: 620px;
+    --dom-z-settings: 2;
+    --dom-z-status: 3;
+    --dom-slider-h: 44px;
+    --dom-slider-thumb: 24px;
 }

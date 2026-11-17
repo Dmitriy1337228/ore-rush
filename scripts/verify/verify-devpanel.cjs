@@ -2,6 +2,7 @@
 // Dev-сервер поднимается сам и гасится после проверки (чужой не трогается).
 const { chromium } = require('playwright');
 const { ensureDevServer, releaseDevServer } = require('../lib/dev-server.cjs');
+const { withLegacy } = require('../lib/forms-flag.mjs');
 const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог скриншотов (правило проекта: OUT_DIR, не мусор в корне)
 (async () => {
     const server = await ensureDevServer();
@@ -21,7 +22,7 @@ const OUT_DIR = process.env.OUT_DIR || 'shots_devpanel'; // каталог ск�
     const page = await b.newPage({ viewport: { width: 1280, height: 720 } });
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
-    await page.goto('http://localhost:5174', { waitUntil: 'load' });
+    await page.goto(withLegacy('http://localhost:5174'), { waitUntil: 'load' });
     await page.waitForTimeout(3000);
 
     const panelVisible = () =>
