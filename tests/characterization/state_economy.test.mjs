@@ -13,9 +13,13 @@ import { fileURLToPath } from 'node:url';
 import { importState } from './helpers/globals.mjs';
 
 const S = await importState();
-const GOLDEN = JSON.parse(fs.readFileSync(path.join(fileURLToPath(new URL('.', import.meta.url)), 'golden/state_catalog.json'), 'utf8'));
+const GOLDEN = JSON.parse(
+    fs.readFileSync(path.join(fileURLToPath(new URL('.', import.meta.url)), 'golden/state_catalog.json'), 'utf8')
+);
 
-beforeEach(() => { S.resetGame(); });
+beforeEach(() => {
+    S.resetGame();
+});
 
 describe('каталоги state.js (golden-снапшот)', () => {
     it('TIERS: 12 тиров, поля и порядок', () => {
@@ -120,10 +124,10 @@ describe('цены улучшений и множители тиров', () => {
         S.gameState.tier = 2;
         S.gameState.levels.pickaxe = 3;
         S.gameState.levels.miner = 2;
-        assert.equal(S.getUpgradeCost('pickaxe'), 1080);  // ceil(15*8)*9
-        assert.equal(S.getUpgradeCost('miner'), 2160);    // ceil(60*4)*9
-        assert.equal(S.getClickDamage(), 36);             // (1+3)*9
-        assert.equal(S.getOrePerSecond(), 18);            // 2*9
+        assert.equal(S.getUpgradeCost('pickaxe'), 1080); // ceil(15*8)*9
+        assert.equal(S.getUpgradeCost('miner'), 2160); // ceil(60*4)*9
+        assert.equal(S.getClickDamage(), 36); // (1+3)*9
+        assert.equal(S.getOrePerSecond(), 18); // 2*9
         assert.equal(S.getExpectedClickGain(), 43.199999999999996); // 36*1.2
         // якорь лениво фиксируется от текущей ставки: gps 18 + 3 клика * 43.2
         assert.equal(S.getNextUnlockPrice(), 231209);
@@ -131,31 +135,41 @@ describe('цены улучшений и множители тиров', () => {
     });
     it('unlockSecondsFor: 180 * 2.95^tier (golden)', () => {
         const want = GOLDEN.constants && {
-            0: 180, 1: 531, 2: 1566.45, 3: 4621.027500000001, 4: 13632.031125000003,
-            5: 40214.491818750015, 6: 118632.75086531254, 7: 349966.61505267204,
-            8: 1032401.5144053826, 9: 3045584.4674958787, 10: 8984474.179112842,
+            0: 180,
+            1: 531,
+            2: 1566.45,
+            3: 4621.027500000001,
+            4: 13632.031125000003,
+            5: 40214.491818750015,
+            6: 118632.75086531254,
+            7: 349966.61505267204,
+            8: 1032401.5144053826,
+            9: 3045584.4674958787,
+            10: 8984474.179112842,
             11: 26504198.828382887
         };
-        for (let t = 0; t <= 11; t++) assert.equal(S.unlockSecondsFor(t), want[t]);
+        for (let t = 0; t <= 11; t++) {
+            assert.equal(S.unlockSecondsFor(t), want[t]);
+        }
     });
     it('свежее состояние: доходы и цены', () => {
         assert.equal(S.getClickDamage(), 1);
         assert.equal(S.getOrePerSecond(), 0);
         assert.equal(S.getAutoClicksPerSecond(), 0);
-        assert.equal(S.getExpectedClickGain(), 1.2);      // 1 * critF(1.2)
+        assert.equal(S.getExpectedClickGain(), 1.2); // 1 * critF(1.2)
         assert.equal(S.getEarningRate(), 3.5999999999999996); // gps 0 + 3 клика * 1.2
         assert.equal(S.getCritChance(), 0.05);
         assert.equal(S.getLuckyChance(), 0);
         assert.equal(S.getPrestigeMult(), 1);
-        assert.equal(S.getNextUnlockPrice(), 2500);       // пол UNLOCK_FLOOR
+        assert.equal(S.getNextUnlockPrice(), 2500); // пол UNLOCK_FLOOR
         assert.equal(S.getUnlockEtaSeconds(), 694.4444444444445);
         assert.equal(S.getSynergyGain(), 0);
     });
     it('цена спуска = ceil(N(tier) x якорь), пол UNLOCK_FLOOR; последний тир -> null', () => {
         S.gameState.tierAnchorRate = 100;
-        assert.equal(S.getNextUnlockPrice(), 18000);      // ceil(180*100)
+        assert.equal(S.getNextUnlockPrice(), 18000); // ceil(180*100)
         S.gameState.tier = 2;
-        assert.equal(S.getNextUnlockPrice(), 156645);     // ceil(1566.45*100)
+        assert.equal(S.getNextUnlockPrice(), 156645); // ceil(1566.45*100)
         S.gameState.tier = 11;
         assert.equal(S.getNextUnlockPrice(), null);
         assert.equal(S.computeNextUnlockPrice(11), null);
@@ -206,10 +220,14 @@ describe('мультипокупка (строгие пакеты x1/x10/x100/ma
 
 describe('видимость/доступность улучшений', () => {
     it('свежий старт: список вкладок (анонсы первых недоступных в цепочках)', () => {
-        assert.deepEqual(S.getVisibleUpgrades('equipment').map((u) => u.id),
-            ['pickaxe', 'sledge', 'hydraulic', 'miner', 'robotarm', 'drill', 'tech', 'aicore', 'helmet']);
-        assert.deepEqual(S.getVisibleUpgrades('enhance').map((u) => u.id),
-            ['dynamite', 'lucky', 'resonance', 'focuslens', 'magnet', 'lantern', 'warehouse']);
+        assert.deepEqual(
+            S.getVisibleUpgrades('equipment').map((u) => u.id),
+            ['pickaxe', 'sledge', 'hydraulic', 'miner', 'robotarm', 'drill', 'tech', 'aicore', 'helmet']
+        );
+        assert.deepEqual(
+            S.getVisibleUpgrades('enhance').map((u) => u.id),
+            ['dynamite', 'lucky', 'resonance', 'focuslens', 'magnet', 'lantern', 'warehouse']
+        );
         // hydraulic — «первое недоступное» цепочки кирки (кирка/кувалда доступны)
         assert.equal(S.isUpgradeVisible('hydraulic'), true);
         assert.equal(S.isUpgradeVisible('plasma'), false);
@@ -222,8 +240,10 @@ describe('видимость/доступность улучшений', () => {
     });
     it('глубокий тир 6: тот же видимый список (машины гейтятся цепочками)', () => {
         S.gameState.tier = 6;
-        assert.deepEqual(S.getVisibleUpgrades('equipment').map((u) => u.id),
-            ['pickaxe', 'sledge', 'hydraulic', 'miner', 'robotarm', 'drill', 'tech', 'aicore', 'helmet']);
+        assert.deepEqual(
+            S.getVisibleUpgrades('equipment').map((u) => u.id),
+            ['pickaxe', 'sledge', 'hydraulic', 'miner', 'robotarm', 'drill', 'tech', 'aicore', 'helmet']
+        );
     });
     it('кап maxLevel: isMaxed', () => {
         S.gameState.levels.pickaxe = 30;
@@ -258,8 +278,22 @@ describe('покупка и спуск: unlockTier / forceNextTier', () => {
 
 describe('upgradeIncomeDelta / pickFreeUpgrade', () => {
     it('дельты дохода (golden, fresh state)', () => {
-        const want = { pickaxe: 3.5999999999999996, sledge: 1.7999999999999998, miner: 1, drill: 10, tech: 0, dynamite: 0.36, lucky: 0.648, resonance: 0, lantern: 0, warehouse: 0 };
-        for (const [id, v] of Object.entries(want)) assert.equal(S.upgradeIncomeDelta(id), v, id);
+        const want = {
+            pickaxe: 3.5999999999999996,
+            sledge: 1.7999999999999998,
+            miner: 1,
+            drill: 10,
+            tech: 0,
+            dynamite: 0.36,
+            lucky: 0.648,
+            resonance: 0,
+            lantern: 0,
+            warehouse: 0
+        };
+        for (const [id, v] of Object.entries(want)) {
+            assert.equal(S.upgradeIncomeDelta(id), v, id);
+        }
+
         // CHARACTERIZATION: current behavior, may be a bug — дельта pickaxe не зависит
         // от текущего уровня кирки (clickChain не включает base 1+lvl)
         S.gameState.levels.pickaxe = 10;

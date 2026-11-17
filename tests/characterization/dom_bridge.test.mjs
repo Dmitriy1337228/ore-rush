@@ -2,7 +2,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { gameState } from '../../src/state.js';
-import { snapshot } from '../../src/dom/bridge.js';
+import { snapshot } from '../../src/ui/dom/bridge.js';
 import { MSG } from '../../src/state/craftMessages.js';
 
 const reset = () => {
@@ -66,6 +66,9 @@ describe('dom bridge: snapshot', () => {
         const snap = snapshot({ bossActive: false });
         const hardpick = snap.recipes.find((r) => r.id === 'r_hardpick');
         assert.equal(hardpick.disabled, true);
-        assert.deepEqual(hardpick.need.map((n) => n.enough), [false, false]);
+        assert.deepEqual(
+            hardpick.need.map((n) => n.enough),
+            [false, false]
+        );
     });
 });

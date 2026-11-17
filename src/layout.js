@@ -22,9 +22,11 @@ export const PORTRAIT_H_MAX = 1680;
 export function baseForOrientation(pw, ph) {
     if (ph > pw) {
         // Высота = пропорции окна: canvas заполняет экран целиком (390x844 -> 720x1558)
-        const h = Math.min(PORTRAIT_H_MAX, Math.max(PORTRAIT_H_MIN, Math.round(720 * ph / pw)));
+        const h = Math.min(PORTRAIT_H_MAX, Math.max(PORTRAIT_H_MIN, Math.round((720 * ph) / pw)));
+
         return { w: 720, h };
     }
+
     return LANDSCAPE_BASE;
 }
 
@@ -40,7 +42,7 @@ export function computeLayout(W, H) {
     // высоты, клампы 700..900) от края до края, прижат к низу; внутри планка
     // с заголовком, тёмная врезка и нижний док.
     const pw = portrait ? W : 364;
-    const ph = portrait ? Math.min(900, Math.max(700, Math.round(H * 0.60))) : 582;
+    const ph = portrait ? Math.min(900, Math.max(700, Math.round(H * 0.6))) : 582;
     const px = portrait ? 0 : 900;
     const py = portrait ? H - ph : 124;
     // Врезка (тёмная зона: вкладки, строка тира, список) — только портрет;
@@ -51,8 +53,8 @@ export function computeLayout(W, H) {
     // --- Вьюпорт списка: панель минус врезки (инсеты от краёв панели) ---
     // Ландшафт: поля 34/34/146/44. Портрет: бока по пропорциям текстуры
     // (face x73..964 из 1029), сверху врезка + планка 142, снизу док 114.
-    const vpInsetL = portrait ? Math.round(73 * pw / 1029) : 34;
-    const vpInsetR = portrait ? Math.round(65 * pw / 1029) : 34;
+    const vpInsetL = portrait ? Math.round((73 * pw) / 1029) : 34;
+    const vpInsetR = portrait ? Math.round((65 * pw) / 1029) : 34;
     const vpInsetT = portrait ? recessTop + 142 : 146;
     const vpInsetB = portrait ? ph - recessBot + 114 : 44;
     const viewport = {
@@ -69,43 +71,59 @@ export function computeLayout(W, H) {
     const unlockW = 300;
 
     return {
-        portrait, W, H,
+        portrait,
+        W,
+        H,
         hud: {
-            barX: portrait ? 8 : 16, barY: 10,
-            barW: portrait ? W - 16 : 1250, barH: 112, centerY: 62,
-            iconX: portrait ? 54 : 78, counterX: portrait ? 88 : 112,
+            barX: portrait ? 8 : 16,
+            barY: 10,
+            barW: portrait ? W - 16 : 1250,
+            barH: 112,
+            centerY: 62,
+            iconX: portrait ? 54 : 78,
+            counterX: portrait ? 88 : 112,
             counterY: portrait ? 66 : 76,
             iconSize: 48,
             gpsIconSize: portrait ? 24 : 26,
             // Сетка текстов во врезке (y30..95): общий левый край counterX.
             // Строка 1 (низ бокса row1Y): счётчик + имя руды слева, ставка справа
             // до «Настроек». Строка 2 (низ бокса row2Y): клик · крит слева.
-            ...(portrait ? {
-                row1Y: 66, row2Y: 92,
-                gapR: 12,          // зазор правого края ставки до кнопки «Настройки»
-                nameGap: 10,       // счётчик -> имя руды
-                midGap: 16,        // имя руды -> блок ставки
-                gpsIconGap: 6
-            } : {}),
-            gpsIconX: portrait ? 0 : 420, gpsIconY: portrait ? 54 : 62,
-            gpsTextX: portrait ? 0 : 450, gpsTextY: portrait ? 66 : 74, gpsSize: 20,
+            ...(portrait
+                ? {
+                      row1Y: 66,
+                      row2Y: 92,
+                      gapR: 12, // зазор правого края ставки до кнопки «Настройки»
+                      nameGap: 10, // счётчик -> имя руды
+                      midGap: 16, // имя руды -> блок ставки
+                      gpsIconGap: 6
+                  }
+                : {}),
+            gpsIconX: portrait ? 0 : 420,
+            gpsIconY: portrait ? 54 : 62,
+            gpsTextX: portrait ? 0 : 450,
+            gpsTextY: portrait ? 66 : 74,
+            gpsSize: 20,
             statsVisible: true,
-            statsXBase: portrait ? 88 : 450, statsY: portrait ? 92 : 74,
+            statsXBase: portrait ? 88 : 450,
+            statsY: portrait ? 92 : 74,
             statsSize: portrait ? 16 : 14,
             starsRight: portrait ? W - 76 : 818,
             starsY: portrait ? py + Math.round(0.081 * ph) : 62,
-            btnW: 160, btnH: 48,
+            btnW: 160,
+            btnH: 48,
             btnX: portrait ? W - 8 - 18 - 160 : 1066,
-            gearDx: 29, labelDx: 52,
-            mapBtn: portrait
-                ? { x: px + vpInsetL, y: dockY, w: dockSideW, h: 92 }
-                : { x: 830, y: 38, w: 110, h: 48 },
+            gearDx: 29,
+            labelDx: 52,
+            mapBtn: portrait ? { x: px + vpInsetL, y: dockY, w: dockSideW, h: 92 } : { x: 830, y: 38, w: 110, h: 48 },
             craftBtn: portrait
                 ? { x: px + pw - vpInsetR - dockSideW, y: dockY, w: dockSideW, h: 92 }
                 : { x: 952, y: 38, w: 110, h: 48 }
         },
         panel: {
-            px, py, pw, ph,
+            px,
+            py,
+            pw,
+            ph,
             titleDy: portrait ? Math.round(0.081 * ph) : 47,
             titleSize: portrait ? 26 : 24,
             tabsCY: portrait ? recessTop + 44 : 84,
@@ -125,22 +143,40 @@ export function computeLayout(W, H) {
             ...(portrait ? { recessTop, recessBot } : {})
         },
         viewport,
-        ...(portrait ? {
-            dock: {
-                y: dockY, h: 92, x: px + vpInsetL, w: viewport.w,
-                sideW: dockSideW, gap: dockGap,
-                unlockX: px + vpInsetL + dockSideW + dockGap, unlockW, bossSideW: 306
-            }
-        } : {}),
-        unlock: portrait ? {
-            cx: px + vpInsetL + dockSideW + dockGap + unlockW / 2,
-            y: dockY, w: unlockW, h: 92,
-            hintY: py - 36, textSize: 20, hintSize: 14
-        } : { cx: 400, y: 604, w: 520, h: 52, hintY: 676, textSize: 18, hintSize: 14 },
-        modal: portrait ? {
-            cx: Math.round(W / 2), cy: Math.round((160 + (H - 16)) / 2),
-            zoneTop: 160, zoneBot: H - 16
-        } : { cx: 640, cy: 360 },
+        ...(portrait
+            ? {
+                  dock: {
+                      y: dockY,
+                      h: 92,
+                      x: px + vpInsetL,
+                      w: viewport.w,
+                      sideW: dockSideW,
+                      gap: dockGap,
+                      unlockX: px + vpInsetL + dockSideW + dockGap,
+                      unlockW,
+                      bossSideW: 306
+                  }
+              }
+            : {}),
+        unlock: portrait
+            ? {
+                  cx: px + vpInsetL + dockSideW + dockGap + unlockW / 2,
+                  y: dockY,
+                  w: unlockW,
+                  h: 92,
+                  hintY: py - 36,
+                  textSize: 20,
+                  hintSize: 14
+              }
+            : { cx: 400, y: 604, w: 520, h: 52, hintY: 676, textSize: 18, hintSize: 14 },
+        modal: portrait
+            ? {
+                  cx: Math.round(W / 2),
+                  cy: Math.round((160 + (H - 16)) / 2),
+                  zoneTop: 160,
+                  zoneBot: H - 16
+              }
+            : { cx: 640, cy: 360 },
         ...(portrait ? { fight: { by: Math.max(Math.round((150 + py) / 2), 340) } } : {}),
         gear: {
             // Секция «Снаряжение» в бою (панель вместо списка улучшений).
@@ -159,20 +195,21 @@ export function computeLayout(W, H) {
             descDy: portrait ? 66 : 37,
             sideInset: 14,
             btnH: portrait ? 0 : 28,
-            btnHMin: 44, btnHMax: 88,
+            btnHMin: 44,
+            btnHMax: 88,
             btnInset: portrait ? 12 : 10,
             hitPad: 5,
             // cardInset — отступ с ОДНОЙ стороны (в коде умножается на 2)
             cardInset: 4
         },
-        block: portrait
-            ? { x: Math.round(W / 2), y: Math.round((156 + (py - 16)) / 2) }
-            : { x: 400, y: 400 },
+        block: portrait ? { x: Math.round(W / 2), y: Math.round((156 + (py - 16)) / 2) } : { x: 400, y: 400 },
         bgCoverToY: portrait ? py : 720,
-        tutorial: portrait ? {
-            finalY: Math.round((156 + (py - 16)) / 2) - 110,
-            btnY: Math.round((156 + (py - 16)) / 2) - 30,
-            tabBubble: 'below'
-        } : { finalY: 320, btnY: 400, tabBubble: 'left' }
+        tutorial: portrait
+            ? {
+                  finalY: Math.round((156 + (py - 16)) / 2) - 110,
+                  btnY: Math.round((156 + (py - 16)) / 2) - 30,
+                  tabBubble: 'below'
+              }
+            : { finalY: 320, btnY: 400, tabBubble: 'left' }
     };
 }

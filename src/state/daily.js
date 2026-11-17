@@ -22,6 +22,7 @@ const REWARD_APPLIERS = {
     mult(reward) {
         gameState.dailyBuffMult = reward.mult;
         gameState.dailyBuffUntil = Date.now() + reward.durMs;
+
         return null;
     },
     instant() {
@@ -29,39 +30,51 @@ const REWARD_APPLIERS = {
         // масштабируется с прогрессом и не раздаёт слишком много
         const amount = DAILY_INSTANT_SECONDS * getEarningRate();
         addOre(amount);
+
         return amount;
     },
     crit() {
         gameState.dailyCritUntil = Date.now() + DAILY_CRIT_DURATION_MS;
+
         return null;
     },
     vein(reward) {
         gameState.dailyVeinUntil = Date.now() + reward.durMs;
+
         return null;
     },
     upgrade() {
         const def = pickFreeUpgrade();
-        if (!def) return null;
+        if (!def) {
+            return null;
+        }
+
         gameState.levels[def.id] = getUpgradeLevel(def.id) + 1;
+
         return { id: def.id, name: def.name };
     }
 };
 
 function applyDailyReward(reward) {
     const apply = REWARD_APPLIERS[reward.kind];
+
     return apply ? apply(reward) : null;
 }
 
 // Выдача награды дня: серия растёт только за подряд идущие дни, пропуск — сброс.
 // Возвращает {reward, streak, extra} или null (уже получено сегодня).
 export function claimDailyReward() {
-    if (!canClaimDaily()) return null;
+    if (!canClaimDaily()) {
+        return null;
+    }
+
     const today = getDailyDay();
     const gap = today - gameState.lastDailyDay;
-    gameState.dailyStreak = (gameState.lastDailyDay > 0 && gap === 1) ? gameState.dailyStreak + 1 : 1;
+    gameState.dailyStreak = gameState.lastDailyDay > 0 && gap === 1 ? gameState.dailyStreak + 1 : 1;
     gameState.lastDailyDay = today;
     const reward = DAILY_REWARDS[(gameState.dailyStreak - 1) % DAILY_REWARDS.length];
     const extra = applyDailyReward(reward);
     saveGame();
+
     return { reward, streak: gameState.dailyStreak, extra };
 }

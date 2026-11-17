@@ -4,72 +4,189 @@ import Phaser from 'phaser';
 // Ключи текстур совпадают с именами файлов в манифесте spritecook-assets.json.
 
 const SFX = [
-    'pickaxe_1', 'pickaxe_2', 'crit_1', 'crit_2',
-    'break_1', 'break_2', 'mutation_1', 'mutation_2',
-    'purchase_1', 'purchase_2', 'tier_1', 'tier_2', 'prestige_1', 'prestige_2',
-    'boss_hit_1', 'boss_hit_2', 'boss_hit_3'
+    'pickaxe_1',
+    'pickaxe_2',
+    'crit_1',
+    'crit_2',
+    'break_1',
+    'break_2',
+    'mutation_1',
+    'mutation_2',
+    'purchase_1',
+    'purchase_2',
+    'tier_1',
+    'tier_2',
+    'prestige_1',
+    'prestige_2',
+    'boss_hit_1',
+    'boss_hit_2',
+    'boss_hit_3'
 ];
 
 const IMAGES = [
     // Блоки: уголь (старый каменный) + 11 тиров, каждый — 4 стадии повреждения
-    'block_stage_1_intact', 'block_stage_2_cracked', 'block_stage_3_heavy_cracks', 'block_stage_4_shattered',
-    'copper_stage_1', 'copper_stage_2', 'copper_stage_3', 'copper_stage_4',
-    'iron_stage_1', 'iron_stage_2', 'iron_stage_3', 'iron_stage_4',
-    'silver_stage_1', 'silver_stage_2', 'silver_stage_3', 'silver_stage_4',
-    'gold_stage_1', 'gold_stage_2', 'gold_stage_3', 'gold_stage_4',
-    'amethyst_stage_1', 'amethyst_stage_2', 'amethyst_stage_3', 'amethyst_stage_4',
-    'emerald_stage_1', 'emerald_stage_2', 'emerald_stage_3', 'emerald_stage_4',
-    'ruby_stage_1', 'ruby_stage_2', 'ruby_stage_3', 'ruby_stage_4',
-    'sapphire_stage_1', 'sapphire_stage_2', 'sapphire_stage_3', 'sapphire_stage_4',
-    'platinum_stage_1', 'platinum_stage_2', 'platinum_stage_3', 'platinum_stage_4',
-    'uranium_stage_1', 'uranium_stage_2', 'uranium_stage_3', 'uranium_stage_4',
-    'diamond_stage_1', 'diamond_stage_2', 'diamond_stage_3', 'diamond_stage_4',
+    'block_stage_1_intact',
+    'block_stage_2_cracked',
+    'block_stage_3_heavy_cracks',
+    'block_stage_4_shattered',
+    'copper_stage_1',
+    'copper_stage_2',
+    'copper_stage_3',
+    'copper_stage_4',
+    'iron_stage_1',
+    'iron_stage_2',
+    'iron_stage_3',
+    'iron_stage_4',
+    'silver_stage_1',
+    'silver_stage_2',
+    'silver_stage_3',
+    'silver_stage_4',
+    'gold_stage_1',
+    'gold_stage_2',
+    'gold_stage_3',
+    'gold_stage_4',
+    'amethyst_stage_1',
+    'amethyst_stage_2',
+    'amethyst_stage_3',
+    'amethyst_stage_4',
+    'emerald_stage_1',
+    'emerald_stage_2',
+    'emerald_stage_3',
+    'emerald_stage_4',
+    'ruby_stage_1',
+    'ruby_stage_2',
+    'ruby_stage_3',
+    'ruby_stage_4',
+    'sapphire_stage_1',
+    'sapphire_stage_2',
+    'sapphire_stage_3',
+    'sapphire_stage_4',
+    'platinum_stage_1',
+    'platinum_stage_2',
+    'platinum_stage_3',
+    'platinum_stage_4',
+    'uranium_stage_1',
+    'uranium_stage_2',
+    'uranium_stage_3',
+    'uranium_stage_4',
+    'diamond_stage_1',
+    'diamond_stage_2',
+    'diamond_stage_3',
+    'diamond_stage_4',
     'ore_particle_debris',
 
     // Иконки руд (частицы + HUD)
-    'coal_nugget', 'copper_nugget', 'iron_nugget', 'silver_nugget', 'gold_nugget',
-    'amethyst_nugget', 'emerald_nugget', 'ruby_nugget', 'sapphire_nugget',
-    'platinum_nugget', 'uranium_nugget', 'diamond_nugget',
+    'coal_nugget',
+    'copper_nugget',
+    'iron_nugget',
+    'silver_nugget',
+    'gold_nugget',
+    'amethyst_nugget',
+    'emerald_nugget',
+    'ruby_nugget',
+    'sapphire_nugget',
+    'platinum_nugget',
+    'uranium_nugget',
+    'diamond_nugget',
 
     // Иконки улучшений
-    'pickaxe_wooden', 'pickaxe_stone', 'pickaxe_iron', 'pickaxe_diamond',
-    'icon_hammer', 'dynamite_bundle', 'icon_vein', 'hand_cursor',
-    'miner_portrait', 'icon_drill', 'icon_excavator', 'icon_factory', 'gear_icon',
-    'icon_robot_arm', 'icon_lantern', 'icon_warehouse',
-    'icon_hydraulic', 'icon_plasma', 'icon_disintegrator',
-    'icon_quarry', 'icon_megafactory', 'icon_orbital', 'icon_quantumlab',
-    'icon_wormhole', 'icon_singularity', 'icon_dyson', 'icon_aicore', 'icon_helmet',
-    'icon_focuslens', 'icon_magnet',
+    'pickaxe_wooden',
+    'pickaxe_stone',
+    'pickaxe_iron',
+    'pickaxe_diamond',
+    'icon_hammer',
+    'dynamite_bundle',
+    'icon_vein',
+    'hand_cursor',
+    'miner_portrait',
+    'icon_drill',
+    'icon_excavator',
+    'icon_factory',
+    'gear_icon',
+    'icon_robot_arm',
+    'icon_lantern',
+    'icon_warehouse',
+    'icon_hydraulic',
+    'icon_plasma',
+    'icon_disintegrator',
+    'icon_quarry',
+    'icon_megafactory',
+    'icon_orbital',
+    'icon_quantumlab',
+    'icon_wormhole',
+    'icon_singularity',
+    'icon_dyson',
+    'icon_aicore',
+    'icon_helmet',
+    'icon_focuslens',
+    'icon_magnet',
 
     // Кнопки (чистые, подписи рендерим движком)
-    'buy_button_normal', 'buy_button_hover', 'buy_button_pressed', 'buy_button_disabled_gray',
-    'close_button_square', 'settings_button_wide',
+    'buy_button_normal',
+    'buy_button_hover',
+    'buy_button_pressed',
+    'buy_button_disabled_gray',
+    'close_button_square',
+    'settings_button_wide',
 
     // Панели
-    'hud_bar_background', 'upgrades_panel_wood', 'modal_panel_metal',
-    'upgrade_row_card_1', 'icon_slot_frame',
+    'hud_bar_background',
+    'upgrades_panel_wood',
+    'modal_panel_metal',
+    'upgrade_row_card_1',
+    'icon_slot_frame',
 
     // Фон карты-«настолки» (внутренняя зона панели карты)
     'map_board',
 
     // Фоны локаций (пиксель-арт конверсия voxel-рендеров ComfyUI, по одному на тир)
-    'bg_01_coal', 'bg_02_copper', 'bg_03_iron', 'bg_04_silver',
-    'bg_05_gold', 'bg_06_amethyst', 'bg_07_emerald', 'bg_08_ruby',
-    'bg_09_sapphire', 'bg_10_platinum', 'bg_11_uranium', 'bg_12_diamond',
+    'bg_01_coal',
+    'bg_02_copper',
+    'bg_03_iron',
+    'bg_04_silver',
+    'bg_05_gold',
+    'bg_06_amethyst',
+    'bg_07_emerald',
+    'bg_08_ruby',
+    'bg_09_sapphire',
+    'bg_10_platinum',
+    'bg_11_uranium',
+    'bg_12_diamond',
 
     // Боссы особых уровней (спрайты боя на месте блока)
-    'boss_copper', 'boss_silver', 'boss_amethyst', 'boss_ruby', 'boss_platinum', 'boss_diamond',
+    'boss_copper',
+    'boss_silver',
+    'boss_amethyst',
+    'boss_ruby',
+    'boss_platinum',
+    'boss_diamond',
 
     // Компоненты крафта (дроп с боссов)
-    'comp_scrap', 'comp_crystal', 'comp_core', 'comp_relic', 'comp_essence',
+    'comp_scrap',
+    'comp_crystal',
+    'comp_core',
+    'comp_relic',
+    'comp_essence',
 
     // Активируемые предметы
-    'item_bomb', 'item_belt', 'item_coffee', 'item_ration', 'item_stim',
-    'item_rig', 'item_oil',
+    'item_bomb',
+    'item_belt',
+    'item_coffee',
+    'item_ration',
+    'item_stim',
+    'item_rig',
+    'item_oil',
 
     // Артефакты (коллекция)
-    'art_miner_totem', 'art_lantern_old', 'art_magnet_ring', 'art_lucky_charm', 'art_glove',
-    'art_deep_compass', 'art_hardpick', 'art_core_battery', 'art_ancient_pick'
+    'art_miner_totem',
+    'art_lantern_old',
+    'art_magnet_ring',
+    'art_lucky_charm',
+    'art_glove',
+    'art_deep_compass',
+    'art_hardpick',
+    'art_core_battery',
+    'art_ancient_pick'
 ];
 
 export class BootScene extends Phaser.Scene {
@@ -85,16 +202,21 @@ export class BootScene extends Phaser.Scene {
         if (fill) {
             this.load.on('progress', (v) => {
                 fill.style.width = `${Math.round(v * 100)}%`;
-                if (pctLabel) pctLabel.textContent = `загрузка… ${Math.round(v * 100)}%`;
+                if (pctLabel) {
+                    pctLabel.textContent = `загрузка… ${Math.round(v * 100)}%`;
+                }
             });
         }
+
         for (const key of IMAGES) {
             this.load.image(key, `assets/ui/${key}.png`);
         }
+
         for (const key of SFX) {
             // Два формата: Safari/iOS не декодирует Ogg Vorbis — Phaser выберет первый playable
             this.load.audio(key, [`assets/audio/${key}.ogg`, `assets/audio/${key}.mp3`]);
         }
+
         // Фоновая музыка — бесшовный луп, те же два формата
         this.load.audio('bgm', ['assets/audio/bgm.ogg', 'assets/audio/bgm.mp3']);
         // Босс-тема (луп на время боя, ключ без _N — играется напрямую, не через playSfx)
@@ -105,4 +227,3 @@ export class BootScene extends Phaser.Scene {
         this.scene.start('GameScene');
     }
 }
-

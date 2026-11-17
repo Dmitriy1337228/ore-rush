@@ -6,6 +6,8 @@
 
 ## Быстрый старт
 
+Индекс скриптов и стабильные npm-алиасы — `scripts/README.md` (гард `npm run scripts:check`).
+
 ```
 npm run ui:check:quick                 # 3 вьюпорта x 16 состояний (~1 мин)
 npm run ui:check                       # полная матрица: 9 вьюпортов x 16 состояний (~5 мин)
@@ -87,13 +89,15 @@ Replay открывает те же вьюпорт, сохранение и эк
 
 ## Связь с другими проверками
 
-`scripts/ui-review.mjs` + `npm run test:ui` — **golden-регрессия** (фиксирует текущую картинку;
+`scripts/gates/ui-review.mjs` + `npm run test:ui` — **golden-регрессия** (фиксирует текущую картинку;
 не знает, что «правильно»). `ui:check` — **нормативная** проверка (знает правила). Нужны обе.
+Перед сдачей любой UI-правки — ещё и стиль-гейты `npm run format:check` и `npm run lint`
+(Prettier/ESLint; см. `AGENTS.md`, раздел «Стиль кода»).
 Список дальнейших улучшений — `docs/UI_LAYOUT_TODO.md`.
 
-## DOM-слой (`src/dom/`, пилот мастерской)
+## DOM-слой (`src/ui/dom/`, пилот мастерской)
 
-Мастерская рисуется обычным DOM (`src/dom/`) поверх канваса и включена по умолчанию
+Мастерская рисуется обычным DOM (`src/ui/dom/`) поверх канваса и включена по умолчанию
 в проде и dev; Phaser-экран удалён после пилота (G3 = go). Для неё действуют свои гейты:
 
 ```
@@ -109,8 +113,8 @@ npm run test:dom-golden                 # tolerant-diff эталона DOM-па�
 входят в проверку. Размеченные PNG — `shots/ui-check/<viewport>__craft-dom.png`,
 JSON-отчёт — `shots/ui-check-dom/report.json`; код выхода ≠ 0 при новых ошибках.
 
-Размеры DOM — только токены: `npm run dom:tokens` генерирует `src/dom/tokens.css` из
-`src/ui/theme.js` (+ `DOM_EXTRA` в `scripts/gen-dom-tokens.mjs`), проверка дрейфа —
+Размеры DOM — только токены: `npm run dom:tokens` генерирует `src/ui/dom/tokens.css` из
+`src/ui/shared/theme.js` (+ `DOM_EXTRA` в `scripts/gates/gen-dom-tokens.mjs`), проверка дрейфа —
 `npm run dom:tokens -- --check`. Ручные правки `tokens.css` запрещены.
 
 `ui:check` (Phaser) для состояния `craft-dom` делает только скриншот: display-list аудит

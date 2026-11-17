@@ -11,37 +11,51 @@ export const YandexSDK = {
         try {
             if (typeof window === 'undefined' || !window.YaGames) {
                 console.info('[YandexSDK] SDK не обнаружен — работа в standalone-режиме (localStorage).');
+
                 return false;
             }
+
             this.sdk = await window.YaGames.init();
             this.player = await this.sdk.getPlayer({ scopes: false });
             this.available = true;
             console.info('[YandexSDK] Инициализация выполнена.');
+
             return true;
         } catch (err) {
             console.warn('[YandexSDK] Инициализация не удалась:', err);
+
             return false;
         }
     },
 
     async save(data) {
-        if (!this.available || !this.player) return false;
+        if (!this.available || !this.player) {
+            return false;
+        }
+
         try {
             await this.player.setData({ oreRushSave: data });
+
             return true;
         } catch (err) {
             console.warn('[YandexSDK] save не удался:', err);
+
             return false;
         }
     },
 
     async load() {
-        if (!this.available || !this.player) return null;
+        if (!this.available || !this.player) {
+            return null;
+        }
+
         try {
             const data = await this.player.getData(['oreRushSave']);
+
             return data && data.oreRushSave ? data.oreRushSave : null;
         } catch (err) {
             console.warn('[YandexSDK] load не удался:', err);
+
             return null;
         }
     },
@@ -63,29 +77,45 @@ export const YandexSDK = {
     // вызывается — без проброса onError ждущий код зависнет навсегда.
     showFullscreenAdv(callbacks = {}) {
         if (!this.available || !this.sdk || !this.sdk.adv) {
-            if (callbacks.onClose) callbacks.onClose(false);
+            if (callbacks.onClose) {
+                callbacks.onClose(false);
+            }
+
             return;
         }
+
         // События для DOM-слоя (D3/4.4): на время рекламы панель скрывается,
         // после — восстанавливается; #ui-root пересчитывается по канвасу.
         const emit = (event) => {
             try {
-                if (typeof window !== 'undefined' && window.__GAME) window.__GAME.events.emit(event);
-            } catch (e) { /* события — не критичный путь */ }
-        };
-        this.sdk.adv.showFullscreenAdv({ callbacks: {
-            onOpen: () => {
-                emit('yandex-ad-open');
-                if (callbacks.onOpen) callbacks.onOpen();
-            },
-            onClose: (wasShown) => {
-                emit('yandex-ad-close');
-                if (callbacks.onClose) callbacks.onClose(wasShown);
-            },
-            onError: (err) => {
-                emit('yandex-ad-close');
-                if (callbacks.onError) callbacks.onError(err);
+                if (typeof window !== 'undefined' && window.__GAME) {
+                    window.__GAME.events.emit(event);
+                }
+            } catch (e) {
+                /* события — не критичный путь */
             }
-        } });
+        };
+        this.sdk.adv.showFullscreenAdv({
+            callbacks: {
+                onOpen: () => {
+                    emit('yandex-ad-open');
+                    if (callbacks.onOpen) {
+                        callbacks.onOpen();
+                    }
+                },
+                onClose: (wasShown) => {
+                    emit('yandex-ad-close');
+                    if (callbacks.onClose) {
+                        callbacks.onClose(wasShown);
+                    }
+                },
+                onError: (err) => {
+                    emit('yandex-ad-close');
+                    if (callbacks.onError) {
+                        callbacks.onError(err);
+                    }
+                }
+            }
+        });
     }
 };

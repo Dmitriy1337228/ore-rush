@@ -22,19 +22,30 @@ export function getOfflineCapSeconds() {
 // Возвращает {seconds, reward} или null (мало времени / нет пассивного дохода)
 export function computeOfflineReward(lastExitMs, nowMs = Date.now()) {
     const diffSec = (nowMs - lastExitMs) / SECOND_MS;
-    if (!isFinite(diffSec) || diffSec < OFFLINE_MIN_SECONDS) return null;
+    if (!isFinite(diffSec) || diffSec < OFFLINE_MIN_SECONDS) {
+        return null;
+    }
+
     const gps = getOrePerSecond();
-    if (gps <= 0) return null;
+    if (gps <= 0) {
+        return null;
+    }
+
     const counted = Math.min(diffSec, getOfflineCapSeconds());
     const reward = counted * gps * getOfflineRate();
-    if (reward <= 0) return null;
+    if (reward <= 0) {
+        return null;
+    }
+
     return { seconds: diffSec, counted, reward };
 }
 
 export function saveLastExit(nowMs = Date.now()) {
     try {
         localStorage.setItem(LAST_EXIT_KEY, String(nowMs));
-    } catch (err) { /* приватный режим и т.п. */ }
+    } catch (err) {
+        /* приватный режим и т.п. */
+    }
     YandexSDKStub.player.setStats({ lastExit: nowMs });
 }
 
@@ -45,9 +56,14 @@ function readStoredExit(key) {
         const raw = localStorage.getItem(key);
         if (raw) {
             const n = Number(raw);
-            if (Number.isFinite(n) && n > 0) return n;
+            if (Number.isFinite(n) && n > 0) {
+                return n;
+            }
         }
-    } catch (err) { /* ignore */ }
+    } catch (err) {
+        /* ignore */
+    }
+
     return null;
 }
 
@@ -57,7 +73,12 @@ export async function readLastExit() {
     // обрывался бы loadSaveThenStart (чёрный экран) или терялось начисление
     try {
         const stats = await YandexSDKStub.player.getStats(['lastExit']);
-        if (typeof stats?.lastExit === 'number' && stats.lastExit > 0) return stats.lastExit;
-    } catch (err) { /* идём к фолбэку */ }
+        if (typeof stats?.lastExit === 'number' && stats.lastExit > 0) {
+            return stats.lastExit;
+        }
+    } catch (err) {
+        /* идём к фолбэку */
+    }
+
     return readStoredExit(LAST_EXIT_KEY) ?? readStoredExit(LEGACY_LAST_EXIT_KEY);
 }

@@ -1,0 +1,86 @@
+/*
+ * СГЕНЕРИРОВАННЫЙ ФАЙЛ — не править руками.
+ * Источник: src/ui/shared/theme.js + DOM_EXTRA в scripts/gates/gen-dom-tokens.mjs.
+ * Перегенерация: npm run dom:tokens. Проверка дрейфа (CI/DoD): npm run dom:tokens -- --check
+ */
+:root {
+    /* Шрифт UI (Phaser: FONT в src/ui/phaser/uiKit.js) */
+    --font-ui: "Monocraft", "Inter", "Consolas", monospace;
+
+    /* Цвета текста (TEXT) */
+    --color-white: #ffffff;
+    --color-gold: #ffd75e;
+    --color-cream: #ffe9b0;
+    --color-muted: #b0b0b0;
+    --color-soft: #c8c8c8;
+    --color-dim: #9a9a9a;
+    --color-pale: #d8d8d8;
+    --color-bright: #e8e8e8;
+    --color-good: #9ad29a;
+    --color-income: #8fd18f;
+    --color-bad: #e09090;
+    --color-warn: #ff9d9d;
+
+    /* Отступы (SPACE), CSS px */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 24px;
+    --space-xxl: 32px;
+    --space-nudge: 2px;
+
+    /* Кегли (FONT_SIZE), CSS px */
+    --font-caption-sm: 11px;
+    --font-caption: 12px;
+    --font-caption-lg: 13px;
+    --font-label: 14px;
+    --font-body: 15px;
+    --font-stat: 16px;
+    --font-button: 17px;
+    --font-button-lg: 18px;
+    --font-accent: 20px;
+    --font-item-name: 21px;
+    --font-card-title: 22px;
+    --font-section: 24px;
+    --font-title: 26px;
+    --font-display: 30px;
+
+    /* Пороги аудита (MIN) */
+    --font-min-css-error: 8px;
+    --font-min-css-warn: 10px;
+    --touch-min: 40px;
+    --touch-min-desktop: 24px;
+    --pad-min-button: 4px;
+    --pad-min-panel: 6px;
+
+    /* Кадры 9-slice текстур (CARD/HIT), координаты исходника */
+    --card-frame: 12px;
+    --card-pad: 24px;
+    --hit-button-w: 267;
+    --hit-button-h: 133;
+    --hit-close-w: 196;
+    --hit-close-h: 191;
+    --hit-card-w: 835;
+    --hit-card-h: 218;
+
+    /* Геометрия DOM-слоя (нет в Phaser-теме; обоснование — DOM_EXTRA в генераторе) */
+    --dom-panel-w: 640px;
+    --dom-panel-h: 660px;
+    --dom-border-panel: 24px;
+    --dom-border-card: 12px;
+    --dom-border-btn: 10px;
+    --dom-border-slot: 10px;
+    --dom-row-min-h: 96px;
+    --dom-art-min-h: 96px;
+    --dom-row-gap: 6px;
+    --dom-slot-size: 64px;
+    --dom-icon-size: 40px;
+    --dom-chip-icon: 22px;
+    --dom-pair-icon: 16px;
+    --dom-art-cols: 2;
+    --dom-z: 20;
+    --dom-dim: 0.6;
+    --dom-line: 1.35;
+    --dom-section-gap: 16px;
+}

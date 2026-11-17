@@ -1,4 +1,4 @@
-// CHARACTERIZATION-ТЕСТЫ: scripts/balance-sim.mjs — CLI как точка входа.
+// CHARACTERIZATION-ТЕСТЫ: scripts/data/balance-sim.mjs — CLI как точка входа.
 // Прогон детерминирован (нет Math.random/Date-ветвлений на пути симуляции:
 // расчётные матожидания кликов, resetGame на старте каждого режима).
 // Golden-файлы перегенерируются ТОЛЬКО при намеренном изменении поведения.
@@ -14,8 +14,10 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(HERE, '..', '..');
 
 function runSim(args) {
-    return execFileSync(process.execPath, ['scripts/balance-sim.mjs', ...args], {
-        cwd: ROOT, encoding: 'utf8', timeout: 120000
+    return execFileSync(process.execPath, ['scripts/data/balance-sim.mjs', ...args], {
+        cwd: ROOT,
+        encoding: 'utf8',
+        timeout: 120000
     });
 }
 
@@ -23,7 +25,7 @@ function golden(name) {
     return normalizeText(fs.readFileSync(path.join(HERE, 'golden', name), 'utf8'));
 }
 
-describe('scripts/balance-sim.mjs: CLI golden', () => {
+describe('scripts/data/balance-sim.mjs: CLI golden', () => {
     it('дефолтные аргументы (cps 3.5, 60ч): stdout как в golden', () => {
         const out = normalizeText(runSim([]));
         assert.equal(out, golden('balance-sim_default.out'));

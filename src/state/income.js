@@ -5,11 +5,23 @@ import { gameState } from './gameState.js';
 import { TIER_INCOME_MULT } from './catalog/tiers.js';
 import { DAILY_CRIT_BONUS } from './catalog/daily.js';
 import {
-    CLICK_MULT_STEPS, PICKAXE_BASE_DAMAGE, PASSIVE_ORE_STEPS, PASSIVE_MULT_STEPS,
-    AUTO_CLICKS_PER_ROBOARM, SYNERGY_PER_LEVEL, MANUAL_CPS_ASSUME,
-    CRIT_BASE_CHANCE, CRIT_CHANCE_PER_DYNAMITE, CRIT_CHANCE_CAP, CRIT_CHANCE_CAP_WITH_DAILY,
-    CRIT_BASE_MULT, CRIT_MULT_PER_FOCUSLENS,
-    LUCKY_CHANCE_PER_LEVEL, LUCKY_CHANCE_CAP, VEIN_BASE_MULT, VEIN_MULT_PER_MAGNET,
+    CLICK_MULT_STEPS,
+    PICKAXE_BASE_DAMAGE,
+    PASSIVE_ORE_STEPS,
+    PASSIVE_MULT_STEPS,
+    AUTO_CLICKS_PER_ROBOARM,
+    SYNERGY_PER_LEVEL,
+    MANUAL_CPS_ASSUME,
+    CRIT_BASE_CHANCE,
+    CRIT_CHANCE_PER_DYNAMITE,
+    CRIT_CHANCE_CAP,
+    CRIT_CHANCE_CAP_WITH_DAILY,
+    CRIT_BASE_MULT,
+    CRIT_MULT_PER_FOCUSLENS,
+    LUCKY_CHANCE_PER_LEVEL,
+    LUCKY_CHANCE_CAP,
+    VEIN_BASE_MULT,
+    VEIN_MULT_PER_MAGNET,
     STAR_BONUS
 } from './catalog/balance.js';
 import { getUpgradeLevel } from './upgrades.js';
@@ -42,15 +54,29 @@ export function getPrestigeMult() {
 export function getClickDamage() {
     // в единицах текущего тира
     const base = PICKAXE_BASE_DAMAGE + getUpgradeLevel('pickaxe');
+
     // артефактный множитель клика — как престиж: входит и в якорь (симметрия)
-    return base * getClickChainMult() * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult() * getArtifactBonus('clickMult');
+    return (
+        base *
+        getClickChainMult() *
+        TIER_INCOME_MULT(gameState.tier) *
+        getPrestigeMult() *
+        getArtifactBonus('clickMult')
+    );
 }
 
 export function getOrePerSecond() {
     // дневной и предметный бафы («Ускорение»/пояс/кофе) применяются к фактической
     // добыче; в якорь цены спуска (getExpectedClickGain) они сознательно не входят
-    return getPassiveFlatOre() * getPassiveTechMult() * TIER_INCOME_MULT(gameState.tier) * getPrestigeMult() * getDailyMult()
-        * getArtifactBonus('passiveMult') * getItemBuffMult();
+    return (
+        getPassiveFlatOre() *
+        getPassiveTechMult() *
+        TIER_INCOME_MULT(gameState.tier) *
+        getPrestigeMult() *
+        getDailyMult() *
+        getArtifactBonus('passiveMult') *
+        getItemBuffMult()
+    );
 }
 
 // Робо-рука: +0.5 авто-кликов в секунду за уровень; артефакт добавляет сверху.
@@ -74,7 +100,10 @@ export function luckyChanceForLevel(luckyLevel) {
 export function getCritChance() {
     const base = critChanceForLevel(getUpgradeLevel('dynamite'), getArtifactBonus('critAdd'));
     // «Критический импульс» (дневная награда): потолок 95% — всегда остаётся шанс промаха по шансу
-    if (isDailyCritActive()) return Math.min(base + DAILY_CRIT_BONUS, CRIT_CHANCE_CAP_WITH_DAILY);
+    if (isDailyCritActive()) {
+        return Math.min(base + DAILY_CRIT_BONUS, CRIT_CHANCE_CAP_WITH_DAILY);
+    }
+
     return base;
 }
 

@@ -21,13 +21,20 @@ function limitByMaxLevel(def, start, want) {
 
 export function getUpgradeCost(id) {
     const def = getUpgradeDef(id);
+
     return costAtLevel(def, getUpgradeLevel(id), TIER_COST_MULT(gameState.tier));
 }
 
 export function isUpgradeAvailable(id) {
     const def = getUpgradeDef(id);
-    if (def.tier !== undefined && gameState.tier < def.tier) return false;
-    if (!def.requires) return true;
+    if (def.tier !== undefined && gameState.tier < def.tier) {
+        return false;
+    }
+
+    if (!def.requires) {
+        return true;
+    }
+
     return getUpgradeLevel(def.requires.id) >= def.requires.level;
 }
 
@@ -37,6 +44,7 @@ export function canAfford(id) {
 
 export function isMaxed(id) {
     const def = getUpgradeDef(id);
+
     return def.maxLevel !== null && getUpgradeLevel(id) >= def.maxLevel;
 }
 
@@ -45,9 +53,13 @@ export function canBuy(id) {
 }
 
 export function buyUpgrade(id) {
-    if (!canBuy(id)) return false;
+    if (!canBuy(id)) {
+        return false;
+    }
+
     gameState.ore -= getUpgradeCost(id);
     gameState.levels[id] = getUpgradeLevel(id) + 1;
+
     return true;
 }
 
@@ -64,18 +76,31 @@ function upgradeChainRoot(id) {
         cur = def.requires.id;
         def = getUpgradeDef(cur);
     }
+
     return cur;
 }
 
 export function isUpgradeVisible(id) {
-    if (isUpgradeAvailable(id)) return true;
-    if (getUpgradeLevel(id) > 0) return true;
+    if (isUpgradeAvailable(id)) {
+        return true;
+    }
+
+    if (getUpgradeLevel(id) > 0) {
+        return true;
+    }
+
     // Первое недоступное в своей цепочке — «следующее», показываем как анонс
     const root = upgradeChainRoot(id);
     for (const u of UPGRADES) {
-        if (upgradeChainRoot(u.id) !== root) continue;
-        if (!isUpgradeAvailable(u.id)) return u.id === id;
+        if (upgradeChainRoot(u.id) !== root) {
+            continue;
+        }
+
+        if (!isUpgradeAvailable(u.id)) {
+            return u.id === id;
+        }
     }
+
     return false;
 }
 
@@ -101,6 +126,7 @@ export function getBulkCost(id, want) {
     for (let i = 0; i < n; i++) {
         total += costAtLevel(def, start + i, tier);
     }
+
     return { n, total };
 }
 
@@ -110,29 +136,44 @@ export function getAffordableBulk(id, want) {
     const start = getUpgradeLevel(id);
     const cap = limitByMaxLevel(def, start, want);
     let budget = gameState.ore;
-    let n = 0, total = 0;
+    let n = 0,
+        total = 0;
     while (n < cap) {
         const cost = costAtLevel(def, start + n, tier);
         // Infinity-бюджет (битый сейв, ore: 1e999 -> Infinity) или Infinity-цена
         // (переполнение pow) ломают сравнения и вешают цикл навсегда — выходим
-        if (!isFinite(budget) || !isFinite(cost) || budget < cost) break;
+        if (!isFinite(budget) || !isFinite(cost) || budget < cost) {
+            break;
+        }
+
         budget -= cost;
         total += cost;
         n++;
     }
+
     return { n, total };
 }
 
 export function buyBulk(id, want) {
-    if (!isUpgradeAvailable(id) || isMaxed(id)) return false;
+    if (!isUpgradeAvailable(id) || isMaxed(id)) {
+        return false;
+    }
+
     const def = getUpgradeDef(id);
     const remaining = def.maxLevel === null ? Infinity : def.maxLevel - getUpgradeLevel(id);
     const isMax = want === BULK_MAX;
     const r = getAffordableBulk(id, isMax ? Infinity : want);
-    if (r.n <= 0) return false;
+    if (r.n <= 0) {
+        return false;
+    }
+
     // Строгий пакет: нужно купить ровно min(want, остаток до лимита)
-    if (!isMax && r.n < Math.min(want, remaining)) return false;
+    if (!isMax && r.n < Math.min(want, remaining)) {
+        return false;
+    }
+
     gameState.ore -= r.total;
     gameState.levels[id] = getUpgradeLevel(id) + r.n;
+
     return true;
 }

@@ -1,6 +1,6 @@
 ---
 name: ui-layout-check
-description: "Use when changing or reviewing any UI layout in this game: HUD, panels, rows, modals, map, craft, boss overlay, buttons, text sizes, adaptive/portrait layout, DOM-слой (src/dom). Runs the measurable layout audit (npm run ui:check / ui:check:dom), reads annotated screenshots and the report. Triggers on: вёрстка, layout, наезжает, перекрывается, отступы, кнопки, адаптив, портрет, ui:check, DOM-слой, src/dom."
+description: "Use when changing or reviewing any UI layout in this game: HUD, panels, rows, modals, map, craft, boss overlay, buttons, text sizes, adaptive/portrait layout, DOM-слой (src/ui/dom). Runs the measurable layout audit (npm run ui:check / ui:check:dom), reads annotated screenshots and the report. Triggers on: вёрстка, layout, наезжает, перекрывается, отступы, кнопки, адаптив, портрет, ui:check, DOM-слой, src/ui/dom."
 ---
 
 # UI layout check
@@ -15,7 +15,8 @@ description: "Use when changing or reviewing any UI layout in this game: HUD, pa
    Нужно: **0 новых ошибок** (error) и 0 новых предупреждений (warn) в затронутом экране.
 4. Открыть размеченные PNG из `shots/ui-check/` (имя из отчёта) и убедиться глазами, что рамки
    соответствуют реальной проблеме / проблем не осталось.
-5. Перед сдачей — полная матрица `npm run ui:check` и `npm run test:ui` (golden-регрессия) и `npm test`.
+5. Перед сдачей — полная матрица `npm run ui:check` и `npm run test:ui` (golden-регрессия), `npm test`,
+   `npm run format:check` и `npm run lint` (стиль-гейты; см. `AGENTS.md`, раздел «Стиль кода»).
    Если картинка изменилась осознанно — golden обновляет только человек/тимлид с явным «ок».
 
 ## Правила работы
@@ -34,18 +35,19 @@ description: "Use when changing or reviewing any UI layout in this game: HUD, pa
 Правила: OVERLAP, OVERFLOW, TEXT-COVERED, OFFSCREEN, MIN-FONT, ROW-NAME, PADDING, TOUCH-TARGET,
 BUTTON-GAP, MISALIGNED, EDGE (таблица в `docs/UI_LAYOUT.md`).
 
-## DOM-слой (`src/dom`, экран мастерской — по умолчанию в проде и dev)
+## DOM-слой (`src/ui/dom`, экран мастерской — по умолчанию в проде и dev)
 
-С пилота DOM (G3 = go) мастерская живёт в `src/dom/*`, Phaser-экран удалён. Для правок действует дополнительный цикл:
+С пилота DOM (G3 = go) мастерская живёт в `src/ui/dom/*`, Phaser-экран удалён. Для правок действует дополнительный цикл:
 
-1. Размеры — **только токены**: `npm run dom:tokens` (генерация из `src/ui/theme.js`),
+1. Размеры — **только токены**: `npm run dom:tokens` (генерация из `src/ui/shared/theme.js`),
    `npm run dom:tokens -- --check` (дрейф), `npm run ui:tokens:css` (голые px/rem/em вне
    `tokens.css` запрещены; 1px — только с комментарием-причиной).
 2. `npm run ui:check:dom` — 7 вьюпортов × 26 рядов, `getBoundingClientRect`, пороги `UI_RULES`;
    скриншоты `shots/ui-check/<vp>__craft-dom.png`, отчёт `shots/ui-check-dom/report.json`.
 3. `npm run test:dom-golden` — tolerant-diff эталона DOM-панели (порог 0.5%, константы в скрипте);
    обновление эталона — только с явным «ок».
-4. Полный прогон UI = `npm run ui:check` **и** `npm run ui:check:dom`; плюс `npm test`, `test:ui`.
+4. Полный прогон UI = `npm run ui:check` **и** `npm run ui:check:dom`; плюс `npm test`, `test:ui`,
+   `npm run format:check`, `npm run lint`.
 5. Бизнес-правила — только в `src/state.js`, тексты ошибок — `src/state/craftMessages.js`;
-   `src/dom/*` не пишет в `gameState`, только читает через `bridge.js`.
+   `src/ui/dom/*` не пишет в `gameState`, только читает через `bridge.js`.
 6. Фикстуры/стенды (`fixtures*.js`, `lab.js`, `build-dom-*.mjs`) — не прод-код и вне метрики LOC.

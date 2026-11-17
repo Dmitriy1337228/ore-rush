@@ -17,22 +17,32 @@ function portReady() {
             resolve(res.statusCode >= 200 && res.statusCode < 500);
         });
         req.on('error', () => resolve(false));
-        req.setTimeout(1000, () => { req.destroy(); resolve(false); });
+        req.setTimeout(1000, () => {
+            req.destroy();
+            resolve(false);
+        });
     });
 }
 
 async function waitForServer(timeoutMs) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
-        if (await portReady()) return true;
+        if (await portReady()) {
+            return true;
+        }
+
         await new Promise((r) => setTimeout(r, 300));
     }
+
     return false;
 }
 
 // Возвращает { base, spawned, pid }. Синхронный release по pid через taskkill /T.
 async function ensureDevServer(timeoutMs = 20000) {
-    if (await portReady()) return { base: BASE, spawned: false, pid: 0 };
+    if (await portReady()) {
+        return { base: BASE, spawned: false, pid: 0 };
+    }
+
     const child = spawn('cmd', ['/c', 'npx', 'vite', '--port', String(PORT), '--strictPort'], {
         cwd: PROJECT_ROOT,
         stdio: 'ignore',
@@ -43,18 +53,28 @@ async function ensureDevServer(timeoutMs = 20000) {
     child.unref();
     const ok = await waitForServer(timeoutMs);
     if (!ok) {
-        try { execSync(`taskkill /pid ${child.pid} /T /F`, { stdio: 'ignore' }); } catch (e) { /* уже мёртв */ }
+        try {
+            execSync(`taskkill /pid ${child.pid} /T /F`, { stdio: 'ignore' });
+        } catch (e) {
+            /* уже мёртв */
+        }
         throw new Error(`dev-сервер не поднялся за ${timeoutMs} мс`);
     }
+
     return { base: BASE, spawned: true, pid: child.pid };
 }
 
 // Синхронно (пригоден для process.on('exit')) гасит ТОЛЬКО свой сервер.
 function releaseDevServer(server) {
-    if (!server || !server.spawned || !server.pid) return;
+    if (!server || !server.spawned || !server.pid) {
+        return;
+    }
+
     try {
         execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
-    } catch (e) { /* процесс уже завершён */ }
+    } catch (e) {
+        /* процесс уже завершён */
+    }
 }
 
 module.exports = { ensureDevServer, releaseDevServer, BASE, PORT };

@@ -14,7 +14,10 @@ export function canPrestige() {
 
 export function doPrestige() {
     const gain = getStarsGain();
-    if (gain < 1) return 0;
+    if (gain < 1) {
+        return 0;
+    }
+
     gameState.stars += gain;
     gameState.ore = 0;
     gameState.tier = 0;
@@ -23,5 +26,6 @@ export function doPrestige() {
     gameState.levels = createInitialState().levels;
     // мета-прогресс переживает престиж; боссы бьются заново (артефакты не дублируются)
     gameState.bossesDefeated = {};
+
     return gain;
 }

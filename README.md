@@ -28,6 +28,6 @@ npm run dev   # dev-сервер на http://localhost:5174
 npm run build # прод-сборка в dist/
 ```
 
-В репозитории также лежат автопроверки: `node scripts/verify-economy.mjs` и соседние `verify-*` гоняют экономику и UI через Playwright, `scripts/ui-review.mjs` снимает скриншоты всех экранов (десктоп + мобильный адаптив) и аудит вёрстки. Вся внутренняя документация проекта — в [CONTEXT.md](CONTEXT.md), дизайн-документ — в [GAME_DESIGN.md](GAME_DESIGN.md).
+В репозитории также лежат автопроверки: `npm run verify:bulkbuy` и соседние `verify:*` гоняют UI через Playwright, `npm run ui:review` снимает скриншоты всех экранов (десктоп + мобильный адаптив) и аудит вёрстки; индекс всех скриптов и алиасов — [scripts/README.md](scripts/README.md). Вся внутренняя документация проекта — в [CONTEXT.md](CONTEXT.md), дизайн-документ — в [GAME_DESIGN.md](GAME_DESIGN.md).
 
 Деплой: push в `master` автоматически собирает и публикует сайт на GitHub Pages (`.github/workflows/deploy.yml`).

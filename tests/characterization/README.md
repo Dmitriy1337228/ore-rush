@@ -9,7 +9,7 @@
 
 ```bash
 npm test        # unit + CLI golden (node --test, ~1-2 с, без браузера)
-npm run test:ui # полный UI-golden прогон scripts/ui-review.mjs (~1 мин, Playwright)
+npm run test:ui # полный UI-golden прогон scripts/gates/ui-review.mjs (~1 мин, Playwright)
 ```
 
 Требования: Node >= 20 (написано и проверено на Node 24), для `test:ui` —
@@ -24,8 +24,8 @@ tests/characterization/
 ├── state_persist.test.mjs     сейв/миграции v1..v5/офлайн/lastExit/resetGame/sdk-stub
 ├── layout.test.mjs            computeLayout/baseForOrientation (golden-объекты)
 ├── sdk_adapter.test.mjs       src/sdk/yandex.js (standalone-поведение, колбэки adv)
-├── balance_sim_golden.test.mjs CLI scripts/balance-sim.mjs (stdout = golden-файл)
-├── ui_review_golden.mjs       полный прогон scripts/ui-review.mjs (медленный, вне npm test)
+├── balance_sim_golden.test.mjs CLI scripts/data/balance-sim.mjs (stdout = golden-файл)
+├── ui_review_golden.mjs       полный прогон scripts/gates/ui-review.mjs (медленный, вне npm test)
 ├── helpers/
 │   ├── globals.mjs            shim localStorage + динамические импорты src/* + stubRandom
 │   └── png.mjs                минимальный PNG-декодер + pixel-diff (без зависимостей)
@@ -64,9 +64,9 @@ Golden перегенерируется ТОЛЬКО при намеренном
 
 ```bash
 node tests/characterization/tools/write_catalog_golden.mjs          # каталоги state.js
-node scripts/balance-sim.mjs > tests/characterization/golden/balance-sim_default.out
-node scripts/balance-sim.mjs 2 30 > tests/characterization/golden/balance-sim_cps2_h30.out
-OUT_DIR=tests/characterization/golden/ui node scripts/ui-review.mjs # UI-артефакты
+node scripts/data/balance-sim.mjs > tests/characterization/golden/balance-sim_default.out
+node scripts/data/balance-sim.mjs 2 30 > tests/characterization/golden/balance-sim_cps2_h30.out
+OUT_DIR=tests/characterization/golden/ui node scripts/gates/ui-review.mjs # UI-артефакты
 ```
 
 (Для сравнения значений с текущим кодом есть `node
@@ -93,8 +93,8 @@ tests/characterization/tools/capture_goldens.mjs` — печатает тот ж
 - **sdk/yandex.js**: standalone-init (возвращает false + info-лог), no-op
   gameplay, showFullscreenAdv без SDK -> onClose(false); разводка колбэков
   onOpen/onClose/onError с фейковым SDK.
-- **CLI**: scripts/balance-sim.mjs — stdout как golden (2 набора аргументов).
-- **UI-сценарии**: полный прогон scripts/ui-review.mjs — 12 страниц/21 скриншот,
+- **CLI**: scripts/data/balance-sim.mjs — stdout как golden (2 набора аргументов).
+- **UI-сценарии**: полный прогон scripts/gates/ui-review.mjs — 12 страниц/21 скриншот,
   9 layout-аудитов, console_errors (0), exit code; через него же покрыт
   boot-путь main.js (BootScene/GameScene/UIScene), карта, крафт, боссы, офлайн,
   портрет, viewport 900.
@@ -106,7 +106,7 @@ tests/characterization/tools/capture_goldens.mjs` — печатает тот ж
   на этой сцене не достижима без правки прод-кода (тест-хук не потребовался).
 - **Звук (sfx.js)**: `playSfx` требует AudioContext/загруженного кэша — в Node
   не запускается; поведение (троттлинг 70 мс, выбор варианта) не покрыто.
-  Для проверки в браузере есть `scripts/verify-sfx.cjs` (вне набора).
+  Для проверки в браузере есть `scripts/verify/verify-sfx.cjs` (вне набора).
 - **Scenes по кадрам**: сцены покрыты через ui-review-прогон (состояния/аудит/
   скриншоты), но не юнит-тестами по кадрам (Phaser требует DOM/WebGL в браузере).
 - **verify-*.cjs**: существующие проверочные скрипты не завёрнуты в golden —

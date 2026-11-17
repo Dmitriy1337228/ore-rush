@@ -13,7 +13,9 @@ describe('YandexSDK.init: без window/YaGames — standalone', () => {
         console.info = (...a) => infos.push(a.join(' '));
         try {
             assert.equal(await YandexSDK.init(), false);
-        } finally { console.info = realInfo; }
+        } finally {
+            console.info = realInfo;
+        }
         assert.equal(YandexSDK.available, false);
         assert.equal(infos.length, 1);
         assert.equal(infos[0], '[YandexSDK] SDK не обнаружен — работа в standalone-режиме (localStorage).');
@@ -30,11 +32,19 @@ describe('YandexSDK: save/load/gameplay/adv без SDK', () => {
         YandexSDK.gameplayStop();
     });
     it('showFullscreenAdv без SDK сразу зовёт onClose(false); onError не зовётся', () => {
-        let onCloseArg = 'не звали', onError = 'не звали', onOpen = 'не звали';
+        let onCloseArg = 'не звали',
+            onError = 'не звали',
+            onOpen = 'не звали';
         YandexSDK.showFullscreenAdv({
-            onClose: (wasShown) => { onCloseArg = wasShown; },
-            onError: () => { onError = 'звали'; },
-            onOpen: () => { onOpen = 'звали'; }
+            onClose: (wasShown) => {
+                onCloseArg = wasShown;
+            },
+            onError: () => {
+                onError = 'звали';
+            },
+            onOpen: () => {
+                onOpen = 'звали';
+            }
         });
         assert.equal(onCloseArg, false);
         assert.equal(onError, 'не звали');

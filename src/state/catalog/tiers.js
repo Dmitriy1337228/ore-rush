@@ -6,18 +6,114 @@ export const TIERS = [
     // текущего дохода (см. state/unlock.js) — статические кривые при внутренней
     // прокачке либо пролетаются (цены отстают от богатства), либо становятся
     // стеной (цены убегают).
-    { key: 'coal',     name: 'Уголь',     gen: 'угля',       adj: 'угольным',      iconKey: 'coal_nugget',     blockPrefix: 'block',      floatColor: '#ffffff'  },
-    { key: 'copper',   name: 'Медь',      gen: 'меди',       adj: 'медным',        iconKey: 'copper_nugget',   blockPrefix: 'copper',     floatColor: '#f0985e'  },
-    { key: 'iron',     name: 'Железо',    gen: 'железа',     adj: 'железным',      iconKey: 'iron_nugget',     blockPrefix: 'iron',       floatColor: '#cfd8e3'  },
-    { key: 'silver',   name: 'Серебро',   gen: 'серебра',    adj: 'серебряным',    iconKey: 'silver_nugget',   blockPrefix: 'silver',     floatColor: '#eeeded'  },
-    { key: 'gold',     name: 'Золото',    gen: 'золота',     adj: 'золотым',       iconKey: 'gold_nugget',     blockPrefix: 'gold',       floatColor: '#ffd75e'  },
-    { key: 'amethyst', name: 'Аметист',   gen: 'аметиста',   adj: 'аметистовым',   iconKey: 'amethyst_nugget', blockPrefix: 'amethyst',   floatColor: '#d9a2ff'  },
-    { key: 'emerald',  name: 'Изумруд',   gen: 'изумруда',   adj: 'изумрудным',    iconKey: 'emerald_nugget',  blockPrefix: 'emerald',    floatColor: '#7ee787'  },
-    { key: 'ruby',     name: 'Рубин',     gen: 'рубина',     adj: 'рубиновым',     iconKey: 'ruby_nugget',     blockPrefix: 'ruby',       floatColor: '#f0638c'  },
-    { key: 'sapphire', name: 'Сапфир',    gen: 'сапфира',    adj: 'сапфировым',    iconKey: 'sapphire_nugget', blockPrefix: 'sapphire',   floatColor: '#63b4ff'  },
-    { key: 'platinum', name: 'Платина',   gen: 'платины',    adj: 'платиновым',    iconKey: 'platinum_nugget', blockPrefix: 'platinum',   floatColor: '#eae6d9'  },
-    { key: 'uranium',  name: 'Уранит',    gen: 'уранита',    adj: 'урановым',      iconKey: 'uranium_nugget',  blockPrefix: 'uranium',    floatColor: '#b7ff47'  },
-    { key: 'diamond',  name: 'Алмаз',     gen: 'алмаза',     adj: 'алмазным',      iconKey: 'diamond_nugget',  blockPrefix: 'diamond',    floatColor: '#7ee7ff'  }
+    {
+        key: 'coal',
+        name: 'Уголь',
+        gen: 'угля',
+        adj: 'угольным',
+        iconKey: 'coal_nugget',
+        blockPrefix: 'block',
+        floatColor: '#ffffff'
+    },
+    {
+        key: 'copper',
+        name: 'Медь',
+        gen: 'меди',
+        adj: 'медным',
+        iconKey: 'copper_nugget',
+        blockPrefix: 'copper',
+        floatColor: '#f0985e'
+    },
+    {
+        key: 'iron',
+        name: 'Железо',
+        gen: 'железа',
+        adj: 'железным',
+        iconKey: 'iron_nugget',
+        blockPrefix: 'iron',
+        floatColor: '#cfd8e3'
+    },
+    {
+        key: 'silver',
+        name: 'Серебро',
+        gen: 'серебра',
+        adj: 'серебряным',
+        iconKey: 'silver_nugget',
+        blockPrefix: 'silver',
+        floatColor: '#eeeded'
+    },
+    {
+        key: 'gold',
+        name: 'Золото',
+        gen: 'золота',
+        adj: 'золотым',
+        iconKey: 'gold_nugget',
+        blockPrefix: 'gold',
+        floatColor: '#ffd75e'
+    },
+    {
+        key: 'amethyst',
+        name: 'Аметист',
+        gen: 'аметиста',
+        adj: 'аметистовым',
+        iconKey: 'amethyst_nugget',
+        blockPrefix: 'amethyst',
+        floatColor: '#d9a2ff'
+    },
+    {
+        key: 'emerald',
+        name: 'Изумруд',
+        gen: 'изумруда',
+        adj: 'изумрудным',
+        iconKey: 'emerald_nugget',
+        blockPrefix: 'emerald',
+        floatColor: '#7ee787'
+    },
+    {
+        key: 'ruby',
+        name: 'Рубин',
+        gen: 'рубина',
+        adj: 'рубиновым',
+        iconKey: 'ruby_nugget',
+        blockPrefix: 'ruby',
+        floatColor: '#f0638c'
+    },
+    {
+        key: 'sapphire',
+        name: 'Сапфир',
+        gen: 'сапфира',
+        adj: 'сапфировым',
+        iconKey: 'sapphire_nugget',
+        blockPrefix: 'sapphire',
+        floatColor: '#63b4ff'
+    },
+    {
+        key: 'platinum',
+        name: 'Платина',
+        gen: 'платины',
+        adj: 'платиновым',
+        iconKey: 'platinum_nugget',
+        blockPrefix: 'platinum',
+        floatColor: '#eae6d9'
+    },
+    {
+        key: 'uranium',
+        name: 'Уранит',
+        gen: 'уранита',
+        adj: 'урановым',
+        iconKey: 'uranium_nugget',
+        blockPrefix: 'uranium',
+        floatColor: '#b7ff47'
+    },
+    {
+        key: 'diamond',
+        name: 'Алмаз',
+        gen: 'алмаза',
+        adj: 'алмазным',
+        iconKey: 'diamond_nugget',
+        blockPrefix: 'diamond',
+        floatColor: '#7ee7ff'
+    }
 ];
 
 export const LAST_TIER_INDEX = TIERS.length - 1;

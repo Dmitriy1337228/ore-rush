@@ -25,10 +25,22 @@ describe('craftMessages: тексты мастерской', () => {
 
     it('recipeStatus: приоритет и пустой статус', () => {
         assert.equal(recipeStatus({ mine: true, owned: true, busy: true, space: 0, resultN: 1, compsOk: true }), '');
-        assert.equal(recipeStatus({ mine: false, owned: true, busy: true, space: 0, resultN: 1, compsOk: true }), MSG.owned);
-        assert.equal(recipeStatus({ mine: false, owned: false, busy: true, space: 0, resultN: 1, compsOk: false }), MSG.benchBusy);
-        assert.equal(recipeStatus({ mine: false, owned: false, busy: false, space: 0, resultN: 1, compsOk: true }), MSG.stackFull);
-        assert.equal(recipeStatus({ mine: false, owned: false, busy: false, space: 0, resultN: 1, compsOk: false }), '');
+        assert.equal(
+            recipeStatus({ mine: false, owned: true, busy: true, space: 0, resultN: 1, compsOk: true }),
+            MSG.owned
+        );
+        assert.equal(
+            recipeStatus({ mine: false, owned: false, busy: true, space: 0, resultN: 1, compsOk: false }),
+            MSG.benchBusy
+        );
+        assert.equal(
+            recipeStatus({ mine: false, owned: false, busy: false, space: 0, resultN: 1, compsOk: true }),
+            MSG.stackFull
+        );
+        assert.equal(
+            recipeStatus({ mine: false, owned: false, busy: false, space: 0, resultN: 1, compsOk: false }),
+            ''
+        );
         assert.equal(recipeStatus({ mine: false, owned: false, busy: false, space: 5, resultN: 1, compsOk: true }), '');
     });
 });
