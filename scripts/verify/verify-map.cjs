@@ -375,7 +375,7 @@ const DEEP_SAVE = JSON.stringify({
                 kind: n.kind,
                 tier: n.kind === 'tier' ? n.tier : null,
                 id: n.boss ? n.boss.id : null,
-                state: n._state,
+                state: n._state ? n._state.split('|')[0] : null,
                 status: n.status ? n.status.text : null,
                 ringType: n.ring ? n.ring.type : null,
                 ringColor: n._ringColor,
@@ -400,7 +400,7 @@ const DEEP_SAVE = JSON.stringify({
             'A7: тиры 2..12 будущие — тёмная обводка 0x3a3d40',
             states
                 .filter((n) => n.kind === 'tier' && n.tier > 0)
-                .every((n) => n.state === 'future' && n.ringColor === 0x3a3d40 && !n.pulsing)
+                .every((n) => n.state === 'future' && n.ringColor === 0x565a60 && !n.pulsing)
         );
         check(
             'A8: все боссы закрыты «нужен: шахта N+1», серая обводка',
@@ -446,7 +446,7 @@ const DEEP_SAVE = JSON.stringify({
             page,
             `(() => {
             const n = ui.mapNodes.find((x) => x.kind === 'tier' && x.tier === 1);
-            return { y: n.root.y + n._r, target: Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2)) };
+            return { y: n.root.y + n._r, target: Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2 - Math.round(10 * (ui._adaptiveScale || 1)))) };
         })()`
         );
         check(
@@ -462,7 +462,7 @@ const DEEP_SAVE = JSON.stringify({
         const banner = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
 
-            return ui.mapRoot.list.some((o) => o.type === 'Text' && /Уровень 2: Медь!/.test(o.text));
+            return ui.mapContent.list.some((o) => o.type === 'Text' && /Уровень 2: Медь!/.test(o.text));
         });
         check('C4: баннер прибытия «Уровень 2: Медь!»', banner);
         await page.mouse.click(closePt.x, closePt.y);
@@ -494,7 +494,7 @@ const DEEP_SAVE = JSON.stringify({
             page,
             `(() => {
             const n = ui.mapNodes.find((x) => x.kind === 'tier' && x.tier === 3);
-            return Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2));
+            return Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2 - Math.round(10 * (ui._adaptiveScale || 1))));
         })()`
         );
         check(
@@ -525,7 +525,7 @@ const DEEP_SAVE = JSON.stringify({
                 kind: n.kind,
                 tier: n.tier || null,
                 id: n.boss ? n.boss.id : null,
-                state: n._state,
+                state: n._state ? n._state.split('|')[0] : null,
                 status: n.status ? n.status.text : null,
                 ringType: n.ring ? n.ring.type : null,
                 ringColor: n._ringColor,
@@ -651,11 +651,13 @@ const DEEP_SAVE = JSON.stringify({
         const craft = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
 
+            const panel = document.querySelector('.dom-panel');
+
             return {
                 open: ui._craftOpen,
-                root: ui.craftRoot.visible,
-                content: ui.craftContent.visible,
-                title: ui.craftTitle.text,
+                root: !!window.__DOM_CRAFT && window.__DOM_CRAFT.isOpen(),
+                content: !!panel && !!panel.querySelector('[data-dom-scroll]'),
+                title: panel?.querySelector('.dom-title')?.textContent?.trim() || '',
                 locked: window.__GAME.registry.get('blockLocked')
             };
         });
@@ -664,7 +666,14 @@ const DEEP_SAVE = JSON.stringify({
             craft.open && craft.root && craft.content && craft.title === 'Мастерская' && craft.locked === true,
             JSON.stringify(craft)
         );
-        await page.mouse.click(860, 132); // крестик каркаса
+        // Крестик DOM-панели: реальный клик по центру кнопки закрытия
+        const craftClosePt = await page.evaluate(() => {
+            const b = document.querySelector('.dom-panel .dom-close');
+            const r = b.getBoundingClientRect();
+
+            return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+        });
+        await page.mouse.click(craftClosePt.x, craftClosePt.y);
         await page.waitForTimeout(300);
         const craftClosed = await uiState(page);
         check('H2: каркас закрылся, lock снят', !craftClosed.craftOpen && craftClosed.locked === false);
@@ -696,7 +705,7 @@ const DEEP_SAVE = JSON.stringify({
             page,
             `(() => {
             const n = ui.mapNodes.find((x) => x.kind === 'tier' && x.tier === 4);
-            return { y: n.root.y + n._r, target: Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2)) };
+            return { y: n.root.y + n._r, target: Math.max(0, Math.min(ui._mapMaxScroll, n.root.y + n._r - ui._mapView.h / 2 - Math.round(10 * (ui._adaptiveScale || 1)))) };
         })()`
         );
         check(
