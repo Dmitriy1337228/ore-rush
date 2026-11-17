@@ -22,6 +22,12 @@ tests/characterization/
 ├── state_economy.test.mjs     каталоги/константы/fmt/цены/мультипокупка/видимость/спуск
 ├── state_meta.test.mjs        клик-роллы/боссы/крафт/предметы/дейли/престиж/мутации
 ├── state_persist.test.mjs     сейв/миграции v1..v5/офлайн/lastExit/resetGame/sdk-stub
+├── state_settings.test.mjs    src/state/settings.js — громкость (clamp, 0 сохраняется), тумблеры
+├── settings_messages.test.mjs тексты настроек (статы/подписи/prestigeInfo, оба пути)
+├── craft_messages.test.mjs    тексты мастерской (единый источник DOM и Phaser)
+├── dom_bridge.test.mjs        снимки bridge.js (только чтение; набор состояний → снимок)
+├── dom_modal.test.mjs         каркас modal.js/rangeInput (разметка, нет голых px, слайдер)
+├── forms_flag.test.mjs        isPhaserForm: query/localStorage/неизвестные имена
 ├── layout.test.mjs            computeLayout/baseForOrientation (golden-объекты)
 ├── sdk_adapter.test.mjs       src/sdk/yandex.js (standalone-поведение, колбэки adv)
 ├── balance_sim_golden.test.mjs CLI scripts/data/balance-sim.mjs (stdout = golden-файл)
@@ -33,8 +39,12 @@ tests/characterization/
 │   ├── state_catalog.json     снапшот каталогов/константов/initialState (write_catalog_golden.mjs)
 │   ├── balance-sim_default.out    stdout CLI (дефолтные аргументы)
 │   ├── balance-sim_cps2_h30.out   stdout CLI (аргументы "2 30")
-│   └── ui/                    golden-артефакты ui-review: 21 png, 9 layout_audit*.txt,
+│   ├── dom/                   DOM-эталоны форм: craft/ и settings/ (1280x720, 390x844)
+│   │                          — гейт test:dom-golden (scripts/gates/dom-golden.mjs)
+│   └── ui/                    Phaser-golden артефакты ui-review: 21 png, 9 layout_audit*.txt,
 │                              console_errors.txt, run.stdout.txt
+│                              (скриншоты форм здесь — до кампании phaser-cleanup, которая
+│                              заменит их на golden/dom/<form>/ и удалит Phaser-снимки)
 └── tools/
     ├── capture_goldens.mjs    снимает значения с текущего кода (JSON в stdout) — источник чисел
     ├── write_catalog_golden.mjs  перегенерация golden/state_catalog.json
@@ -94,6 +104,10 @@ tests/characterization/tools/capture_goldens.mjs` — печатает тот ж
   gameplay, showFullscreenAdv без SDK -> onClose(false); разводка колбэков
   onOpen/onClose/onError с фейковым SDK.
 - **CLI**: scripts/data/balance-sim.mjs — stdout как golden (2 набора аргументов).
+- **DOM-слой** (фазы 1–2): `src/state/settings.js` (clamp/сейв), тексты форм
+  (`craftMessages`/`settingsMessages` — единый источник для обоих путей), снимки
+  `bridge.js` (мутаторы не вызываются), каркас `modal.js`/`rangeInput`, флаг
+  отката `formsFlag`; DOM-golden форм — в `golden/dom/` (гейт `test:dom-golden`).
 - **UI-сценарии**: полный прогон scripts/gates/ui-review.mjs — 12 страниц/21 скриншот,
   9 layout-аудитов, console_errors (0), exit code; через него же покрыт
   boot-путь main.js (BootScene/GameScene/UIScene), карта, крафт, боссы, офлайн,
