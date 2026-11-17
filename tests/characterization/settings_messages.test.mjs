@@ -1,4 +1,4 @@
-// Тексты окна настроек (docs/UI_DOM_PHASE2_PLAN.md, шаг 2.2): единственный источник
+// Тексты окна настроек (docs/dom-phase2/UI_DOM_PHASE2_PLAN.md, шаг 2.2): единственный источник
 // для DOM и Phaser-пути; проверяем формулировки, склонения и «взведённые» подписи.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';

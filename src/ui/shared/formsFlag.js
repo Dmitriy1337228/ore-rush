@@ -1,4 +1,4 @@
-// Флаг-откат форм на Phaser-путь (docs/UI_DOM_PHASE2_PLAN.md, D5).
+// Флаг-откат форм на Phaser-путь (docs/dom-phase2/UI_DOM_PHASE2_PLAN.md, D5).
 // По умолчанию обе формы (settings, status) — на DOM. Список DEFAULT_PHASER_FORMS
 // пополняется автоматически при провале R-критерия формы (раздел 10.4).
 // Включить откат вручную: ?phaserForms=settings,status или localStorage.phaserForms.

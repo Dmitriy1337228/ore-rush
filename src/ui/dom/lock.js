@@ -1,4 +1,4 @@
-// Общая блокировка DOM-форм (docs/UI_DOM_PHASE2_PLAN.md, шаг 1.8): единая точка
+// Общая блокировка DOM-форм (docs/dom-phase2/UI_DOM_PHASE2_PLAN.md, шаг 1.8): единая точка
 // выставления флагов `_xxxOpen` и пересчёта `registry blockLocked` — чтобы каждая
 // форма не копировала логику мастерской.
 export function setFormOpen(scene, flag, open) {

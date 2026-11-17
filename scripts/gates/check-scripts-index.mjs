@@ -1,4 +1,4 @@
-// Гард индекса скриптов (docs/REPO_REFACTOR_PLAN.md, D8):
+// Гард индекса скриптов (docs/repo-reorg/REPO_REFACTOR_PLAN.md, D8):
 //  (а) каждый файл scripts/**/* (кроме lib/, archive/ и README.md) имеет npm-алиас;
 //  (б) каждый такой файл упомянут строкой в scripts/README.md;
 //  (в) каждый npm-алиас, ссылающийся на scripts/**, указывает на существующий файл.

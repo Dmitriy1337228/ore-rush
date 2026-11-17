@@ -1,4 +1,4 @@
-// DOM-форма «Настройки» (docs/UI_DOM_PHASE2_PLAN.md, этап 2): единственная точка записи —
+// DOM-форма «Настройки» (docs/dom-phase2/UI_DOM_PHASE2_PLAN.md, этап 2): единственная точка записи —
 // src/state/settings.js; тексты — src/state/settingsMessages.js; данные — bridge.settingsSnapshot.
 // Каркас модалки — modal.js, блокировка — lock.js (общие для форм).
 import { html, toNode } from './html.js';

@@ -1,4 +1,4 @@
-// Хелперы флага-отката для проверочных скриптов (docs/UI_DOM_PHASE2_PLAN.md, D5).
+// Хелперы флага-отката для проверочных скриптов (docs/dom-phase2/UI_DOM_PHASE2_PLAN.md, D5).
 // Старые скрипты, написанные под Phaser-путь, открывают игру с этим параметром.
 export const LEGACY_FORMS_QUERY = 'phaserForms=settings,status';
 

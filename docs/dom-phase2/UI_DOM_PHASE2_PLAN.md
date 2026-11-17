@@ -1,19 +1,19 @@
 # План-ТЗ: фаза 2 «формы на DOM» — настройки и статус-модалки (исполняемая версия)
 
-Статус: **к исполнению после апрува игроком** · Дата: 2026-11-16 · Версия 2 (вердикт /judge от 2026-11-16 + требование владельца «план неделим»; пути — по структуре после `docs/REPO_REFACTOR_PLAN.md`)
+Статус: **ВЫПОЛНЕН (частичный go: настройки на DOM, M2 отложен по гейту GA) — ветка `phase2/dom-forms` к слиянию игроком (ревью: `docs/dom-phase2/CODE_REVIEW_PHASE2_DOM.md`)** · Дата: 2026-11-16 · Версия 2 (вердикт /judge от 2026-11-16 + требование владельца «план неделим»; пути — по структуре после `docs/repo-reorg/REPO_REFACTOR_PLAN.md`)
 
 > ## ⚠ Режим исполнения (обязательно к прочтению)
 >
 > 1. **План неделим.** Выполняется **целиком, за один непрерывный проход**: от предстартовой проверки до финального отчёта (этап 4). Остановок, пауз «ждать игрока», промежуточных приёмок и вопросов в ходе работы **нет**. Бывшие остановки P1, P2, P3 и гейт GA заменены автоматическими правилами (раздел 0.0, п. 4; раздел 5; раздел 10.4).
-> 2. **Предусловие старта (проверяется один раз, до начала работы):** `docs/REPO_REFACTOR_PLAN.md` **выполнен полностью** и ветка `chore/repo-reorg` **слита игроком в `master`**: в `master` существуют `src/ui/dom/`, `src/ui/phaser/`, `src/ui/shared/`, `scripts/gates/`, `scripts/README.md`, `.git-blame-ignore-revs`; зелёные `npm run format:check`, `npm run lint`, `npm run scripts:check`, `npm run layers:check`. Если нет — план **не начинается**, игроку задаётся один вопрос сразу («сначала выполните `REPO_REFACTOR_PLAN`»).
+> 2. **Предусловие старта (проверяется один раз, до начала работы):** `docs/repo-reorg/REPO_REFACTOR_PLAN.md` **выполнен полностью** и ветка `chore/repo-reorg` **слита игроком в `master`**: в `master` существуют `src/ui/dom/`, `src/ui/phaser/`, `src/ui/shared/`, `scripts/gates/`, `scripts/README.md`, `.git-blame-ignore-revs`; зелёные `npm run format:check`, `npm run lint`, `npm run scripts:check`, `npm run layers:check`. Если нет — план **не начинается**, игроку задаётся один вопрос сразу («сначала выполните `REPO_REFACTOR_PLAN`»).
 > 3. **Участие игрока — только до старта и после финала:** после финального отчёта игрок проверяет результат (в т.ч. на телефоне) и сливает ветку `phase2/dom-forms` в `master`.
 > 4. **Сбой = аварийное завершение, а не пауза:** общие гейты/инфраструктура красные и не исправлены за 2 попытки → откат этапа `git revert`, финальный отчёт «план не выполнен», ветка не сливается. Провал формы (R-критерий) — не сбой: форма откатывается флагом на Phaser-путь автоматически, план продолжается (раздел 10.4).
 > 5. **Вне плана:** M3, карта, HUD; **удаление Phaser-путей** — последующая задача после релиза (раздел 8) — отдельный неделимый план по запросу.
 
-Основа: `docs/UI_DOM_PHASE2.md` (предложение, остаётся как обоснование — не править).
+Основа: `docs/dom-phase2/UI_DOM_PHASE2.md` (предложение, остаётся как обоснование — не править).
 Baseline (LOC, нарушения, gzip, p95) снимается **на отформатированном коде и новой структуре** (после `REPO_REFACTOR_PLAN`); числа пилота (1430, 322, 301 строка) сняты до форматирования и с новыми не сравниваются.
 
-Связанные: `docs/REPO_REFACTOR_PLAN.md`, `docs/UI_DOM_PILOT_PLAN.md` (образец исполнения и журнал пилота), `docs/UI_LAYOUT.md`, `docs/UI_LAYOUT_TODO.md`, `AGENTS.md` (гейты UI, токены, DOM-слой, скиллы).
+Связанные: `docs/repo-reorg/REPO_REFACTOR_PLAN.md`, `docs/dom-pilot/UI_DOM_PILOT_PLAN.md` (образец исполнения и журнал пилота), `docs/UI_LAYOUT.md`, `docs/UI_LAYOUT_TODO.md`, `AGENTS.md` (гейты UI, токены, DOM-слой, скиллы).
 
 Что изменено относительно предложения (вердикт «принять с правками»):
 
@@ -28,13 +28,13 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 | 7 | Сценарии M2: 4 формы | Добавлены сценарии **очереди модалок** (логика очереди — поведенческая, не «одна вёрстка») |
 | 8 | Карта «только с обоснованием» | Карта и HUD — **вне плана**; HUD-спайк — отдельное решение |
 | 9 | Остановки P1/P2/P3 и «решение игрока» на GA и G-итог | **Неделимый план:** GA — формула (раздел 5), G-итог — таблица правил (10.4), провал формы — автооткат флагом; подтверждение игроком — после финального отчёта и не блокирует |
-| 10 | Прежние пути `src/dom/`, `src/scenes/ui/`, `scripts/*.mjs` | Пути — **после** `docs/REPO_REFACTOR_PLAN.md` (факт — раздел «Пути после реорганизации»): `src/ui/dom/`, `src/ui/phaser/`, `src/ui/shared/`, `src/ui/UIScene.js`, `scripts/gates/`, `scripts/verify/`, `scripts/metrics/`, `scripts/stands/`, `scripts/audio/`, `scripts/data/`. `fixcount` считает историю с учётом переименований (`--follow`) |
+| 10 | Прежние пути `src/dom/`, `src/scenes/ui/`, `scripts/*.mjs` | Пути — **после** `docs/repo-reorg/REPO_REFACTOR_PLAN.md` (факт — раздел «Пути после реорганизации»): `src/ui/dom/`, `src/ui/phaser/`, `src/ui/shared/`, `src/ui/UIScene.js`, `scripts/gates/`, `scripts/verify/`, `scripts/metrics/`, `scripts/stands/`, `scripts/audio/`, `scripts/data/`. `fixcount` считает историю с учётом переименований (`--follow`) |
 
 ---
 
 ## Пути после реорганизации (факт, 2026-11-17)
 
-`docs/REPO_REFACTOR_PLAN.md` выполнен; ниже — реальные пути, на которые опирается фаза 2.
+`docs/repo-reorg/REPO_REFACTOR_PLAN.md` выполнен; ниже — реальные пути, на которые опирается фаза 2.
 
 | Что | Путь |
 |---|---|
@@ -56,7 +56,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 
 ### 0.0. Стартовая инструкция исполнителю (прочитать первой)
 
-0. **Проверь предусловие старта** (блок «Режим исполнения», п. 2): `docs/REPO_REFACTOR_PLAN.md` выполнен полностью и слит игроком в `master`. Не выполнено — задай игроку **один** вопрос сразу и не начинай этап 0 (работа ещё не началась, это не пауза).
+0. **Проверь предусловие старта** (блок «Режим исполнения», п. 2): `docs/repo-reorg/REPO_REFACTOR_PLAN.md` выполнен полностью и слит игроком в `master`. Не выполнено — задай игроку **один** вопрос сразу и не начинай этап 0 (работа ещё не началась, это не пауза).
 1. Прочитай целиком этот документ, затем `AGENTS.md`, `docs/UI_LAYOUT.md`, `.kilo/skills/ui-layout-check/SKILL.md`; если есть `.kilo/skills/INDEX.md` — сверься с ним и прочитай 1–2 релевантных скилла (например, `phaser-scenes`, `phaser-input-keyboard-mouse-touch`). Ознакомься с образцом: `src/ui/dom/craft.js`, `src/ui/dom/bridge.js`, `src/ui/dom/root.js`, `src/ui/dom/components.js`, `scripts/verify/verify-craft-dom.mjs`.
 2. Работай в одиночном режиме (команду `/team` не поднимать — игрок не просил).
 3. Иди строго по этапам **без остановок**: следующий этап — сразу после выполнения **всего** DoD предыдущего и записи в журнал (раздел 13).
@@ -117,15 +117,15 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 
 ## 2. Этап 0 — Подготовка, baseline, пересчёт метрик (0.5 дня)
 
-> Предусловие: `docs/REPO_REFACTOR_PLAN.md` выполнен и слит в `master`; baseline этого этапа снимается на отформатированном коде и новой структуре.
+> Предусловие: `docs/repo-reorg/REPO_REFACTOR_PLAN.md` выполнен и слит в `master`; baseline этого этапа снимается на отформатированном коде и новой структуре.
 
 ### Шаги
 - 0.1. `git status` — чисто; ветка `master` содержит результат `REPO_REFACTOR_PLAN` (предусловие). `git switch master && git switch -c phase2/dom-forms`.
 - 0.2. Прогнать и сохранить вывод: `npm test`, `npm run test:ui`, `npm run ui:tokens`, `npm run ui:tokens:css`, `npm run dom:tokens -- --check`, `npm run ui:check`, `npm run ui:check:dom`, `npm run format:check`, `npm run lint`, `npm run scripts:check`, `npm run layers:check`, `node scripts/verify/verify-craft-dom.mjs`. Всё зелёное; иначе — «внешний долг», не чинить, записать в журнал.
-- 0.3. **Baseline форм** → `docs/UI_DOM_PHASE2_BASELINE.md`:
+- 0.3. **Baseline форм** → `docs/dom-phase2/UI_DOM_PHASE2_BASELINE.md`:
   - строки: `src/ui/phaser/settingsModal.js`, `statusModals.js` (baseline снимается заново на отформатированном коде; прежние числа 322 и 301 не использовать), плюс специфичные скрипты проверок форм (`verify-daily.mjs`, части `verify-boss.cjs`, `verify-offline.cjs`) — списком с числами; метрика — `scripts/metrics/pilot-loc.mjs` по явному списку файлов формы;
   - нарушения: из `tests/ui-check/baseline.json` и отчёта `ui:check` — таблица «состояние × вьюпорт × нарушения» для `settings`, `settings-stress`, `daily`, `offline`, `player-down`, `boss-reward`; итоговая сумма по форме;
-  - скриншоты Phaser-эталонов по 6 вьюпортам (360×640, 390×844, 412×915, 768×1024, 844×390, 1280×720) для `settings`, `daily`, `offline`, `boss-reward`, `player-down` → `docs/pilot-baseline/phase2/<состояние>-<вьюпорт>.png` (скриптом на базе `scripts/metrics/pilot-baseline-shots.mjs`);
+  - скриншоты Phaser-эталонов по 6 вьюпортам (360×640, 390×844, 412×915, 768×1024, 844×390, 1280×720) для `settings`, `daily`, `offline`, `boss-reward`, `player-down` → `docs/dom-phase2/baseline/phase2/<состояние>-<вьюпорт>.png` (скриптом на базе `scripts/metrics/pilot-baseline-shots.mjs`);
   - вес бандла: `npm run build`, gzip всех `dist/assets/*.js` и `*.css`;
   - p95 кадра при открытой форме (эмуляция CPU ×4, 3×10 с) для `settings` и для `daily` — после того как скрипт обобщён (этап 1, шаг 1.4); в этапе 0 снимается **только** вес и нарушения, p95 baseline дозаписывается в конце этапа 1 **до** любых правок форм (на Phaser-пути под флагом).
 - 0.4. **Пересчёт `fix`-счётчиков по новому правилу** (скрипт `scripts/metrics/phase2-fixcount.mjs`):
@@ -139,8 +139,8 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 ### DoD этапа 0
 - [x] Ветка `phase2/dom-forms` создана от `master`, дерево чистое.
 - [x] Все гейты из 0.2 зелёные (вывод сохранён) либо «внешний долг» записан.
-- [x] `docs/UI_DOM_PHASE2_BASELINE.md` закоммичен: LOC, таблица нарушений по 6 состояниям, gzip, метод замеров, пересчёт `fix`.
-- [x] 6 вьюпортов × 5 состояний Phaser-эталонов лежат в `docs/pilot-baseline/phase2/` (30 PNG).
+- [x] `docs/dom-phase2/UI_DOM_PHASE2_BASELINE.md` закоммичен: LOC, таблица нарушений по 6 состояниям, gzip, метод замеров, пересчёт `fix`.
+- [x] 6 вьюпортов × 5 состояний Phaser-эталонов лежат в `docs/dom-phase2/baseline/phase2/` (30 PNG).
 - [x] `node scripts/metrics/phase2-fixcount.mjs` запускается и даёт числа; массовые коммиты отсеяны (список в выводе).
 - [x] Коммит: `docs(ui): фиксирует baseline форм перед фазой 2 DOM` (`bf595e3` + `feat(scripts)`).
 
@@ -154,7 +154,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 - 1.1. **Реестр форм** `scripts/lib/dom-forms.mjs`: для каждой формы — `id`, `label`, `api` (`window.__DOM_CRAFT`/`__DOM_SETTINGS`/`__DOM_STATUS`), `open(page)`/`close(page)` (JS-вызов в странице), `rootSelector`, `expectedIds()` (ожидаемые элементы/ряды по каталогам state — для мастерской прежние 26), `states` (идентификаторы состояний матрицы). Записи для `settings` и `status` создаются **заглушками** (`pending: true`), реальные заполняются в этапах 2 и 3.
 - 1.2. **`scripts/gates/ui-check-dom.mjs`**: параметр `--form craft|settings|status|all` (по умолчанию `all` = все не-`pending`); селекторы и ожидаемые ряды — из реестра; код выхода ≠ 0 при пропуске ожидаемого элемента или любом нарушении; размеченные PNG — `shots/ui-check/<vp>__<form>-dom.png`. Для статус-модалок аудит запускается по каждому `kind` (4 прогона на вьюпорт).
 - 1.3. **`scripts/gates/dom-golden.mjs`**: параметр `--form`; каталог `tests/characterization/golden/dom/<form>/<state>-<WxH>.png` (мастерскую переложить `git mv` из `golden/dom/craft-1280x720.png` в `golden/dom/craft/default-1280x720.png`, пути в скрипте обновить); tolerant-diff — прежние именованные константы (`CHANNEL_TOLERANCE`, `MAX_DIFF_RATIO`), общие для форм; `--update` обновляет только выбранную форму.
-- 1.4. **`scripts/metrics/pilot-frame-p95.mjs`** и **`scripts/metrics/pilot-loc.mjs`**: параметр `--form` (для p95 — сид и открытие формы из реестра; для LOC — список файлов формы из реестра, группы «экран / проверки / фикстуры»). После обобщения **снять p95 baseline** для `settings` и `daily` на Phaser-пути (`--legacy`) и дозаписать в `docs/UI_DOM_PHASE2_BASELINE.md`.
+- 1.4. **`scripts/metrics/pilot-frame-p95.mjs`** и **`scripts/metrics/pilot-loc.mjs`**: параметр `--form` (для p95 — сид и открытие формы из реестра; для LOC — список файлов формы из реестра, группы «экран / проверки / фикстуры»). После обобщения **снять p95 baseline** для `settings` и `daily` на Phaser-пути (`--legacy`) и дозаписать в `docs/dom-phase2/UI_DOM_PHASE2_BASELINE.md`.
 - 1.5. **Флаг-откат (D5)**: `src/ui/dom/formsFlag.js` — `phaserForms()` читает `?phaserForms=` и `localStorage.phaserForms`, возвращает `Set`; экспорт `isPhaserForm('settings'|'status')`. `scripts/lib/forms-flag.mjs` — `LEGACY_FORMS_QUERY = 'phaserForms=settings,status'` и хелпер `withLegacy(url)`; `ui-check.mjs`, `ui-review.mjs` и все `verify-*`, написанные под Phaser-путь (список — Приложение A), открывают игру с этим параметром. Пока формы на Phaser-пути (до этапов 2/3) параметр безвреден.
 - 1.6. **Матрица** `scripts/lib/ui-matrix.mjs`: ввести соглашение «`<состояние>-dom` с `dom: true`» (по образцу `craft`): `ui:check` для него только снимает PNG, вёрстку меряет `ui:check:dom`. Сами состояния `settings-dom`, `settings-stress-dom`, `daily-dom`, `offline-dom`, `boss-reward-dom`, `player-down-dom` добавляются на этапах 2 и 3.
 - 1.7. **Общие DOM-компоненты** `src/ui/dom/modal.js`: `modalHost(root)` (контейнер `[data-dom-modal-host]` внутри `#ui-root`), `modal({ kind, title, closable, children, actions })` — скрим (глотает клики, `pointer-events:auto`), панель по токенам, шапка с крестиком (если `closable`), блок кнопок. Токены z-index и размеров — в `src/ui/shared/theme.js` → `npm run dom:tokens`; новые единицы — в `DOM_EXTRA` генератора с обоснованием. Компонент `rangeInput` (слайдер) — в `components.js`.
@@ -164,7 +164,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 - [x] `node scripts/gates/ui-check-dom.mjs --form craft` — прежний результат: 7 вьюпортов × 26/26 рядов, 0 err / 0 warn; для `--form settings|status` с `pending: true` вывод «пропущено», код 0; неизвестная форма — код ≠ 0 (2).
 - [x] `node scripts/gates/dom-golden.mjs --form craft --runs 3` зелёный из нового каталога (`golden/dom/craft/default-1280x720.png`); старого файла нет; старый путь остался только в тексте плана и исторического пилот-плана.
 - [x] `node scripts/metrics/pilot-frame-p95.mjs --form craft` — p95 16.7 мс (в пределах ±0.5 мс от 16.8); `pilot-loc.mjs --form craft` работает, но с таблицей пилота не совпадает (в пилот-документе 1138 строк, Phaser-экран удалён) — отклонение в журнале.
-- [x] p95 baseline `settings`/`daily` (Phaser-путь) записан в `docs/UI_DOM_PHASE2_BASELINE.md` §8: 33.3 и 16.8 мс.
+- [x] p95 baseline `settings`/`daily` (Phaser-путь) записан в `docs/dom-phase2/UI_DOM_PHASE2_BASELINE.md` §8: 33.3 и 16.8 мс.
 - [x] `isPhaserForm` покрыт тестом (`tests/characterization/forms_flag.test.mjs`: query, localStorage, пусто, неизвестные имена игнорируются).
 - [x] Скрипты Phaser-пути запускаются через `withLegacy`; `npm run test:ui` (4/4) и `node scripts/verify/verify-craft-dom.mjs` (40/40) зелёные без изменений поведения.
 - [x] `modal.js`/`lock.js`/`rangeInput` существуют, **не подключены** к игре, покрыты unit-тестом (`dom_modal.test.mjs`: разметка, отсутствие голых px, слайдер).
@@ -208,7 +208,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 | ST14 | Откат флагом: `?phaserForms=settings` | открывается Phaser-путь, прежние `verify-*` (бой/престиж) зелёные |
 
 - 2.10. **Автономный снимок для телефона**: обобщить `scripts/stands/build-dom-craft-snapshot.mjs` → `scripts/stands/build-dom-form-snapshot.mjs --form settings` → `shots/pilot-gates/dom-settings-phone.html` (всё вшито, 0 внешних запросов).
-- 2.11. **Скриншоты к апруву**: ландшафт 1280×720 и портрет 390×844 (DOM-путь против эталонов Phaser из этапа 0) → `docs/pilot-dom/phase2/settings-*.png`; размеченные PNG `shots/ui-check/<vp>__settings-dom.png`.
+- 2.11. **Скриншоты к апруву**: ландшафт 1280×720 и портрет 390×844 (DOM-путь против эталонов Phaser из этапа 0) → `docs/dom-pilot/baseline/pilot-dom/phase2/settings-*.png`; размеченные PNG `shots/ui-check/<vp>__settings-dom.png`.
 
 ### 4.2. DoD этапа 2
 - [x] `node scripts/verify/verify-settings-dom.mjs` — ST1–ST14 зелёные (27 проверок), консоль чиста; Phaser-путь — `--legacy` (7 проверок). Вывод в журнале.
@@ -219,7 +219,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 - [x] Phaser-путь под флагом: ST14 + `verify-settings-dom --legacy` 7/7; `verify-boss` 90/90, `verify:daily` 25/25, `verify:offline` зелёный, `test:ui` 4/4 — ожидания не менялись.
 - [x] `npm test` 142/142 (включая `state_settings`, `settings_messages`, `dom_bridge`, `forms_flag`), `test:ui` 4/4, `ui:tokens`, `ui:tokens:css`, `dom:tokens --check`, `ui:check` 0 новых ошибок — `baseline.json` не расширен.
 - [x] Замеры: p95 settings **16.7 мс** против baseline 33.3 (−16.6 мс, прирост ≤ 2 мс выполнен); бандл +4.29 КБ gzip (≤ 15); LOC: 497 без тестов (1.35× к Phaser 367) и 818 с тестами — W1 с обоснованием.
-- [x] **Чекпоинт M1**: `docs/pilot-baseline/phase2-dom/settings-*.png` (6 вьюпортов), `shots/pilot-gates/dom-settings-phone.html`; подтверждение на телефоне — за игроком после отчёта.
+- [x] **Чекпоинт M1**: `docs/dom-phase2/baseline/phase2-dom/settings-*.png` (6 вьюпортов), `shots/pilot-gates/dom-settings-phone.html`; подтверждение на телефоне — за игроком после отчёта.
 - [x] Коммиты: `cbb7d35` (state), `ac9dc5a` (DOM-форма), `a09f091` (приёмка/golden/снимок).
 
 **Провал любого обязательного критерия** → форма откатывается на Phaser-путь (флагом по умолчанию), причина — в журнал, этап 3 не блокируется.
@@ -304,7 +304,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 | SM9 | Откат флагом `?phaserForms=status` | Phaser-путь, `verify-daily`, `verify-boss`, `verify-offline`, `verify-devpanel` зелёные |
 
 - 3.9. **Адаптация потребителей фасада** (без смены ожиданий): `DevPanel.js` (`ui.closeModal()`, `ui.hideDailyModal()`), `scripts/lib/ui-matrix.mjs` (`hideDaily`), `src/dev/uiAudit.js` — работают с обоими путями через фасад D6.
-- 3.10. **Снимок для телефона**: `scripts/stands/build-dom-form-snapshot.mjs --form status` → `shots/pilot-gates/dom-status-phone.html` (4 модалки, переключатель). Скриншоты 4 модалок ландшафт/портрет → `docs/pilot-dom/phase2/status-*.png`.
+- 3.10. **Снимок для телефона**: `scripts/stands/build-dom-form-snapshot.mjs --form status` → `shots/pilot-gates/dom-status-phone.html` (4 модалки, переключатель). Скриншоты 4 модалок ландшафт/портрет → `docs/dom-pilot/baseline/pilot-dom/phase2/status-*.png`.
 
 ### 6.2. DoD этапа 3 — **не выполнялся: M2 отложен на гейте GA**
 
@@ -453,9 +453,9 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 
 | Дата | Этап | Что сделано | Результат (числа/ссылки) | Отклонения |
 |---|---|---|---|---|
-| 2026-11-17 | 0 | Ветка `phase2/dom-forms`, baseline-гейты, LOC форм, нарушения по 6 состояниям, 30 эталонных PNG, gzip, пересчёт `fix` | Все гейты 0.2 — код 0; LOC: settingsModal 342/399, statusModals (позже); нарушения форм 151 (settings 31, settings-stress 32, daily/offline/player-down по 19, boss-reward 31); 30 PNG в `docs/pilot-baseline/phase2/`; gzip 414.19 КБ; fixcount: settings **3**, status **1**, list 2, map 2, hud 2 | `fixcount` добавлен алиасом `metrics:fixcount`; p95 settings на Phaser-пути 33.3 мс (30 fps под CPU×4) — baseline зафиксирован как есть |
+| 2026-11-17 | 0 | Ветка `phase2/dom-forms`, baseline-гейты, LOC форм, нарушения по 6 состояниям, 30 эталонных PNG, gzip, пересчёт `fix` | Все гейты 0.2 — код 0; LOC: settingsModal 342/399, statusModals (позже); нарушения форм 151 (settings 31, settings-stress 32, daily/offline/player-down по 19, boss-reward 31); 30 PNG в `docs/dom-phase2/baseline/phase2/`; gzip 414.19 КБ; fixcount: settings **3**, status **1**, list 2, map 2, hud 2 | `fixcount` добавлен алиасом `metrics:fixcount`; p95 settings на Phaser-пути 33.3 мс (30 fps под CPU×4) — baseline зафиксирован как есть |
 | 2026-11-17 | 1 | Реестр форм `scripts/lib/dom-forms.mjs`, `--form` в `ui-check-dom`/`dom-golden`/`pilot-loc`/`p95`, golden мастерской переложен, флаг-откат `formsFlag.js` + `withLegacy` в старых проверках, каркас `modal.js`/`lock.js`/`rangeInput`, токены модалки | `ui-check-dom --form craft` 7×26/26, 0/0; pending/unknown — ок; `dom-golden --form craft --runs 3` из `golden/dom/craft/default-1280x720.png`; p95 craft 16.7; p95 baseline settings 33.3 / daily 16.8; тесты 129/129; `ui:check` 0 новых; инфраструктура проверок 1174 строки (12 файлов); коммиты `900a3fb`, `633cf79`, `a456959` | Старый путь golden остался только в тексте плана/пилота (исторические). `pilot-loc --form craft` не совпал с «1430» из DoD: пилот-документ фиксирует 1138, Phaser-экран удалён — DoD-число устарело. Поймана коллизия `.dom-actions` (глобальное правило ломало мастерскую на 6.2 %) — новое правило сужено до `.dom-modal .dom-actions` |
-| 2026-11-17 | 2 (M1) | `src/state/settings.js` + `settingsMessages.js` (единая запись и тексты), `settingsSnapshot` в bridge, DOM-форма `settingsScreen.js` на `modal.js`/`lock.js`, фасад `openModal/closeModal` с флагом отката, `afterPrestige/afterReset`, компоненты `rangeInput`, CSS/токены модалки, golden и скриншоты, приёмка ST1–ST14 | `verify:settings-dom` 28/28 (с ST1f) (+ `--legacy` 7/7); `ui:check:dom --form settings` 8×6 элементов 0/0; golden 1280×720 0.020–0.043 %, 390×844 0.000 %; p95 33.3 → **16.7 мс**; бандл +4.29 КБ gzip (метод — `metrics:gzip`, см. baseline §9); LOC 497 без тестов (1.35×); коммиты `cbb7d35`, `ac9dc5a`, `a09f091` | **Отклонение от шага 2.6:** Phaser-модалка настроек продолжает строиться при старте и остаётся скрытой (`buildModal` вызывается безусловно) — так окно отката готово мгновенно и не зависит от ленивой загрузки; это ломает учёт LOC окна отката (в W1 считается весь `settingsModal.js`), удаление/ленивая сборка — задача раздела 8 после релиза. Также: форма в портрете клиппилась — уплотнён ритм и `height: fit-content`; `__DOM_SETTINGS` монтируется **после** мастерской (craft пересобирает innerHTML `#ui-root`); `formsFlag` в `ui/shared` (правило слоёв); `.dom-actions` скоупирован к `.dom-modal`; скриншоты к апруву лежат в `docs/pilot-baseline/phase2-dom/` (фактический путь, 8 вьюпортов) |
+| 2026-11-17 | 2 (M1) | `src/state/settings.js` + `settingsMessages.js` (единая запись и тексты), `settingsSnapshot` в bridge, DOM-форма `settingsScreen.js` на `modal.js`/`lock.js`, фасад `openModal/closeModal` с флагом отката, `afterPrestige/afterReset`, компоненты `rangeInput`, CSS/токены модалки, golden и скриншоты, приёмка ST1–ST14 | `verify:settings-dom` 28/28 (с ST1f) (+ `--legacy` 7/7); `ui:check:dom --form settings` 8×6 элементов 0/0; golden 1280×720 0.020–0.043 %, 390×844 0.000 %; p95 33.3 → **16.7 мс**; бандл +4.29 КБ gzip (метод — `metrics:gzip`, см. baseline §9); LOC 497 без тестов (1.35×); коммиты `cbb7d35`, `ac9dc5a`, `a09f091` | **Отклонение от шага 2.6:** Phaser-модалка настроек продолжает строиться при старте и остаётся скрытой (`buildModal` вызывается безусловно) — так окно отката готово мгновенно и не зависит от ленивой загрузки; это ломает учёт LOC окна отката (в W1 считается весь `settingsModal.js`), удаление/ленивая сборка — задача раздела 8 после релиза. Также: форма в портрете клиппилась — уплотнён ритм и `height: fit-content`; `__DOM_SETTINGS` монтируется **после** мастерской (craft пересобирает innerHTML `#ui-root`); `formsFlag` в `ui/shared` (правило слоёв); `.dom-actions` скоупирован к `.dom-modal`; скриншоты к апруву лежат в `docs/dom-phase2/baseline/phase2-dom/` (фактический путь, 8 вьюпортов) |
 | 2026-11-17 | GA | Пересчёт `fix` (90 дней): settings 3, status 1; оценка R/W формы settings; автоматический G-итог | R1–R8 — PASS (приёмка 27/27, аудит 7 вьюпортов 0/0, golden, ST9–ST11, ST12, консоль чистая, `--legacy` 7/7); W2 +4.29 КБ, W3 −16.6 мс; W1 1.35× — W-провал с обоснованием; **M2 отложен** (status clean fixes = 1) | Этап 3 не выполнялся как реализация; `dom-forms.status` остаётся `pending`, реестр печатает «пропущено» |
 | 2026-11-17 | 3 (M2) | Не выполнялся — M2 отложен на GA | `verify:status-dom`, `ui:check:dom --form status`, `dom-golden --form status` не создавались | По правилу 10.4 отложенная форма не строится в этой фазе |
 | 2026-11-17 | 4 | Замеры раздела 12, оценка R/W, стоимость двух стеков, итоговый прогон, финальный отчёт | Таблица 12 заполнена; все итоговые гейты зелёные; G-итог — частичный go; ветка `phase2/dom-forms` не слита | Стоимость окна отката: Phaser-путь `settingsModal.js` 428 строк + флаг/ветки фасада + `--legacy`-приёмка; удаление — отдельной задачей после релиза (раздел 8) |
@@ -478,7 +478,7 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 7. Не трогать экраны вне D9; не делать редизайнов «заодно».
 8. Применённые скиллы указывать в отчёте: `Skills: <файлы>`.
 9. Если этап упирается в нерешённый вопрос — выбрать вариант с меньшим изменением и сохранением гейтов, записать решение и причину в журнал; вопросов игроку после старта не задавать (политика сбоев — 0.0).
-10. Новый скрипт в `scripts/` — сразу в целевую папку (`gates|verify|metrics|stands|lib`), алиас в `package.json` и строка в `scripts/README.md` (`npm run scripts:check`, `docs/REPO_REFACTOR_PLAN.md`, D8). Пути существующих файлов в этом плане не меняются (реорганизация уже выполнена).
+10. Новый скрипт в `scripts/` — сразу в целевую папку (`gates|verify|metrics|stands|lib`), алиас в `package.json` и строка в `scripts/README.md` (`npm run scripts:check`, `docs/repo-reorg/REPO_REFACTOR_PLAN.md`, D8). Пути существующих файлов в этом плане не меняются (реорганизация уже выполнена).
 11. Новый и изменённый код проходит `npm run format:check`, `npm run lint`, `npm run scripts:check` и `npm run layers:check` (`REPO_REFACTOR_PLAN`, D13/D14); эти команды входят в **каждый** «полный набор гейтов» этого плана. Комментарии: комментарии-обоснования голых чисел обязательны (`ui:tokens`), боковые комментарии не добавлять; JSDoc у новых экспортируемых функций приветствуется.
 
 ---
@@ -516,5 +516,5 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 
 ## Приложение C. Файлы фазы (ожидаемый состав)
 
-Новые: `scripts/metrics/phase2-fixcount.mjs`, `scripts/lib/dom-forms.mjs`, `scripts/lib/forms-flag.mjs`, `scripts/stands/build-dom-form-snapshot.mjs`, `scripts/verify/verify-settings-dom.mjs`, `scripts/verify/verify-status-dom.mjs`, `src/ui/dom/formsFlag.js`, `src/ui/dom/modal.js`, `src/ui/dom/lock.js`, `src/ui/dom/settingsScreen.js`, `src/ui/dom/statusModals.js`, `src/state/settings.js`, `src/state/settingsMessages.js`, `src/state/statusMessages.js`, `tests/characterization/{forms_flag,state_settings,settings_messages,status_messages}.test.mjs`, `docs/UI_DOM_PHASE2_BASELINE.md`.
+Новые: `scripts/metrics/phase2-fixcount.mjs`, `scripts/lib/dom-forms.mjs`, `scripts/lib/forms-flag.mjs`, `scripts/stands/build-dom-form-snapshot.mjs`, `scripts/verify/verify-settings-dom.mjs`, `scripts/verify/verify-status-dom.mjs`, `src/ui/dom/formsFlag.js`, `src/ui/dom/modal.js`, `src/ui/dom/lock.js`, `src/ui/dom/settingsScreen.js`, `src/ui/dom/statusModals.js`, `src/state/settings.js`, `src/state/settingsMessages.js`, `src/state/statusMessages.js`, `tests/characterization/{forms_flag,state_settings,settings_messages,status_messages}.test.mjs`, `docs/dom-phase2/UI_DOM_PHASE2_BASELINE.md`.
 Изменяются: `src/state.js` (реэкспорт), `src/ui/dom/bridge.js`, `src/ui/dom/components.js`, `src/ui/dom/dom.css`, `src/ui/shared/theme.js` (+ `tokens.css` генератором), `src/ui/UIScene.js`, `src/ui/phaser/{settings,statusModals}.js`, `src/dev/uiAudit.js`, `scripts/gates/ui-check-dom.mjs`, `scripts/gates/dom-golden.mjs`, `scripts/metrics/pilot-frame-p95.mjs`, `scripts/metrics/pilot-loc.mjs`, `scripts/stands/build-dom-craft-snapshot.mjs`, `scripts/lib/ui-matrix.mjs`, `scripts/README.md`, `package.json` (алиасы).

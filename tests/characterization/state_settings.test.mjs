@@ -1,4 +1,4 @@
-// Настройки (docs/UI_DOM_PHASE2_PLAN.md, шаг 2.1): границы громкости, 0 сохраняется как 0,
+// Настройки (docs/dom-phase2/UI_DOM_PHASE2_PLAN.md, шаг 2.1): границы громкости, 0 сохраняется как 0,
 // тумблеры звука/музыки пишутся в state и сохраняются сразу.
 import { beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';

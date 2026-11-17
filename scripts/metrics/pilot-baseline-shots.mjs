@@ -1,9 +1,9 @@
 // Пилот DOM (этап 0.3): чистые (без разметки нарушений) скриншоты мастерской
-// на фиксированном наборе вьюпортов -> docs/pilot-baseline/.
+// на фиксированном наборе вьюпортов -> docs/dom-pilot/baseline/.
 // Использует те же seed/setup, что состояние `craft` матрицы ui:check,
 // и ту же остановку таймеров (детерминированная картинка).
 //
-// Запуск: node scripts/pilot-baseline-shots.mjs [--out docs/pilot-baseline]
+// Запуск: node scripts/pilot-baseline-shots.mjs [--out docs/dom-pilot/baseline]
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -22,10 +22,10 @@ const opt = (name, def = null) => {
 const BASE = process.env.BASE_URL || 'http://localhost:5174';
 const outArg = opt('out', null);
 // Безопасный дефолт: shots/ в .gitignore. Трекнутый эталон обновляется ТОЛЬКО явным
-// --out docs/pilot-baseline — случайный прогон метрики не перезапишет артефакты (M4).
+// --out docs/dom-pilot/baseline — случайный прогон метрики не перезапишет артефакты (M4).
 const OUT = path.resolve(outArg || path.join('shots', 'metrics', 'baseline'));
 if (!outArg) {
-    console.log('по умолчанию: shots/metrics/baseline; для обновления эталона — --out docs/pilot-baseline');
+    console.log('по умолчанию: shots/metrics/baseline; для обновления эталона — --out docs/dom-pilot/baseline');
 }
 
 const SHOT_IDS = ['p360', 'p390', 'p412', 't768', 'l844', 'd1280'];

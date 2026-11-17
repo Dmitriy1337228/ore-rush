@@ -1,4 +1,4 @@
-// Флаг-откат форм (docs/UI_DOM_PHASE2_PLAN.md, D5): query, localStorage, пусто,
+// Флаг-откат форм (docs/dom-phase2/UI_DOM_PHASE2_PLAN.md, D5): query, localStorage, пусто,
 // неизвестные имена игнорируются.
 import assert from 'node:assert/strict';
 import { afterEach, describe, test } from 'node:test';

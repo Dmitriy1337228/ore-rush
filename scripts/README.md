@@ -1,7 +1,7 @@
 # Индекс скриптов `scripts/`
 
 Единая точка входа: **алиас npm** (стабильное имя, не зависит от папки). Гард
-`npm run scripts:check` проверяет три правила (D8 в `docs/REPO_REFACTOR_PLAN.md`):
+`npm run scripts:check` проверяет три правила (D8 в `docs/repo-reorg/REPO_REFACTOR_PLAN.md`):
 
 1. у каждого файла `scripts/**/*` (кроме `lib/`, `archive/`, `README.md`) есть npm-алиас;
 2. каждый такой файл упомянут строкой в этой таблице;
@@ -47,7 +47,7 @@
 | `scripts/metrics/pilot-layers-check.mjs` | Порядок слоёв DOM и Phaser (DOM над канвасом) | `metrics:layers` | метрика | да | активен |
 | `scripts/archive/pilot-dom-input-check.mjs` | Ввод через DOM-слой: клик в шахту, клик по панели, драг | — | архив | да | архив: пилот завершён (G3 = go), блокировка под панелью покрыта `verify:craft-dom`; удалить после квартальной ревизии |
 | `scripts/archive/pilot-dpr-shots.mjs` | Шрифт/рамки на DPR 1…3 (CSS px не «плывут») | — | архив | да | архив: разовый замер пилота, ассертов нет; вернуть из истории при смене шрифтов |
-| `scripts/metrics/pilot-baseline-shots.mjs` | Чистые скриншоты мастерской на наборе вьюпортов → `docs/pilot-baseline/` | `metrics:baseline-shots` | метрика | да | активен |
+| `scripts/metrics/pilot-baseline-shots.mjs` | Чистые скриншоты мастерской на наборе вьюпортов → `docs/dom-pilot/baseline/` | `metrics:baseline-shots` | метрика | да | активен |
 | `scripts/stands/build-dom-lab.mjs` | Автономный стенд DOM-панели (один HTML, без сети) | `stand:dom-lab` | стенд | нет | активен |
 | `scripts/stands/build-dom-form-snapshot.mjs` | Автономный снимок DOM-формы для телефона (`--form craft|settings`) | `stand:craft-phone` | стенд | нет | активен |
 | `scripts/data/balance-sim.mjs` | Симулятор баланса на реальной экономике `src/state.js` | `balance:sim` | данные | нет | активен |

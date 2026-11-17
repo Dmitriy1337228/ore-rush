@@ -201,6 +201,6 @@ if (argv.includes('--json')) {
 
     if (FORM_ID === 'craft' && !baselineFiles.length) {
         console.log('\nPhaser-экран мастерской удалён (пилот DOM, G3 = go): baseline-число историческое,');
-        console.log('см. docs/UI_DOM_PILOT_BASELINE.md (1138 строк кода).');
+        console.log('см. docs/dom-pilot/UI_DOM_PILOT_BASELINE.md (1138 строк кода).');
     }
 }

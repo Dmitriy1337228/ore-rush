@@ -1,7 +1,7 @@
-// Приёмка DOM-формы «Настройки» (docs/UI_DOM_PHASE2_PLAN.md, этап 2, ST1–ST14).
+// Приёмка DOM-формы «Настройки» (docs/dom-phase2/UI_DOM_PHASE2_PLAN.md, этап 2, ST1–ST14).
 // Реальный dev-сервер и state.js: поведение, паритет текстов, блокировки и жесты.
 // Вёрстку (пороги, пересечения) меряет `npm run ui:check:dom`; здесь — только скриншоты
-// состояний в docs/pilot-baseline/phase2/settings-dom/.
+// состояний в docs/dom-phase2/baseline/phase2/settings-dom/.
 //
 // Запуск: npm run verify:settings-dom            (DOM-путь, эталон)
 //         npm run verify:settings-dom -- --legacy (Phaser-путь под флагом, адаптация шагов)
@@ -16,7 +16,7 @@ const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('..
 
 const BASE = process.env.BASE_URL || 'http://localhost:5174';
 const LEGACY = process.argv.includes('--legacy');
-const OUT = path.resolve('docs/pilot-baseline/phase2/settings-dom');
+const OUT = path.resolve('docs/dom-phase2/baseline/phase2/settings-dom');
 fs.mkdirSync(OUT, { recursive: true });
 
 let passed = 0;

@@ -1,4 +1,4 @@
-// Каркас DOM-модалки и слайдера (docs/UI_DOM_PHASE2_PLAN.md, шаг 1.7): структура
+// Каркас DOM-модалки и слайдера (docs/dom-phase2/UI_DOM_PHASE2_PLAN.md, шаг 1.7): структура
 // разметки, токены (никаких голых px), крестик только у closable.
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';

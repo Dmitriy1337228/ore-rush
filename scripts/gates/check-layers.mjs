@@ -1,4 +1,4 @@
-// Гард слоёв (docs/REPO_REFACTOR_PLAN.md, этап 4.3): правила изоляции ui/dom, ui/phaser,
+// Гард слоёв (docs/repo-reorg/REPO_REFACTOR_PLAN.md, этап 4.3): правила изоляции ui/dom, ui/phaser,
 // ui/shared и game. Запуск: npm run layers:check (код 1 — нарушения, список в stdout).
 // Селф-тест: node scripts/gates/check-layers.mjs --self-test — строит заведомо плохое
 // дерево во временном каталоге и обязан вернуть код 1.
