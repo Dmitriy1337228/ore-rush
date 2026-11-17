@@ -160,6 +160,13 @@ export function createDomSettings(scene) {
     // Клики: тумблеры, престиж, сброс. Скрим (backdrop) намеренно без обработчика —
     // клик по фону игру не закрывает и ничего не меняет (ST9).
     layer.addEventListener('click', (e) => {
+        if (e.target.closest('[data-dom-close]')) {
+            e.stopPropagation();
+            scene.closeModal();
+
+            return;
+        }
+
         const btn = e.target.closest('[data-act]');
         if (!btn) {
             return;
