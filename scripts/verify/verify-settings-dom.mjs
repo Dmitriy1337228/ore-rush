@@ -74,7 +74,8 @@ async function openSettings({ seed = SEEDS.mid, width = 1280, height = 720, befo
             ui.hideDailyModal();
         }
     });
-    await page.waitForTimeout(150);
+    // Не спим: ждём фактического снятия блокировки (updateBlockLock идёт по кадру)
+    await page.waitForFunction(() => !window.__GAME.registry.get('blockLocked'), null, { timeout: 5000 });
     if (before) {
         await page.evaluate(before);
         await page.waitForTimeout(150);

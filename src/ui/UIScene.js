@@ -200,7 +200,16 @@ export class UIScene extends Phaser.Scene {
         }
 
         await this._domSettingsReady;
-        this.domSettings?.open();
+        if (!this.domSettings) {
+            // Тихий отказ чанка/цепочки не должен оставлять «мёртвую» кнопку:
+            // диагностируем и отдаём управление готовому Phaser-пути (окно отката).
+            console.error('[settings:dom] контроллер не смонтирован — открываю Phaser-путь');
+            this.openSettingsPhaser();
+
+            return;
+        }
+
+        this.domSettings.open();
     }
 
     closeModal() {
