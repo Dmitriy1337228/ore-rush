@@ -1,18 +1,19 @@
-// Пилот DOM (этап 0.3 / 1.9 / этап 6): p95 времени кадра при открытой мастерской.
-// Один и тот же скрипт для baseline (Phaser) и DOM-версии (`--dom` -> ?dom=1).
+// p95 времени кадра при открытой форме (пилот DOM, этап 0.3/1.9; фаза 2 — шаг 1.4).
+// Один и тот же скрипт для baseline (Phaser-путь, --legacy) и DOM-версии (по умолчанию).
 //
 // Условия замера (фиксированы для сравнимости):
 //  - Chromium, viewport 1280x720, deviceScaleFactor 1;
 //  - эмуляция CPU x4 (CDP Emulation.setCPUThrottlingRate);
-//  - сейв/состояние `craft` из scripts/lib/ui-matrix.mjs, таймеры экономики НЕ паузятся;
-//  - 1 с прогрева, затем 10 с замеров по requestAnimationFrame; p95 по всем кадрам.
+//  - сид/состояние формы — из реестра (scripts/lib/dom-forms.mjs) и ui-matrix;
+//  - 1 с прогрева, затем 3 раунда по 10 с замеров по requestAnimationFrame; p95 по всем кадрам.
 //
-// Запуск: node scripts/pilot-frame-p95.mjs [--dom] [--seconds 10] [--out <file.json>]
+// Запуск: npm run metrics:p95 [-- --form craft|settings|daily] [--legacy] [--dom] [--seconds 10] [--out file.json]
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { STATES, SAVE_KEY } from '../lib/ui-matrix.mjs';
+import { SAVE_KEY, SEEDS } from '../lib/ui-matrix.mjs';
+import { withLegacy } from '../lib/forms-flag.mjs';
 
 const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 
@@ -25,11 +26,81 @@ const opt = (n, d = null) => {
 };
 
 const BASE = process.env.BASE_URL || 'http://localhost:5174';
-const URL = flag('dom') ? `${BASE}/?dom=1` : BASE;
 const SECONDS = Number(opt('seconds', 10));
 const WARMUP_MS = 1000;
 const CPU_RATE = 4;
-const craftState = STATES.find((s) => s.id === 'craft');
+const FORM = opt('form', 'craft');
+// Дом: craft уже только DOM; settings/daily — DOM по умолчанию, Phaser по --legacy.
+const LEGACY = flag('legacy');
+const DOM = flag('dom') || (FORM === 'craft' && !LEGACY);
+
+const TARGETS = {
+    craft: {
+        seed: 'mid',
+        dom: {
+            prepare: `(async () => {
+                const ui = window.__GAME.scene.getScene('UIScene');
+                ui._pendingDaily = null;
+                ui.registry.set('dailyInfo', null);
+                if (ui._dailyOpen) ui.hideDailyModal();
+                const url = performance.getEntriesByType('resource').map((r) => r.name).find((u) => u.includes('/src/state.js'));
+                const m = await import(url);
+                for (const id of Object.keys(m.gameState.levels)) m.gameState.levels[id] = 0;
+                for (const c of m.COMPONENTS) m.gameState.components[c.id] = 100;
+                for (const i of m.ITEMS) m.gameState.items[i.id] = 2;
+            })()`,
+            open: "window.__GAME.scene.getScene('UIScene').openCraft()",
+            ready: 'window.__DOM_CRAFT.isOpen()',
+            state: 'craftOpen'
+        },
+        phaser: null
+    },
+    settings: {
+        seed: 'mid',
+        dom: {
+            prepare: null,
+            open: "window.__GAME.scene.getScene('UIScene').openModal()",
+            ready: '!!window.__DOM_SETTINGS && window.__DOM_SETTINGS.isOpen()',
+            state: 'settingsOpen'
+        },
+        phaser: {
+            prepare: `(() => { const ui = window.__GAME.scene.getScene('UIScene'); ui._pendingDaily = null; ui.registry.set('dailyInfo', null); if (ui._dailyOpen) ui.hideDailyModal(); })()`,
+            open: "window.__GAME.scene.getScene('UIScene').settingsBtn.emit('pointerdown')",
+            ready: "window.__GAME.scene.getScene('UIScene')._settingsOpen",
+            state: 'settingsOpen'
+        }
+    },
+    daily: {
+        seed: 'fresh',
+        dom: {
+            prepare: null,
+            open: "window.__GAME.scene.getScene('UIScene').tryShowDailyModal()",
+            ready: "window.__GAME.scene.getScene('UIScene')._dailyOpen",
+            state: 'dailyOpen'
+        },
+        phaser: {
+            prepare: null,
+            open: null,
+            ready: "window.__GAME.scene.getScene('UIScene')._dailyOpen",
+            state: 'dailyOpen'
+        }
+    }
+};
+
+const target = TARGETS[FORM];
+if (!target) {
+    console.error(`metrics:p95: неизвестная форма "${FORM}" (есть: craft, settings, daily)`);
+    process.exit(2);
+}
+
+const pathDef = DOM ? target.dom : target.phaser;
+if (!pathDef) {
+    console.error(`metrics:p95: у формы ${FORM} нет ${DOM ? 'DOM' : 'Phaser'}-пути`);
+    process.exit(2);
+}
+
+const URL = DOM ? BASE : withLegacy(BASE);
+const MODE = DOM ? 'dom' : 'phaser';
 
 const server = await ensureDevServer();
 process.on('exit', () => releaseDevServer(server));
@@ -51,7 +122,7 @@ try {
                 localStorage.setItem(k, v);
             }
         },
-        { [SAVE_KEY]: JSON.stringify(craftState.seed) }
+        { [SAVE_KEY]: JSON.stringify(SEEDS[target.seed] || SEEDS.mid) }
     );
     const cdp = await ctx.newCDPSession(page);
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_RATE });
@@ -67,31 +138,28 @@ try {
         { timeout: 30000 }
     );
     await page.waitForTimeout(500);
-    if (flag('dom')) {
-        // DOM-версия (этап 2): боевой экран монтирует UIScene по флагу ?dom=1.
-        await page.waitForFunction(() => !!window.__DOM_CRAFT, null, { timeout: 30000 });
-        await page.waitForTimeout(1250); // отложенная ежедневная награда
-        await page.evaluate(() => {
-            const ui = window.__GAME.scene.getScene('UIScene');
-            ui._pendingDaily = null;
-            ui.registry.set('dailyInfo', null);
-            if (ui._dailyOpen) {
-                ui.hideDailyModal();
-            }
-        });
-        await page.waitForTimeout(350);
-        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
-        await page.waitForFunction(() => window.__DOM_CRAFT.isOpen(), null, { timeout: 10000 });
-    } else {
-        await craftState.setup(page);
+    if (pathDef.prepare) {
+        await page.evaluate(pathDef.prepare);
     }
 
+    if (DOM) {
+        await page.waitForFunction(() => /__DOM_(CRAFT|SETTINGS|STATUS)/.test(Object.keys(window).join(',')), null, {
+            timeout: 30000
+        });
+    }
+
+    await page.waitForTimeout(FORM === 'daily' ? 900 : 1250);
+    if (pathDef.open) {
+        await page.evaluate(pathDef.open);
+    }
+
+    await page.waitForFunction(pathDef.ready, null, { timeout: 10000 });
     await page.waitForTimeout(800);
-    const open = await page.evaluate(() => {
+    const open = await page.evaluate((flagName) => {
         const ui = window.__GAME.scene.getScene('UIScene');
 
-        return { craftOpen: !!ui._craftOpen, domRoot: !!document.getElementById('ui-root') };
-    });
+        return { [flagName]: !!ui[`_${flagName}`], domRoot: !!document.getElementById('ui-root') };
+    }, pathDef.state);
 
     await page.waitForTimeout(WARMUP_MS);
 
@@ -133,13 +201,13 @@ try {
         };
     };
     const perRound = rounds.map(stats);
-    // Итоговый p95 — по объединённой выборке всех раундов (устойчивее к «холодному» первому).
     const all = stats(rounds.flat());
 
     report = {
         createdAt: new Date().toISOString(),
         url: URL,
-        mode: flag('dom') ? 'dom' : 'phaser',
+        form: FORM,
+        mode: MODE,
         viewport: '1280x720',
         deviceScaleFactor: 1,
         cpuThrottleRate: CPU_RATE,
