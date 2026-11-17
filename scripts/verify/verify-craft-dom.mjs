@@ -216,7 +216,8 @@ const check = (name, ok, details = {}) => {
 
     await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
     await page.waitForTimeout(150);
-    await page.locator('.dom-close').click();
+    // Скоуп на панель мастерской: в #ui-root теперь есть и скрытый крестик настроек
+    await page.locator('[data-dom-panel] .dom-close').click();
     await page.waitForTimeout(150);
     check('закрытие крестиком', await page.evaluate(() => !window.__DOM_CRAFT.isOpen()));
 
@@ -350,7 +351,7 @@ const check = (name, ok, details = {}) => {
 
     // S7. Ресайз/ориентация при открытой мастерской
     await page.evaluate(() => {
-        document.querySelector('[data-dom-scroll]').scrollTop = 200;
+        document.querySelector('[data-dom-panel] [data-dom-scroll]').scrollTop = 200;
     });
     await wait(200);
     await page.setViewportSize({ width: 390, height: 844 });
@@ -358,7 +359,7 @@ const check = (name, ok, details = {}) => {
     let s7 = await page.evaluate(() => ({
         open: window.__DOM_CRAFT.isOpen(),
         cls: document.getElementById('ui-root').className,
-        top: document.querySelector('[data-dom-scroll]').scrollTop
+        top: document.querySelector('[data-dom-panel] [data-dom-scroll]').scrollTop
     }));
     check('S7: портрет сохраняет скролл', s7.open && /portrait/.test(s7.cls) && s7.top > 0, s7);
 
@@ -367,7 +368,7 @@ const check = (name, ok, details = {}) => {
     s7 = await page.evaluate(() => ({
         open: window.__DOM_CRAFT.isOpen(),
         cls: document.getElementById('ui-root').className,
-        top: document.querySelector('[data-dom-scroll]').scrollTop
+        top: document.querySelector('[data-dom-panel] [data-dom-scroll]').scrollTop
     }));
     check('S7: ландшафт сохраняет скролл', s7.open && /landscape/.test(s7.cls) && s7.top > 0, s7);
 
@@ -678,9 +679,11 @@ const check = (name, ok, details = {}) => {
     // Прокрутка списка не нажимает кнопки
     await st('m.gameState.items.item_bomb = 0; m.gameState.ore = 1e6;');
     await wait(400);
-    const scrollBefore = await page.evaluate(() => document.querySelector('[data-dom-scroll]').scrollTop);
+    const scrollBefore = await page.evaluate(
+        () => document.querySelector('[data-dom-panel] [data-dom-scroll]').scrollTop
+    );
     await page.touchscreen.tap(150, 700); // фокус в области списка (не кнопка)
-    const scrollBox = await page.locator('[data-dom-scroll]').boundingBox();
+    const scrollBox = await page.locator('[data-dom-panel] [data-dom-scroll]').boundingBox();
     const sx = Math.round(scrollBox.x + scrollBox.width * 0.4);
     const sy = Math.round(scrollBox.y + scrollBox.height * 0.75);
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: sx, y: sy }] });
@@ -690,7 +693,9 @@ const check = (name, ok, details = {}) => {
 
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await wait(500);
-    const scrollAfter = await page.evaluate(() => document.querySelector('[data-dom-scroll]').scrollTop);
+    const scrollAfter = await page.evaluate(
+        () => document.querySelector('[data-dom-panel] [data-dom-scroll]').scrollTop
+    );
     stock = await st('m.gameState.items.item_bomb || 0');
     check('4.2 прокрутка не нажимает кнопки', scrollAfter > scrollBefore && stock === 0, {
         scrollBefore,
