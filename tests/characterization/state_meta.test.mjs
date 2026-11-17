@@ -271,7 +271,9 @@ describe('крафт', () => {
         assert.equal(S.canCraft('r_bomb'), true);
         assert.equal(S.startCraft('r_bomb'), true);
         assert.equal(S.gameState.crafting.recipeId, 'r_bomb');
-        assert.equal(S.gameState.crafting.endsAt - Date.now(), 0); // craftMs=0
+        // craftMs=0: endsAt равен моменту старта; между двумя Date.now() проходит
+        // до нескольких мс — допуск, иначе тест флейкует на ±1 мс
+        assert.equal(Math.abs(S.gameState.crafting.endsAt - Date.now()) <= 5, true);
         assert.equal(S.canClaimCraft(), true);
         const claimed = S.claimCraft();
         assert.equal(claimed.id, 'r_bomb');

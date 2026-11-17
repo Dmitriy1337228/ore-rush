@@ -129,6 +129,17 @@ function check(name, cond, detail = '') {
                 rowCard: r(row0 && row0.rc.list.find((o) => o.texture && o.texture.key === 'upgrade_row_card_1')),
                 tierLbl: r(ui.tierLabel),
                 amountC: { x: Math.round(ui.amountC.x), y: Math.round(ui.amountC.y) },
+                dock: ui.L.dock
+                    ? {
+                          x: ui.L.dock.x,
+                          y: ui.L.dock.y,
+                          w: ui.L.dock.w,
+                          h: ui.L.dock.h,
+                          unlockX: ui.L.dock.unlockX,
+                          unlockW: ui.L.dock.unlockW
+                      }
+                    : null,
+                modalCy: ui.L.modal.cy,
                 canvas: { w: Math.round(g.scale.displaySize.width), h: Math.round(g.scale.displaySize.height) }
             };
         });
@@ -187,15 +198,22 @@ function check(name, cond, detail = '') {
             JSON.stringify(l.canvas)
         );
         check('портрет: флаг portrait', l.portrait === true);
-        const py = H - 582; // верх панели (лист вровень с низом экрана)
+        // Текущая спека портретной сетки (src/layout.js): «лист» 700..900 высотой,
+        // вьюпорт-ниша внутри листа, нижний док Карта/Спуск/Крафт, модалки по центру
+        // свободной зоны (cx=W/2, cy=(160+H-16)/2).
+        const ph = Math.min(900, Math.max(700, Math.round(H * 0.6)));
+        const py = H - ph;
+        const recessTop = Math.round(0.186 * ph);
+        const recessBot = Math.round(0.945 * ph);
+        const vpInsetT = recessTop + 142;
         check(
             'портрет: блок по центру свободной зоны',
-            l.block.x === 360 && l.block.y === Math.round((140 + (py - 124)) / 2),
+            l.block.x === 360 && l.block.y === Math.round((140 + py) / 2),
             JSON.stringify(l.block)
         );
         check(
             'портрет: панель-«лист» от края до края',
-            l.panel.x === 360 && l.panel.w === 720 && l.panel.y === py + 291,
+            l.panel.x === 360 && l.panel.w === 720 && l.panel.y === py + ph / 2,
             JSON.stringify(l.panel)
         );
         check(
@@ -204,13 +222,13 @@ function check(name, cond, detail = '') {
         );
         const vp = {
             x: Math.round((73 * l.gameSize.w) / 1029),
-            y: py + 156,
+            y: py + vpInsetT,
             w: l.gameSize.w - Math.round((65 * l.gameSize.w) / 1029) - Math.round((73 * l.gameSize.w) / 1029),
-            h: 394
+            h: ph - vpInsetT - (ph - recessBot + 114)
         };
         check(
             'портрет: вкладки растянуты на весь вьюпорт',
-            Math.abs(l.amountC.x + 46 - (vp.x + vp.w - 18)) <= 1 && Math.round(l.tierLbl.x) === vp.x + 2,
+            Math.abs(l.amountC.x + 60 - (vp.x + vp.w - 16)) <= 1 && Math.round(l.tierLbl.x) === vp.x + 14,
             JSON.stringify({ amount: l.amountC, tier: l.tierLbl, vp })
         );
         check(
@@ -224,16 +242,19 @@ function check(name, cond, detail = '') {
             JSON.stringify(l.rowCard)
         );
         check('портрет: фон закрывает полосу до панели', l.bg.h >= py && l.bg.w >= 720, JSON.stringify(l.bg));
-        check('портрет: спуск над панелью', l.unlock.y + l.unlock.h / 2 <= py, JSON.stringify(l.unlock));
         check(
-            'портрет: подсказка между кнопкой и панелью',
-            l.hint.y > l.unlock.y + l.unlock.h / 2 && l.hint.y + l.hint.h / 2 <= py,
-            JSON.stringify(l.hint)
+            'портрет: спуск в нижнем доке (между Картой и Крафтом)',
+            l.unlock.y === l.dock.y &&
+                l.unlock.x === l.dock.unlockX &&
+                l.unlock.w === l.dock.unlockW &&
+                l.unlock.h === l.dock.h,
+            JSON.stringify({ unlock: l.unlock, dock: l.dock })
         );
+        check('портрет: подсказка над панелью', l.hint.y > 0 && l.hint.y + l.hint.h / 2 <= py, JSON.stringify(l.hint));
         check('портрет: статы видимы (клик/крит в HUD)', l.statsVisible === true);
         check(
-            'портрет: модалка в свободной зоне над панелью',
-            l.modal.x === 360 && l.modal.y === Math.max(Math.round(py / 2), 302) && l.modal.y + 300 <= py,
+            'портрет: модалка по центру свободной зоны',
+            l.modal.x === 360 && l.modal.y === l.modalCy,
             JSON.stringify(l.modal)
         );
         check('портрет: HUD-бар на всю ширину', l.hudBar.w === 704 && l.hudBar.x === 360, JSON.stringify(l.hudBar));
@@ -244,7 +265,7 @@ function check(name, cond, detail = '') {
         );
         check(
             'портрет: кнопка x1 с отступом от правого края',
-            Math.round(l.amountC.x + 46) === l.listCam.x + l.listCam.w - 18,
+            Math.round(l.amountC.x + 60) === l.listCam.x + l.listCam.w - 16,
             JSON.stringify(l.amountC)
         );
 
@@ -315,7 +336,7 @@ function check(name, cond, detail = '') {
         });
         check(
             'портрет: модалка открылась над панелью',
-            modalOpen.visible && modalOpen.x === 360 && modalOpen.y === Math.max(Math.round(py / 2), 302),
+            modalOpen.visible && modalOpen.x === 360 && modalOpen.y === Math.round((160 + (H - 16)) / 2),
             JSON.stringify(modalOpen)
         );
         check('портрет: затемнение 720xH', modalOpen.dim === `720x${H}`, modalOpen.dim);
@@ -404,8 +425,10 @@ function check(name, cond, detail = '') {
                 mapLbl: f(ui.mapLbl),
                 craftLbl: f(ui.craftLbl),
                 mapBtnH: ui.mapBtn.displayHeight,
-                mapBtnBottom: ui.mapBtn.y + ui.mapBtn.displayHeight / 2,
-                tabsTop: ui.L.panel.py + 58,
+                mapBtnTop: ui.mapBtn.getBounds().top,
+                mapBtnBottom: ui.mapBtn.getBounds().bottom,
+                dockTop: ui.L.dock.y,
+                H: ui.L.H,
                 settingsW: ui.settingsBtn.displayWidth,
                 settingsH: ui.settingsBtn.displayHeight,
                 settingsLbl: f(ui.settingsLbl),
@@ -414,7 +437,7 @@ function check(name, cond, detail = '') {
                 stats: f(ui.statsLine),
                 stars: f(ui.starsText),
                 buff: f(ui.buffLine),
-                gpsRight: ui.gpsText.x + ui.gpsText.width,
+                gpsRight: ui.gpsText.getBounds().right,
                 statsRight: ui.statsLine.x + ui.statsLine.width,
                 settingsLeft: ui.settingsBtn.x - ui.settingsBtn.displayWidth / 2,
                 settingsRight: ui.settingsBtn.x + ui.settingsBtn.displayWidth / 2,
@@ -424,9 +447,13 @@ function check(name, cond, detail = '') {
         });
         check('портрет-HUD: масштаб 1.8 (390px)', Math.abs(h.s - 1.8) <= 0.05, String(h.s));
         check(
-            'портрет-HUD: кнопки Карта/Крафт выросли, низ не на вкладках',
-            h.mapBtnH >= 36 && h.mapBtnH <= 38 && h.mapBtnBottom <= h.tabsTop && h.mapLbl >= 18 && h.craftLbl >= 18,
-            JSON.stringify({ h: h.mapBtnH, bottom: h.mapBtnBottom, tabs: h.tabsTop, map: h.mapLbl, craft: h.craftLbl })
+            'портрет-HUD: кнопки Карта/Крафт выросли и стоят в нижнем доке (не за экраном)',
+            h.mapBtnH >= 64 &&
+                h.mapBtnTop >= h.dockTop - 1 &&
+                h.mapBtnBottom <= h.H - 8 &&
+                h.mapLbl >= 18 &&
+                h.craftLbl >= 18,
+            JSON.stringify({ h: h.mapBtnH, top: h.mapBtnTop, bottom: h.mapBtnBottom, dock: h.dockTop, H: h.H })
         );
         check(
             'портрет-HUD: кнопка Настройки крупнее',
@@ -470,7 +497,7 @@ function check(name, cond, detail = '') {
                 statsSize: f(ui.statsLine),
                 gpsText: ui.gpsText.text,
                 statsText: ui.statsLine.text,
-                gpsRight: ui.gpsText.x + ui.gpsText.width,
+                gpsRight: ui.gpsText.getBounds().right,
                 statsRight: ui.statsLine.x + ui.statsLine.width,
                 settingsLeft: ui.settingsBtn.x - ui.settingsBtn.displayWidth / 2
             };
@@ -536,7 +563,7 @@ function check(name, cond, detail = '') {
         );
         check(
             'портрет-панель: высота ряда сохранена (108), иконка в нише',
-            p.rowH === 108 && p.iconSize <= 64,
+            p.rowH === 132 && p.iconSize <= 64,
             JSON.stringify({ h: p.rowH, icon: p.iconSize })
         );
         check(
@@ -551,7 +578,7 @@ function check(name, cond, detail = '') {
         );
         check(
             'портрет-панель: тексты в карточке',
-            p.nameBottom <= 104 && p.priceBottom <= 106 && p.nameW <= p.nameMaxW + 1,
+            p.nameBottom <= p.rowH - 4 && p.priceBottom <= p.rowH - 2 && p.nameW <= p.nameMaxW + 1,
             JSON.stringify(p)
         );
         await ctx.close();
@@ -622,80 +649,46 @@ function check(name, cond, detail = '') {
         await ctx.close();
     }
 
-    // ---------- 9. Портрет-крафт: R5/R6-ряды, покупка, без вылезаний ----------
+    // ---------- 9. Портрет-крафт (DOM): панель в вьюпорте, скролл, тап-зоны ----------
+    // Phaser-мастерская удалена при пилоте DOM (G3 = go): проверяем живой DOM-контроллер.
     {
         const { ctx, page } = await newPage({ width: 390, height: 844 });
         await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
-        await page.waitForTimeout(400);
+        await page.waitForSelector('.dom-panel', { state: 'visible', timeout: 5000 });
+        await page.waitForTimeout(200);
         const c = await page.evaluate(() => {
-            const ui = window.__GAME.scene.getScene('UIScene');
-            const f = (o) => parseFloat(o.style.fontSize);
-            const items = Object.values(ui.craftItemRows).map((r) => ({
-                rowH: r.rc.list[0].displayHeight,
-                buyText: r.buyBtnText.text,
-                buySize: f(r.buyBtnText),
-                actSize: f(r.btnText),
-                hintSize: f(r.hint),
-                nameW: r.name.width,
-                nameMaxW: r.btn.x - r.btn.displayWidth / 2 - 8 - r.name.x
-            }));
-            const recipes = Object.values(ui.craftRecipeRows).map((r) => ({
-                desc: r.desc.text,
-                descSize: f(r.desc),
-                src: r.src.text,
-                nameSize: f(r.name),
-                lastPairRight: r.costPairs.length
-                    ? r.costPairs[r.costPairs.length - 1].text.x + r.costPairs[r.costPairs.length - 1].text.width
-                    : 0,
-                btnLeft: r.btn.x - r.btn.displayWidth / 2
-            }));
-            const texts = [];
-            const walk = (list) => {
-                for (const o of list) {
-                    if (o.type === 'Text') {
-                        texts.push(o);
-                    }
-
-                    if (o.list) {
-                        walk(o.list);
-                    }
-                }
-            };
-            walk(ui.craftContent.list);
+            const panel = document.querySelector('.dom-panel');
+            const scroll = panel.querySelector('[data-dom-scroll]');
+            const r = panel.getBoundingClientRect();
+            const btns = [...panel.querySelectorAll('.dom-btn')].filter((b) => !b.hidden);
+            const rects = btns.map((b) => b.getBoundingClientRect());
 
             return {
-                s: ui._adaptiveScale,
-                rowsS: ui._craftRowsS,
-                items,
-                recipes,
-                minFont: Math.min(...texts.map((t) => parseFloat(t.style.fontSize)))
+                open: !!window.__DOM_CRAFT && window.__DOM_CRAFT.isOpen(),
+                rect: { x: r.x, y: r.y, w: r.width, h: r.height, right: r.right, bottom: r.bottom },
+                vw: { w: window.innerWidth, h: window.innerHeight },
+                scrollable: scroll.scrollHeight > scroll.clientHeight + 1,
+                noHOverflow: scroll.scrollWidth <= scroll.clientWidth + 1,
+                minBtnH: rects.length ? Math.min(...rects.map((x) => x.height)) : 0,
+                rows: panel.querySelectorAll('[data-row]').length
             };
         });
         check(
-            'портрет-крафт: ряды собраны с масштабом (rowH=172)',
-            Math.abs(c.rowsS - 1.8) <= 0.05 &&
-                c.items.length === 7 &&
-                c.items.every((r) => Math.abs(r.rowH - Math.round(96 * 1.8)) <= 2),
-            `s=${c.rowsS}`
+            'портрет-крафт (DOM): открыт, панель внутри вьюпорта',
+            c.open && c.rect.x >= -1 && c.rect.y >= -1 && c.rect.right <= c.vw.w + 1 && c.rect.bottom <= c.vw.h + 1,
+            JSON.stringify(c.rect)
         );
         check(
-            'портрет-крафт: кнопка покупки с ценой в каждом ряду',
-            c.items.every((r) => r.buyText.startsWith('Купить ') && r.buySize >= 8 && r.actSize >= 8),
-            JSON.stringify(c.items.map((r) => r.buyText))
+            'портрет-крафт (DOM): ряды и вертикальный скролл',
+            c.rows >= 7 && c.scrollable,
+            JSON.stringify({ rows: c.rows, scroll: c.scrollable })
         );
-        check(
-            'портрет-крафт: «Получишь:/источник» в рецептах',
-            c.recipes.every((r) => r.desc.startsWith('Получишь: ') && r.src.length > 0 && r.descSize >= 9),
-            JSON.stringify(c.recipes[0])
-        );
-        check(
-            'портрет-крафт: тексты не наезжают на кнопки',
-            c.items.every((r) => r.nameW <= r.nameMaxW + 1) && c.recipes.every((r) => r.lastPairRight <= r.btnLeft - 4),
-            JSON.stringify(c.recipes.map((r) => Math.round(r.lastPairRight)))
-        );
-        check('портрет-крафт: минимальный кегль ≥ 9', c.minFont >= 9, String(c.minFont));
-        await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeCraft());
-        await page.waitForTimeout(200);
+        check('портрет-крафт (DOM): нет горизонтального переполнения', c.noHOverflow, '');
+        check('портрет-крафт (DOM): тап-зоны ≥ 24px', c.minBtnH >= 24, String(c.minBtnH));
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(300);
+        const closed = await page.evaluate(() => !window.__DOM_CRAFT || !window.__DOM_CRAFT.isOpen());
+        check('портрет-крафт (DOM): Escape закрывает', closed === true, String(closed));
         await ctx.close();
     }
 
@@ -714,7 +707,9 @@ function check(name, cond, detail = '') {
 
             return {
                 py: L.panel.py,
-                fightPyExpected: byF + 224,
+                panelBase: L.panel.py,
+                fightTop: byF,
+                H: L.H,
                 hintBottom,
                 gearVisible: ui.gearContent.visible,
                 listVisible: ui.listContent.visible,
@@ -725,14 +720,14 @@ function check(name, cond, detail = '') {
             };
         });
         check(
-            'портрет-бой: панель поднята под босса (fightPy)',
-            Math.abs(f.py - f.fightPyExpected) <= 1,
-            JSON.stringify({ py: f.py, exp: f.fightPyExpected })
+            'портрет-бой: панель не прыгает (py = базовый)',
+            f.py === f.panelBase,
+            JSON.stringify({ py: f.py, base: f.panelBase })
         );
         check(
-            'портрет-бой: зазор босс-панель мал (пустоты нет)',
-            f.py - f.hintBottom <= 40 && f.py - f.hintBottom >= -10,
-            JSON.stringify({ gap: Math.round(f.py - f.hintBottom) })
+            'портрет-бой: панель целиком на экране',
+            f.py > 0 && f.py + f.panelH <= f.H + 1,
+            JSON.stringify({ py: f.py, h: f.panelH, H: f.H })
         );
         check('портрет-бой: «Снаряжение» видно, список улучшений скрыт', f.gearVisible && !f.listVisible, '');
         check('портрет-бой: спуск скрыт', !f.unlockVisible, '');
@@ -759,9 +754,10 @@ function check(name, cond, detail = '') {
                 H: ui.L.H
             };
         });
+        const basePy = after.H - Math.min(900, Math.max(700, Math.round(after.H * 0.6)));
         check(
             'портрет-бой: после победы панель возвращается на базовое место',
-            !after.gear && after.list && after.unlock && Math.abs(after.py - (after.H - 582)) <= 2,
+            !after.gear && after.list && after.unlock && after.py === basePy,
             JSON.stringify(after)
         );
         await ctx.close();

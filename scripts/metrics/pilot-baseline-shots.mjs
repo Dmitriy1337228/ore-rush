@@ -20,7 +20,14 @@ const opt = (name, def = null) => {
 };
 
 const BASE = process.env.BASE_URL || 'http://localhost:5174';
-const OUT = path.resolve(opt('out', 'docs/pilot-baseline'));
+const outArg = opt('out', null);
+// Безопасный дефолт: shots/ в .gitignore. Трекнутый эталон обновляется ТОЛЬКО явным
+// --out docs/pilot-baseline — случайный прогон метрики не перезапишет артефакты (M4).
+const OUT = path.resolve(outArg || path.join('shots', 'metrics', 'baseline'));
+if (!outArg) {
+    console.log('по умолчанию: shots/metrics/baseline; для обновления эталона — --out docs/pilot-baseline');
+}
+
 const SHOT_IDS = ['p360', 'p390', 'p412', 't768', 'l844', 'd1280'];
 
 const viewports = VIEWPORTS.filter((v) => SHOT_IDS.includes(v.id));

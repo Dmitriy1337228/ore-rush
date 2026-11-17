@@ -13,6 +13,7 @@
 - Форматирование — Prettier (`.prettierrc`), линт — ESLint flat-конфиг (`eslint.config.js`): только стилистические правила (`curly: all`, пустая строка перед `return` и после `if/for/while`), без смысловых `no-*`.
 - Команды: `npm run format`, `npm run format:check`, `npm run lint`, `npm run lint:fix`. Охват — `src/`, `scripts/`, `tests/` (`*.js/*.mjs/*.cjs`) и `vite.config.js`. Не форматируются: `docs/`, `shots/`, `dist/`, `assets/`, `.kilo/`, `*.css` (в т.ч. генерируемый `src/ui/dom/tokens.css`), `*.html`, `*.md`, `*.json` (в т.ч. `tests/ui-check/baseline.json`), golden и `*.out` — защита в `.prettierignore` и `ignores` ESLint.
 - Перед сдачей любой правки кода — `npm run format:check` и `npm run lint` с кодом 0; обе команды входят в «полный набор гейтов» вместе с `npm test`, `npm run test:ui`, токен-гейтами и `npm run build`.
+- pre-commit (husky + lint-staged) прогоняет `prettier --write` и `eslint --fix` на staged-файлах: красный стиль не попадёт в коммит; обход — только осознанно (`git commit --no-verify`).
 - `embeddedLanguageFormatting: "off"`: HTML-шаблоны внутри шаблонных литералов Prettier не переформатирует (иначе меняется разметка DOM и расходится dist-бандл).
 - Комментарии: обоснования голых чисел обязательны (`ui:tokens`); боковой `//` допустимо переносить на строку над стейтментом, но не удалять; новые боковые комментарии не добавлять.
 - `git blame` без шума стиля: `git config blame.ignoreRevsFile .git-blame-ignore-revs` (хэши механических коммитов — в файле).

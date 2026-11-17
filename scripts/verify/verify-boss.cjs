@@ -696,7 +696,7 @@ const parseElapsed = (t) => {
         const k1 = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
 
-            return { open: ui._craftOpen, root: ui.craftRoot.visible };
+            return { open: ui._craftOpen, root: !!window.__DOM_CRAFT && window.__DOM_CRAFT.isOpen() };
         });
         check('K1: крафт открыт в бою', k1.open && k1.root, JSON.stringify(k1));
         await page.evaluate(() => {
@@ -705,13 +705,14 @@ const parseElapsed = (t) => {
         await page.waitForTimeout(2500);
         const k2 = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+            const dim = document.querySelector('.dom-backdrop');
 
             return {
                 reward: ui.bossRewardModal.visible,
                 open: ui._bossRewardOpen,
                 craftOpen: ui._craftOpen,
-                craftRoot: ui.craftRoot.visible,
-                craftDim: ui.craftDim.visible,
+                craftRoot: !!window.__DOM_CRAFT && window.__DOM_CRAFT.isOpen(),
+                craftDim: !!dim && !dim.hidden,
                 mapOpen: ui._mapOpen,
                 locked: window.__GAME.registry.get('blockLocked')
             };
@@ -759,7 +760,7 @@ const parseElapsed = (t) => {
         const k5 = await page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
 
-            return { open: ui._craftOpen, root: ui.craftRoot.visible };
+            return { open: ui._craftOpen, root: !!window.__DOM_CRAFT && window.__DOM_CRAFT.isOpen() };
         });
         check('K5: после закрытия награды крафт открывается заново', k5.open && k5.root, JSON.stringify(k5));
         await page.evaluate(() => window.__GAME.scene.getScene('UIScene').closeCraft());
@@ -958,7 +959,7 @@ const parseElapsed = (t) => {
         );
         check(
             'G2: ряд снаряжения — запас и динамическая цена',
-            /^в запасе: \d+$/.test(gear.stock) && /^Купить · /.test(gear.buyLbl) && gear.useLbl === 'Использовать',
+            /^x \d+$/.test(gear.stock) && /^Купить · /.test(gear.buyLbl) && gear.useLbl === 'Использовать',
             JSON.stringify(gear)
         );
 
@@ -966,7 +967,7 @@ const parseElapsed = (t) => {
         const slot = await gsOf(
             '({ buyLbl: gs.bossItems[0].buyLbl.visible ? gs.bossItems[0].buyLbl.text : null, cnt: gs.bossItems[0].cnt.visible ? gs.bossItems[0].cnt.text : null, hint: gs.bossHint && gs.bossHint.text })'
         );
-        check('G4: слот бомбы — понятная подпись покупки', /^купить \d/.test(slot.buyLbl || ''), JSON.stringify(slot));
+        check('G4: слот бомбы — понятная подпись покупки', /^Купить \d/.test(slot.buyLbl || ''), JSON.stringify(slot));
         check('G5: под слотами подсказка эффекта (что даёт покупка)', /урон/i.test(slot.hint || ''), slot.hint);
 
         // Покупка кликом по кнопке снаряжения (add.image — x/y уже центр кнопки)
