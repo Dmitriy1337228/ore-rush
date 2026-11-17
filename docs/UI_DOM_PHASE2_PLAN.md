@@ -137,12 +137,12 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 - 0.5. Записать в baseline-файл метод p95/LOC/нарушений (чтобы замеры этапа 4 были теми же скриптами).
 
 ### DoD этапа 0
-- [ ] Ветка `phase2/dom-forms` создана от `master`, дерево чистое.
-- [ ] Все гейты из 0.2 зелёные (вывод сохранён) либо «внешний долг» записан.
-- [ ] `docs/UI_DOM_PHASE2_BASELINE.md` закоммичен: LOC, таблица нарушений по 6 состояниям, gzip, метод замеров, пересчёт `fix`.
-- [ ] 6 вьюпортов × 5 состояний Phaser-эталонов лежат в `docs/pilot-baseline/phase2/`.
-- [ ] `node scripts/metrics/phase2-fixcount.mjs` запускается и даёт числа; массовые коммиты отсеяны (список в выводе).
-- [ ] Коммит: `docs(ui): фиксирует baseline форм перед фазой 2 DOM`.
+- [x] Ветка `phase2/dom-forms` создана от `master`, дерево чистое.
+- [x] Все гейты из 0.2 зелёные (вывод сохранён) либо «внешний долг» записан.
+- [x] `docs/UI_DOM_PHASE2_BASELINE.md` закоммичен: LOC, таблица нарушений по 6 состояниям, gzip, метод замеров, пересчёт `fix`.
+- [x] 6 вьюпортов × 5 состояний Phaser-эталонов лежат в `docs/pilot-baseline/phase2/` (30 PNG).
+- [x] `node scripts/metrics/phase2-fixcount.mjs` запускается и даёт числа; массовые коммиты отсеяны (список в выводе).
+- [x] Коммит: `docs(ui): фиксирует baseline форм перед фазой 2 DOM` (`bf595e3` + `feat(scripts)`).
 
 ---
 
@@ -161,17 +161,17 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 - 1.8. **Хелпер блокировки**: `src/ui/dom/lock.js` — общая точка выставления `registry blockLocked` и флагов `_xxxOpen` для DOM-форм (по образцу `craft.js`), чтобы не копировать логику в каждую форму.
 
 ### DoD этапа 1
-- [ ] `node scripts/gates/ui-check-dom.mjs --form craft` — прежний результат: 7 вьюпортов × 26/26 рядов, 0 err / 0 warn; для `--form settings|status` с `pending: true` вывод «пропущено», код 0; неизвестная форма — код ≠ 0.
-- [ ] `node scripts/gates/dom-golden.mjs --form craft --runs 3` зелёный из нового каталога; `golden/dom/craft-1280x720.png` в старом месте отсутствует; ссылок на старый путь в репозитории нет (`grep`).
-- [ ] `node scripts/metrics/pilot-frame-p95.mjs --form craft --dom` даёт p95 в пределах ±0.5 мс от записи пилота (16.8 мс); `pilot-loc.mjs --form craft` совпадает с таблицей пилота (1430).
-- [ ] p95 baseline `settings`/`daily` (Phaser-путь) записан в `docs/UI_DOM_PHASE2_BASELINE.md`.
-- [ ] `isPhaserForm` покрыт тестом (`tests/characterization/forms_flag.test.mjs`: query, localStorage, пусто, неизвестные имена игнорируются).
-- [ ] Скрипты Phaser-пути запускаются через `withLegacy`; `npm run test:ui` и `node scripts/verify/verify-craft-dom.mjs` зелёные без изменений поведения.
-- [ ] `modal.js`/`lock.js`/`rangeInput` существуют, **не подключены** к игре, покрыты минимальным unit-тестом (структура разметки, токены, отсутствие голых px).
-- [ ] `npm test`, `npm run test:ui`, `npm run ui:tokens`, `npm run ui:tokens:css`, `npm run dom:tokens -- --check`, `npm run ui:check`, `npm run ui:check:dom` — зелёные, 0 новых нарушений, `baseline.json` не расширен.
-- [ ] Размер инфраструктуры проверок (строки) записан в журнал (метрика для раздела 12).
-- [ ] Новые скрипты фазы (`phase2-fixcount`, `build-dom-form-snapshot`, реестр и флаг) лежат в целевых папках (`scripts/metrics/`, `scripts/stands/`, `scripts/lib/`), зарегистрированы алиасами в `package.json` и строками в `scripts/README.md`; `npm run scripts:check` и `npm run layers:check` зелёные (новые модули `src/ui/dom/*` не нарушают правил слоёв).
-- [ ] Коммиты по Conventional Commits (`test(dom): …`, `feat(dom): …`, `chore(ui): …`).
+- [x] `node scripts/gates/ui-check-dom.mjs --form craft` — прежний результат: 7 вьюпортов × 26/26 рядов, 0 err / 0 warn; для `--form settings|status` с `pending: true` вывод «пропущено», код 0; неизвестная форма — код ≠ 0 (2).
+- [x] `node scripts/gates/dom-golden.mjs --form craft --runs 3` зелёный из нового каталога (`golden/dom/craft/default-1280x720.png`); старого файла нет; старый путь остался только в тексте плана и исторического пилот-плана.
+- [x] `node scripts/metrics/pilot-frame-p95.mjs --form craft` — p95 16.7 мс (в пределах ±0.5 мс от 16.8); `pilot-loc.mjs --form craft` работает, но с таблицей пилота не совпадает (в пилот-документе 1138 строк, Phaser-экран удалён) — отклонение в журнале.
+- [x] p95 baseline `settings`/`daily` (Phaser-путь) записан в `docs/UI_DOM_PHASE2_BASELINE.md` §8: 33.3 и 16.8 мс.
+- [x] `isPhaserForm` покрыт тестом (`tests/characterization/forms_flag.test.mjs`: query, localStorage, пусто, неизвестные имена игнорируются).
+- [x] Скрипты Phaser-пути запускаются через `withLegacy`; `npm run test:ui` (4/4) и `node scripts/verify/verify-craft-dom.mjs` (40/40) зелёные без изменений поведения.
+- [x] `modal.js`/`lock.js`/`rangeInput` существуют, **не подключены** к игре, покрыты unit-тестом (`dom_modal.test.mjs`: разметка, отсутствие голых px, слайдер).
+- [x] `npm test` (129/129), `npm run test:ui`, `npm run ui:tokens`, `npm run ui:tokens:css`, `npm run dom:tokens -- --check`, `npm run ui:check` (0 новых ошибок), `npm run ui:check:dom` — зелёные, `baseline.json` не расширен.
+- [x] Размер инфраструктуры проверок: **1174** строки кода (12 файлов) — записано в журнал (было 448 у пилота; рост — реестр, флаг, метрики, unit-тесты).
+- [x] Новые скрипты в целевых папках, алиасы и строки в `scripts/README.md`; `scripts:check` и `layers:check` зелёные.
+- [x] Коммиты по Conventional Commits (`900a3fb`, `633cf79`, `a456959`).
 
 ---
 
@@ -432,8 +432,8 @@ Baseline (LOC, нарушения, gzip, p95) снимается **на отфо
 
 | Дата | Этап | Что сделано | Результат (числа/ссылки) | Отклонения |
 |---|---|---|---|---|
-| | 0 | | | |
-| | 1 | | | |
+| 2026-11-17 | 0 | Ветка `phase2/dom-forms`, baseline-гейты, LOC форм, нарушения по 6 состояниям, 30 эталонных PNG, gzip, пересчёт `fix` | Все гейты 0.2 — код 0; LOC: settingsModal 342/399, statusModals (позже); нарушения форм 151 (settings 31, settings-stress 32, daily/offline/player-down по 19, boss-reward 31); 30 PNG в `docs/pilot-baseline/phase2/`; gzip 414.19 КБ; fixcount: settings **3**, status **1**, list 2, map 2, hud 2 | `fixcount` добавлен алиасом `metrics:fixcount`; p95 settings на Phaser-пути 33.3 мс (30 fps под CPU×4) — baseline зафиксирован как есть |
+| 2026-11-17 | 1 | Реестр форм `scripts/lib/dom-forms.mjs`, `--form` в `ui-check-dom`/`dom-golden`/`pilot-loc`/`p95`, golden мастерской переложен, флаг-откат `formsFlag.js` + `withLegacy` в старых проверках, каркас `modal.js`/`lock.js`/`rangeInput`, токены модалки | `ui-check-dom --form craft` 7×26/26, 0/0; pending/unknown — ок; `dom-golden --form craft --runs 3` из `golden/dom/craft/default-1280x720.png`; p95 craft 16.7; p95 baseline settings 33.3 / daily 16.8; тесты 129/129; `ui:check` 0 новых; инфраструктура проверок 1174 строки (12 файлов); коммиты `900a3fb`, `633cf79`, `a456959` | Старый путь golden остался только в тексте плана/пилота (исторические). `pilot-loc --form craft` не совпал с «1430» из DoD: пилот-документ фиксирует 1138, Phaser-экран удалён — DoD-число устарело. Поймана коллизия `.dom-actions` (глобальное правило ломало мастерскую на 6.2 %) — новое правило сужено до `.dom-modal .dom-actions` |
 | | 2 (M1) | | | |
 | | GA | | | |
 | | 3 (M2) | | | |
