@@ -42,7 +42,7 @@
 
 ## DOM-слой UI (`src/ui/dom/` — мастерская и настройки с G3 = go / фазы 2)
 - Мастерская и **настройки** собираются в `src/ui/dom/` и включены по умолчанию в проде и dev. Контроллеры грузятся чанками при старте UIScene (`openCraft()`/`openModal()` ждут готовности); настройки монтируются после мастерской (она пересобирает `#ui-root`).
-- Статус-модалки (офлайн/дейли/босс/вырубление) — пока Phaser: DOM-версия отложена гейтом GA фазы 2 (`docs/UI_DOM_PHASE2_PLAN.md`, раздел 4.3). Откат любой формы на Phaser-путь: `?phaserForms=settings,status` или `localStorage.phaserForms` (`src/ui/shared/formsFlag.js`, `DEFAULT_PHASER_FORMS`).
+- Статус-модалки (офлайн/дейли/босс/вырубление) — пока Phaser: DOM-версия отложена гейтом GA фазы 2 (`docs/dom-phase2/UI_DOM_PHASE2_PLAN.md`, раздел 4.3). Откат любой формы на Phaser-путь: `?phaserForms=settings,status` или `localStorage.phaserForms` (`src/ui/shared/formsFlag.js`, `DEFAULT_PHASER_FORMS`).
 - Размеры — только токены: `npm run dom:tokens` генерирует `src/ui/dom/tokens.css` из `src/ui/shared/theme.js`; дрейф — `npm run dom:tokens -- --check`; голые `px/rem/em` вне `tokens.css` запрещены (`npm run ui:tokens:css`, 1px — только с комментарием-причиной).
 - Гейты: `npm run ui:check:dom [-- --form craft|settings|all]` (8 вьюпортов, PNG `shots/ui-check/<vp>__<form>-dom.png`) и `npm run test:dom-golden [-- --form …]` (tolerant-diff, порог 0.5 %); приёмки — `npm run verify:craft-dom`, `npm run verify:settings-dom`. **Полный UI-прогон = `npm run ui:check` + `npm run ui:check:dom`** + `npm test`, `npm run test:ui`, `npm run format:check`, `npm run lint`.
 - Бизнес-правила и запись состояния — только в `src/state.js`/`src/state/*`; `src/ui/dom/*` читает через `bridge.js`, тексты — `src/state/craftMessages.js`, `src/state/settingsMessages.js` (без копий).
@@ -60,7 +60,7 @@
 ## Скрипты `scripts/` (индекс и алиасы — обязательное правило)
 - Каждый скрипт запускается по **npm-алиасу** (`verify:boss`, `metrics:p95`, …), а не по пути: индекс — `scripts/README.md`, гард — `npm run scripts:check` (алиас + строка в README + файл существует).
 - Новый скрипт — сразу в целевую папку (`gates|verify|metrics|stands|audio|data`), с алиасом в `package.json` и строкой в `scripts/README.md`; `scripts/lib/` — библиотеки без алиасов, `scripts/archive/` — снятые с эксплуатации (вне гардов).
-- Триаж и внешний долг падающих проверок — `docs/REPO_REFACTOR_BASELINE.md`; падающий скрипт не «лечат» правкой ожиданий.
+- Триаж и внешний долг падающих проверок — `docs/repo-reorg/REPO_REFACTOR_BASELINE.md`; падающий скрипт не «лечат» правкой ожиданий.
 
 ## Скиллы (.kilo/skills)
 - Перед началом задачи сверься с реестром `.kilo/skills/INDEX.md` (если файл существует).
@@ -68,3 +68,6 @@
 - Если подходящего скилла нет — не читай лишние файлы и сразу переходи к задаче.
 - В командном режиме (`/team`) сабагенты читают только те скиллы, которые явно передал тимлид в брифинге (или совпавшие по их узкой роли в `INDEX.md`).
 - В финальном ответе/отчёте укажи `Skills: <файлы>` только если скиллы реально применялись.
+
+## Решения владельца (docs/DECISIONS.md)
+- Перед стартом любой задачи проверь `docs/DECISIONS.md` — там действующие решения владельца (HUD остаётся в Phaser; временные гейты/релизные окна отменены и т.п.). Задача, противоречащая решению, не начинается — расхождение выносится владельцу.
