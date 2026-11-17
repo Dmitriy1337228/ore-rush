@@ -130,6 +130,9 @@
     flex: 1 1 auto;
     min-height: 0;
     margin-top: var(--space-sm);
+    /* Формы скроллятся только вертикально; горизонтальное переполнение — дефект
+       (ловит H-SCROLL в ui:check:dom), а не повод показывать серую полосу */
+    overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     touch-action: pan-y;
@@ -486,9 +489,16 @@
 
 .dom-range-input {
     flex: 1 1 auto;
+    /* Нативный range имеет min-content ~129px и не сжимался: на 375/360 строка
+       переполняла скролл по горизонтали, «50%» уезжал за край (фикс игрока) */
+    min-width: 0;
     height: var(--dom-slider-h);
     accent-color: var(--color-gold);
     pointer-events: auto;
+}
+
+.dom-range {
+    min-width: 0;
 }
 
 .dom-range-value {

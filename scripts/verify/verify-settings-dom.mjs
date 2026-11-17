@@ -311,6 +311,36 @@ try {
             check('ST1e после закрытия клики снова добывают', ore1 > ore0, `${ore0} -> ${ore1}`);
             await page.screenshot({ path: path.join(OUT, 'st1-desktop.png') });
             await ctx.close();
+
+            // ST1f: узкий телефон 375 px — значение громкости не обрезается,
+            // горизонтального переполнения скролла нет (репорт игрока)
+            const narrow = await openSettings({ width: 375, height: 812 });
+            const nm = await narrow.page.evaluate(() => {
+                const panel = document.querySelector('[data-dom-modal]');
+                const scroll = panel.querySelector('[data-dom-scroll]');
+                const val = panel.querySelector('.dom-range-value');
+                const pr = panel.getBoundingClientRect();
+                const sr = scroll.getBoundingClientRect();
+                const vr = val.getBoundingClientRect();
+
+                return {
+                    inViewport:
+                        pr.x >= -1 &&
+                        pr.y >= -1 &&
+                        pr.right <= window.innerWidth + 1 &&
+                        pr.bottom <= window.innerHeight + 1,
+                    noHScroll: scroll.scrollWidth <= scroll.clientWidth + 1,
+                    valueVisible: vr.right <= sr.right + 1 && vr.left >= sr.left - 1,
+                    text: val.textContent
+                };
+            });
+            check(
+                'ST1f 375px: «50%» виден, горизонтального скролла нет',
+                nm.inViewport && nm.noHScroll && nm.valueVisible && nm.text === '50%',
+                JSON.stringify(nm)
+            );
+            await narrow.page.screenshot({ path: path.join(OUT, 'st1-375.png') });
+            await narrow.ctx.close();
         }
 
         // ---------- ST2/ST3: тумблеры, звук подтверждения и musicChanged ----------

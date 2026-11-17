@@ -42,7 +42,7 @@ BUTTON-GAP, MISALIGNED, EDGE (таблица в `docs/UI_LAYOUT.md`).
 1. Размеры — **только токены**: `npm run dom:tokens` (генерация из `src/ui/shared/theme.js`),
    `npm run dom:tokens -- --check` (дрейф), `npm run ui:tokens:css` (голые px/rem/em вне
    `tokens.css` запрещены; 1px — только с комментарием-причиной).
-2. `npm run ui:check:dom` — 7 вьюпортов × 26 рядов, `getBoundingClientRect`, пороги `UI_RULES`;
+2. `npm run ui:check:dom` — 8 вьюпортов (`--form craft|settings`), `getBoundingClientRect`, пороги `UI_RULES`;
    скриншоты `shots/ui-check/<vp>__craft-dom.png`, отчёт `shots/ui-check-dom/report.json`.
 3. `npm run test:dom-golden` — tolerant-diff эталона DOM-панели (порог 0.5%, константы в скрипте);
    обновление эталона — только с явным «ок».

@@ -87,7 +87,7 @@
 
 - LOC — `pilot-loc.mjs --form <form>` (обобщение на этапе 1; группы «экран / проверки / фикстуры»).
 - Нарушения — `ui:check` (Phaser-состояния `*-dom` только PNG) и `ui:check:dom --form <form>`
-  (те же 7 вьюпортов, 0 новых).
+  (те же вьюпорты, 0 новых; с фиксом по репорту игрока матрица — 8, добавлен 375×812).
 - Вес — `npm run build`, gzip всех `dist/assets/*.js|*.css`.
 - p95 — `pilot-frame-p95.mjs --form <form>` (CPU ×4, 3×10 с), baseline дозаписывается в
   конце этапа 1 на Phaser-пути (`--legacy`).

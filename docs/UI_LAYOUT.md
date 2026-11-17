@@ -11,7 +11,7 @@
 ```
 npm run ui:check:quick                 # 3 вьюпорта x 16 состояний (~1 мин)
 npm run ui:check                       # полная матрица: 9 вьюпортов x 16 состояний (~5 мин)
-npm run ui:check:dom                   # DOM-мастерская: 7 вьюпортов x 26 рядов (гейт)
+npm run ui:check:dom                   # DOM-формы: 8 вьюпортов x ряды/элементы формы (гейт)
 npm run ui:check -- --viewports p390 --states settings,craft   # точечно
 npm run ui:check -- --no-baseline      # показать ВЕСЬ долг, а не только новое
 ```
@@ -101,7 +101,7 @@ Replay открывает те же вьюпорт, сохранение и эк
 в проде и dev; Phaser-экран удалён после пилота (G3 = go). Для неё действуют свои гейты:
 
 ```
-npm run ui:check:dom                    # 7 вьюпортов, 26 рядов с прокруткой, 0 ошибок — гейт
+npm run ui:check:dom                    # 8 вьюпортов (вкл. 375), 0 ошибок — гейт
 npm run ui:tokens:css                   # голых px/rem/em вне tokens.css — нет
 npm run test:dom-golden                 # tolerant-diff эталона DOM-панели (порог 0.5% пикселей)
 ```

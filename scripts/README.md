@@ -16,7 +16,7 @@
 | Скрипт | Назначение | Алиас | Категория | Браузер/dev-сервер | Статус |
 |---|---|---|---|---|---|
 | `scripts/gates/ui-check.mjs` | Матрица вьюпортов × состояний, аудит вёрстки Phaser, размеченные PNG, baseline долга | `ui:check`, `ui:check:quick` | гейт | да | активен |
-| `scripts/gates/ui-check-dom.mjs` | DOM-аудит вёрстки (7 вьюпортов × 26 рядов мастерской) | `ui:check:dom` | гейт | да | активен |
+| `scripts/gates/ui-check-dom.mjs` | DOM-аудит вёрстки форм (`--form`, 8 вьюпортов; H-SCROLL, TOUCH, MIN-FONT, PADDING) | `ui:check:dom` | гейт | да | активен |
 | `scripts/gates/ui-review.mjs` | Golden-обзор состояний игры (скриншоты + текстовые артефакты) | `ui:review` | гейт | да | активен |
 | `scripts/gates/ui-tokens.mjs` | Нет голых кеглей/отступов в `src/scenes/ui` | `ui:tokens` | гейт | нет | активен |
 | `scripts/gates/ui-tokens-css.mjs` | Нет голых px/rem/em вне `tokens.css` в DOM-слое | `ui:tokens:css` | гейт | нет | активен |

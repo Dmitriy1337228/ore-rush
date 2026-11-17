@@ -35,6 +35,7 @@ const flag = (name) => argv.includes(`--${name}`);
 
 const VIEWPORTS = [
     { id: 'p360', width: 360, height: 640 },
+    { id: 'p375', width: 375, height: 812 },
     { id: 'p390', width: 390, height: 844 },
     { id: 'p412', width: 412, height: 915 },
     { id: 't768', width: 768, height: 1024 },
@@ -117,6 +118,16 @@ if (active.length) {
 
         const panelRect = r(panel);
         const scrollRect = scroll ? r(scroll) : null;
+        // H-SCROLL: формы скроллятся только по вертикали; горизонтальное переполнение
+        // уводит контент за край и рисует серую полосу (поймано на 375 px у настроек)
+        if (scroll && scroll.scrollWidth > scroll.clientWidth + tolerance) {
+            result.violations.push({
+                rule: 'H-SCROLL',
+                severity: 'error',
+                msg: `горизонтальное переполнение скролла: scrollWidth ${scroll.scrollWidth} > clientWidth ${scroll.clientWidth}`
+            });
+        }
+
         const intersects = (rect, zone) =>
             rect.width > 0 &&
             rect.height > 0 &&
