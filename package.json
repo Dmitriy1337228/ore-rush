@@ -32,6 +32,7 @@
     "verify:sfx": "node scripts/verify/verify-sfx.cjs",
     "metrics:p95": "node scripts/metrics/pilot-frame-p95.mjs",
     "metrics:loc": "node scripts/metrics/pilot-loc.mjs",
+    "metrics:fixcount": "node scripts/metrics/phase2-fixcount.mjs",
     "metrics:layers": "node scripts/metrics/pilot-layers-check.mjs",
     "metrics:baseline-shots": "node scripts/metrics/pilot-baseline-shots.mjs",
     "stand:dom-lab": "node scripts/stands/build-dom-lab.mjs",

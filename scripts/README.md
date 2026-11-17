@@ -41,6 +41,7 @@
 | `scripts/verify/verify-sfx.cjs` | Звуки: ключи из `assets/audio`, воспроизведение, клики/покупка | `verify:sfx` | verify | да | активен |
 | `scripts/metrics/pilot-frame-p95.mjs` | p95 времени кадра при открытой мастерской (Phaser и DOM) | `metrics:p95` | метрика | да | активен |
 | `scripts/metrics/pilot-loc.mjs` | Метрика «экран целиком»: строки кода по явному списку файлов | `metrics:loc` | метрика | нет | активен |
+| `scripts/metrics/phase2-fixcount.mjs` | Пересчёт «чистых» fix-коммитов по формам для гейта GA (фаза 2) | `metrics:fixcount` | метрика | нет | активен |
 | `scripts/metrics/pilot-layers-check.mjs` | Порядок слоёв DOM и Phaser (DOM над канвасом) | `metrics:layers` | метрика | да | активен |
 | `scripts/archive/pilot-dom-input-check.mjs` | Ввод через DOM-слой: клик в шахту, клик по панели, драг | — | архив | да | архив: пилот завершён (G3 = go), блокировка под панелью покрыта `verify:craft-dom`; удалить после квартальной ревизии |
 | `scripts/archive/pilot-dpr-shots.mjs` | Шрифт/рамки на DPR 1…3 (CSS px не «плывут») | — | архив | да | архив: разовый замер пилота, ассертов нет; вернуть из истории при смене шрифтов |
