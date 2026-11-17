@@ -1,9 +1,12 @@
-// Пилот DOM (этап 1, шаг 1.7 / решение D3): порядок слоёв DOM и Phaser.
-// Проверяет факт: DOM-панель лежит над канвасом, поэтому Phaser-модалка
-// (ежедневная награда) оказывается под ней. Результат — в журнал и в решение
-// этапа 2 (что делать с алертами при открытом DOM-экране).
+// Метрика слоёв (бывший пилот DOM, этап 1, шаг 1.7 / решение D3): порядок слоёв
+// DOM и Phaser. Проверяет факт: DOM-слой (#ui-root) лежит над канвасом, поэтому
+// Phaser-алерты (ежедневная награда и т.п.) оказываются под DOM-панелью; DevPanel
+// (z-index 9999) обязан быть выше DOM-слоя.
 //
-// Запуск: node scripts/pilot-layers-check.mjs [--out shots/pilot-gates]
+// После пилота (G3 = go) мастерская — обычный DOM-контроллер `__DOM_CRAFT`;
+// фикстурный `?dom=1`/`window.__DOM_UI` удалён, метрика работает на реальном приложении.
+//
+// Запуск: npm run metrics:layers [-- --out shots/pilot-gates]
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -25,7 +28,7 @@ fs.mkdirSync(OUT, { recursive: true });
 const server = await ensureDevServer();
 process.on('exit', () => releaseDevServer(server));
 const browser = await chromium.launch();
-const report = { url: `${BASE}/?dom=1`, checks: {} };
+const report = { url: BASE, checks: {} };
 try {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
     const page = await ctx.newPage();
@@ -37,22 +40,27 @@ try {
                 localStorage.setItem(k, v);
             }
         },
-        { [SAVE_KEY]: JSON.stringify(SEEDS.mid), domUi: '1' }
+        { [SAVE_KEY]: JSON.stringify(SEEDS.mid) }
     );
-    await page.goto(`${BASE}/?dom=1`, { waitUntil: 'load' });
-    await page.waitForFunction(() => !!window.__DOM_UI && window.__GAME.scene.getScene('UIScene').L, null, {
+    await page.goto(BASE, { waitUntil: 'load' });
+    await page.waitForFunction(() => window.__GAME?.scene?.getScene('UIScene')?.scene?.isActive?.(), null, {
         timeout: 30000
     });
-    await page.waitForTimeout(600);
+    await page.waitForTimeout(400);
+
+    // Открываем реальную DOM-мастерскую и ждём панель
+    await page.evaluate(() => window.__GAME.scene.getScene('UIScene').openCraft());
+    await page.waitForSelector('.dom-panel', { state: 'visible', timeout: 10000 });
+    await page.waitForTimeout(300);
     await page.screenshot({ path: path.join(OUT, 'layers-before.png') });
 
-    // Принудительно открываем Phaser-модалку ежедневной награды.
+    // Пробуем показать Phaser-алерт (ежедневная награда) поверх открытой мастерской:
+    // по D3 он обязан оказаться ПОД DOM-слоем; открытие может быть отложено очередью.
     const phaser = await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
         ui._pendingDaily = { streak: 3, extra: 1200 };
         ui.tryShowDailyModal();
         const daily = { open: !!ui._dailyOpen, visible: !!(ui.dailyModal && ui.dailyModal.visible) };
-        // Объекты алертов: dim (depth 50) и панель (51)
         const alerts = ui.children.list
             .filter((o) => o.visible && o.depth >= 50)
             .map((o) => ({
@@ -89,7 +97,8 @@ try {
             panel: r(panel),
             canvas: r(canvas),
             elementAtCenter: top ? (top.closest('#ui-root') ? 'dom' : 'canvas') : 'none',
-            panelAboveCanvas: Number(cs.zIndex) > 0
+            panelAboveCanvas: Number(cs.zIndex) > 0,
+            craftOpen: !!window.__DOM_CRAFT && window.__DOM_CRAFT.isOpen()
         };
     });
 
@@ -125,9 +134,9 @@ try {
     report.checks = {
         phaserDailyOpen: phaser.daily,
         phaserAlertObjects: phaser.alerts,
-        dom: dom,
-        domCoversPhaserAlert: phaser.daily.open && dom.elementAtCenter === 'dom',
-        devPanel: devPanel,
+        dom,
+        domCoversPhaserAlert: dom.craftOpen && dom.elementAtCenter === 'dom',
+        devPanel,
         devPanelAboveDom: devPanel.present && devPanel.elementAtDevPanel === 'devpanel',
         consoleErrors: errors
     };
