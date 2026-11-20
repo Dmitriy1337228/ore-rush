@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { fmt, getUpgradeCost, getBulkCost, getAffordableBulk } from '../state.js';
+import { fmt, getUpgradeCost, getBulkCost, getAffordableBulk, gameState } from '../state.js';
 import { computeLayout } from '../layout.js';
 import { VIEWPORT } from './shared/listGeometry.js';
 import { EVENTS, REG } from './shared/theme.js';
@@ -11,7 +11,7 @@ import { settingsModalMethods } from './phaser/settingsModal.js';
 import { statusModalsMethods } from './phaser/statusModals.js';
 import { mapScreenMethods } from './phaser/mapScreen.js';
 import { tutorialMethods } from './phaser/tutorial.js';
-import { isPhaserForm } from './shared/formsFlag.js';
+import { isPhaserForm, upgradesOnDom } from './shared/formsFlag.js';
 
 // UIScene — оболочка интерфейса: владеет жизненным циклом, глобальной блокировкой
 // (updateBlockLock) и перерисовкой (refreshUi). Реализация разложена по фичам
@@ -180,6 +180,55 @@ export class UIScene extends Phaser.Scene {
             .catch((err) => {
                 console.error('[settings:dom] не загрузился:', err);
             });
+
+        // Список улучшений — DOM-форма фазы 3. Спайк этапа 0: монтируется только
+        // по dev-флагу ?domUpgradesSpike=1 (в прод не попадает). На этапе 2
+        // включается по умолчанию через isPhaserForm('upgrades').
+        this._upgradesDomSpike =
+            import.meta.env.DEV && new URLSearchParams(window.location.search).has('domUpgradesSpike');
+        this._domUpgradesReady = this._domSettingsReady
+            .then(() => import('./dom/upgradesPanel.js'))
+            .then(({ createDomUpgrades }) => {
+                if (!this.shouldMountDomUpgrades()) {
+                    return;
+                }
+
+                this.domUpgrades = createDomUpgrades(this);
+                this.syncDomUpgradesChrome();
+            })
+            .catch((err) => {
+                console.error('[upgrades:dom] не загрузился:', err);
+            });
+    }
+
+    // D3-развилка обучения: пока обучение не завершено, список и вкладки остаются
+    // на Phaser (tutorial.js привязан к tabBtns, учебные слои — над listCam);
+    // после tutorialDone DOM-панель становится основной. Спайк этапа 0 — по флагу.
+    shouldMountDomUpgrades() {
+        if (this.domUpgrades) {
+            return false;
+        }
+
+        // По умолчанию (этап 2) — upgradesOnDom(); на этапе 0–1 это dev-спайк.
+        return upgradesOnDom() && !!(this._upgradesDomSpike || gameState.tutorialDone === true);
+    }
+
+    // D8: на DOM-пути Phaser-хром списка (вкладки, пакет, тир, подсказка, ряды)
+    // не показывается — иначе двойной стек. Внешняя панель/звёзды/карта остаются.
+    syncDomUpgradesChrome() {
+        if (!this.domUpgrades) {
+            return;
+        }
+
+        for (const t of this.tabBtns || []) {
+            t.c.setVisible(false);
+        }
+
+        for (const o of [this.amountC, this.viewportBg, this.tierLabel, this.hint]) {
+            o?.setVisible(false);
+        }
+
+        this.listContent?.setVisible(false);
     }
 
     // Фасад настроек: одна точка входа для HUD/DevPanel/обучения. Выбор пути — по флагу
@@ -312,8 +361,12 @@ export class UIScene extends Phaser.Scene {
             }
         }
 
-        // В бою панель показывает «Снаряжение» вместо списка улучшений
-        this.listContent.setVisible(!locked && !bossNow);
+        // В бою панель показывает «Снаряжение» вместо списка улучшений.
+        // На DOM-пути Phaser-список не строится/не показывается (D8 фазы 3).
+        if (!this.domUpgrades) {
+            this.listContent.setVisible(!locked && !bossNow);
+        }
+
         if (this.gearContent) {
             const gearVis = bossNow && !locked;
             this.gearContent.setVisible(gearVis);
@@ -336,6 +389,9 @@ export class UIScene extends Phaser.Scene {
         this.refreshTabs();
         this.refreshRows();
         this.refreshSettingsModal();
+        // Порядок важен: refreshUnlockButton снова показывает подсказку — на DOM-пути
+        // прячем хром списка после всех штатных обновлений кадра.
+        this.syncDomUpgradesChrome();
     }
 
     update() {
@@ -346,6 +402,7 @@ export class UIScene extends Phaser.Scene {
         }
 
         this.domSettings?.tick();
+        this.domUpgrades?.tick();
 
         this.stepTutorial();
         this.refreshUi();

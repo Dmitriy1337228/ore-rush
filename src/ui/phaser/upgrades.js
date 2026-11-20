@@ -35,6 +35,7 @@ import {
 import { addButton } from './button.js';
 import { VIEWPORT, ROW_H, ROW_GAP, TABS, BUY_AMOUNTS, ROW } from '../shared/listGeometry.js';
 import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE } from '../shared/theme.js';
+import { upgradesOnDom } from '../shared/formsFlag.js';
 import { playSfx } from '../../sfx.js';
 
 export const panelMethods = {
@@ -43,6 +44,9 @@ export const panelMethods = {
         // applyPanelLayout ниже переставляет те же объекты по актуальной сетке.
         const p = this.L.panel;
         const v = this.L.viewport;
+        // D8 фазы 3: на DOM-пути (и после обучения) Phaser-список не строится —
+        // вкладки/ряды/пакет живут в DOM-панели. До tutorialDone — Phaser (развилка D3).
+        const domPath = upgradesOnDom() && gameState.tutorialDone;
 
         this.panelImg = addImg(this, p.px, p.py, 'upgrades_panel_wood', p.pw, p.ph, 10);
         // Планка с заклёпками (143..200): заголовок по её центру
@@ -52,16 +56,25 @@ export const panelMethods = {
 
         // Вкладки: одна ширина со списком, две по p.tabW + зазор SPACE.sm
         const tabCY = p.py + p.tabsCY;
-        this.tabBtns = TABS.map((tab, i) =>
-            this.buildTabButton(v.x + i * (p.tabW + SPACE.sm), tabCY - p.tabH / 2, tab)
-        );
+        this.tabBtns = domPath
+            ? []
+            : TABS.map((tab, i) => this.buildTabButton(v.x + i * (p.tabW + SPACE.sm), tabCY - p.tabH / 2, tab));
 
         // Строка тира + переключатель мультипокупки (в границах списка)
         this.tierLabel = makeLabel(this, v.x + p.tierInset, p.py + p.tierCY, '', p.tierLabelSize, '#c8b78e');
         this.tierLabel.setOrigin(0, 0.5).setDepth(DEPTH.ui);
-        const amount = this.buildAmountButton(v.x + v.w - p.amountPadRight - p.amountW / 2, p.py + p.tierCY);
-        this.amountC = amount.c;
-        this.amountBg = amount.bg;
+        if (domPath) {
+            // Объекты строятся для совместимости раскладки, но скрыты (syncDomUpgradesChrome):
+            // реальные вкладки/пакет — в DOM-панели.
+            const amount = this.buildAmountButton(v.x + v.w - p.amountPadRight - p.amountW / 2, p.py + p.tierCY);
+            this.amountC = amount.c;
+            this.amountBg = amount.bg;
+            this.amountC.setVisible(false);
+        } else {
+            const amount = this.buildAmountButton(v.x + v.w - p.amountPadRight - p.amountW / 2, p.py + p.tierCY);
+            this.amountC = amount.c;
+            this.amountBg = amount.bg;
+        }
 
         // Фон вьюпорта (для драга). Клиппинг списка — через отдельную камеру с viewport
         // (GeometryMask в Phaser 4 работает только в Canvas; в WebGL игнорируется).
@@ -82,7 +95,7 @@ export const panelMethods = {
 
         // Ряды всех улучшений строятся один раз; видимость и позиции
         // пересчитываются каждый кадр в refreshUi (фильтр вкладки + «доступные + 1»)
-        this.rows = UPGRADES.map((def) => this.buildRow(def));
+        this.rows = domPath ? [] : UPGRADES.map((def) => this.buildRow(def));
         this._rowsBuiltW = VIEWPORT.w;
         this._rowsBuiltS = this._adaptiveScale;
     },
@@ -184,6 +197,14 @@ export const panelMethods = {
     },
 
     switchTab(tab) {
+        // Фасад (D6): на DOM-пути вкладка — DOM-кнопка, Phaser-ряды не трогаем
+        if (this.domUpgrades) {
+            this.activeTab = tab;
+            this.domUpgrades.switchTab(tab);
+
+            return;
+        }
+
         if (this.activeTab === tab) {
             return;
         }
@@ -691,6 +712,11 @@ export const panelMethods = {
 
     // Вкладки: активная подсветка
     refreshTabs() {
+        // D8 фазы 3: на DOM-пути вкладки — DOM-кнопки, Phaser-обвязка не обновляется
+        if (this.domUpgrades) {
+            return;
+        }
+
         // Вкладки: активная подсветка
         for (const t of this.tabBtns) {
             const active = t.tab.id === this.activeTab;
@@ -701,6 +727,12 @@ export const panelMethods = {
 
     // Ряды улучшений: фильтр по вкладке, цены, доступность
     refreshRows() {
+        // D8 фазы 3: на DOM-пути Phaser-ряды не строятся/не обновляются —
+        // иначе W3 мерил бы двойную работу; DOM-панель читает снимок моста.
+        if (this.domUpgrades) {
+            return;
+        }
+
         const tier = TIERS[gameState.tier];
         // Ряды: фильтр по вкладке + «доступные + 1 следующее», перепозиционирование
         const rowH = this.rowGeom().h;

@@ -524,3 +524,155 @@
 .portrait .dom-modal .dom-section {
     margin: var(--space-sm) 0 var(--space-xs);
 }
+
+/* ---------- Список улучшений (фаза 3, M3) ---------- */
+/* Постоянная панель, а не модалка: прямоугольник вкладок и списка в врезке
+   Phaser-панели (проценты от canvas — токены в tokens.css). Скрим модалок выше
+   по z-index: статус-окно перекрывает список, клики под ним не проходят. */
+.dom-upgrades {
+    position: absolute;
+    left: var(--dom-upgrades-left-l);
+    top: var(--dom-upgrades-top-l);
+    width: var(--dom-upgrades-width-l);
+    height: var(--dom-upgrades-height-l);
+    z-index: var(--dom-upgrades-z);
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-sm);
+    border: var(--dom-border-card) solid transparent;
+    border-image: url('../../../assets/ui/modal_panel_metal.png') 60 fill / var(--dom-border-card) stretch;
+    image-rendering: pixelated;
+}
+
+.portrait .dom-upgrades {
+    left: var(--dom-upgrades-left-p);
+    top: var(--dom-upgrades-top-p);
+    width: var(--dom-upgrades-width-p);
+    height: var(--dom-upgrades-height-p);
+}
+
+.dom-upgrades[hidden] {
+    display: none;
+}
+
+.dom-tabs,
+.dom-bulk {
+    display: flex;
+    gap: var(--space-xs);
+    flex: 0 0 auto;
+}
+
+.dom-tabs .dom-toggle,
+.dom-bulk .dom-toggle {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: var(--font-label);
+    white-space: nowrap;
+}
+
+.dom-upgrades-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-muted) transparent;
+}
+
+.dom-upgrades-scroll::-webkit-scrollbar {
+    width: var(--space-xs);
+}
+
+.dom-upgrades-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-muted);
+}
+
+/* Ряд улучшения: слот, текст, кнопка. Карточка — та же 9-slice, что у мастерской. */
+.dom-upgrades-row {
+    grid-template-columns: var(--dom-icon-size) 1fr auto;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+    min-height: 0;
+}
+
+.dom-upgrades-row .dom-slot {
+    width: var(--dom-icon-size);
+    height: var(--dom-icon-size);
+    border-width: 0;
+}
+
+.dom-upgrades-row .dom-actions {
+    flex-direction: row;
+}
+
+.dom-upgrades-row .dom-btn {
+    min-width: var(--touch-min);
+    padding: 0 var(--space-xs);
+    font-size: var(--font-caption);
+}
+
+.dom-upgrades-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-sm);
+}
+
+.dom-upgrades-row .dom-name {
+    font-size: var(--font-label);
+}
+
+.dom-upgrades-row .dom-desc {
+    font-size: var(--font-caption-sm);
+}
+
+.dom-upgrades-price {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-size: var(--font-caption);
+    color: var(--color-gold);
+}
+
+.dom-upgrades-price.is-dim {
+    color: var(--color-dim);
+}
+
+.dom-upgrades-price .dom-pair-icon {
+    width: var(--dom-pair-icon);
+    height: var(--dom-pair-icon);
+}
+
+/* Пульс ряда после покупки (CSS-анимация на токенах, без JS-твинов). */
+@keyframes dom-upgrades-pulse {
+    0% {
+        filter: brightness(1);
+    }
+    50% {
+        filter: brightness(1.6);
+    }
+    100% {
+        filter: brightness(1);
+    }
+}
+
+.dom-upgrades-row.is-pulse {
+    animation: dom-upgrades-pulse 180ms ease-out;
+}
+
+.portrait .dom-upgrades-row {
+    grid-template-columns: var(--dom-icon-size) 1fr;
+}
+
+.portrait .dom-upgrades-row .dom-actions {
+    grid-column: 1 / -1;
+}
+
+.portrait .dom-upgrades-row .dom-btn {
+    width: 100%;
+    font-size: var(--font-caption);
+}

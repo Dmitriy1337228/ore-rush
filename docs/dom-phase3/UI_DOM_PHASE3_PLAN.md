@@ -354,7 +354,7 @@
 
 | Дата | Этап | Что сделано | Результат (числа/ссылки) | Отклонения |
 |---|---|---|---|---|
-| | 0 | | | |
+| 2026-11-20 | 0 | Ветка `phase3/dom-forms`; флаг `upgrades` в `formsFlag.js`/`forms-flag.mjs` + тесты; реестр `dom-forms` (`upgrades`, pending) и `pilot-loc`; baseline-док; расширенный протокол p95 (фазы, long tasks, 2 вьюпорта); спайк M3 на черновом DOM-контроллере | Гейты: test 144, test:ui 4/4, ui:check 0 err/3 warn (p360 boss, внешний долг), ui:check:dom 16/0, verify craft 40/40, settings 28/0. LOC: `upgrades.js` 573, `gear.js` 193. Каталог 27 (20+7). gzip 404.43 КБ. p95 Phaser 33.3/33.4 → **порог 35.4 мс**. Спайк DOM: p95 **16.7/16.7**, покупка **0.9 мс (≤ 1 кадра)** → **GO**. Артефакты: `docs/dom-phase3/UI_DOM_PHASE3_BASELINE.md`, `docs/dom-phase3/baseline/*.json` | 3 новых MIN-FONT warn в `p360|boss` — внешний долг, не чинился (baseline.json не расширялся). Спайк — черновик боевого контроллера под dev-флагом `?domUpgradesSpike=1` (в прод не попадает), а не отдельный одноразовый файл: план разрешает «черновую ветку контроллера» |
 | | 1 (M2) | | | |
 | | 2 (M3) | | | |
 | | 3 (финал) | | | |

@@ -1,6 +1,8 @@
 // Геометрия списка улучшений, карты и рядов — общие константы UIScene.
 
 import { computeLayout, LANDSCAPE_BASE } from '../../layout.js';
+// Подписи вкладок и метки пакетов — из единого модуля текстов (D4 фазы 3): копий нет.
+export { TABS, BUY_AMOUNTS } from '../../state/upgradesMessages.js';
 
 // Вьюпорт списка: по внутренней зоне деревянной панели (панель 364x582 (image):
 // face source x73..964, y208..1058 -> drawn x 926..1241, y 232..674). Заголовок
@@ -12,13 +14,6 @@ import { computeLayout, LANDSCAPE_BASE } from '../../layout.js';
 export const VIEWPORT = { ...computeLayout(LANDSCAPE_BASE.w, LANDSCAPE_BASE.h).viewport };
 export const ROW_H = 96;
 export const ROW_GAP = 6;
-
-export const TABS = [
-    { id: 'equipment', label: 'Оборудование' },
-    { id: 'enhance', label: 'Усиления' }
-];
-export const BUY_AMOUNTS = [1, 10, 100, 'max'];
-
 // Карта шахты «как настольная»: фон-доска map_board, вертикальная тропа из
 // кружков (Graphics), соединённых пунктиром со стрелками-шевронами; тексты —
 // под кружком. Прокрутка камерой mapCam по внутренней зоне панели. Контент:

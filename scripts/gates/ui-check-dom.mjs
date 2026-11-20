@@ -21,7 +21,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { UI_RULES } from '../../src/dev/uiAudit.js';
 import { SAVE_KEY, SEEDS } from '../lib/ui-matrix.mjs';
-import { resolveForms } from '../lib/dom-forms.mjs';
+import { FORMS, resolveForms } from '../lib/dom-forms.mjs';
 
 const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
 
@@ -56,7 +56,7 @@ const SCROLL_STEP_SHARE = 0.75;
 const requested = opt('form', 'all');
 const forms = resolveForms(requested);
 if (!forms) {
-    console.error(`ui:check:dom: неизвестная форма "${requested}" (есть: craft, settings, status, all)`);
+    console.error(`ui:check:dom: неизвестная форма "${requested}" (есть: ${FORMS.map((f) => f.id).join(', ')}, all)`);
     process.exit(2);
 }
 
@@ -388,26 +388,38 @@ if (active.length) {
                     positions.push(scrollMetrics.max);
                 }
 
-                for (const [i, y] of positions.entries()) {
-                    if (scrollMetrics) {
-                        await page.evaluate((top) => {
-                            document.querySelector('[data-dom-scroll]').scrollTop = top;
-                        }, y);
-                        await page.waitForTimeout(150);
+                for (const tabId of form.tabs || [null]) {
+                    if (tabId) {
+                        await page.evaluate(form.switchTab(tabId));
+                        await page.waitForTimeout(200);
                     }
 
-                    const res = await page.evaluate(auditFn, {
-                        rules: {
-                            minFontCss: UI_RULES.minFontCss,
-                            minTouchCss: UI_RULES.minTouchCss,
-                            minPadding: UI_RULES.minPadding,
-                            mobileMaxWidthCss: UI_RULES.mobileMaxWidthCss
-                        },
-                        tolerance: RECT_TOLERANCE_CSS,
-                        panelSelector: form.panel
-                    });
-                    violations.push(...res.violations.map((v) => ({ ...v, step: `#${i}@${y}` })));
-                    res.rows.forEach((row) => seenRows.add(row));
+                    for (const [i, y] of positions.entries()) {
+                        if (scrollMetrics) {
+                            await page.evaluate((top) => {
+                                document.querySelector('[data-dom-scroll]').scrollTop = top;
+                            }, y);
+                            await page.waitForTimeout(150);
+                        }
+
+                        const res = await page.evaluate(auditFn, {
+                            rules: {
+                                minFontCss: UI_RULES.minFontCss,
+                                minTouchCss: UI_RULES.minTouchCss,
+                                minPadding: UI_RULES.minPadding,
+                                mobileMaxWidthCss: UI_RULES.mobileMaxWidthCss
+                            },
+                            tolerance: RECT_TOLERANCE_CSS,
+                            panelSelector: form.panel
+                        });
+                        violations.push(...res.violations.map((v) => ({ ...v, step: `#${i}@${y}` })));
+                        res.rows.forEach((row) => seenRows.add(row));
+                    }
+
+                    if (form.tabs && form.tabs[0] && tabId !== form.tabs[0]) {
+                        await page.evaluate(form.switchTab(form.tabs[0]));
+                        await page.waitForTimeout(200);
+                    }
                 }
             } catch (e) {
                 failures = String((e && e.message) || e).split('\n')[0];

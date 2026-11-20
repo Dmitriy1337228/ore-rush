@@ -1,0 +1,142 @@
+{
+  "createdAt": "2026-11-20T17:20:46.353Z",
+  "url": "http://localhost:5174?domUpgradesSpike=1",
+  "form": "upgrades",
+  "mode": "dom",
+  "deviceScaleFactor": 1,
+  "cpuThrottleRate": 4,
+  "secondsPerRound": 10,
+  "warmupMs": 1000,
+  "protocol": "q4-upgrades",
+  "viewports": [
+    {
+      "viewport": "1280x720",
+      "screen": {
+        "upgradesDom": false,
+        "domRoot": true
+      },
+      "rounds": [
+        {
+          "frames": 598,
+          "meanMs": 16.75,
+          "p50Ms": 16.7,
+          "p95Ms": 16.8,
+          "maxMs": 33.4
+        },
+        {
+          "frames": 602,
+          "meanMs": 16.63,
+          "p50Ms": 16.7,
+          "p95Ms": 16.7,
+          "maxMs": 16.8
+        },
+        {
+          "frames": 600,
+          "meanMs": 16.67,
+          "p50Ms": 16.7,
+          "p95Ms": 16.7,
+          "maxMs": 33.3
+        }
+      ],
+      "combined": {
+        "frames": 1800,
+        "meanMs": 16.68,
+        "p50Ms": 16.7,
+        "p95Ms": 16.7,
+        "maxMs": 33.4
+      },
+      "p95": 16.7,
+      "longTasks": {
+        "count": 0,
+        "maxMs": 0,
+        "totalMs": 0
+      },
+      "consoleErrors": []
+    },
+    {
+      "viewport": "390x844",
+      "screen": {
+        "upgradesDom": false,
+        "domRoot": true
+      },
+      "rounds": [
+        {
+          "frames": 598,
+          "meanMs": 16.72,
+          "p50Ms": 16.7,
+          "p95Ms": 16.7,
+          "maxMs": 33.4
+        },
+        {
+          "frames": 602,
+          "meanMs": 16.64,
+          "p50Ms": 16.7,
+          "p95Ms": 16.7,
+          "maxMs": 16.8
+        },
+        {
+          "frames": 601,
+          "meanMs": 16.66,
+          "p50Ms": 16.7,
+          "p95Ms": 16.7,
+          "maxMs": 33.3
+        }
+      ],
+      "combined": {
+        "frames": 1801,
+        "meanMs": 16.67,
+        "p50Ms": 16.7,
+        "p95Ms": 16.7,
+        "maxMs": 33.4
+      },
+      "p95": 16.7,
+      "longTasks": {
+        "count": 0,
+        "maxMs": 0,
+        "totalMs": 0
+      },
+      "consoleErrors": []
+    }
+  ],
+  "screen": {
+    "upgradesDom": false,
+    "domRoot": true
+  },
+  "rounds": [
+    {
+      "frames": 598,
+      "meanMs": 16.75,
+      "p50Ms": 16.7,
+      "p95Ms": 16.8,
+      "maxMs": 33.4
+    },
+    {
+      "frames": 602,
+      "meanMs": 16.63,
+      "p50Ms": 16.7,
+      "p95Ms": 16.7,
+      "maxMs": 16.8
+    },
+    {
+      "frames": 600,
+      "meanMs": 16.67,
+      "p50Ms": 16.7,
+      "p95Ms": 16.7,
+      "maxMs": 33.3
+    }
+  ],
+  "combined": {
+    "frames": 1800,
+    "meanMs": 16.68,
+    "p50Ms": 16.7,
+    "p95Ms": 16.7,
+    "maxMs": 33.4
+  },
+  "p95": 16.7,
+  "longTasks": {
+    "count": 0,
+    "maxMs": 0,
+    "totalMs": 0
+  },
+  "consoleErrors": []
+}

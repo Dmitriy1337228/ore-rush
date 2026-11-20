@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { SAVE_KEY, SEEDS } from '../lib/ui-matrix.mjs';
-import { resolveForms } from '../lib/dom-forms.mjs';
+import { FORMS, resolveForms } from '../lib/dom-forms.mjs';
 import { decodePng, diffRatio } from '../../tests/characterization/helpers/png.mjs';
 
 const { ensureDevServer, releaseDevServer } = createRequire(import.meta.url)('../lib/dev-server.cjs');
@@ -34,7 +34,7 @@ const RUNS = Number(opt('runs', 1));
 const requested = opt('form', 'all');
 const forms = resolveForms(requested);
 if (!forms) {
-    console.error(`dom-golden: неизвестная форма "${requested}" (есть: craft, settings, status, all)`);
+    console.error(`dom-golden: неизвестная форма "${requested}" (есть: ${FORMS.map((f) => f.id).join(', ')}, all)`);
     process.exit(2);
 }
 

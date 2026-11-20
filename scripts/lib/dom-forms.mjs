@@ -4,7 +4,7 @@
 // форма подключалась записью в реестре, а не копированием скриптов.
 //
 // `pending: true` — форма ещё не на DOM: гейты печатают «пропущено» и не падают.
-import { ITEMS, CRAFT_RECIPES, ARTIFACTS } from '../../src/state.js';
+import { ITEMS, CRAFT_RECIPES, ARTIFACTS, UPGRADES } from '../../src/state.js';
 
 const craftPrepare = `(async () => {
     const ui = window.__GAME.scene.getScene('UIScene');
@@ -114,6 +114,37 @@ export const FORMS = [
         files: {
             screen: ['src/ui/dom/statusModals.js', 'src/ui/dom/modal.js'],
             checks: ['scripts/verify/verify-status-dom.mjs'],
+            fixtures: []
+        }
+    },
+    {
+        // Фаза 3, M3: постоянная панель списка улучшений (не модалка). Аудит меряет
+        // панель в двух состояниях: обычный каталог (mid) и stress-сид.
+        id: 'upgrades',
+        label: 'Список улучшений',
+        pending: true,
+        api: '__DOM_UPGRADES',
+        seed: 'mid',
+        prepare: null,
+        open: "(() => { const ui = window.__GAME.scene.getScene('UIScene'); ui._pendingDaily = null; ui.registry.set('dailyInfo', null); if (ui._dailyOpen) ui.hideDailyModal(); })()",
+        close: null,
+        isOpen: '!!window.__DOM_UPGRADES',
+        panel: '[data-dom-upgrades]',
+        scroll: '[data-dom-upgrades-scroll]',
+        expected: () => UPGRADES.map((u) => u.id),
+        states: ['upgrades-dom', 'upgrades-stress-dom'],
+        golden: ['1280x720', '390x844'],
+        // Аудит обходит обе вкладки (20 equipment + 7 enhance = 27 рядов в expected)
+        tabs: ['equipment', 'enhance'],
+        switchTab: (id) => `window.__DOM_UPGRADES.switchTab(${JSON.stringify(id)})`,
+        files: {
+            screen: [
+                'src/ui/dom/upgradesPanel.js',
+                'src/state/upgradesMessages.js',
+                'src/ui/phaser/upgrades.js',
+                'src/ui/phaser/gear.js'
+            ],
+            checks: ['scripts/verify/verify-upgrades-dom.mjs'],
             fixtures: []
         }
     }

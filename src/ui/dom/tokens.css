@@ -89,4 +89,13 @@
     --dom-z-status: 3;
     --dom-slider-h: 44px;
     --dom-slider-thumb: 24px;
+    --dom-upgrades-left-l: 72.97%;
+    --dom-upgrades-width-l: 23.13%;
+    --dom-upgrades-top-l: 26.67%;
+    --dom-upgrades-height-l: 65.28%;
+    --dom-upgrades-left-p: 7.08%;
+    --dom-upgrades-width-p: 86.67%;
+    --dom-upgrades-top-p: 51.95%;
+    --dom-upgrades-height-p: 35.86%;
+    --dom-upgrades-z: 1;
 }

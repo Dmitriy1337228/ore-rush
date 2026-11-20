@@ -5,7 +5,7 @@
 //
 // Строки кода = непустые строки без чисто-комментарных (//, /*, *, <!--, CSS /* ) строк.
 //
-// Запуск: npm run metrics:loc [-- --form craft|settings|status] [--json]
+// Запуск: npm run metrics:loc [-- --form craft|settings|status|upgrades] [--json]
 import fs from 'node:fs';
 import path from 'node:path';
 import { FORMS } from '../lib/dom-forms.mjs';
@@ -54,11 +54,18 @@ const SETS = {
             'scripts/verify/verify-status-dom.mjs'
         ],
         checks: ['scripts/gates/ui-check-dom.mjs', 'scripts/gates/dom-golden.mjs']
+    },
+    upgrades: {
+        // Baseline фазы 3: список + боевая панель снаряжения (W1 сравнивает только
+        // upgrades.js; gear.js в baseline-доке как справка — Q2 выводит его из M3).
+        baseline: ['src/ui/phaser/upgrades.js', 'src/ui/phaser/gear.js'],
+        dom: ['src/ui/dom/upgradesPanel.js', 'src/state/upgradesMessages.js', 'scripts/verify/verify-upgrades-dom.mjs'],
+        checks: ['scripts/gates/ui-check-dom.mjs', 'scripts/gates/dom-golden.mjs']
     }
 };
 
 if (!SETS[FORM_ID]) {
-    console.error(`metrics:loc: неизвестная форма "${FORM_ID}" (есть: craft, settings, status)`);
+    console.error(`metrics:loc: неизвестная форма "${FORM_ID}" (есть: craft, settings, status, upgrades)`);
     process.exit(2);
 }
 

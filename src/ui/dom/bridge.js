@@ -18,6 +18,15 @@ import {
     COMPONENTS,
     BOSSES,
     TIERS,
+    UPGRADES,
+    getUpgradeDef,
+    getUpgradeLevel,
+    getUpgradeCost,
+    getBulkCost,
+    getAffordableBulk,
+    isMaxed,
+    isUpgradeAvailable,
+    isUpgradeVisible,
     getOfflineRate,
     getOfflineCapSeconds,
     canPrestige,
@@ -27,6 +36,19 @@ import {
     DIAMOND_INDEX
 } from '../../state.js';
 import { itemStockHint, recipeStatus } from '../../state/craftMessages.js';
+import {
+    BUY_AMOUNTS,
+    TABS,
+    bulkLabel,
+    bulkPriceText,
+    buyLabel,
+    levelText,
+    lockedLabel,
+    lockRequiresText,
+    lockTierText,
+    maxedLabel,
+    maxPriceText
+} from '../../state/upgradesMessages.js';
 import {
     musicLabel,
     prestigeIdle,
@@ -271,5 +293,89 @@ export function settingsSnapshot({ bossActive = false, portrait = false } = {}) 
         pct: Math.floor((have / need) * 100),
         prestigeLines: prestigeInfo({ can, gain, have, need, portrait }),
         bossLocked: !!bossActive
+    };
+}
+
+// ---------- Список улучшений (фаза 3, шаг 2.2): только чтение ----------
+// Цены, пакеты и МАКС считает только state (getBulkCost/getAffordableBulk): DOM их
+// не пересчитывает, а показывает готовые числа. Активная вкладка и выбранный пакет —
+// представление (UI-состояние контроллера), бизнес-правил здесь нет.
+const PICKAXE_ICONS = ['pickaxe_wooden', 'pickaxe_stone', 'pickaxe_iron', 'pickaxe_diamond'];
+
+function upgradeIcon(def, level) {
+    if (def.id === 'pickaxe') {
+        return PICKAXE_ICONS[Math.min(Math.floor(level / 3), PICKAXE_ICONS.length - 1)];
+    }
+
+    return def.icon || 'gear_icon';
+}
+
+function upgradeRow(def, buyAmount) {
+    const level = getUpgradeLevel(def.id);
+    const maxed = isMaxed(def.id);
+    const available = isUpgradeAvailable(def.id);
+    const amount = buyAmount === 'max' ? 'max' : Number(buyAmount) || 1;
+    const row = {
+        id: def.id,
+        icon: upgradeIcon(def, level),
+        name: def.name,
+        desc: def.effect,
+        level,
+        levelText: levelText(level),
+        available,
+        maxed,
+        buttonLabel: buyLabel,
+        buttonDim: true,
+        priceText: '',
+        priceKind: 'gold',
+        lockText: '',
+        visible: isUpgradeVisible(def.id)
+    };
+
+    if (!available) {
+        row.buttonLabel = lockedLabel;
+        row.lockText =
+            def.tier !== undefined && gameState.tier < def.tier
+                ? lockTierText(def.tier)
+                : lockRequiresText(getUpgradeDef(def.requires.id).name, def.requires.level);
+
+        return row;
+    }
+
+    if (maxed) {
+        row.buttonLabel = maxedLabel;
+        row.priceText = maxedLabel;
+        row.priceKind = 'dim';
+
+        return row;
+    }
+
+    if (amount === 'max') {
+        const r = getAffordableBulk(def.id, Infinity);
+        row.buttonDim = !(r.n > 0);
+        row.priceText = maxPriceText({ total: r.total, n: r.n, fallback: getUpgradeCost(def.id) });
+    } else {
+        const b = getBulkCost(def.id, amount);
+        const r = getAffordableBulk(def.id, amount);
+        row.buttonDim = !(b.n > 0 && r.n === b.n);
+        row.priceText = bulkPriceText({ total: b.total, n: b.n, amount });
+    }
+
+    return row;
+}
+
+export function upgradesSnapshot({ tab = 'equipment', buyAmount = 1, bossActive = false, portrait = false } = {}) {
+    const active = TABS.some((t) => t.id === tab) ? tab : TABS[0].id;
+    const amount = BUY_AMOUNTS.includes(buyAmount) ? buyAmount : 1;
+    const rows = UPGRADES.filter((def) => def.tab === active).map((def) => upgradeRow(def, amount));
+
+    return {
+        tab: active,
+        tabs: TABS.map((t) => ({ id: t.id, label: t.label, active: t.id === active })),
+        buyAmount: amount,
+        bulk: BUY_AMOUNTS.map((a) => ({ amount: a, label: bulkLabel(a), active: a === amount })),
+        rows,
+        bossActive: !!bossActive,
+        portrait: !!portrait
     };
 }

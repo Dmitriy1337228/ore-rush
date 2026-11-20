@@ -34,3 +34,4 @@ export * from './state/prestige.js';
 export * from './state/offline.js';
 export * from './state/persistence.js';
 export * from './state/settings.js';
+export * from './state/upgradesMessages.js';

@@ -1,8 +1,9 @@
-// Флаг-откат форм на Phaser-путь (docs/dom-phase2/UI_DOM_PHASE2_PLAN.md, D5).
-// По умолчанию обе формы (settings, status) — на DOM. Список DEFAULT_PHASER_FORMS
-// пополняется автоматически при провале R-критерия формы (раздел 10.4).
-// Включить откат вручную: ?phaserForms=settings,status или localStorage.phaserForms.
-const NAMES = new Set(['settings', 'status']);
+// Флаг-откат форм на Phaser-путь (docs/dom-phase2/UI_DOM_PHASE2_PLAN.md, D5;
+// docs/dom-phase3/UI_DOM_PHASE3_PLAN.md, D5). По умолчанию формы (settings, status,
+// upgrades) — на DOM. Список DEFAULT_PHASER_FORMS пополняется автоматически при
+// провале R-критерия формы (раздел 6.3 фазы 3).
+// Включить откат вручную: ?phaserForms=settings,status,upgrades или localStorage.phaserForms.
+const NAMES = new Set(['settings', 'status', 'upgrades']);
 
 export const DEFAULT_PHASER_FORMS = [];
 
@@ -38,4 +39,24 @@ export function phaserForms() {
 
 export function isPhaserForm(id) {
     return phaserForms().has(id);
+}
+
+// Фаза 3: DOM-список улучшений включается по умолчанию на этапе 2 (M3).
+// До приёмки M3 — только dev-спайк этапа 0 (?domUpgradesSpike=1), в прод не попадает.
+export const UPGRADES_DOM_DEFAULT = false;
+
+export function upgradesOnDom() {
+    if (isPhaserForm('upgrades')) {
+        return false;
+    }
+
+    if (UPGRADES_DOM_DEFAULT) {
+        return true;
+    }
+
+    if (typeof window === 'undefined' || !import.meta.env?.DEV) {
+        return false;
+    }
+
+    return new URLSearchParams(window.location.search).has('domUpgradesSpike');
 }

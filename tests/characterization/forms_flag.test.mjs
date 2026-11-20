@@ -53,4 +53,16 @@ describe('formsFlag: флаг-откат форм', () => {
         assert.equal(isPhaserForm('settings'), true);
         assert.equal(isPhaserForm('status'), true);
     });
+
+    test('upgrades — третья форма флага (фаза 3)', () => {
+        withWindow({ search: '?phaserForms=upgrades' });
+        assert.equal(isPhaserForm('upgrades'), true);
+        assert.equal(isPhaserForm('settings'), false);
+        assert.equal(isPhaserForm('status'), false);
+    });
+
+    test('все три формы сразу', () => {
+        withWindow({ search: '?phaserForms=settings,status,upgrades' });
+        assert.deepEqual([...phaserForms()].sort(), ['settings', 'status', 'upgrades']);
+    });
 });
