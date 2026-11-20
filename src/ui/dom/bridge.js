@@ -460,11 +460,18 @@ export function upgradesSnapshot({ tab = 'equipment', buyAmount = 1, bossActive 
     const active = TABS.some((t) => t.id === tab) ? tab : TABS[0].id;
     const amount = BUY_AMOUNTS.includes(buyAmount) ? buyAmount : 1;
     const rows = UPGRADES.filter((def) => def.tab === active).map((def) => upgradeRow(def, amount));
+    const tier = TIERS[gameState.tier];
+    // Тот же ярлык, что HUD: в портрете короткий (полный ужимался до ~7 px)
+    const tierText = portrait
+        ? `Шахта ${gameState.tier + 1} · ${tier.name}`
+        : `уровень шахты: ${gameState.tier + 1} — ${tier.name}`;
 
     return {
         tab: active,
+        tierText,
         tabs: TABS.map((t) => ({ id: t.id, label: t.label, active: t.id === active })),
         buyAmount: amount,
+        amountLabel: bulkLabel(amount),
         bulk: BUY_AMOUNTS.map((a) => ({ amount: a, label: bulkLabel(a), active: a === amount })),
         rows,
         bossActive: !!bossActive,

@@ -472,6 +472,11 @@
     image-rendering: pixelated;
 }
 
+.dom-toggle[data-on='0'] {
+    border-image-source: url('../../../assets/ui/buy_button_disabled_gray.png');
+    color: var(--color-muted);
+}
+
 .dom-toggle[data-on='1'] {
     border-image-source: url('../../../assets/ui/buy_button_hover.png');
 }
@@ -654,22 +659,24 @@
     pointer-events: auto;
     display: flex;
     flex-direction: column;
-    gap: var(--space-xs);
-    padding: var(--space-sm);
-    border: var(--dom-border-card) solid transparent;
-    border-image: url('../../../assets/ui/modal_panel_metal.png') 60 fill / var(--dom-border-card) stretch;
-    image-rendering: pixelated;
+    /* Зазор между вкладками, строкой тира и списком — как у Phaser (иначе
+       кнопки вкладок липнут к списку) */
+    gap: var(--space-sm);
+    /* Панель — не отдельная металлическая врезка: она ровно покрывает врезку
+       деревянной панели Phaser. Своя рамка давала двойной кант и серые полосы. */
+    padding: 0;
+    background: transparent;
 }
 
 /* Узкая панель (класс ставит контроллер по ширине слоя, порог — константа в
-   upgradesPanel.js): l844 ~195 CSS px не вмещает 3 колонки ряда и две вкладки
-   в строку — переходим на двухколоночную раскладку и вкладки в столбик. */
+   upgradesPanel.js): l844 ~195 CSS px не вмещает ряд и две вкладки в строку —
+   ряд переносит кнопку на новую строку, вкладки встают в столбик. */
 .dom-upgrades.is-narrow .dom-upgrades-row {
-    grid-template-columns: var(--dom-icon-size) 1fr;
+    flex-wrap: wrap;
 }
 
 .dom-upgrades.is-narrow .dom-upgrades-row .dom-actions {
-    grid-column: 1 / -1;
+    flex-basis: 100%;
 }
 
 .dom-upgrades.is-narrow .dom-upgrades-row .dom-btn {
@@ -686,10 +693,6 @@
     flex: 1 1 40%;
     font-size: var(--font-caption-sm);
     white-space: normal;
-}
-
-.dom-upgrades.is-narrow .dom-upgrades-head {
-    flex-wrap: wrap;
 }
 
 .dom-upgrades.is-narrow .dom-name,
@@ -714,6 +717,33 @@
     flex-wrap: wrap;
     gap: var(--space-xs);
     flex: 0 0 auto;
+}
+
+/* Строка тира как в Phaser: ярлык шахты слева, компактная кнопка пакета справа
+   (в Phaser x1 → x10 → x100 → МАКС — одна кнопка, а не четыре) */
+.dom-upgrades-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    padding: 0 var(--space-xs);
+}
+
+.dom-upgrades-tier {
+    min-width: 0;
+    font-size: var(--font-caption-sm);
+    color: var(--color-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dom-bulk {
+    flex: 0 0 26%;
+}
+
+.dom-bulk .dom-toggle {
+    flex: 1 1 100%;
 }
 
 .dom-tabs .dom-toggle,
@@ -743,48 +773,91 @@
     background: var(--color-muted);
 }
 
-/* Ряд улучшения: слот, текст, кнопка. Карточка — та же 9-slice, что у мастерской. */
+/* Карточка улучшения — обычный флекс: иконка | текст | кнопка.
+   Текстура строки та же, что в Phaser (upgrade_row_card_1, 9-slice). */
 .dom-upgrades-row {
-    grid-template-columns: var(--dom-icon-size) 1fr auto;
+    display: flex;
+    align-items: center;
     gap: var(--space-sm);
-    padding: var(--space-sm);
-    min-height: 0;
-    /* Ряд — вложенная карточка внутри панели: рамку 9-slice не дублируем,
-       иначе её 24-px борта съедают ~48 CSS px текста и он рвётся по буквам. */
-    border-width: 0;
-    border-image: none;
-    background: rgba(0, 0, 0, 0.28);
+    padding: var(--space-xs) var(--space-sm);
+    border: var(--dom-border-row) solid transparent;
+    border-image: url('../../../assets/ui/upgrade_row_card_1.png') 30 fill / var(--dom-border-row) stretch;
+    image-rendering: pixelated;
+    background: none;
 }
 
-.dom-upgrades-row .dom-slot {
+.dom-upgrades-icon {
+    flex: 0 0 var(--dom-slot-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Карточка имеет 9-slice борта: сдвиг влево ставит иконку в нишу текстуры */
+    margin-left: calc(-1 * var(--space-xs));
+}
+
+.dom-upgrades-icon .dom-icon {
+    /* Арт меньше ниши карточки: не вылезает за рамку */
     width: var(--dom-icon-size);
     height: var(--dom-icon-size);
-    border-width: 0;
+}
+
+.dom-upgrades-body {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.dom-upgrades-line,
+.dom-upgrades-bottom {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    min-width: 0;
+}
+
+.dom-upgrades-bottom {
+    align-items: center;
+}
+
+/* «ур. N»: в портрете — справа в строке имени, в ландшафте — у цены
+   (как rowGeom Phaser: levelY 14 против priceY) */
+.dom-level-top {
+    display: none;
+}
+
+.portrait .dom-level-top {
+    display: inline;
+}
+
+.portrait .dom-level-bottom {
+    display: none;
 }
 
 .dom-upgrades-row .dom-actions {
-    flex-direction: row;
+    flex: 0 0 26%;
+    display: flex;
 }
 
 .dom-upgrades-row .dom-btn {
-    min-width: var(--touch-min);
+    /* Кнопка как в Phaser (84x40 / 148x88), не на всю высоту ряда */
+    width: 100%;
+    min-width: 0;
+    min-height: var(--touch-min);
     padding: 0 var(--space-xs);
     font-size: var(--font-caption);
 }
 
-.dom-upgrades-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: var(--space-sm);
-}
-
 .dom-upgrades-row .dom-name {
     font-size: var(--font-label);
+    overflow-wrap: anywhere;
 }
 
 .dom-upgrades-row .dom-desc {
     font-size: var(--font-caption-sm);
+    overflow-wrap: anywhere;
 }
 
 .dom-upgrades-price {
@@ -836,5 +909,7 @@
 }
 
 .portrait .dom-upgrades-row .dom-btn {
+    /* Phaser-портрет: 148x88 из ряда 132 — кнопка выше, но не на весь ряд */
+    min-height: calc(var(--touch-min) + var(--space-sm));
     font-size: var(--font-caption);
 }

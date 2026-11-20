@@ -8,6 +8,7 @@ import { iconSlot, iconBox } from './components.js';
 import { fitIcons } from './iconFit.js';
 import { upgradesSnapshot, PUBLISH_MS } from './bridge.js';
 import { buyBulk, saveGame, gameState } from '../../state.js';
+import { BUY_AMOUNTS } from '../../state/upgradesMessages.js';
 import { playSfx } from '../../sfx.js';
 import { REG } from '../shared/theme.js';
 import './tokens.css';
@@ -20,33 +21,37 @@ const TAP_SLOP_CSS = 10; // дрожание пальца ≤ 10 CSS px = тап
 const NARROW_PANEL_CSS = 260;
 
 const rowHtml = (r) =>
-    html`<article class="dom-row dom-upgrades-row" data-row="${r.id}">
-        ${iconSlot(r.icon)}
-        <div class="dom-row-text">
-            <div class="dom-upgrades-head">
+    html`<div class="dom-row dom-upgrades-row" data-row="${r.id}">
+        <div class="dom-upgrades-icon">${iconBox(r.icon)}</div>
+        <div class="dom-upgrades-body">
+            <div class="dom-upgrades-line">
                 <span class="dom-name">${r.name}</span>
+                ${r.available ? html`<span class="dom-sub dom-level-top">${r.levelText}</span>` : ''}
             </div>
             <div class="dom-desc">${r.desc}</div>
-            ${
-                r.lockText
-                    ? html`<div class="dom-error">${r.lockText}</div>`
-                    : html`<div class="dom-upgrades-price ${r.priceKind === 'dim' ? 'is-dim' : ''}">
-                          ${iconBox('coal_nugget', 'dom-pair-icon')}<span>${r.priceText}</span>
-                          <span class="dom-sub">${r.levelText}</span>
-                      </div>`
-            }
+            <div class="dom-upgrades-bottom">
+                ${
+                    r.lockText
+                        ? html`<span class="dom-error">${r.lockText}</span>`
+                        : html`<span class="dom-upgrades-price ${r.priceKind === 'dim' ? 'is-dim' : ''}">
+                              ${iconBox('coal_nugget', 'dom-pair-icon')}<span>${r.priceText}</span>
+                          </span>`
+                }
+                ${r.available ? html`<span class="dom-sub dom-level-bottom">${r.levelText}</span>` : ''}
+            </div>
         </div>
         <div class="dom-actions">
             <button class="dom-btn ${r.buttonDim ? 'is-disabled' : ''}" type="button"
                 data-buy data-act="buy" data-id="${r.id}">${r.buttonLabel}</button>
         </div>
-    </article>`;
+    </div>`;
 
 const tabHtml = (t) =>
     html`<button class="dom-toggle" type="button" data-tab="${t.id}" data-on="${t.active ? '1' : '0'}">${t.label}</button>`;
 
-const bulkHtml = (b) =>
-    html`<button class="dom-toggle" type="button" data-amount="${b.amount}" data-on="${b.active ? '1' : '0'}">${b.label}</button>`;
+// Как в Phaser: ОДНА кнопка пакета, циклически x1 → x10 → x100 → МАКС
+const bulkHtml = (snap) =>
+    html`<button class="dom-toggle" type="button" data-amount-cycle data-amount="${snap.buyAmount}">${snap.amountLabel}</button>`;
 
 export function createDomUpgrades(scene) {
     const root = document.getElementById('ui-root');
@@ -56,7 +61,10 @@ export function createDomUpgrades(scene) {
 
     const layer = toNode(html`<section class="dom-upgrades" data-dom-upgrades hidden aria-label="Улучшения">
         <div class="dom-tabs" data-dom-upgrades-tabs></div>
-        <div class="dom-bulk" data-dom-upgrades-bulk></div>
+        <div class="dom-upgrades-top">
+            <span class="dom-upgrades-tier" data-dom-upgrades-tier></span>
+            <div class="dom-bulk" data-dom-upgrades-bulk></div>
+        </div>
         <div class="dom-upgrades-scroll" data-dom-scroll data-dom-upgrades-scroll>
             <div data-dom-upgrades-rows></div>
         </div>
@@ -65,6 +73,7 @@ export function createDomUpgrades(scene) {
 
     const tabsEl = layer.querySelector('[data-dom-upgrades-tabs]');
     const bulkEl = layer.querySelector('[data-dom-upgrades-bulk]');
+    const tierEl = layer.querySelector('[data-dom-upgrades-tier]');
     const rowsEl = layer.querySelector('[data-dom-upgrades-rows]');
     const scrollEl = layer.querySelector('[data-dom-upgrades-scroll]');
 
@@ -87,7 +96,8 @@ export function createDomUpgrades(scene) {
 
     const render = (snap = snapshot()) => {
         tabsEl.innerHTML = String(snap.tabs.map(tabHtml).join(''));
-        bulkEl.innerHTML = String(snap.bulk.map(bulkHtml).join(''));
+        tierEl.textContent = snap.tierText;
+        bulkEl.innerHTML = String(bulkHtml(snap));
         renderKeyed(rowsEl, snap.rows, {
             keyOf: (r) => r.id,
             create: rowHtml
@@ -203,14 +213,10 @@ export function createDomUpgrades(scene) {
             return;
         }
 
-        const bulkBtn = e.target.closest('[data-amount]');
-        if (bulkBtn) {
-            const raw = bulkBtn.dataset.amount;
-            const next = raw === 'max' ? 'max' : Number(raw);
-            if (next !== buyAmount) {
-                buyAmount = next;
-                render();
-            }
+        if (e.target.closest('[data-amount-cycle]')) {
+            const idx = BUY_AMOUNTS.indexOf(buyAmount);
+            buyAmount = BUY_AMOUNTS[(idx + 1) % BUY_AMOUNTS.length];
+            render();
         }
     });
 
