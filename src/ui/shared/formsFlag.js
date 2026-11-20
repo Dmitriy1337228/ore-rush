@@ -41,9 +41,9 @@ export function isPhaserForm(id) {
     return phaserForms().has(id);
 }
 
-// Фаза 3: DOM-список улучшений включается по умолчанию на этапе 2 (M3).
-// До приёмки M3 — только dev-спайк этапа 0 (?domUpgradesSpike=1), в прод не попадает.
-export const UPGRADES_DOM_DEFAULT = false;
+// Фаза 3: DOM-список улучшений включён по умолчанию (M3 принят).
+// Откат — `?phaserForms=...upgrades` или localStorage.phaserForms.
+export const UPGRADES_DOM_DEFAULT = true;
 
 export function upgradesOnDom() {
     if (isPhaserForm('upgrades')) {

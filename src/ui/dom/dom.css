@@ -661,6 +661,42 @@
     image-rendering: pixelated;
 }
 
+/* Узкая панель (класс ставит контроллер по ширине слоя, порог — константа в
+   upgradesPanel.js): l844 ~195 CSS px не вмещает 3 колонки ряда и две вкладки
+   в строку — переходим на двухколоночную раскладку и вкладки в столбик. */
+.dom-upgrades.is-narrow .dom-upgrades-row {
+    grid-template-columns: var(--dom-icon-size) 1fr;
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-row .dom-actions {
+    grid-column: 1 / -1;
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-row .dom-btn {
+    width: 100%;
+}
+
+.dom-upgrades.is-narrow .dom-tabs .dom-toggle {
+    flex: 1 1 100%;
+    font-size: var(--font-caption-sm);
+    white-space: normal;
+}
+
+.dom-upgrades.is-narrow .dom-bulk .dom-toggle {
+    flex: 1 1 40%;
+    font-size: var(--font-caption-sm);
+    white-space: normal;
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-head {
+    flex-wrap: wrap;
+}
+
+.dom-upgrades.is-narrow .dom-name,
+.dom-upgrades.is-narrow .dom-desc {
+    overflow-wrap: anywhere;
+}
+
 .portrait .dom-upgrades {
     left: var(--dom-upgrades-left-p);
     top: var(--dom-upgrades-top-p);
@@ -675,6 +711,7 @@
 .dom-tabs,
 .dom-bulk {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-xs);
     flex: 0 0 auto;
 }
@@ -712,6 +749,11 @@
     gap: var(--space-sm);
     padding: var(--space-sm);
     min-height: 0;
+    /* Ряд — вложенная карточка внутри панели: рамку 9-slice не дублируем,
+       иначе её 24-px борта съедают ~48 CSS px текста и он рвётся по буквам. */
+    border-width: 0;
+    border-image: none;
+    background: rgba(0, 0, 0, 0.28);
 }
 
 .dom-upgrades-row .dom-slot {
@@ -747,10 +789,24 @@
 
 .dom-upgrades-price {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-xs);
     font-size: var(--font-caption);
     color: var(--color-gold);
+}
+
+.dom-upgrades-price span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.dom-upgrades-price .dom-sub {
+    margin-left: auto;
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-price {
+    font-size: var(--font-caption-sm);
 }
 
 .dom-upgrades-price.is-dim {
@@ -779,15 +835,6 @@
     animation: dom-upgrades-pulse 180ms ease-out;
 }
 
-.portrait .dom-upgrades-row {
-    grid-template-columns: var(--dom-icon-size) 1fr;
-}
-
-.portrait .dom-upgrades-row .dom-actions {
-    grid-column: 1 / -1;
-}
-
 .portrait .dom-upgrades-row .dom-btn {
-    width: 100%;
     font-size: var(--font-caption);
 }

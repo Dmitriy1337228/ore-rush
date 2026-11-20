@@ -7,7 +7,7 @@ import { html, toNode, renderKeyed } from './html.js';
 import { iconSlot, iconBox } from './components.js';
 import { fitIcons } from './iconFit.js';
 import { upgradesSnapshot, PUBLISH_MS } from './bridge.js';
-import { buyBulk, saveGame } from '../../state.js';
+import { buyBulk, saveGame, gameState } from '../../state.js';
 import { playSfx } from '../../sfx.js';
 import { REG } from '../shared/theme.js';
 import './tokens.css';
@@ -15,6 +15,9 @@ import './dom.css';
 
 const PULSE_MS = 200; // длительность CSS-пульса ряда (dom.css)
 const TAP_SLOP_CSS = 10; // дрожание пальца ≤ 10 CSS px = тап (R2)
+// Порог узкой панели (l844: 23 % от 844 ≈ 195 CSS px): 3 колонки ряда и две
+// вкладки в строку не помещаются — переключаем CSS-класс is-narrow.
+const NARROW_PANEL_CSS = 260;
 
 const rowHtml = (r) =>
     html`<article class="dom-row dom-upgrades-row" data-row="${r.id}">
@@ -22,7 +25,6 @@ const rowHtml = (r) =>
         <div class="dom-row-text">
             <div class="dom-upgrades-head">
                 <span class="dom-name">${r.name}</span>
-                <span class="dom-sub">${r.levelText}</span>
             </div>
             <div class="dom-desc">${r.desc}</div>
             ${
@@ -30,6 +32,7 @@ const rowHtml = (r) =>
                     ? html`<div class="dom-error">${r.lockText}</div>`
                     : html`<div class="dom-upgrades-price ${r.priceKind === 'dim' ? 'is-dim' : ''}">
                           ${iconBox('coal_nugget', 'dom-pair-icon')}<span>${r.priceText}</span>
+                          <span class="dom-sub">${r.levelText}</span>
                       </div>`
             }
         </div>
@@ -90,10 +93,25 @@ export function createDomUpgrades(scene) {
             create: rowHtml
         });
         lastSig = JSON.stringify(snap);
+        syncNarrow();
         fitIcons(layer);
 
         return snap;
     };
+
+    const syncNarrow = () => {
+        const width = layer.clientWidth;
+        if (width > 0) {
+            layer.classList.toggle('is-narrow', width < NARROW_PANEL_CSS);
+        }
+    };
+
+    if (typeof ResizeObserver !== 'undefined') {
+        // Панель меняет ширину при повороте/ресайзе — класс пересчитываем без JS-таймера
+        new ResizeObserver(syncNarrow).observe(layer);
+    } else {
+        window.addEventListener('resize', syncNarrow);
+    }
 
     const refresh = () => {
         if (hidden) {
@@ -129,6 +147,24 @@ export function createDomUpgrades(scene) {
         );
     };
 
+    // D9: перечитывание одного ряда из state (мимо 150-мс тика), без пересборки списка
+    const refreshRow = (id) => {
+        if (hidden) {
+            return;
+        }
+
+        const snap = snapshot();
+        const data = snap.rows.find((r) => r.id === id);
+        const el = rowsEl.querySelector(`[data-row="${id}"]`);
+        if (!data || !el) {
+            return;
+        }
+
+        const next = toNode(rowHtml(data));
+        next.dataset.key = id;
+        el.replaceWith(next);
+    };
+
     // D2/D8: состав покупки как в Phaser — buyBulk (state) -> saveGame -> sfx -> пульс,
     // затем ряд(ы) перечитываются из state немедленно (D9: мимо 150-мс тика).
     const buy = (id) => {
@@ -143,7 +179,13 @@ export function createDomUpgrades(scene) {
         saveGame();
         playSfx(scene, 'purchase');
         pulse(id);
-        refresh();
+        // D9: строгий пакет меняет только купленный ряд (цены других не зависят от руды);
+        // МАКС зависит от текущей руды у всех рядов — тогда перечитываем список целиком.
+        if (buyAmount === 'max') {
+            refresh();
+        } else {
+            refreshRow(id);
+        }
 
         return true;
     };
@@ -245,7 +287,13 @@ export function createDomUpgrades(scene) {
             // Seam/D3: бой и полноэкранные Phaser-экраны (карта) выше списка,
             // настройки/мастерская — DOM поверх (свой скрим и z)
             const bossNow = !!scene.registry.get(REG.bossActive);
-            const hide = bossNow || !!scene._settingsOpen || !!scene._mapOpen || !!scene._craftOpen;
+            const hide =
+                bossNow ||
+                !!scene._settingsOpen ||
+                !!scene._mapOpen ||
+                !!scene._craftOpen ||
+                // D3: во время обучения (в т.ч. после сброса) вкладки ведёт Phaser
+                !gameState.tutorialDone;
             setHidden(hide);
             if (hidden) {
                 return false;
@@ -267,22 +315,7 @@ export function createDomUpgrades(scene) {
             return true;
         },
         refreshAll: render,
-        refreshRow(id) {
-            if (hidden) {
-                return;
-            }
-
-            const snap = snapshot();
-            const data = snap.rows.find((r) => r.id === id);
-            const el = rowsEl.querySelector(`[data-row="${id}"]`);
-            if (!data || !el) {
-                return;
-            }
-
-            const next = toNode(rowHtml(data));
-            next.dataset.key = id;
-            el.replaceWith(next);
-        },
+        refreshRow,
         switchTab(next) {
             if (next === tab) {
                 return;

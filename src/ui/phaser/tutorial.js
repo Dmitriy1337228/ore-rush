@@ -254,6 +254,9 @@ export const tutorialMethods = {
             this.cameras.remove(this.tutCam);
             this.tutCam = null;
         }
+
+        // D3 фазы 3: после обучения список переезжает на DOM-панель
+        this.enableDomUpgrades?.();
     },
 
     // «Полный сброс» возвращает tutorialDone=false, но учебные объекты строятся

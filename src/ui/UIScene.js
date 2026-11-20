@@ -200,12 +200,24 @@ export class UIScene extends Phaser.Scene {
                 console.error('[upgrades:dom] не загрузился:', err);
             });
 
-        // Статус-модалки — DOM-форма фазы 3 (M2). Монтируются после настроек:
-        // те же host и порядок слоёв (статус выше настроек, D3).
+        // Статус-модалки — DOM-форма фазы 3 (M2). Монтируются сразу после мастерской
+        // (нужен только #ui-root), не дожидаясь настроек: бой может закончиться за
+        // первые кадры, и окно награды не должно «успеть» на Phaser-путь.
         // Мост импортируем ДО создания контроллера: иначе между появлением
         // __DOM_STATUS и готовностью снимков остаётся окно, в котором фасад
         // уходит на Phaser-путь (найдено verify:settings-dom ST9).
-        this._domStatusReady = this._domSettingsReady
+        this._pendingStatusShows = [];
+        this._statusMountFailed = false;
+        this._flushStatusQueue = () => {
+            const queue = this._pendingStatusShows;
+            this._pendingStatusShows = [];
+            for (const call of queue) {
+                call();
+            }
+
+            this.tryShowDailyModal();
+        };
+        this._domStatusReady = this._domCraftReady
             .then(async () => {
                 const [mod, bridge] = await Promise.all([import('./dom/statusModals.js'), import('./dom/bridge.js')]);
                 this._statusSnap = {
@@ -216,21 +228,46 @@ export class UIScene extends Phaser.Scene {
                 };
                 this.domStatus = mod.createDomStatusModals(this);
             })
+            .then(() => this._flushStatusQueue())
             .catch((err) => {
+                // Чанк не загрузился: очередь уходит на Phaser-путь (окно отката)
+                this._statusMountFailed = true;
                 console.error('[status:dom] не загрузился:', err);
+                this._flushStatusQueue();
             });
     }
 
     // D3-развилка обучения: пока обучение не завершено, список и вкладки остаются
     // на Phaser (tutorial.js привязан к tabBtns, учебные слои — над listCam);
-    // после tutorialDone DOM-панель становится основной. Спайк этапа 0 — по флагу.
+    // после tutorialDone DOM-панель становится основной.
     shouldMountDomUpgrades() {
         if (this.domUpgrades) {
             return false;
         }
 
-        // По умолчанию (этап 2) — upgradesOnDom(); на этапе 0–1 это dev-спайк.
-        return upgradesOnDom() && !!(this._upgradesDomSpike || gameState.tutorialDone === true);
+        return upgradesOnDom() && (this._upgradesDomSpike || gameState.tutorialDone === true);
+    }
+
+    // Вызывается из finishTutorial: обучение завершилось в этой сессии —
+    // монтируем DOM-панель и снимаем Phaser-хром списка (D3).
+    enableDomUpgrades() {
+        if (this.domUpgrades || !upgradesOnDom() || !gameState.tutorialDone) {
+            return;
+        }
+
+        import('./dom/upgradesPanel.js')
+            .then(({ createDomUpgrades }) => {
+                if (this.domUpgrades) {
+                    return;
+                }
+
+                this.domUpgrades = createDomUpgrades(this);
+                this.syncDomUpgradesChrome();
+                this.refreshUi();
+            })
+            .catch((err) => {
+                console.error('[upgrades:dom] не загрузился:', err);
+            });
     }
 
     // D8: на DOM-пути Phaser-хром списка (вкладки, пакет, тир, подсказка, ряды)
@@ -240,8 +277,11 @@ export class UIScene extends Phaser.Scene {
             return;
         }
 
+        // Пока обучение не завершено (после «Полного сброса»), вкладки остаются
+        // видимыми Phaser-объектами: tutorial.js подсвечивает именно их (D3).
+        const tutorial = !gameState.tutorialDone;
         for (const t of this.tabBtns || []) {
-            t.c.setVisible(false);
+            t.c.setVisible(tutorial);
         }
 
         for (const o of [this.amountC, this.viewportBg, this.tierLabel, this.hint]) {
@@ -258,7 +298,23 @@ export class UIScene extends Phaser.Scene {
         return !isPhaserForm('status') && !!this.domStatus && !!this._statusSnap;
     }
 
+    // Ранняя награда/офлайн до готовности DOM-контроллера: не уходим на Phaser
+    // (другой экран и кегли), а откладываем вызов до монтирования.
+    deferStatus(call) {
+        if (isPhaserForm('status') || this.statusOnDom() || this._statusMountFailed) {
+            return false;
+        }
+
+        this._pendingStatusShows.push(call);
+
+        return true;
+    }
+
     showOfflineModal(info) {
+        if (this.deferStatus(() => this.showOfflineModal(info))) {
+            return;
+        }
+
         if (!this.statusOnDom()) {
             this.showOfflinePhaser(info);
 
@@ -301,6 +357,10 @@ export class UIScene extends Phaser.Scene {
         }
 
         const info = this._pendingDaily;
+        if (this.deferStatus(() => this.tryShowDailyModal())) {
+            return;
+        }
+
         this._pendingDaily = null;
         if (!this.statusOnDom()) {
             this.showDailyPhaser(info);
@@ -330,6 +390,10 @@ export class UIScene extends Phaser.Scene {
 
     showBossRewardModal(reward) {
         if (!reward) {
+            return;
+        }
+
+        if (this.deferStatus(() => this.showBossRewardModal(reward))) {
             return;
         }
 
@@ -370,6 +434,10 @@ export class UIScene extends Phaser.Scene {
 
     showPlayerDownModal(info) {
         if (!info) {
+            return;
+        }
+
+        if (this.deferStatus(() => this.showPlayerDownModal(info))) {
             return;
         }
 

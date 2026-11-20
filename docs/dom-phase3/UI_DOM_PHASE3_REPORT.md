@@ -1,0 +1,91 @@
+# Отчёт фазы 3: статус-модалки и список улучшений на DOM
+
+Дата: 2026-11-20 · Ветка: `phase3/dom-forms` от `master` (bf4c027) · План: `docs/dom-phase3/UI_DOM_PHASE3_PLAN.md` ·
+Baseline: `docs/dom-phase3/UI_DOM_PHASE3_BASELINE.md`.
+
+## Что сделано
+
+- **M2 — статус-модалки на DOM.** Офлайн, ежедневная награда, награда босса и «Ты вырубился!»
+  собираются в `src/ui/dom/statusModals.js` (один слой `modal.js`, скрим, флаги открытия).
+  Тексты — `src/state/statusMessages.js` (единый источник; Phaser берёт те же строки),
+  числа/награды — только снимки моста (`offlineSnapshot`, `dailySnapshot`,
+  `bossRewardSnapshot`, `playerDownSnapshot`). Очередь окон и публичные имена остались
+  в фасаде `UIScene`; Phaser-реализации — `*Phaser` в `src/ui/phaser/statusModals.js`.
+- **M3 — список улучшений на DOM.** Постоянная панель `src/ui/dom/upgradesPanel.js`:
+  вкладки, пакеты x1/x10/x100/МАКС, прокрутка, покупка `buyBulk` + `saveGame` + sfx +
+  синхронное перечитывание ряда. Цены/пакеты/МАКС считает только state
+  (`getBulkCost`, `getAffordableBulk`), тексты — `src/state/upgradesMessages.js`.
+- **Seams (D3/D7/D8).** Обучение до `tutorialDone` остаётся на Phaser (включая повторное
+  обучение после «Полного сброса»); карта/бой/мастерская/настройки прячут DOM-список;
+  статус-окно лежит поверх списка (`z 3 > 1`), клики под скримом не проходят.
+- **Откат.** `?phaserForms=settings,status,upgrades` (или `localStorage.phaserForms`)
+  возвращает Phaser-путь для любой формы; `verify:status-dom -- --legacy` и
+  `verify:upgrades-dom -- --legacy` проверяют его.
+
+## Гейты (после включения DOM по умолчанию)
+
+| Проверка | Результат |
+|---|---|
+| `npm test` | 157 pass, 0 fail |
+| `npm run test:ui` | 4/4 pass (Phaser-эталоны не менялись) |
+| `npm run ui:check:dom` | 32 прогона (craft+settings+status+upgrades × 8), **0 err / 0 warn**, 0 console |
+| `npm run test:dom-golden -- --form all --runs 3` | 13 эталонов, худший **0.097 %** (< 0.5 %) |
+| `npm run format:check`, `lint`, `scripts:check`, `layers:check` | ок |
+| `npm run ui:tokens`, `ui:tokens:css`, `dom:tokens -- --check` | ок |
+| `npm run build` | ок (411.84 КБ gzip, 11 файлов) |
+| `npm run ui:check` | 0 новых ошибок, **кроме** `l844|boss`: **6 err / 5 warn** |
+| `verify:craft-dom` | 40/40 |
+| `verify:settings-dom` | 28/0 |
+| `verify:status-dom` (+ `--legacy`) | **28/0** (+4/0) |
+| `verify:upgrades-dom` (+ `--legacy`) | **13/0** (+3/0) |
+| `verify:daily`, `verify:offline`, `verify:bulkbuy`, `verify:responsive` | 25/0, 12/0, 37/0, 81/0 |
+| `verify:boss` | 90/0 |
+
+**Внешний долг `ui:check`:** `l844|boss` даёт 6 MIN-FONT ошибок и 5 предупреждений
+(кегли 6.0–7.6 CSS px при FIT 0.54). Это воспроизводится **на `master` без изменений
+фазы 3** (прогон в отдельном worktree: те же 6/5, долг 6) — долг окружения/порогов,
+`tests/ui-check/baseline.json` не расширялся.
+
+## Метрики (этап 3, тем же методом)
+
+| Критерий | Значение | Вердикт |
+|---|---|---|
+| **W1** LOC `upgrades.js` + `gear.js` ≤ Phaser-baseline | 782 vs 766 (+16 у `upgrades.js`) | **не выполнен**: Phaser-код оставлен для откатов, добавлены ветки пути/обучения |
+| **W2** прирост бандла ≤ 15 КБ gzip на форму | +7.41 КБ всего (`statusModals` 1.17 + `upgradesPanel` 1.91 + тексты/чанки) | выполнен |
+| **W3** нет двойного обновления списка | на DOM-пути Phaser-ряды не строятся, вкладки/пакет скрыты; `upgrades.js` 573→589 (+гварды пути), `gear.js` без изменений; per-frame обновления Phaser-рядов выключены | выполнен по факту (одно обновление DOM) |
+| **W4** golden 3 прогона без правок | худший 0.097 % (порог 0.5 %) | выполнен |
+| **R1** тесты | unit 157, все verify-сценарии зелёные (см. таблицу) | выполнен |
+| **R2** жесты | тап/дрожание ≤ 10 CSS px покупает, драг/скролл — нет (U8, SM1c) | выполнен |
+| **R3** вёрстка | ui:check:dom 32×0, golden ×3, портрет/ландшафт | выполнен |
+| **R4** `ui:check` 0 новых | 6/5 на `l844|boss`, воспроизведено на `master` | **внешний долг**, не блокирует (см. §Гейты) |
+| **R5** без «пинков» на Phaser | откат только флагом; `--legacy` зелёный | выполнен |
+| p95 списка (порог 35.4 мс) | Phaser 33.3/33.4 → DOM **16.8/16.8** | выполнен |
+| Отклик покупки | ряд перерисован за **4.3 мс, 1 кадр** | выполнен |
+| Long tasks (> 50 мс, CPU×4) | DOM 15–17 (max 87–103 мс) против Phaser 2–3 (max 55–91) | зафиксировано как кандидат оптимизации (saveGame + пересборка вкладки); на p95/отклик не влияет |
+| **G1** DOM-путь неделю без критики | — | **не проверено**: требуется недельное окно наблюдения |
+| **G2** fixcount не растёт | `upgrades.js` 14→15, `statusModals.js` 14→15 (+1 за ветки пути) | выполнен с оговоркой (рост — служебные ветки, не новые классы багов) |
+| **G3** решения записаны | этот отчёт + журнал плана; `docs/DECISIONS.md` №3 остаётся в силе | выполнен |
+| **G4** полный gate set | всё зелёное, кроме внешнего `l844|boss` | выполнен с оговоркой |
+
+## Отклонения и долги
+
+1. **Голден stress-списка не снимается** (`golden: false`): фон-шахта stress-сида
+   анимирован и попиксельно нестабилен между прогонами (1–3 %); 27 рядов и «макс»
+   покрыты `ui:check:dom` (8 вьюпортов) и `verify:upgrades-dom` U6/U9.
+2. **LOC W1:** Phaser-путь отката сохранён по требованию D5/R5, поэтому `upgrades.js`
+   не уменьшился; вместо этого DOM-код вынесен в отдельные файлы (280 строк + verify).
+3. **`ui:check` l844|boss** — внешний MIN-FONT долг extreme-вьюпорта, воспроизводится
+   на `master`; baseline не расширялся, проверка не ослаблялась.
+4. **Телефонный стенд** статус-окна: официальный `stand:*-phone` поддерживает только
+   craft|settings, поэтому мобильные PNG статуса — из `verify-status-dom`
+   (`docs/dom-phase3/baseline/phase3/status-dom/q1-*-390x844.png`).
+5. **Long tasks** списка при CPU×4: 15–17 за 30 с с фазой частых покупок; p95 и
+   отклик укладываются, но `saveGame` на каждый клик — кандидат на дебаунс.
+
+## Как откатить
+
+- Всё: `?phaserForms=settings,status,upgrades`; точечно — `?phaserForms=status` или
+  `?phaserForms=upgrades`.
+- Постоянно: `localStorage.phaserForms = "status,upgrades"`.
+- Удаление DOM-кода не требуется: при флаге контроллеры не монтируются, публичные имена
+  ведут на `*Phaser`-реализации.

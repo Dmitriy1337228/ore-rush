@@ -56,9 +56,11 @@ export const panelMethods = {
 
         // Вкладки: одна ширина со списком, две по p.tabW + зазор SPACE.sm
         const tabCY = p.py + p.tabsCY;
-        this.tabBtns = domPath
-            ? []
-            : TABS.map((tab, i) => this.buildTabButton(v.x + i * (p.tabW + SPACE.sm), tabCY - p.tabH / 2, tab));
+        // Вкладки строятся всегда (дёшево): обучение после «Полного сброса»
+        // подсвечивает их даже на DOM-пути — хром временно показывается (D3).
+        this.tabBtns = TABS.map((tab, i) =>
+            this.buildTabButton(v.x + i * (p.tabW + SPACE.sm), tabCY - p.tabH / 2, tab)
+        );
 
         // Строка тира + переключатель мультипокупки (в границах списка)
         this.tierLabel = makeLabel(this, v.x + p.tierInset, p.py + p.tierCY, '', p.tierLabelSize, '#c8b78e');

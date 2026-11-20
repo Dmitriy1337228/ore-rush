@@ -148,13 +148,13 @@ export const FORMS = [
         // панель в двух состояниях: обычный каталог (mid) и stress-сид.
         id: 'upgrades',
         label: 'Список улучшений',
-        pending: true,
+        pending: false,
         api: '__DOM_UPGRADES',
         seed: 'mid',
         prepare: null,
         open: "(() => { const ui = window.__GAME.scene.getScene('UIScene'); ui._pendingDaily = null; ui.registry.set('dailyInfo', null); if (ui._dailyOpen) ui.hideDailyModal(); })()",
         close: null,
-        isOpen: '!!window.__DOM_UPGRADES',
+        isOpen: '!!window.__DOM_UPGRADES && !document.querySelector("[data-dom-upgrades]")?.hidden',
         panel: '[data-dom-upgrades]',
         scroll: '[data-dom-upgrades-scroll]',
         expected: () => UPGRADES.map((u) => u.id),
@@ -163,6 +163,33 @@ export const FORMS = [
         // Аудит обходит обе вкладки (20 equipment + 7 enhance = 27 рядов в expected)
         tabs: ['equipment', 'enhance'],
         switchTab: (id) => `window.__DOM_UPGRADES.switchTab(${JSON.stringify(id)})`,
+        // Голдены: обычный каталог (mid) и stress-сид с полным списком/«макс»
+        kinds: [
+            {
+                id: 'default',
+                open: "(() => { const ui = window.__GAME.scene.getScene('UIScene'); ui._pendingDaily = null; ui.registry.set('dailyInfo', null); if (ui._dailyOpen) ui.hideDailyModal(); })()",
+                isOpen: '!!window.__DOM_UPGRADES && !document.querySelector("[data-dom-upgrades]")?.hidden'
+            },
+            {
+                id: 'stress',
+                // Голден не снимаем: фон-шахта в stress-сиде анимирован и попиксельно
+                // нестабилен между прогонами; 27 рядов и «макс» проверяют аудит и U9.
+                golden: false,
+                open: `(async () => {
+                    const files = performance.getEntriesByType('resource').map((r) => r.name);
+                    const m = await import(files.find((u) => u.includes('/src/state.js')));
+                    const ui = window.__GAME.scene.getScene('UIScene');
+                    ui._pendingDaily = null;
+                    ui.registry.set('dailyInfo', null);
+                    if (ui._dailyOpen) ui.hideDailyModal();
+                    m.gameState.tier = 11;
+                    m.gameState.ore = 9.99e33;
+                    for (const id of Object.keys(m.gameState.levels)) m.gameState.levels[id] = 999;
+                    window.__DOM_UPGRADES?.refreshAll();
+                })()`,
+                isOpen: '!!window.__DOM_UPGRADES && !document.querySelector("[data-dom-upgrades]")?.hidden'
+            }
+        ],
         files: {
             screen: [
                 'src/ui/dom/upgradesPanel.js',

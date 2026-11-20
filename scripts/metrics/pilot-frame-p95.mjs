@@ -105,9 +105,7 @@ const TARGETS = {
             prepare: hideDaily,
             open: null,
             ready: '!!window.__DOM_UPGRADES',
-            state: 'upgradesDom',
-            // Этап 0: спайк-прототип монтируется только dev-флагом (в прод не попадает)
-            query: 'domUpgradesSpike=1'
+            state: 'upgradesDom'
         },
         phaser: {
             prepare: hideDaily,

@@ -63,7 +63,7 @@ for (const form of active) {
             process.exit(2);
         }
 
-        for (const variant of form.kinds || [null]) {
+        for (const variant of (form.kinds || [null]).filter((k) => !k || k.golden !== false)) {
             jobs.push({ form, variant, size, width: Number(m[1]), height: Number(m[2]) });
         }
     }
