@@ -1,0 +1,98 @@
+{
+  "createdAt": "2026-11-20T18:30:01.124Z",
+  "url": "http://localhost:5174",
+  "form": "daily",
+  "mode": "dom",
+  "deviceScaleFactor": 1,
+  "cpuThrottleRate": 4,
+  "secondsPerRound": 10,
+  "warmupMs": 1000,
+  "protocol": "standard",
+  "viewports": [
+    {
+      "viewport": "1280x720",
+      "screen": {
+        "dailyOpen": true,
+        "domRoot": true
+      },
+      "rounds": [
+        {
+          "frames": 602,
+          "meanMs": 16.64,
+          "p50Ms": 16.7,
+          "p95Ms": 16.8,
+          "maxMs": 16.8
+        },
+        {
+          "frames": 601,
+          "meanMs": 16.64,
+          "p50Ms": 16.7,
+          "p95Ms": 16.7,
+          "maxMs": 16.8
+        },
+        {
+          "frames": 602,
+          "meanMs": 16.64,
+          "p50Ms": 16.7,
+          "p95Ms": 16.8,
+          "maxMs": 16.8
+        }
+      ],
+      "combined": {
+        "frames": 1805,
+        "meanMs": 16.64,
+        "p50Ms": 16.7,
+        "p95Ms": 16.8,
+        "maxMs": 16.8
+      },
+      "p95": 16.8,
+      "longTasks": {
+        "count": 0,
+        "maxMs": 0,
+        "totalMs": 0
+      },
+      "consoleErrors": []
+    }
+  ],
+  "screen": {
+    "dailyOpen": true,
+    "domRoot": true
+  },
+  "rounds": [
+    {
+      "frames": 602,
+      "meanMs": 16.64,
+      "p50Ms": 16.7,
+      "p95Ms": 16.8,
+      "maxMs": 16.8
+    },
+    {
+      "frames": 601,
+      "meanMs": 16.64,
+      "p50Ms": 16.7,
+      "p95Ms": 16.7,
+      "maxMs": 16.8
+    },
+    {
+      "frames": 602,
+      "meanMs": 16.64,
+      "p50Ms": 16.7,
+      "p95Ms": 16.8,
+      "maxMs": 16.8
+    }
+  ],
+  "combined": {
+    "frames": 1805,
+    "meanMs": 16.64,
+    "p50Ms": 16.7,
+    "p95Ms": 16.8,
+    "maxMs": 16.8
+  },
+  "p95": 16.8,
+  "longTasks": {
+    "count": 0,
+    "maxMs": 0,
+    "totalMs": 0
+  },
+  "consoleErrors": []
+}

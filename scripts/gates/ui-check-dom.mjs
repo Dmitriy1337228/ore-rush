@@ -108,8 +108,11 @@ if (active.length) {
             }
         }
 
-        const panel = root.querySelector(panelSelector);
-        const scroll = root.querySelector('[data-dom-scroll]');
+        // В DOM живут модалки всех форм (скрытые в слоях): берём первую видимую
+        // панель запрошенной формы, иначе аудит молча мерил бы пустой скрытый узел.
+        const panels = Array.from(root.querySelectorAll(panelSelector));
+        const panel = panels.find((el) => el.getClientRects().length);
+        const scroll = panel ? panel.querySelector('[data-dom-scroll]') : null;
         if (!panel || panel.hidden) {
             result.violations.push({ rule: 'ROOT-RECT', severity: 'error', msg: 'панель не смонтирована или скрыта' });
 
@@ -367,59 +370,93 @@ if (active.length) {
 
             const violations = [];
             const seenRows = new Set();
+            let blocksSeen = 0;
             let failures = '';
+            const variants = (form.kinds || [null]).map(
+                (k) => k || { id: null, open: form.open, isOpen: form.isOpen, close: form.close }
+            );
             try {
-                const scrollMetrics = await page.evaluate(() => {
-                    const el = document.querySelector('[data-dom-scroll]');
-                    if (!el) {
-                        return null;
+                for (const variant of variants) {
+                    if (variant.id && variant.open && variant.open !== form.open) {
+                        await page.evaluate(variant.open);
+                        await page.waitForFunction(variant.isOpen, null, { timeout: 10000 });
+                        await page.waitForTimeout(300);
                     }
 
-                    return { max: el.scrollHeight - el.clientHeight, view: el.clientHeight };
-                });
-                let positions = [0];
-                if (scrollMetrics) {
-                    const stepPx = Math.max(1, Math.floor(scrollMetrics.view * SCROLL_STEP_SHARE));
-                    positions = [];
-                    for (let y = 0; y < scrollMetrics.max; y += stepPx) {
-                        positions.push(y);
-                    }
-
-                    positions.push(scrollMetrics.max);
-                }
-
-                for (const tabId of form.tabs || [null]) {
-                    if (tabId) {
-                        await page.evaluate(form.switchTab(tabId));
-                        await page.waitForTimeout(200);
-                    }
-
-                    for (const [i, y] of positions.entries()) {
-                        if (scrollMetrics) {
-                            await page.evaluate((top) => {
-                                document.querySelector('[data-dom-scroll]').scrollTop = top;
-                            }, y);
-                            await page.waitForTimeout(150);
+                    const stepTag = variant.id || 'default';
+                    const scrollMetrics = await page.evaluate(() => {
+                        // Только скролл видимой панели: скрытые модалки других форм
+                        // имеют нулевую высоту и дали бы «один кадр» без прокрутки.
+                        const el = Array.from(document.querySelectorAll('[data-dom-scroll]')).find(
+                            (n) => n.getClientRects().length
+                        );
+                        if (!el) {
+                            return null;
                         }
 
-                        const res = await page.evaluate(auditFn, {
-                            rules: {
-                                minFontCss: UI_RULES.minFontCss,
-                                minTouchCss: UI_RULES.minTouchCss,
-                                minPadding: UI_RULES.minPadding,
-                                mobileMaxWidthCss: UI_RULES.mobileMaxWidthCss
-                            },
-                            tolerance: RECT_TOLERANCE_CSS,
-                            panelSelector: form.panel
-                        });
-                        violations.push(...res.violations.map((v) => ({ ...v, step: `#${i}@${y}` })));
-                        res.rows.forEach((row) => seenRows.add(row));
+                        return { max: el.scrollHeight - el.clientHeight, view: el.clientHeight };
+                    });
+                    let positions = [0];
+                    if (scrollMetrics) {
+                        const stepPx = Math.max(1, Math.floor(scrollMetrics.view * SCROLL_STEP_SHARE));
+                        positions = [];
+                        for (let y = 0; y < scrollMetrics.max; y += stepPx) {
+                            positions.push(y);
+                        }
+
+                        positions.push(scrollMetrics.max);
                     }
 
-                    if (form.tabs && form.tabs[0] && tabId !== form.tabs[0]) {
-                        await page.evaluate(form.switchTab(form.tabs[0]));
+                    for (const tabId of form.tabs || [null]) {
+                        if (tabId) {
+                            await page.evaluate(form.switchTab(tabId));
+                            await page.waitForTimeout(200);
+                        }
+
+                        for (const [i, y] of positions.entries()) {
+                            if (scrollMetrics) {
+                                await page.evaluate((top) => {
+                                    const el = Array.from(document.querySelectorAll('[data-dom-scroll]')).find(
+                                        (n) => n.getClientRects().length
+                                    );
+                                    if (el) {
+                                        el.scrollTop = top;
+                                    }
+                                }, y);
+                                await page.waitForTimeout(150);
+                            }
+
+                            const res = await page.evaluate(auditFn, {
+                                rules: {
+                                    minFontCss: UI_RULES.minFontCss,
+                                    minTouchCss: UI_RULES.minTouchCss,
+                                    minPadding: UI_RULES.minPadding,
+                                    mobileMaxWidthCss: UI_RULES.mobileMaxWidthCss
+                                },
+                                tolerance: RECT_TOLERANCE_CSS,
+                                panelSelector: form.panel
+                            });
+                            violations.push(...res.violations.map((v) => ({ ...v, step: `${stepTag}#${i}@${y}` })));
+                            blocksSeen = Math.max(blocksSeen, res.counts.rectangles);
+                            res.rows.forEach((row) => seenRows.add(row));
+                        }
+
+                        if (form.tabs && form.tabs[0] && tabId !== form.tabs[0]) {
+                            await page.evaluate(form.switchTab(form.tabs[0]));
+                            await page.waitForTimeout(200);
+                        }
+                    }
+
+                    if (variants.length > 1 && variant.close) {
+                        await page.evaluate(variant.close);
                         await page.waitForTimeout(200);
                     }
+                }
+
+                if (variants.length > 1) {
+                    await page.evaluate(variants[0].open);
+                    await page.waitForFunction(variants[0].isOpen, null, { timeout: 10000 });
+                    await page.waitForTimeout(200);
                 }
             } catch (e) {
                 failures = String((e && e.message) || e).split('\n')[0];
@@ -467,7 +504,9 @@ if (active.length) {
                     document.body.appendChild(layer);
                 }, marks);
                 await page.evaluate(() => {
-                    const el = document.querySelector('[data-dom-scroll]');
+                    const el = Array.from(document.querySelectorAll('[data-dom-scroll]')).find(
+                        (n) => n.getClientRects().length
+                    );
                     if (el) {
                         el.scrollTop = 0;
                     }
@@ -492,7 +531,7 @@ if (active.length) {
                 failure: failures
             });
             console.log(
-                `${failures ? 'FAIL' : errors.length ? 'ERR ' : warns.length ? 'warn' : 'ok  '} ${form.id.padEnd(9)} ${vp.id.padEnd(6)} ${String(vp.width + 'x' + vp.height).padEnd(9)} элементов: ${seenRows.size}/${expectedIds.length}; новых: ${errors.length} err, ${warns.length} warn${failures ? ' — ' + failures : ''}`
+                `${failures ? 'FAIL' : errors.length ? 'ERR ' : warns.length ? 'warn' : 'ok  '} ${form.id.padEnd(9)} ${vp.id.padEnd(6)} ${String(vp.width + 'x' + vp.height).padEnd(9)} элементов: ${seenRows.size}/${expectedIds.length}; блоков: ${blocksSeen}; новых: ${errors.length} err, ${warns.length} warn${failures ? ' — ' + failures : ''}`
             );
             unique
                 .slice(0, 20)

@@ -525,6 +525,121 @@
     margin: var(--space-sm) 0 var(--space-xs);
 }
 
+/* ---------- Статус-модалки (фаза 3, M2) ---------- */
+/* Один слой modal.js: офлайн / дейли / награда босса / вырубление. Тексты — готовый
+   снимок моста, поэтому здесь только типографика и раскладка на токенах. */
+.dom-status {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    align-items: center;
+    text-align: center;
+}
+
+.dom-status .dom-line {
+    font-size: var(--font-stat);
+    color: var(--color-pale);
+}
+
+.dom-status-gap {
+    height: var(--space-xs);
+}
+
+.dom-status-streak {
+    color: var(--color-soft);
+}
+
+.dom-status-bounty {
+    color: var(--color-income);
+    font-size: var(--font-label);
+}
+
+.dom-reward,
+.dom-artifact {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin: var(--space-xs) 0;
+    width: 100%;
+    justify-content: center;
+}
+
+.dom-reward-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    min-width: 0;
+    text-align: left;
+}
+
+.dom-reward {
+    flex-direction: column;
+}
+
+.dom-reward .dom-reward-text {
+    text-align: center;
+    align-items: center;
+}
+
+.dom-reward-text .dom-desc {
+    white-space: pre-line;
+}
+
+.dom-daily-slots {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-xs);
+    margin-top: var(--space-xs);
+}
+
+.dom-daily-slot {
+    display: inline-flex;
+    width: calc(var(--dom-icon-size) - var(--space-xs));
+    height: calc(var(--dom-icon-size) - var(--space-xs));
+    padding: var(--space-xs);
+    opacity: 0.45;
+}
+
+.dom-daily-slot.is-active {
+    opacity: 1;
+    outline: var(--space-xs) solid var(--color-gold);
+    outline-offset: calc(-1 * var(--space-xs));
+}
+
+.dom-daily-slot .dom-icon {
+    width: 100%;
+    height: 100%;
+}
+
+.dom-comps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin: var(--space-xs) 0;
+    width: 100%;
+}
+
+.dom-comp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+}
+
+.dom-comp-icon {
+    width: var(--dom-pair-icon);
+    height: var(--dom-pair-icon);
+}
+
+.dom-comp .dom-line {
+    font-size: var(--font-body);
+}
+
+.portrait .dom-status .dom-line {
+    font-size: var(--font-label);
+}
+
 /* ---------- Список улучшений (фаза 3, M3) ---------- */
 /* Постоянная панель, а не модалка: прямоугольник вкладок и списка в врезке
    Phaser-панели (проценты от canvas — токены в tokens.css). Скрим модалок выше

@@ -2,7 +2,15 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { gameState } from '../../src/state.js';
-import { settingsSnapshot, snapshot } from '../../src/ui/dom/bridge.js';
+import {
+    bossRewardSnapshot,
+    dailySnapshot,
+    offlineSnapshot,
+    playerDownSnapshot,
+    settingsSnapshot,
+    snapshot,
+    upgradesSnapshot
+} from '../../src/ui/dom/bridge.js';
 import { MSG } from '../../src/state/craftMessages.js';
 
 const reset = () => {
@@ -109,5 +117,96 @@ describe('dom bridge: settingsSnapshot', () => {
         assert.equal(snap.canPrestige, false);
         assert.match(snap.prestigeLines[0], /^Нужно добыть /);
         assert.equal(snap.pct, 0);
+    });
+});
+
+describe('dom bridge: статус-снимки', () => {
+    beforeEach(reset);
+
+    it('офлайн: тело из statusMessages и заголовок', () => {
+        const before = JSON.stringify(gameState);
+        const snap = offlineSnapshot({ seconds: 7200, reward: 1200, counted: 3600 });
+        assert.equal(JSON.stringify(gameState), before, 'снимок не мутирует состояние');
+        assert.equal(snap.kind, 'offline');
+        assert.equal(snap.title, 'С возвращением!');
+        assert.equal(snap.okLabel, 'Забрать');
+        assert.equal(snap.body.split('\n').length, 5);
+        assert.match(snap.body, /^шахтёры добыли 1200 /m);
+    });
+
+    it('ежедневная: серия, награда дня и 7 слотов с активным', () => {
+        const snap = dailySnapshot({ streak: 3, extra: 250 });
+        assert.equal(snap.title, 'Ежедневная награда');
+        assert.equal(snap.streakText, 'Серия: 3 дня');
+        assert.equal(snap.slots.length, 7);
+        assert.equal(snap.slots.filter((s) => s.active).length, 1);
+        assert.equal(snap.slots[2].active, true);
+        assert.match(snap.desc, /\n\+250 руды$/);
+        assert.equal(typeof snap.name, 'string');
+        assert.equal(typeof snap.icon, 'string');
+    });
+
+    it('награда босса: баунти, скорость, компоненты и артефакт', () => {
+        const snap = bossRewardSnapshot({
+            bounty: 5000,
+            elapsedSec: 32,
+            speedMult: 1.5,
+            comps: { scrap: 2 },
+            artifactId: 'art_miner_totem'
+        });
+        assert.equal(snap.title, 'Босс повержен!');
+        assert.equal(snap.bountyText, 'Баунти: +5000 руды');
+        assert.equal(snap.speedText, 'Время: 0:32 · бонус x1.5');
+        assert.equal(snap.comps.length, 1);
+        assert.equal(snap.comps[0].id, 'scrap');
+        assert.equal(snap.comps[0].countText, '×2');
+        assert.equal(snap.artifact.name.length > 0, true);
+    });
+
+    it('награда босса без компонентов/артефакта и без времени', () => {
+        const snap = bossRewardSnapshot({ bounty: 10 });
+        assert.deepEqual(snap.comps, []);
+        assert.equal(snap.artifact, null);
+        assert.equal(snap.speedText, null);
+    });
+
+    it('вырубление: тело из statusMessages', () => {
+        const snap = playerDownSnapshot({ bossName: 'Голем', dmg: 10, maxPlayer: 100 });
+        assert.equal(snap.title, 'Ты вырубился!');
+        assert.equal(snap.okLabel, 'В шахту');
+        assert.match(snap.body, /^Голем отбросил тебя в шахту\./);
+    });
+});
+
+describe('dom bridge: upgradesSnapshot', () => {
+    beforeEach(reset);
+
+    it('вкладка, пакет и ряды: 20 equipment / 7 enhance по каталогу', () => {
+        gameState.tier = 11;
+        gameState.levels = { pickaxe: 30, miner: 999, drill: 999, excavator: 999 };
+        const before = JSON.stringify(gameState);
+        const snap = upgradesSnapshot({ tab: 'equipment', buyAmount: 10 });
+        assert.equal(JSON.stringify(gameState), before, 'снимок не мутирует состояние');
+        assert.equal(snap.tab, 'equipment');
+        assert.equal(snap.rows.length > 0, true);
+        assert.equal(
+            snap.rows.every((r) => typeof r.id === 'string'),
+            true
+        );
+        assert.equal(snap.bulk.length, 4);
+        assert.equal(snap.bulk.find((b) => b.amount === 10).active, true);
+        assert.equal(snap.tabs.find((t) => t.id === 'equipment').active, true);
+    });
+
+    it('МАКС и строгий пакет показывают числа из state (без локального пересчёта)', () => {
+        gameState.tier = 0;
+        gameState.ore = 1e6;
+        gameState.levels = { pickaxe: 1 };
+        const one = upgradesSnapshot({ tab: 'equipment', buyAmount: 1 });
+        const pick = one.rows.find((r) => r.id === 'pickaxe');
+        assert.equal(pick.level, 1);
+        assert.match(pick.priceText, /^\d/);
+        const max = upgradesSnapshot({ tab: 'equipment', buyAmount: 'max' });
+        assert.match(max.rows.find((r) => r.id === 'pickaxe').priceText, /(\d|K|M)/);
     });
 });

@@ -148,6 +148,7 @@ export const STATES = [
     {
         id: 'daily',
         seed: SEEDS.fresh,
+        dom: true,
         setup: async (p) => {
             await wait(p, 600);
         }
@@ -238,8 +239,11 @@ export const STATES = [
         }
     },
     {
+        // Статус-модалки — DOM-слой (фаза 3): ui:check снимает PNG, вёрстку
+        // меряет ui:check:dom (form status). Phaser-путь — verify:status-dom --legacy.
         id: 'offline',
         seed: SEEDS.mid,
+        dom: true,
         offlineHours: 2,
         setup: async (p) => {
             await wait(p, 600);
@@ -286,6 +290,7 @@ export const STATES = [
     {
         id: 'boss-reward',
         seed: SEEDS.deep,
+        dom: true,
         setup: async (p) => {
             await hideDaily(p);
             await ui(p, 'gs.startBossFight("boss_copper");');
@@ -297,6 +302,7 @@ export const STATES = [
     {
         id: 'player-down',
         seed: SEEDS.mid,
+        dom: true,
         setup: async (p) => {
             await hideDaily(p);
             await ui(

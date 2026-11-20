@@ -33,9 +33,23 @@ import {
     getStarsGain,
     getPrestigeMult,
     PRESTIGE_REQUIREMENT,
-    DIAMOND_INDEX
+    DIAMOND_INDEX,
+    DAILY_REWARDS,
+    OFFLINE_CAP_HOURS,
+    getOrePerSecond,
+    fmtDuration
 } from '../../state.js';
 import { itemStockHint, recipeStatus } from '../../state/craftMessages.js';
+import {
+    bossRewardBounty,
+    bossRewardSpeed,
+    dailyDesc,
+    dailyStreak,
+    offlineBody,
+    playerDownBody,
+    statusButtons,
+    statusTitles
+} from '../../state/statusMessages.js';
 import {
     BUY_AMOUNTS,
     TABS,
@@ -293,6 +307,84 @@ export function settingsSnapshot({ bossActive = false, portrait = false } = {}) 
         pct: Math.floor((have / need) * 100),
         prestigeLines: prestigeInfo({ can, gain, have, need, portrait }),
         bossLocked: !!bossActive
+    };
+}
+
+// ---------- Статус-модалки (фаза 3, шаг 1.2): только чтение ----------
+// Phaser-путь берёт те же числа и тексты из state/statusMessages: DOM не вычисляет
+// награды, не пишет gameState — только раскладывает готовый снимок по узлам.
+export function offlineSnapshot(info = {}) {
+    const tier = TIERS[gameState.tier];
+    const level = getUpgradeLevel('warehouse');
+    const capHours = OFFLINE_CAP_HOURS[Math.min(level, OFFLINE_CAP_HOURS.length - 1)];
+
+    return {
+        kind: 'offline',
+        title: statusTitles.offline,
+        okLabel: statusButtons.offline,
+        body: offlineBody({
+            seconds: info.seconds || 0,
+            reward: info.reward || 0,
+            tierName: tier.name,
+            ratePct: Math.round(getOfflineRate() * 100),
+            orePerSec: getOrePerSecond(),
+            capHours,
+            counted: info.counted || 0
+        })
+    };
+}
+
+export function dailySnapshot(info = {}) {
+    const streak = info.streak || 1;
+    const idx = (streak - 1) % DAILY_REWARDS.length;
+    const reward = DAILY_REWARDS[idx];
+
+    return {
+        kind: 'daily',
+        title: statusTitles.daily,
+        okLabel: statusButtons.daily,
+        streakText: dailyStreak(streak),
+        icon: reward.icon,
+        name: reward.name,
+        desc: dailyDesc(reward, info),
+        slots: DAILY_REWARDS.map((r, i) => ({ icon: r.icon, active: i === idx }))
+    };
+}
+
+export function bossRewardSnapshot(reward = {}) {
+    const comps = Object.keys(reward.comps || {})
+        .map((id) => {
+            const def = COMPONENTS.find((c) => c.id === id);
+            if (!def) {
+                return null;
+            }
+
+            return { id, icon: def.icon, name: def.name, countText: `×${reward.comps[id]}` };
+        })
+        .filter(Boolean);
+    const artDef = reward.artifactId ? ARTIFACTS.find((a) => a.id === reward.artifactId) : null;
+
+    return {
+        kind: 'boss-reward',
+        title: statusTitles['boss-reward'],
+        okLabel: statusButtons['boss-reward'],
+        bountyText: bossRewardBounty(reward.bounty || 0),
+        speedText: bossRewardSpeed(reward),
+        comps,
+        artifact: artDef ? { id: artDef.id, icon: artDef.id, name: artDef.name, desc: artDef.desc } : null
+    };
+}
+
+export function playerDownSnapshot(info = {}) {
+    return {
+        kind: 'player-down',
+        title: statusTitles['player-down'],
+        okLabel: statusButtons['player-down'],
+        body: playerDownBody({
+            bossName: info.bossName || 'Босс',
+            dmg: info.dmg || 0,
+            maxPlayer: info.maxPlayer || 0
+        })
     };
 }
 

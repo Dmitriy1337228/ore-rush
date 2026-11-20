@@ -199,6 +199,26 @@ export class UIScene extends Phaser.Scene {
             .catch((err) => {
                 console.error('[upgrades:dom] не загрузился:', err);
             });
+
+        // Статус-модалки — DOM-форма фазы 3 (M2). Монтируются после настроек:
+        // те же host и порядок слоёв (статус выше настроек, D3).
+        // Мост импортируем ДО создания контроллера: иначе между появлением
+        // __DOM_STATUS и готовностью снимков остаётся окно, в котором фасад
+        // уходит на Phaser-путь (найдено verify:settings-dom ST9).
+        this._domStatusReady = this._domSettingsReady
+            .then(async () => {
+                const [mod, bridge] = await Promise.all([import('./dom/statusModals.js'), import('./dom/bridge.js')]);
+                this._statusSnap = {
+                    offline: bridge.offlineSnapshot,
+                    daily: bridge.dailySnapshot,
+                    'boss-reward': bridge.bossRewardSnapshot,
+                    'player-down': bridge.playerDownSnapshot
+                };
+                this.domStatus = mod.createDomStatusModals(this);
+            })
+            .catch((err) => {
+                console.error('[status:dom] не загрузился:', err);
+            });
     }
 
     // D3-развилка обучения: пока обучение не завершено, список и вкладки остаются
@@ -229,6 +249,163 @@ export class UIScene extends Phaser.Scene {
         }
 
         this.listContent?.setVisible(false);
+    }
+
+    // ---------- Статус-модалки: фасад (D6) ----------
+    // Публичные имена остаются прежними; путь выбирается флагом. Phaser-реализации —
+    // *Phaser в phaser/statusModals.js; DOM — src/ui/dom/statusModals.js.
+    statusOnDom() {
+        return !isPhaserForm('status') && !!this.domStatus && !!this._statusSnap;
+    }
+
+    showOfflineModal(info) {
+        if (!this.statusOnDom()) {
+            this.showOfflinePhaser(info);
+
+            return;
+        }
+
+        this.registry.set(REG.offlineInfo, null);
+        this.domStatus.show('offline', this._statusSnap.offline(info));
+        this.updateBlockLock();
+    }
+
+    hideOfflineModal() {
+        if (this.statusOnDom()) {
+            this.domStatus.hide('offline');
+        } else {
+            this.hideOfflinePhaser();
+        }
+
+        this.tryShowDailyModal();
+        this.updateBlockLock();
+    }
+
+    // Очередь награды: не поверх модалок/экранов/боя (перенесено из Phaser-метода,
+    // чтобы путь не дублировал условия).
+    tryShowDailyModal() {
+        if (!this._pendingDaily) {
+            return;
+        }
+
+        if (this.registry.get(REG.bossActive)) {
+            return;
+        }
+
+        if (this._offlineOpen || this._settingsOpen || this._dailyOpen || this._playerDownOpen) {
+            return;
+        }
+
+        if (this._mapOpen || (this.mapRoot && this.mapRoot.visible) || this._craftOpen || this._bossRewardOpen) {
+            return;
+        }
+
+        const info = this._pendingDaily;
+        this._pendingDaily = null;
+        if (!this.statusOnDom()) {
+            this.showDailyPhaser(info);
+
+            return;
+        }
+
+        this.domStatus.show('daily', this._statusSnap.daily(info));
+        this.updateBlockLock();
+    }
+
+    hideDailyModal() {
+        if (this.statusOnDom()) {
+            this.domStatus.hide('daily');
+        } else {
+            this.hideDailyPhaser();
+        }
+
+        // Обучение, отложенное ради окна награды, стартует после его закрытия
+        if (this._tutorialPending && !gameState.tutorialDone) {
+            this._tutorialPending = false;
+            this.buildTutorial();
+        }
+
+        this.updateBlockLock();
+    }
+
+    showBossRewardModal(reward) {
+        if (!reward) {
+            return;
+        }
+
+        // Q4/D3: окно босса приоритетнее любых открытых экранов (настройки/карта/крафт)
+        this._bossRewardOpen = true;
+        if (this._settingsOpen) {
+            this.closeModal();
+        }
+
+        if (!this.statusOnDom()) {
+            this.showBossRewardPhaser(reward);
+
+            return;
+        }
+
+        if (this._mapOpen) {
+            this.closeMap();
+        }
+
+        if (this._craftOpen) {
+            this.closeCraft();
+        }
+
+        this.domStatus.show('boss-reward', this._statusSnap['boss-reward'](reward));
+        this.updateBlockLock();
+    }
+
+    hideBossRewardModal() {
+        if (this.statusOnDom()) {
+            this.domStatus.hide('boss-reward');
+        } else {
+            this.hideBossRewardPhaser();
+        }
+
+        this.tryShowDailyModal();
+        this.updateBlockLock();
+    }
+
+    showPlayerDownModal(info) {
+        if (!info) {
+            return;
+        }
+
+        // Q4/D3: вырубление приоритетнее настроек; карта/крафт закрываются ниже
+        this._playerDownOpen = true;
+        if (this._settingsOpen) {
+            this.closeModal();
+        }
+
+        if (!this.statusOnDom()) {
+            this.showPlayerDownPhaser(info);
+
+            return;
+        }
+
+        if (this._mapOpen) {
+            this.closeMap();
+        }
+
+        if (this._craftOpen) {
+            this.closeCraft();
+        }
+
+        this.domStatus.show('player-down', this._statusSnap['player-down'](info));
+        this.updateBlockLock();
+    }
+
+    hidePlayerDownModal() {
+        if (this.statusOnDom()) {
+            this.domStatus.hide('player-down');
+        } else {
+            this.hidePlayerDownPhaser();
+        }
+
+        this.tryShowDailyModal();
+        this.updateBlockLock();
     }
 
     // Фасад настроек: одна точка входа для HUD/DevPanel/обучения. Выбор пути — по флагу

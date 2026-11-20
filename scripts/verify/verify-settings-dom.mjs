@@ -630,11 +630,12 @@ try {
                 const ui = window.__GAME.scene.getScene('UIScene');
                 ui.showOfflineModal({ seconds: 7200, reward: 1200, rate: 0.28, capSeconds: 14400 });
                 await new Promise((r) => setTimeout(r, 250));
-                const hidden = document.querySelector('.dom-modal-layer').hidden;
-                const overlay = !!ui.offlineModal.visible;
+                const settingsLayer = () => document.querySelector('[data-dom-modal-kind="settings"]');
+                const hidden = settingsLayer().hidden;
+                const overlay = window.__DOM_STATUS.isOpen('offline');
                 ui.hideOfflineModal();
                 await new Promise((r) => setTimeout(r, 250));
-                const restored = !document.querySelector('.dom-modal-layer').hidden;
+                const restored = !settingsLayer().hidden;
 
                 return { hidden, overlay, restored, open: window.__DOM_SETTINGS.isOpen() };
             });
@@ -722,7 +723,10 @@ try {
                     await new Promise((r) => setTimeout(r, 16));
                     ui.settingsBtn.emit('pointerdown');
                     await new Promise((r) => setTimeout(r, 20));
-                    maxLayers = Math.max(maxLayers, document.querySelectorAll('.dom-modal-layer').length);
+                    maxLayers = Math.max(
+                        maxLayers,
+                        document.querySelectorAll('[data-dom-modal-kind="settings"]').length
+                    );
                 }
 
                 return {

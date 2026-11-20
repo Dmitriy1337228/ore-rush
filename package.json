@@ -19,6 +19,8 @@
     "ui:review": "node scripts/gates/ui-review.mjs",
     "verify:craft-dom": "node scripts/verify/verify-craft-dom.mjs",
     "verify:settings-dom": "node scripts/verify/verify-settings-dom.mjs",
+    "verify:status-dom": "node scripts/verify/verify-status-dom.mjs",
+    "verify:upgrades-dom": "node scripts/verify/verify-upgrades-dom.mjs",
     "verify:bg": "node scripts/verify/verify-bg.cjs",
     "verify:boss": "node scripts/verify/verify-boss.cjs",
     "verify:bulkbuy": "node scripts/verify/verify-bulkbuy.cjs",

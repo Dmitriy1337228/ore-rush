@@ -76,7 +76,7 @@ export const statusModalsMethods = {
         shell.assemble([this.offlineBody]);
     },
 
-    showOfflineModal(info) {
+    showOfflinePhaser(info) {
         const tier = TIERS[gameState.tier];
         const text = [
             `Пока вас не было (${fmtDuration(info.seconds)}),`,
@@ -92,11 +92,10 @@ export const statusModalsMethods = {
         this.registry.set(REG.offlineInfo, null);
     },
 
-    hideOfflineModal() {
+    hideOfflinePhaser() {
         this.offlineDim.setVisible(false);
         this.offlineModal.setVisible(false);
         this._offlineOpen = false;
-        this.tryShowDailyModal(); // награда могла ждать очереди под офлайн-окном
     },
 
     buildDailyModal() {
@@ -141,36 +140,9 @@ export const statusModalsMethods = {
         );
     },
 
-    // Награда не показывается поверх других модалок и полноэкранных экранов —
-    // очередь до их закрытия; в бою тоже откладывается (не дёргаем игрока),
-    // покажется после боя — по закрытию окна награды/экрана
-    tryShowDailyModal() {
-        if (!this._pendingDaily) {
-            return;
-        }
-
-        if (this.registry.get(REG.bossActive)) {
-            return;
-        }
-
-        // Очередь: окно вырубления не проверялось — награда открывалась ОДНОВРЕМЕННО
-        // с ним (два модальных окна в кадре, аудит: 20+ OVERLAP на состояние; таймер
-        // выдачи награды стрелял позже hideDaily в сценарных прогонах)
-        if (
-            this.offlineModal.visible ||
-            this._settingsOpen ||
-            this.dailyModal.visible ||
-            this.playerDownModal.visible
-        ) {
-            return;
-        }
-
-        if (this.mapRoot.visible || this._craftOpen || this._bossRewardOpen) {
-            return;
-        }
-
-        const info = this._pendingDaily;
-        this._pendingDaily = null;
+    // Рендер дня из готового info (D4): очередь и выбор пути — фасад UIScene
+    // (tryShowDailyModal), здесь только Phaser-отрисовка.
+    showDailyPhaser(info) {
         const idx = (info.streak - 1) % DAILY_REWARDS.length;
         const reward = DAILY_REWARDS[idx];
         this.dailyStreakText.setText(
@@ -200,15 +172,10 @@ export const statusModalsMethods = {
         this._dailyOpen = true;
     },
 
-    hideDailyModal() {
+    hideDailyPhaser() {
         this.dailyDim.setVisible(false);
         this.dailyModal.setVisible(false);
         this._dailyOpen = false;
-        // Обучение, отложенное ради окна награды, стартует после его закрытия
-        if (this._tutorialPending && !gameState.tutorialDone) {
-            this._tutorialPending = false;
-            this.buildTutorial();
-        }
     },
 
     buildBossRewardModal() {
@@ -241,7 +208,7 @@ export const statusModalsMethods = {
         }
     },
 
-    showBossRewardModal(reward) {
+    showBossRewardPhaser(reward) {
         if (!reward) {
             return;
         }
@@ -343,11 +310,10 @@ export const statusModalsMethods = {
         this.bossRewardModal.setVisible(true);
     },
 
-    hideBossRewardModal() {
+    hideBossRewardPhaser() {
         this.bossRewardDim.setVisible(false);
         this.bossRewardModal.setVisible(false);
         this._bossRewardOpen = false;
-        this.tryShowDailyModal(); // награда могла ждать очереди под окном босса
     },
 
     buildPlayerDownModal() {
@@ -381,7 +347,7 @@ export const statusModalsMethods = {
         }
     },
 
-    showPlayerDownModal(info) {
+    showPlayerDownPhaser(info) {
         if (!info) {
             return;
         }
@@ -408,10 +374,9 @@ export const statusModalsMethods = {
         this.playerDownModal.setVisible(true);
     },
 
-    hidePlayerDownModal() {
+    hidePlayerDownPhaser() {
         this.playerDownDim.setVisible(false);
         this.playerDownModal.setVisible(false);
         this._playerDownOpen = false;
-        this.tryShowDailyModal();
     }
 };

@@ -5,6 +5,7 @@
 // Отклик покупки — принудительное перечитывание ряда из state (D9), не оптимистика.
 import { html, toNode, renderKeyed } from './html.js';
 import { iconSlot, iconBox } from './components.js';
+import { fitIcons } from './iconFit.js';
 import { upgradesSnapshot, PUBLISH_MS } from './bridge.js';
 import { buyBulk, saveGame } from '../../state.js';
 import { playSfx } from '../../sfx.js';
@@ -89,6 +90,7 @@ export function createDomUpgrades(scene) {
             create: rowHtml
         });
         lastSig = JSON.stringify(snap);
+        fitIcons(layer);
 
         return snap;
     };

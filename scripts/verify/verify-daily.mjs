@@ -130,12 +130,31 @@ const b = await chromium.launch();
     await page.goto('http://localhost:5174', { waitUntil: 'load' });
     await page.waitForTimeout(3500);
 
+    // Путь модалки выбирается флагом (фаза 3): читаем DOM при открытом
+    // __DOM_STATUS, иначе — Phaser-объекты; закрываем ту же кнопку, что видит игрок.
     const daily = () =>
         page.evaluate(() => {
             const ui = window.__GAME.scene.getScene('UIScene');
+            const domOpen = !!window.__DOM_STATUS?.isOpen('daily');
+            const layer = document.querySelector('[data-dom-modal-kind="status"]');
 
-            return { visible: ui.dailyModal.visible, name: ui.dailyName.text, streak: ui.dailyStreakText.text };
+            return {
+                visible: domOpen || !!ui.dailyModal.visible,
+                dom: domOpen,
+                name: domOpen ? layer.querySelector('.dom-name')?.textContent : ui.dailyName.text,
+                streak: domOpen ? layer.querySelector('.dom-status-streak')?.textContent : ui.dailyStreakText.text
+            };
         });
+    const closeDaily = async () => {
+        const d = await daily();
+        if (d.dom) {
+            await page.click('[data-dom-modal-kind="status"] [data-act="status-ok"]');
+        } else {
+            await page.mouse.click(640, 512);
+        }
+
+        await page.waitForTimeout(300);
+    };
     const st = async () =>
         page.evaluate(async () => {
             const u = performance
@@ -159,12 +178,15 @@ const b = await chromium.launch();
     );
     check('U3 баф x2 выдан', (await st()).mult === 2);
 
-    await page.mouse.click(640, 512); // «Отлично!» (контейнер 640,360 + кнопка y152)
-    await page.waitForTimeout(300);
+    await closeDaily(); // «Отлично!»: DOM-кнопка или Phaser y152
     const closed = await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
 
-        return { visible: ui.dailyModal.visible, locked: ui.registry.get('blockLocked'), rows: ui.listContent.visible };
+        return {
+            visible: ui.dailyModal.visible || !!window.__DOM_STATUS?.isOpen('daily'),
+            locked: ui.registry.get('blockLocked'),
+            rows: ui.listContent.visible
+        };
     });
     check(
         'U4 закрытие: модалка скрыта, блокировка снята',
@@ -182,8 +204,7 @@ const b = await chromium.launch();
             // модалку последнего (7-го) дня оставляем открытой для проверки
             const d = await daily();
             if (d.visible) {
-                await page.mouse.click(640, 512);
-                await page.waitForTimeout(250);
+                await closeDaily();
             }
         }
     }
@@ -191,8 +212,7 @@ const b = await chromium.launch();
     const day7 = await daily();
     const s7 = await st();
     check('U5 серия 7, день 7 = «Золотая жила»', s7.streak === 7 && day7.visible && day7.name === 'Золотая жила');
-    await page.mouse.click(640, 512); // закрыть
-    await page.waitForTimeout(300);
+    await closeDaily(); // закрыть
 
     // Форсированная жила: гасим дневной баф множителя (day6 x10 ещё активен),
     // клик по блоку даёт ровно урон x множитель жилы (детерминированный ролл)
@@ -240,7 +260,7 @@ const b = await chromium.launch();
         'U7 сброс серии -> день 1 «Ускорение»',
         reset.visible && reset.name === 'Ускорение' && (await st()).streak === 1
     );
-    await page.mouse.click(640, 512);
+    await closeDaily();
     await page.waitForTimeout(200);
 
     // Перезагрузка: награда за сегодня уже получена — модалка не открывается

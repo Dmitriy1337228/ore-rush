@@ -98,17 +98,43 @@ export const FORMS = [
     {
         id: 'status',
         label: 'Статус-модалки',
-        pending: true,
+        pending: false,
         api: '__DOM_STATUS',
         seed: 'mid',
-        prepare: null,
-        open: "window.__GAME.scene.getScene('UIScene').showOfflineModal({ seconds: 7200, reward: 1200, rate: 0.28, capSeconds: 14400 })",
+        prepare:
+            "(() => { const ui = window.__GAME.scene.getScene('UIScene'); ui._pendingDaily = null; ui.registry.set('dailyInfo', null); if (ui._dailyOpen) ui.hideDailyModal(); })()",
+        open: "window.__GAME.scene.getScene('UIScene').showOfflineModal({ seconds: 7200, reward: 1200, counted: 3600 })",
         close: "window.__GAME.scene.getScene('UIScene').hideOfflineModal()",
         isOpen: "window.__DOM_STATUS.isOpen('offline')",
         panel: '[data-dom-modal]',
         scroll: null,
         expected: () => [],
-        kinds: ['offline', 'daily', 'boss-reward', 'player-down'],
+        kinds: [
+            {
+                id: 'offline',
+                open: "window.__GAME.scene.getScene('UIScene').showOfflineModal({ seconds: 7200, reward: 1200, counted: 3600 })",
+                isOpen: "window.__DOM_STATUS.isOpen('offline')",
+                close: "window.__GAME.scene.getScene('UIScene').hideOfflineModal()"
+            },
+            {
+                id: 'daily',
+                open: "(() => { const ui = window.__GAME.scene.getScene('UIScene'); ui._pendingDaily = { streak: 3, extra: 250 }; ui.tryShowDailyModal(); })()",
+                isOpen: "window.__DOM_STATUS.isOpen('daily')",
+                close: "window.__GAME.scene.getScene('UIScene').hideDailyModal()"
+            },
+            {
+                id: 'boss-reward',
+                open: "window.__GAME.scene.getScene('UIScene').showBossRewardModal({ bounty: 5000, elapsedSec: 32, speedMult: 1.5, comps: { scrap: 2, crystal: 1 }, artifactId: 'art_miner_totem' })",
+                isOpen: "window.__DOM_STATUS.isOpen('boss-reward')",
+                close: "window.__GAME.scene.getScene('UIScene').hideBossRewardModal()"
+            },
+            {
+                id: 'player-down',
+                open: "window.__GAME.scene.getScene('UIScene').showPlayerDownModal({ bossName: 'Алмазный владыка', dmg: 123456789, maxPlayer: 987654321 })",
+                isOpen: "window.__DOM_STATUS.isOpen('player-down')",
+                close: "window.__GAME.scene.getScene('UIScene').hidePlayerDownModal()"
+            }
+        ],
         states: ['offline-dom', 'daily-dom', 'boss-reward-dom', 'player-down-dom'],
         golden: ['1280x720', '390x844'],
         files: {

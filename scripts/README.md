@@ -29,6 +29,8 @@
 | `scripts/verify/verify-bulkbuy.cjs` | Мультипокупка x1/x10/x100/max: экономика и UI | `verify:bulkbuy` | verify | да | активен |
 | `scripts/verify/verify-craft-dom.mjs` | Приёмка DOM-мастерской: открытие/закрытие, блокировка, мост, слои | `verify:craft-dom` | verify | да | активен |
 | `scripts/verify/verify-settings-dom.mjs` | Приёмка DOM-настроек (ST1–ST14): тумблеры, громкость, престиж/сброс, очередь, блокировка | `verify:settings-dom` | verify | да | активен |
+| `scripts/verify/verify-status-dom.mjs` | Приёмка DOM-статус-модалок (SM1–SM9, Q1–Q5): очередь, тексты моста, портрет, скрим над списком, откат | `verify:status-dom` | verify | да | активен |
+| `scripts/verify/verify-upgrades-dom.mjs` | Приёмка DOM-списка улучшений (U1–U9, Q3/Q4): покупка за кадр, ряды, вкладки, seam боя, откат | `verify:upgrades-dom` | verify | да | активен |
 | `scripts/verify/verify-daily.mjs` | Ежедневные награды: цикл, серия, бафы, DevPanel, модалка | `verify:daily` | verify | да | активен |
 | `scripts/verify/verify-devpanel.cjs` | DevPanel: активация, ресурсы, тиры, офлайн-симуляция, сброс | `verify:devpanel` | verify | да | активен |
 | `scripts/archive/verify-economy.mjs` | Экономика (node): 12 тиров, цена спуска, гейты, миграции v2→v4 | — | архив | нет | архив: полностью покрыт unit-тестами `state_economy`/`state_persist`; удалить после квартальной ревизии, если не понадобился |

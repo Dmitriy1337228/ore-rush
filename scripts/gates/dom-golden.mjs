@@ -63,7 +63,9 @@ for (const form of active) {
             process.exit(2);
         }
 
-        jobs.push({ form, size, width: Number(m[1]), height: Number(m[2]) });
+        for (const variant of form.kinds || [null]) {
+            jobs.push({ form, variant, size, width: Number(m[1]), height: Number(m[2]) });
+        }
     }
 }
 
@@ -106,8 +108,8 @@ if (jobs.length) {
         }
 
         await page.waitForTimeout(350);
-        await page.evaluate(job.form.open);
-        await page.waitForFunction(job.form.isOpen, null, { timeout: 10000 });
+        await page.evaluate(job.variant ? job.variant.open : job.form.open);
+        await page.waitForFunction(job.variant ? job.variant.isOpen : job.form.isOpen, null, { timeout: 10000 });
         await page.waitForTimeout(500);
         await page.evaluate(() => {
             const game = window.__GAME;
@@ -115,7 +117,8 @@ if (jobs.length) {
             game.scene.pause('UIScene');
         });
         await page.waitForTimeout(250);
-        const dir = path.join(SHOT_ROOT, `${job.form.id}-${STATE}-${job.size}`);
+        const kind = job.variant ? job.variant.id : STATE;
+        const dir = path.join(SHOT_ROOT, `${job.form.id}-${kind}-${job.size}`);
         fs.mkdirSync(dir, { recursive: true });
         const file = path.join(dir, `run-${i}.png`);
         await page.screenshot({ path: file });
@@ -126,7 +129,8 @@ if (jobs.length) {
 
     try {
         for (const job of jobs) {
-            const golden = path.join(GOLDEN_ROOT, job.form.id, `${STATE}-${job.size}.png`);
+            const kind = job.variant ? job.variant.id : STATE;
+            const golden = path.join(GOLDEN_ROOT, job.form.id, `${kind}-${job.size}.png`);
             const shots = [];
             for (let i = 1; i <= RUNS; i++) {
                 shots.push({ i, ...(await capture(job, i)) });
@@ -134,7 +138,9 @@ if (jobs.length) {
 
             const errors = shots.flatMap((s) => s.errors);
             if (errors.length) {
-                console.error(`dom-golden ${job.form.id} ${job.size}: console/pageerror — ${errors.length}`);
+                console.error(
+                    `dom-golden ${job.form.id} ${job.variant ? job.variant.id : STATE} ${job.size}: console/pageerror — ${errors.length}`
+                );
                 errors.slice(0, 5).forEach((e) => console.error('  ' + e));
                 exitCode = 1;
                 continue;
@@ -143,13 +149,15 @@ if (jobs.length) {
             if (flag('update')) {
                 fs.mkdirSync(path.dirname(golden), { recursive: true });
                 fs.copyFileSync(shots[0].file, golden);
-                console.log(`dom-golden ${job.form.id} ${job.size}: эталон обновлён — ${path.relative(ROOT, golden)}`);
+                console.log(
+                    `dom-golden ${job.form.id} ${job.variant ? job.variant.id : STATE} ${job.size}: эталон обновлён — ${path.relative(ROOT, golden)}`
+                );
                 continue;
             }
 
             if (!fs.existsSync(golden)) {
                 console.error(
-                    `dom-golden ${job.form.id} ${job.size}: нет эталона ${path.relative(ROOT, golden)} — запустите с --update`
+                    `dom-golden ${job.form.id} ${job.variant ? job.variant.id : STATE} ${job.size}: нет эталона ${path.relative(ROOT, golden)} — запустите с --update`
                 );
                 exitCode = 1;
                 continue;
@@ -168,12 +176,12 @@ if (jobs.length) {
                 }
 
                 console.log(
-                    `dom-golden ${job.form.id} ${job.size} run ${s.i}: ${(ratio * 100).toFixed(3)}% пикселей вне допуска ${CHANNEL_TOLERANCE} — ${ok ? 'ok' : 'FAIL'}`
+                    `dom-golden ${job.form.id} ${job.variant ? job.variant.id : STATE} ${job.size} run ${s.i}: ${(ratio * 100).toFixed(3)}% пикселей вне допуска ${CHANNEL_TOLERANCE} — ${ok ? 'ok' : 'FAIL'}`
                 );
             }
 
             console.log(
-                `dom-golden ${job.form.id} ${job.size}: прогонов ${RUNS}, худший ${(worst * 100).toFixed(3)}%, порог ${(MAX_DIFF_RATIO * 100).toFixed(2)}% — ${bad ? 'FAIL' : 'ok'}`
+                `dom-golden ${job.form.id} ${job.variant ? job.variant.id : STATE} ${job.size}: прогонов ${RUNS}, худший ${(worst * 100).toFixed(3)}%, порог ${(MAX_DIFF_RATIO * 100).toFixed(2)}% — ${bad ? 'FAIL' : 'ok'}`
             );
             if (bad) {
                 exitCode = 1;

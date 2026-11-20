@@ -554,7 +554,8 @@ const check = (name, ok, details = {}) => {
                 daily: ui._dailyOpen,
                 bossReward: ui._bossRewardOpen,
                 playerDown: ui._playerDownOpen,
-                topIsDom: !!(top && top.closest('#ui-root'))
+                topIsDom: !!(top && top.closest('#ui-root')),
+                topStatus: !!(top && top.closest('[data-dom-modal-kind="status"]'))
             };
         });
         const flag = name === 'daily' ? st.daily : name === 'boss-reward' ? st.bossReward : st.playerDown;
@@ -571,16 +572,19 @@ const check = (name, ok, details = {}) => {
                 return {
                     domOpen: window.__DOM_CRAFT.isOpen(),
                     daily: ui._dailyOpen,
-                    topIsDom: !!(top && top.closest('#ui-root'))
+                    topIsDom: !!(top && top.closest('#ui-root')),
+                    topStatus: !!(top && top.closest('[data-dom-modal-kind="status"]'))
                 };
             });
-            check('D3: daily показана после закрытия DOM', !after.domOpen && after.daily && !after.topIsDom, after);
+            check('D3: daily показана после закрытия DOM', !after.domOpen && after.daily && after.topStatus, {
+                note: JSON.stringify(after)
+            });
             await page.evaluate(`(() => { const ui = window.__GAME.scene.getScene('UIScene'); ${closeCode} })()`);
             await page.waitForTimeout(200);
             continue;
         }
 
-        check(`D3: ${name} закрывает DOM и виден`, !st.domOpen && flag && !st.topIsDom, st);
+        check(`D3: ${name} закрывает DOM и виден`, !st.domOpen && flag && st.topStatus, { note: JSON.stringify(st) });
         await page.evaluate(`(() => { const ui = window.__GAME.scene.getScene('UIScene'); ${closeCode} })()`);
         await page.waitForTimeout(200);
     }
