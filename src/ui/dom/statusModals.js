@@ -20,10 +20,22 @@ const line = (text) => html`<div class="dom-line">${text}</div>`;
 
 // Тело с пустыми строками: каждую строку рисуем отдельным .dom-line, пустые —
 // вертикальным зазором (аудит видит реальные текстовые блоки и их пересечения).
-const bodyLines = (body) =>
-    String(body)
+const bodyLines = (body) => {
+    // Абзац до первой пустой строки — ведущий (что случилось), остальное — пояснения
+    let lead = true;
+
+    return String(body)
         .split('\n')
-        .map((text) => (text ? line(text) : html`<div class="dom-status-gap"></div>`));
+        .map((text) => {
+            if (!text) {
+                lead = false;
+
+                return html`<div class="dom-status-gap"></div>`;
+            }
+
+            return html`<div class="dom-line ${lead ? 'dom-status-lead' : 'dom-status-note'}">${text}</div>`;
+        });
+};
 
 const dailyContent = (snap) => html`
     <div class="dom-line dom-status-streak">${snap.streakText}</div>

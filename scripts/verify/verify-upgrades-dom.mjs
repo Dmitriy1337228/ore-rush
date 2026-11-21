@@ -172,12 +172,17 @@ async function runDom() {
     // ---------- U1: панель и вкладки, Phaser-хром выключен ----------
     {
         const { ctx, page } = await openGame();
-        const m = await page.evaluate(() => {
+        const m = await page.evaluate(async () => {
+            const files = performance.getEntriesByType('resource').map((r) => r.name);
+            const st = await import(files.find((u) => u.includes('/src/state.js')));
+            // Как в Phaser-списке: показаны доступные и «следующее» в цепочке (isUpgradeVisible)
+            const expectedRows = st.UPGRADES.filter((d) => d.tab === 'equipment' && st.isUpgradeVisible(d.id)).length;
             const ui = window.__GAME.scene.getScene('UIScene');
             const panel = document.querySelector('[data-dom-upgrades]');
             const tabs = [...panel.querySelectorAll('[data-tab]')];
 
             return {
+                expectedRows,
                 open: !!window.__DOM_UPGRADES && !panel.hidden,
                 rows: panel.querySelectorAll('[data-row]').length,
                 tabs: tabs.length,
@@ -188,9 +193,9 @@ async function runDom() {
             };
         });
         check(
-            'U1 20 рядов, 2 вкладки, Phaser-список не строится/скрыт',
+            'U1 ряды как в Phaser (доступные + следующее), 2 вкладки, Phaser-список не строится/скрыт',
             m.open &&
-                m.rows === 20 &&
+                m.rows === m.expectedRows &&
                 m.tabs === 2 &&
                 m.active === 1 &&
                 m.phaserRows === 0 &&

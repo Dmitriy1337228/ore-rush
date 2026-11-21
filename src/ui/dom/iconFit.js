@@ -104,10 +104,24 @@ function fitOne(img) {
     }
 
     const scale = Math.min(bw / content.w, bh / content.h);
-    img.style.width = `${img.naturalWidth * scale}px`;
-    img.style.height = `${img.naturalHeight * scale}px`;
-    img.style.left = `${(bw - content.w * scale) / 2 - content.x * scale}px`;
-    img.style.top = `${(bh - content.h * scale) / 2 - content.y * scale}px`;
+    const width = img.naturalWidth * scale;
+    const height = img.naturalHeight * scale;
+    const left = (bw - content.w * scale) / 2 - content.x * scale;
+    const top = (bh - content.h * scale) / 2 - content.y * scale;
+    if (box.hasAttribute('data-icon-rel')) {
+        // Масштабируемый слот (панель улучшений: размер = canvas-единицы * FIT-масштаб):
+        // проценты слота не зависят от его текущих px и переживают ресайз без переобмера
+        img.style.width = `${(width / bw) * 100}%`;
+        img.style.height = `${(height / bh) * 100}%`;
+        img.style.left = `${(left / bw) * 100}%`;
+        img.style.top = `${(top / bh) * 100}%`;
+    } else {
+        img.style.width = `${width}px`;
+        img.style.height = `${height}px`;
+        img.style.left = `${left}px`;
+        img.style.top = `${top}px`;
+    }
+
     img.dataset.fit = '1';
 }
 

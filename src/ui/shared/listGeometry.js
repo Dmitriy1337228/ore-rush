@@ -41,3 +41,89 @@ export const ROW = {
     priceY: 76,
     btnY: 28
 };
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+// Геометрия ряда по ориентации (единый источник для Phaser-ряда и DOM-ряда).
+// s — портретный масштаб кеглей (UIScene._adaptiveScale: 720 / ширина canvas на экране,
+// 1..1.8). В портрете карточки шире (624): кегли и кнопка крупнее (FIT-даунскейл ~0.52
+// на телефонах), ряд выше под 2 строки. Ландшафтные значения = ROW (296x96) 1:1.
+// Смещения цены от textX: центр монетки и начало текста (buildRow: textX + 6 / textX + 16)
+export const PRICE_ICON_DX = 6;
+export const PRICE_TEXT_DX = 16;
+
+export function computeRowGeom(portrait, s = 1) {
+    if (portrait) {
+        // Спека редизайна мобильной панели: ряд 132 (тач-таргет «Купить» 148x88),
+        // «ур. N» — в строке имени наверху, цена под описанием. Кегли по s с клампами.
+        const nameSize = Math.round(18 * Math.min(s, 1.5));
+        // Минимум 18: «Квантовая лаборатория» при 20px (13*1.5) давала 280px против
+        // nameMaxW 277 — Monocraft advance ~0.667em (аудит NAME-TOO-LONG)
+        const nameMin = Math.round(12 * Math.min(s, 1.5));
+        const nameSizes = [];
+        for (let v = nameSize; v >= nameMin; v--) {
+            nameSizes.push(v);
+        }
+
+        return {
+            h: 132,
+            iconCY: 66,
+            iconSize: clamp(Math.round(48 * s), 56, 64),
+            nameY: 12,
+            nameSizes,
+            descY: Math.max(34, Math.round(10 + nameSize * 1.2 + 3)),
+            descSize: Math.round(14 * Math.min(s, 1.5)),
+            priceY: 102,
+            priceSize: Math.round(15 * Math.min(s, 1.3)),
+            priceIconSize: Math.round(18 * Math.min(s, 1.3)),
+            levelY: 14,
+            levelSize: Math.round(14 * Math.min(s, 1.3)),
+            rightInset: 18,
+            btnY: 26,
+            btnW: 148,
+            btnH: 88,
+            btnSize: Math.round(15 * Math.min(s, 1.33)),
+            lockSize: Math.round(13 * Math.min(s, 1.3))
+        };
+    }
+
+    return {
+        h: ROW_H,
+        iconCY: ROW.iconY,
+        iconSize: 40,
+        nameY: ROW.nameY,
+        nameSizes: [15, 14, 13, 12, 11, 10],
+        descY: ROW.descY,
+        descSize: ROW.descSize,
+        priceY: ROW.priceY,
+        priceSize: 13,
+        priceIconSize: 16,
+        levelSize: 12,
+        levelY: ROW.priceY,
+        rightInset: 12,
+        btnY: ROW.btnY,
+        btnW: ROW.btnW,
+        btnH: ROW.btnH,
+        btnSize: 14,
+        lockSize: 11
+    };
+}
+
+// Производные x-позиции ряда шириной w (портрет — широкие ряды): ниша иконки и текст
+// привязаны к пропорциям текстуры карточки (source 835x218, ниша x36..193 центр 118).
+// Ландшафт (296) даёт ровно прежние iconX=42 / textX=100 / nameMaxW=182.
+export function computeRowMetrics(w, g, portrait) {
+    const f = w / 835;
+    const iconCX = Math.round(118 * f);
+    const textX = Math.round(186 * f) + 34;
+    const btnX = w - g.rightInset - g.btnW;
+
+    return {
+        iconCX,
+        textX,
+        btnX,
+        // В портрете имя до 27px: его низ ниже верха кнопки — ограничение левой кромкой кнопки
+        nameMaxW: portrait ? btnX - textX - 8 : w - textX - 14,
+        descWrap: btnX - textX - 4
+    };
+}

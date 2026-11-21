@@ -459,7 +459,10 @@ function upgradeRow(def, buyAmount) {
 export function upgradesSnapshot({ tab = 'equipment', buyAmount = 1, bossActive = false, portrait = false } = {}) {
     const active = TABS.some((t) => t.id === tab) ? tab : TABS[0].id;
     const amount = BUY_AMOUNTS.includes(buyAmount) ? buyAmount : 1;
-    const rows = UPGRADES.filter((def) => def.tab === active).map((def) => upgradeRow(def, amount));
+    // Как в Phaser (refreshRows): ряд показан, только если вкладка совпала и он «доступен или следующий»
+    const rows = UPGRADES.filter((def) => def.tab === active && isUpgradeVisible(def.id)).map((def) =>
+        upgradeRow(def, amount)
+    );
     const tier = TIERS[gameState.tier];
     // Тот же ярлык, что HUD: в портрете короткий (полный ужимался до ~7 px)
     const tierText = portrait
@@ -471,6 +474,7 @@ export function upgradesSnapshot({ tab = 'equipment', buyAmount = 1, bossActive 
         tierText,
         tabs: TABS.map((t) => ({ id: t.id, label: t.label, active: t.id === active })),
         buyAmount: amount,
+        priceIcon: tier.iconKey,
         amountLabel: bulkLabel(amount),
         bulk: BUY_AMOUNTS.map((a) => ({ amount: a, label: bulkLabel(a), active: a === amount })),
         rows,

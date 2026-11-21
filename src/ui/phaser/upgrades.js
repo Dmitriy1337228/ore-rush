@@ -33,7 +33,7 @@ import {
     tapSlopPx
 } from './uiKit.js';
 import { addButton } from './button.js';
-import { VIEWPORT, ROW_H, ROW_GAP, TABS, BUY_AMOUNTS, ROW } from '../shared/listGeometry.js';
+import { VIEWPORT, ROW_GAP, TABS, BUY_AMOUNTS, computeRowGeom } from '../shared/listGeometry.js';
 import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE } from '../shared/theme.js';
 import { upgradesOnDom } from '../shared/formsFlag.js';
 import { playSfx } from '../../sfx.js';
@@ -216,9 +216,7 @@ export const panelMethods = {
         this.refreshUi();
     },
 
-    // Геометрия ряда по ориентации: в портрете карточки шире (624) — кегли и
-    // кнопка крупнее (FIT-даунскейл ~0.52 на телефонах), ряд выше под 2 строки.
-    // Ландшафтные значения = исторические константы ROW (296x96) 1:1.
+    // Геометрия ряда по ориентации — единый источник с DOM-рядом (shared/listGeometry.js).
     rowGeom() {
         const key = `${this.L.portrait ? 'p' : 'l'}|${this._adaptiveScale}`;
         if (this._rowGeomKey === key) {
@@ -226,70 +224,9 @@ export const panelMethods = {
         }
 
         this._rowGeomKey = key;
-        if (this.L.portrait) {
-            const s = this._adaptiveScale;
-            // Спека редизайна мобильной панели: ряд 132 (тач-таргет «Купить»
-            // 148x88), «ур. N» переезжает в строку имени наверх, цена под
-            // описанием. Кегли по _adaptiveScale с клампами, без переносов
-            const nameSize = Math.round(18 * Math.min(s, 1.5));
-            // Минимум 18: «Квантовая лаборатория» при 20px (13*1.5) давала 280px
-            // против nameMaxW 277 — Monocraft advance ~0.667em (аудит NAME-TOO-LONG)
-            const nameMin = Math.round(12 * Math.min(s, 1.5));
-            const nameSizes = [];
-            for (let v = nameSize; v >= nameMin; v--) {
-                nameSizes.push(v);
-            }
+        this._rowGeomCache = computeRowGeom(this.L.portrait, this._adaptiveScale);
 
-            const descSize = Math.round(14 * Math.min(s, 1.5));
-            const descY = Math.max(34, Math.round(10 + nameSize * 1.2 + 3));
-            const geom = {
-                h: 132,
-                iconCY: 66,
-                iconSize: Phaser.Math.Clamp(Math.round(48 * s), 56, 64),
-                nameY: 12,
-                nameSizes,
-                descY,
-                descSize,
-                priceY: 102,
-                priceSize: Math.round(15 * Math.min(s, 1.3)),
-                priceIconSize: Math.round(18 * Math.min(s, 1.3)),
-                levelY: 14,
-                levelSize: Math.round(14 * Math.min(s, 1.3)),
-                rightInset: 18,
-                btnY: 26,
-                btnW: 148,
-                btnH: 88,
-                btnSize: Math.round(15 * Math.min(s, 1.33)),
-                lockSize: Math.round(13 * Math.min(s, 1.3))
-            };
-            this._rowGeomCache = geom;
-
-            return geom;
-        }
-
-        const geom = {
-            h: ROW_H,
-            iconCY: ROW.iconY,
-            iconSize: 40,
-            nameY: ROW.nameY,
-            nameSizes: [15, 14, 13, 12, 11, 10],
-            descY: ROW.descY,
-            descSize: ROW.descSize,
-            priceY: ROW.priceY,
-            priceSize: 13,
-            priceIconSize: 16,
-            levelSize: 12,
-            levelY: ROW.priceY,
-            rightInset: 12,
-            btnY: ROW.btnY,
-            btnW: ROW.btnW,
-            btnH: ROW.btnH,
-            btnSize: 14,
-            lockSize: 11
-        };
-        this._rowGeomCache = geom;
-
-        return geom;
+        return this._rowGeomCache;
     },
 
     buildRow(def) {

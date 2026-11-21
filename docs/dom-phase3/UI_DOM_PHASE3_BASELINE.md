@@ -149,3 +149,12 @@ Phaser-baseline (`--legacy`): `docs/dom-phase3/baseline/phase3-p95-upgrades-phas
 - p95 — `npm run metrics:p95 -- --form upgrades` (DOM) / `--legacy` (Phaser).
 - fixcount — `npm run metrics:fixcount` (справочно).
 - Golden — `npm run test:dom-golden -- --form … --runs 3`.
+
+## 9. Примечание после доводки вида (2026-11-21)
+
+Baseline «до» не пересчитывался. Спайк §7 мерил черновую панель с прямоугольником из процентов
+Phaser-вьюпорта и 27/27 рядами в DOM; после доводки к Phaser-эталону DOM-список показывает
+только «доступные + следующее» (как Phaser, isUpgradeVisible), поэтому число рядов в DOM
+на mid-сиде — 10 (equipment), а полный охват 27/27 даёт аудит ui:check:dom на stress-сиде.
+Числа p95/отклика §7 остаются точкой отсчёта; перезамер после доводки — вне объёма (геометрия
+менялась только в CSS/раскладке, число DOM-узлов списка не выросло).

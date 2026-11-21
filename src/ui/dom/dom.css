@@ -532,41 +532,64 @@
 
 /* ---------- Статус-модалки (фаза 3, M2) ---------- */
 /* Один слой modal.js: офлайн / дейли / награда босса / вырубление. Тексты — готовый
-   снимок моста, поэтому здесь только типографика и раскладка на токенах. */
+   снимок моста, поэтому здесь только типографика и раскладка на токенах.
+   Уют: иерархия (ведущая строка крупнее и белая, пояснения тише), награда лежит в тёмной
+   врезке-карточке, плитки дейли — в рамках, действие — компактная кнопка по центру,
+   а не полоса во всю ширину. */
 .dom-status {
     display: flex;
     flex-direction: column;
     gap: var(--space-xs);
     align-items: center;
     text-align: center;
+    padding: var(--space-sm) var(--space-xs) var(--space-xs);
 }
 
 .dom-status .dom-line {
     font-size: var(--font-stat);
+    line-height: 1.5;
     color: var(--color-pale);
 }
 
-.dom-status-gap {
-    height: var(--space-xs);
+/* Ведущий абзац (что случилось) — крупнее и ярче, дальше идут пояснения потише */
+.dom-status .dom-status-lead {
+    font-size: var(--font-accent);
+    line-height: 1.5;
+    color: var(--color-white);
 }
 
-.dom-status-streak {
-    color: var(--color-soft);
-}
-
-.dom-status-bounty {
-    color: var(--color-income);
+.dom-status .dom-status-note {
     font-size: var(--font-label);
+    color: var(--color-muted);
 }
 
+.dom-status-gap {
+    height: var(--space-md);
+}
+
+.dom-status .dom-status-streak {
+    font-size: var(--font-label);
+    color: var(--color-muted);
+}
+
+.dom-status .dom-status-bounty {
+    color: var(--color-income);
+    font-size: var(--font-button-lg);
+}
+
+/* Карточки наград: тёмная врезка с тонкой золотистой каймой (2 px — толщина линии) */
 .dom-reward,
-.dom-artifact {
+.dom-artifact,
+.dom-comps {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
-    margin: var(--space-xs) 0;
-    width: 100%;
     justify-content: center;
+    gap: var(--space-md);
+    width: 100%;
+    margin: var(--space-sm) 0;
+    padding: var(--space-md) var(--space-lg);
+    background: rgb(0 0 0 / 0.28);
+    border: var(--space-nudge) solid rgb(255 233 176 / 0.14);
 }
 
 .dom-reward-text {
@@ -586,6 +609,17 @@
     align-items: center;
 }
 
+.dom-status .dom-name {
+    font-size: var(--font-button-lg);
+    color: var(--color-cream);
+}
+
+.dom-status .dom-desc {
+    font-size: var(--font-label);
+    line-height: 1.5;
+    color: var(--color-good);
+}
+
 .dom-reward-text .dom-desc {
     white-space: pre-line;
 }
@@ -594,22 +628,25 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: var(--space-xs);
+    gap: var(--space-sm);
     margin-top: var(--space-xs);
 }
 
+/* Плитка дня: своя рамка и тёмный фон; сегодняшняя — золотая и в полную яркость */
 .dom-daily-slot {
     display: inline-flex;
-    width: calc(var(--dom-icon-size) - var(--space-xs));
-    height: calc(var(--dom-icon-size) - var(--space-xs));
-    padding: var(--space-xs);
-    opacity: 0.45;
+    width: calc(var(--dom-icon-size) + var(--space-md));
+    height: calc(var(--dom-icon-size) + var(--space-md));
+    padding: var(--space-sm);
+    background: rgb(0 0 0 / 0.35);
+    border: var(--space-nudge) solid rgb(255 255 255 / 0.1);
+    opacity: 0.5;
 }
 
 .dom-daily-slot.is-active {
     opacity: 1;
-    outline: var(--space-xs) solid var(--color-gold);
-    outline-offset: calc(-1 * var(--space-xs));
+    background: rgb(255 215 94 / 0.14);
+    border-color: var(--color-gold);
 }
 
 .dom-daily-slot .dom-icon {
@@ -618,11 +655,9 @@
 }
 
 .dom-comps {
-    display: flex;
     flex-direction: column;
-    gap: var(--space-xs);
-    margin: var(--space-xs) 0;
-    width: 100%;
+    align-items: stretch;
+    gap: var(--space-sm);
 }
 
 .dom-comp {
@@ -633,105 +668,157 @@
 }
 
 .dom-comp-icon {
-    width: var(--dom-pair-icon);
-    height: var(--dom-pair-icon);
+    width: var(--dom-chip-icon);
+    height: var(--dom-chip-icon);
 }
 
 .dom-comp .dom-line {
-    font-size: var(--font-body);
+    font-size: var(--font-stat);
 }
 
 .portrait .dom-status .dom-line {
     font-size: var(--font-label);
 }
 
+.portrait .dom-status .dom-status-lead {
+    font-size: var(--font-stat);
+}
+
+.portrait .dom-status .dom-status-bounty {
+    font-size: var(--font-stat);
+}
+
+.portrait .dom-status .dom-name {
+    font-size: var(--font-stat);
+}
+
+.portrait .dom-status .dom-desc,
+.portrait .dom-status .dom-status-note {
+    font-size: var(--font-caption-lg);
+}
+
+.portrait .dom-reward,
+.portrait .dom-artifact,
+.portrait .dom-comps {
+    padding: var(--space-md) var(--space-sm);
+}
+
+.portrait .dom-daily-slots {
+    max-width: 100%;
+    flex-wrap: nowrap;
+    gap: var(--space-xs);
+}
+
+.portrait .dom-daily-slot {
+    flex: 0 1 calc(var(--dom-chip-icon) + var(--space-md));
+    min-width: 0;
+    width: calc(var(--dom-chip-icon) + var(--space-md));
+    height: calc(var(--dom-chip-icon) + var(--space-md));
+    padding: var(--space-xs);
+}
+
+.portrait .dom-comp .dom-line {
+    font-size: var(--font-caption-lg);
+}
+
+/* Кнопка действия статус-окна: компактная, по центру, крупная подпись, толстые борта
+   (в Phaser — ровно такая зелёная плитка, а не полоса на всю ширину панели) */
+.dom-modal-layer[data-dom-modal-kind='status'] .dom-actions {
+    flex-direction: row;
+    justify-content: center;
+    padding-top: var(--space-md);
+}
+
+.dom-modal-layer[data-dom-modal-kind='status'] .dom-actions .dom-btn {
+    min-width: calc(var(--touch-min) * 5);
+    min-height: calc(var(--touch-min) + var(--space-sm));
+    padding: 0 var(--space-xxl);
+    font-size: var(--font-button-lg);
+    border-width: calc(var(--dom-border-btn) * 1.5);
+    border-image-width: calc(var(--dom-border-btn) * 1.5);
+}
 /* ---------- Список улучшений (фаза 3, M3) ---------- */
-/* Постоянная панель, а не модалка: прямоугольник вкладок и списка в врезке
-   Phaser-панели (проценты от canvas — токены в tokens.css). Скрим модалок выше
-   по z-index: статус-окно перекрывает список, клики под ним не проходят. */
+/* Постоянная панель, а не модалка. Раскладка = Phaser-эталон 1:1: числа геометрии
+   приходят из upgradesPanel.js как CSS-переменные в canvas-единицах (--g-*, из
+   shared/listGeometry.js и scene.L), а --upg-u (px на единицу) = FIT-масштаб канваса;
+   поэтому на 1280x720 панель совпадает с Phaser пиксель в пиксель, на 1920x1080 — ×1.5.
+   Положение и размер слоя (вкладки + тир + список) задаёт контроллер. Скрим модалок
+   выше по z-index: статус-окно перекрывает список, клики под ним не проходят. */
 .dom-upgrades {
     position: absolute;
-    left: var(--dom-upgrades-left-l);
-    top: var(--dom-upgrades-top-l);
-    width: var(--dom-upgrades-width-l);
-    height: var(--dom-upgrades-height-l);
     z-index: var(--dom-upgrades-z);
     pointer-events: auto;
-    display: flex;
-    flex-direction: column;
-    /* Зазор между вкладками, строкой тира и списком — как у Phaser (иначе
-       кнопки вкладок липнут к списку) */
-    gap: var(--space-sm);
-    /* Панель — не отдельная металлическая врезка: она ровно покрывает врезку
-       деревянной панели Phaser. Своя рамка давала двойной кант и серые полосы. */
     padding: 0;
     background: transparent;
-}
-
-/* Узкая панель (l844 ≈ 160 CSS px): вкладки в столбик, кнопка ряда — под текстом.
-   Класс ставит контроллер по ширине слоя (NARROW_PANEL_CSS в upgradesPanel.js). */
-.dom-upgrades.is-narrow .dom-tabs {
-    flex-wrap: wrap;
-}
-
-.dom-upgrades.is-narrow .dom-tabs .dom-toggle {
-    flex: 1 1 100%;
-    min-width: 0;
-    font-size: var(--font-caption-sm);
-    white-space: normal;
-}
-
-.dom-upgrades.is-narrow .dom-bulk .dom-toggle {
-    font-size: var(--font-caption-sm);
-    white-space: normal;
-}
-
-.dom-upgrades.is-narrow .dom-upgrades-row {
-    flex-wrap: wrap;
-}
-
-.dom-upgrades.is-narrow .dom-upgrades-row .dom-actions {
-    flex-basis: 100%;
-}
-
-.dom-upgrades.is-narrow .dom-upgrades-row .dom-btn {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.portrait .dom-upgrades {
-    left: var(--dom-upgrades-left-p);
-    top: var(--dom-upgrades-top-p);
-    width: var(--dom-upgrades-width-p);
-    height: var(--dom-upgrades-height-p);
 }
 
 .dom-upgrades[hidden] {
     display: none;
 }
 
-.dom-tabs,
-.dom-bulk {
+/* Вкладки: те же текстуры кнопок, что у Phaser (активная — зелёная, остальные — серые) */
+.dom-tabs {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--upg-tabs-h);
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-xs);
-    flex: 0 0 auto;
+    gap: var(--upg-tab-gap);
 }
 
-/* Строка тира как в Phaser: ярлык шахты слева, компактная кнопка пакета справа
+.dom-upgrades .dom-up-tab,
+.dom-upgrades .dom-up-bulk {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-image: none;
+    background: url('../../../assets/ui/buy_button_normal.png') 0 0 / 100% 100% no-repeat;
+    color: var(--color-white);
+    font-family: var(--font-ui);
+    line-height: var(--dom-line-tight);
+    padding-top: calc(var(--dom-em) * var(--dom-drop-label) * 2);
+    white-space: nowrap;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.dom-upgrades .dom-up-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: max(var(--font-min-css-warn), calc(var(--upg-u) * var(--upg-tab-size)));
+}
+
+.dom-upgrades .dom-up-tab[data-on='0'] {
+    background-image: url('../../../assets/ui/buy_button_disabled_gray.png');
+    color: var(--color-muted);
+}
+
+.dom-upgrades .dom-up-tab[data-on='1'] {
+    background-image: url('../../../assets/ui/buy_button_normal.png');
+}
+
+/* Строка тира: ярлык шахты слева, компактная кнопка пакета справа
    (в Phaser x1 → x10 → x100 → МАКС — одна кнопка, а не четыре) */
 .dom-upgrades-top {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: var(--upg-top-y);
+    height: var(--upg-top-h);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-xs);
-    /* Правый отступ не даёт кнопке пакета лечь на рамку панели */
-    padding: 0 var(--space-sm);
 }
 
 .dom-upgrades-tier {
+    flex: 1 1 0;
     min-width: 0;
-    font-size: var(--font-caption-sm);
+    padding: calc(var(--dom-em) * var(--dom-drop-label) * 2) 0 0 var(--upg-tier-inset);
+    font-size: max(var(--font-min-css-warn), calc(var(--upg-u) * var(--upg-tier-size)));
+    line-height: var(--dom-line-tight);
+    /* цвет ярлыка тира Phaser-панели (upgrades.js: '#c8b78e') */
     color: #c8b78e;
     white-space: nowrap;
     overflow: hidden;
@@ -739,24 +826,40 @@
 }
 
 .dom-bulk {
-    flex: 0 0 26%;
+    flex: 0 0 var(--upg-amount-w);
+    height: 100%;
+    margin-right: var(--upg-pad-right);
 }
 
-.dom-bulk .dom-toggle {
-    flex: 1 1 100%;
+.dom-upgrades .dom-up-bulk {
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    height: 100%;
+    background: none;
+    font-size: max(var(--font-min-css-warn), calc(var(--upg-u) * var(--upg-amount-size)));
 }
 
-.dom-tabs .dom-toggle,
-.dom-bulk .dom-toggle {
-    flex: 1 1 0;
-    min-width: 0;
-    font-size: var(--font-label);
-    white-space: nowrap;
+/* Зона нажатия кнопки пакета >= TOUCH, а видимая плитка — компактная, как в Phaser
+   (на телефоне 26 игровых px): текстура рисуется псевдо-элементом по центру зоны */
+.dom-upgrades .dom-up-bulk::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    z-index: -1;
+    height: var(--upg-amount-vis-h);
+    transform: translateY(-50%);
+    background: url('../../../assets/ui/buy_button_normal.png') 0 0 / 100% 100% no-repeat;
 }
 
 .dom-upgrades-scroll {
-    flex: 1 1 auto;
-    min-height: 0;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: var(--upg-scroll-top);
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -768,139 +871,160 @@
     display: none;
 }
 
-/* Карточка улучшения — обычный флекс: иконка | текст | кнопка.
-   Фон строки — ровный тон врезки, подложка иконки и фаска нарисованы CSS
-   (текстура row_card с запечённой нишей больше не используется). */
+/* Карточка ряда — текстура upgrade_row_card_1 на весь ряд (как addImg в Phaser: тёмная ниша
+   иконки уже в текстуре). Содержимое — абсолютные позиции в canvas-единицах (геометрия
+   Phaser: иконка/имя/описание/цена/уровень/кнопка), контейнеры-обёртки не участвуют в раскладке. */
 .dom-upgrades-row {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-xs) var(--space-sm);
+    position: relative;
+    display: block;
+    height: calc(var(--upg-u) * var(--g-row-h));
+    min-height: 0;
+    margin: 0 0 calc(var(--upg-u) * var(--g-row-gap));
+    padding: 0;
     border: 0;
     border-image: none;
-    background: #2c2f34;
-    box-shadow: inset 0 0 0 var(--dom-hairline) #17191c;
-    border-radius: var(--space-xs);
-    overflow: hidden;
+    background: url('../../../assets/ui/upgrade_row_card_1.png') 0 0 / 100% 100% no-repeat;
+}
+
+.dom-upgrades-row:last-child {
+    margin-bottom: 0;
+}
+
+.dom-upgrades-body,
+.dom-upgrades-row .dom-actions {
+    display: contents;
 }
 
 .dom-upgrades-icon {
-    flex: 0 0 var(--dom-slot-size);
-    width: var(--dom-slot-size);
-    height: var(--dom-slot-size);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #1f2226;
-    box-shadow:
-        inset 0 0 0 var(--dom-bevel) #454a51,
-        inset 0 calc(-1 * var(--dom-bevel)) 0 #14161a;
-    border-radius: var(--space-xs);
+    position: absolute;
+    left: calc(var(--upg-u) * (var(--g-icon-cx) - var(--g-icon-size) / 2));
+    top: calc(var(--upg-u) * (var(--g-icon-cy) - var(--g-icon-size) / 2));
+    width: calc(var(--upg-u) * var(--g-icon-size));
+    height: calc(var(--upg-u) * var(--g-icon-size));
 }
 
 .dom-upgrades-icon .dom-icon {
-    /* Арт меньше подложки — центрируется флексом, без привязки к текстуре */
-    width: var(--dom-icon-size);
-    height: var(--dom-icon-size);
-}
-
-.dom-upgrades-body {
-    flex: 1 1 auto;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
-    /* Отступ текста от рамки иконки — как в Phaser (textX за нишей) */
-    padding-left: var(--space-md);
-}
-
-.dom-upgrades-line,
-.dom-upgrades-bottom {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-xs);
-    min-width: 0;
-}
-
-.dom-upgrades-bottom {
-    align-items: center;
-}
-
-/* «ур. N»: в портрете — справа в строке имени, в ландшафте — у цены
-   (как rowGeom Phaser: levelY 14 против priceY) */
-.dom-level-top {
-    display: none;
-}
-
-.portrait .dom-level-top {
-    display: inline;
-}
-
-.portrait .dom-level-bottom {
-    display: none;
-}
-
-.dom-upgrades-row .dom-actions {
-    flex: 0 0 26%;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: center;
-    gap: var(--space-xs);
-}
-
-.dom-level-bottom {
-    font-size: var(--font-caption-sm);
-    color: var(--color-bright);
-    text-align: right;
-    white-space: nowrap;
-}
-
-.dom-upgrades-row .dom-btn {
-    /* Кнопка как в Phaser (84x40 / 148x88), не на всю высоту ряда */
     width: 100%;
-    min-width: 0;
-    min-height: var(--touch-min);
-    padding: 0 var(--space-xs);
-    font-size: var(--font-caption);
+    height: 100%;
+}
+
+.dom-upgrades-row .dom-name,
+.dom-upgrades-row .dom-desc,
+.dom-upgrades-row .dom-error {
+    position: absolute;
+    left: calc(var(--upg-u) * var(--g-text-x));
+    line-height: var(--dom-line-tight);
+    overflow-wrap: break-word;
 }
 
 .dom-upgrades-row .dom-name {
-    font-size: var(--font-label);
-    overflow-wrap: anywhere;
+    top: calc(var(--upg-u) * var(--g-name-y) + var(--dom-em) * var(--dom-drop-name));
+    max-width: calc(var(--upg-u) * var(--g-name-max-w));
+    font-size: max(var(--font-min-css-warn), calc(var(--upg-u) * var(--g-name-size)));
+    color: var(--color-white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .dom-upgrades-row .dom-desc {
-    font-size: var(--font-caption-sm);
-    overflow-wrap: anywhere;
+    top: calc(var(--upg-u) * var(--g-desc-y) + var(--dom-em) * var(--dom-drop-desc));
+    width: calc(var(--upg-u) * var(--g-desc-w));
+    font-size: max(var(--font-min-css-warn), calc(var(--upg-u) * var(--g-desc-size)));
+    /* цвет описания ряда Phaser-панели (upgrades.js: '#cfcfcf') */
+    color: #cfcfcf;
 }
 
+.dom-upgrades-row .dom-error {
+    top: calc(var(--upg-u) * var(--g-price-y));
+    transform: translateY(-50%);
+    max-width: calc(var(--upg-u) * var(--g-lock-max-w));
+    font-size: max(var(--font-min-css-warn), calc(var(--upg-u) * var(--g-lock-size)));
+    color: var(--color-bad);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Цена: нулевой по размеру якорь в (textX, priceY); монетка центрирована в textX+6,
+   текст начинается в textX+16 — как priceIcon/priceText в buildRow */
 .dom-upgrades-price {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-xs);
-    font-size: var(--font-caption);
+    position: absolute;
+    left: calc(var(--upg-u) * var(--g-text-x));
+    top: calc(var(--upg-u) * var(--g-price-y));
+    width: 0;
+    height: 0;
     color: var(--color-gold);
-}
-
-.dom-upgrades-price span {
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-
-.dom-upgrades-price .dom-sub {
-    margin-left: auto;
 }
 
 .dom-upgrades-price.is-dim {
     color: var(--color-dim);
 }
 
-.dom-upgrades-price .dom-pair-icon {
-    width: var(--dom-pair-icon);
-    height: var(--dom-pair-icon);
+.dom-upgrades-price .dom-up-coin {
+    position: absolute;
+    left: calc(var(--upg-u) * (var(--g-coin-cx) - var(--g-price-icon) / 2));
+    top: calc(var(--upg-u) * (var(--g-price-icon) / -2));
+    width: calc(var(--upg-u) * var(--g-price-icon));
+    height: calc(var(--upg-u) * var(--g-price-icon));
+}
+
+.dom-up-price-text {
+    position: absolute;
+    left: calc(var(--upg-u) * var(--g-price-dx));
+    top: 0;
+    transform: translateY(-50%);
+    max-width: calc(var(--upg-u) * var(--g-price-max-w));
+    font-size: max(var(--font-min-css-warn), calc(var(--upg-u) * var(--g-price-size)));
+    line-height: var(--dom-line-tight);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dom-upgrades-row .dom-up-level {
+    position: absolute;
+    right: calc(var(--upg-u) * var(--g-right));
+    top: calc(var(--upg-u) * var(--g-level-y));
+    transform: translateY(-50%);
+    font-size: max(var(--font-min-css-warn), calc(var(--upg-u) * var(--g-level-size)));
+    line-height: var(--dom-line-tight);
+    color: var(--color-bright);
+    white-space: nowrap;
+}
+
+/* Кнопка «Купить»: та же текстура и размер, что у Phaser (84x40 / 148x88), у правого края */
+.dom-upgrades .dom-upgrades-row .dom-actions .dom-up-btn {
+    position: absolute;
+    left: calc(100% - var(--upg-u) * (var(--g-right) + var(--g-btn-w)));
+    top: calc(var(--upg-u) * var(--g-btn-y));
+    width: calc(var(--upg-u) * var(--g-btn-w));
+    height: calc(var(--upg-u) * var(--g-btn-h));
+    min-height: 0;
+    padding: calc(var(--dom-em) * var(--dom-drop-btn) * 2) 0 0;
+    border: 0;
+    border-image: none;
+    background: url('../../../assets/ui/buy_button_normal.png') 0 0 / 100% 100% no-repeat;
+    font-size: max(var(--font-min-css-warn), calc(var(--upg-u) * var(--g-btn-size)));
+    line-height: var(--dom-line-tight);
+    white-space: nowrap;
+}
+
+.dom-upgrades .dom-upgrades-row .dom-actions .dom-up-btn:hover {
+    background-image: url('../../../assets/ui/buy_button_hover.png');
+}
+
+.dom-upgrades .dom-upgrades-row .dom-actions .dom-up-btn:active {
+    background-image: url('../../../assets/ui/buy_button_pressed.png');
+}
+
+.dom-upgrades .dom-upgrades-row .dom-actions .dom-up-btn.is-disabled {
+    background-image: url('../../../assets/ui/buy_button_disabled_gray.png');
+    color: var(--color-muted);
+}
+
+.dom-upgrades .dom-upgrades-row .dom-actions .dom-up-btn.is-maxed {
+    color: var(--color-soft);
 }
 
 /* Пульс ряда после покупки (CSS-анимация на токенах, без JS-твинов). */
@@ -920,8 +1044,109 @@
     animation: dom-upgrades-pulse 180ms ease-out;
 }
 
-.portrait .dom-upgrades-row .dom-btn {
-    /* Phaser-портрет: 148x88 из ряда 132 — кнопка выше, но не на весь ряд */
-    min-height: calc(var(--touch-min) + var(--space-sm));
+/* ---------- Узкая панель (телефон в ландшафте) ----------
+   Описание Phaser-ряда (11 единиц) при FIT-масштабе <~0.9 опускается ниже порога
+   читаемости, поэтому ряд собирается обычным потоком: иконка | текст, кнопка под текстом.
+   Класс ставит контроллер (upgradesPanel.js, applyLayout). */
+.dom-upgrades.is-narrow .dom-upgrades-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs);
+    height: auto;
+    margin-bottom: var(--dom-row-gap);
+    padding: var(--space-xs);
+    /* текстура ряда Phaser зашита под фиксированную высоту (ниша иконки слева): у потокового
+       ряда переменной высоты — обычная рамка карточки, иконка в своём слоте */
+    border: var(--dom-border-card) solid transparent;
+    border-image: url('../../../assets/ui/modal_panel_metal.png') 60 fill / var(--dom-border-card) stretch;
+    background: none;
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-icon {
+    position: static;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 var(--dom-icon-size);
+    width: var(--dom-icon-size);
+    height: var(--dom-icon-size);
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-icon .dom-icon {
+    flex: 0 0 auto;
+    width: var(--dom-icon-size);
+    height: var(--dom-icon-size);
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-width: 0;
+    gap: var(--space-nudge);
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-row .dom-name,
+.dom-upgrades.is-narrow .dom-upgrades-row .dom-desc,
+.dom-upgrades.is-narrow .dom-upgrades-row .dom-error {
+    position: static;
+    transform: none;
+    width: auto;
+    max-width: none;
+    white-space: normal;
+    overflow: visible;
+    font-size: var(--font-caption-sm);
+    overflow-wrap: anywhere;
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-row .dom-name {
+    font-size: var(--font-label);
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-price {
+    position: static;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    width: auto;
+    height: auto;
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-price .dom-up-coin {
+    position: relative;
+    flex: 0 0 var(--dom-pair-icon);
+    width: var(--dom-pair-icon);
+    height: var(--dom-pair-icon);
+}
+
+.dom-upgrades.is-narrow .dom-up-price-text {
+    position: static;
+    transform: none;
+    max-width: none;
     font-size: var(--font-caption);
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: anywhere;
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-row .dom-actions {
+    display: flex;
+    flex: 1 1 100%;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-row .dom-actions .dom-up-btn {
+    position: static;
+    width: 100%;
+    height: var(--touch-min);
+    font-size: var(--font-caption);
+}
+
+.dom-upgrades.is-narrow .dom-upgrades-row .dom-up-level {
+    position: static;
+    transform: none;
+    align-self: flex-end;
+    font-size: var(--font-caption-sm);
 }
