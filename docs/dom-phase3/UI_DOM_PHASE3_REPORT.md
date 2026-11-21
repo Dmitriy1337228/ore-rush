@@ -26,18 +26,18 @@ Baseline: `docs/dom-phase3/UI_DOM_PHASE3_BASELINE.md`.
 
 | Проверка | Результат |
 |---|---|
-| `npm test` | 157 pass, 0 fail |
+| `npm test` | 162 pass, 0 fail |
 | `npm run test:ui` | 4/4 pass (Phaser-эталоны не менялись) |
 | `npm run ui:check:dom` | 32 прогона (craft+settings+status+upgrades × 8), **0 err / 0 warn**, 0 console |
-| `npm run test:dom-golden -- --form all --runs 3` | 13 эталонов, худший **0.097 %** (< 0.5 %) |
+| `npm run test:dom-golden -- --form all --runs 3` | 13 эталонов, худший **0.105 %** (< 0.5 %) |
 | `npm run format:check`, `lint`, `scripts:check`, `layers:check` | ок |
 | `npm run ui:tokens`, `ui:tokens:css`, `dom:tokens -- --check` | ок |
-| `npm run build` | ок (411.84 КБ gzip, 11 файлов) |
+| `npm run build` | ок (413.98 КБ gzip, 11 файлов) |
 | `npm run ui:check` | 0 новых ошибок, **кроме** `l844|boss`: **6 err / 5 warn** |
 | `verify:craft-dom` | 40/40 |
 | `verify:settings-dom` | 28/0 |
-| `verify:status-dom` (+ `--legacy`) | **28/0** (+4/0) |
-| `verify:upgrades-dom` (+ `--legacy`) | **13/0** (+3/0) |
+| `verify:status-dom` (+ `--legacy`) | **30/0** (+4/0) |
+| `verify:upgrades-dom` (+ `--legacy`) | **19/0** (+4/0) |
 | `verify:daily`, `verify:offline`, `verify:bulkbuy`, `verify:responsive` | 25/0, 12/0, 37/0, 81/0 |
 | `verify:boss` | 90/0 |
 
@@ -50,11 +50,11 @@ Baseline: `docs/dom-phase3/UI_DOM_PHASE3_BASELINE.md`.
 
 | Критерий | Значение | Вердикт |
 |---|---|---|
-| **W1** LOC `upgrades.js` + `gear.js` ≤ Phaser-baseline | 782 vs 766 (+16 у `upgrades.js`) | **не выполнен**: Phaser-код оставлен для откатов, добавлены ветки пути/обучения |
-| **W2** прирост бандла ≤ 15 КБ gzip на форму | +7.41 КБ всего (`statusModals` 1.17 + `upgradesPanel` 1.91 + тексты/чанки) | выполнен |
+| **W1** LOC `upgrades.js` + `gear.js` ≤ Phaser-baseline | 742 vs 766 (`upgrades.js` 549 + `gear.js` 193) | выполнен после доводки: общие `computeRowGeom` и модули текстов сократили Phaser-ряд (до доводки было 782 — не выполнен) |
+| **W2** прирост бандла ≤ 15 КБ gzip на форму | +9.97 КБ всего (413.98 КБ gzip против 404.01 КБ на master; доводка списка добавила раскладку) | выполнен (≤ 15 КБ) |
 | **W3** нет двойного обновления списка | на DOM-пути Phaser-ряды не строятся, вкладки/пакет скрыты; `upgrades.js` 573→589 (+гварды пути), `gear.js` без изменений; per-frame обновления Phaser-рядов выключены | выполнен по факту (одно обновление DOM) |
-| **W4** golden 3 прогона без правок | худший 0.097 % (порог 0.5 %) | выполнен |
-| **R1** тесты | unit 157, все verify-сценарии зелёные (см. таблицу) | выполнен |
+| **W4** golden 3 прогона без правок | худший 0.105 % (порог 0.5 %) | выполнен |
+| **R1** тесты | unit 162, все verify-сценарии зелёные (см. таблицу) | выполнен |
 | **R2** жесты | тап/дрожание ≤ 10 CSS px покупает, драг/скролл — нет (U8, SM1c) | выполнен |
 | **R3** вёрстка | ui:check:dom 32×0, golden ×3, портрет/ландшафт | выполнен |
 | **R4** `ui:check` 0 новых | 6/5 на `l844|boss`, воспроизведено на `master` | **внешний долг**, не блокирует (см. §Гейты) |
@@ -72,8 +72,8 @@ Baseline: `docs/dom-phase3/UI_DOM_PHASE3_BASELINE.md`.
 1. **Голден stress-списка не снимается** (`golden: false`): фон-шахта stress-сида
    анимирован и попиксельно нестабилен между прогонами (1–3 %); 27 рядов и «макс»
    покрыты `ui:check:dom` (8 вьюпортов) и `verify:upgrades-dom` U6/U9.
-2. **LOC W1:** Phaser-путь отката сохранён по требованию D5/R5, поэтому `upgrades.js`
-   не уменьшился; вместо этого DOM-код вынесен в отдельные файлы (280 строк + verify).
+2. **LOC W1:** Phaser-путь отката сохранён по требованию D5/R5; после доводки W1 выполнен (742 против 766)
+   за счёт общей геометрии ряда и модулей текстов.
 3. **`ui:check` l844|boss** — внешний MIN-FONT долг extreme-вьюпорта, воспроизводится
    на `master`; baseline не расширялся, проверка не ослаблялась.
 4. **Телефонный стенд** статус-окна: официальный `stand:*-phone` поддерживает только
@@ -82,32 +82,61 @@ Baseline: `docs/dom-phase3/UI_DOM_PHASE3_BASELINE.md`.
 5. **Long tasks** списка при CPU×4: 15–17 за 30 с с фазой частых покупок; p95 и
    отклик укладываются, но `saveGame` на каждый клик — кандидат на дебаунс.
 
-## Доводка вида (2026-11-21, по замечанию игрока)
+## Доводка вида и закрытие ревью (2026-11-21)
 
-Первая версия DOM-списка расходилась с Phaser-эталоном (	ests/characterization/golden/ui/04_list_top.png):
+Первая версия DOM-списка расходилась с Phaser-эталоном (`tests/characterization/golden/ui/04_list_top.png`):
 мелкие кегли, «жидкий» вид, кнопка x1 пересекала верх текстуры. Что исправлено:
 
-- **Единая геометрия.** computeRowGeom/computeRowMetrics в src/ui/shared/listGeometry.js — один
+- **Единая геометрия.** `computeRowGeom`/`computeRowMetrics` в `src/ui/shared/listGeometry.js` — один
   источник чисел для Phaser-ряда и DOM-ряда. DOM переводит canvas-единицы в CSS px множителем
-  FIT-масштаба (--upg-u), поэтому 1280x720 совпадает с Phaser, 1920x1080 — ×1.5. Голые px вёрстки
-  ряда убраны; токены --dom-upgrades-left/width/top/height-* заменены раскладкой из scene.L.
-- **Паритет состава.** Карточка ряда — текстура upgrade_row_card_1; одна кнопка пакета
+  FIT-масштаба (`--upg-u`), поэтому 1280x720 совпадает с Phaser, 1920x1080 — ×1.5. Голые px вёрстки
+  ряда убраны; токены `--dom-upgrades-left/width/top/height-*` заменены раскладкой из `scene.L`.
+- **Паритет состава.** Карточка ряда — текстура `upgrade_row_card_1`; одна кнопка пакета
   x1→x10→x100→МАКС (не четыре); ряды «доступные + следующее»; цена с иконкой руды текущей шахты;
-  кегли имени/описания/«нужно: …» ужимаются как itFontSize; строка шахты — полной ширины.
+  кегли имени/описания/«нужно: …» ужимаются как `fitFontSize`; строка шахты — полной ширины.
 - **Кнопка x1 в портрете** — компактная плитка (псевдо-элемент), зона нажатия ≥ 40 px сохранена.
 - **Разъезд на промежуточных высотах** (окна вроде 1682x641): узкий режим включался слишком рано;
-  порог снижен (NARROW_FONT_SHARE), сам узкий режим получил обычную рамку карточки и колонку иконки.
+  порог снижен (`NARROW_FONT_SHARE`), сам узкий режим получил обычную рамку карточки и колонку иконки.
 - **Статус-модалки** (дейли/босс/офлайн/вырубление): иерархия «ведущая строка / заметки»,
   награды в тёмных карточках, плитки дейли в рамках (7 в ряд в портрете, фикс H-SCROLL на 360),
   компактная кнопка с подписью 18 px, выровнены отступы.
 
-Проверки: ui:check:dom 32×0 err/0 warn; erify:upgrades-dom 13/0 (U1 теперь сверяет число рядов с
-isUpgradeVisible, а не фиксированные 20 — паритет с Phaser, не ослабление); erify:status-dom 28/0;
-erify:responsive 81/0; erify:bulkbuy 37/0; golden upgrades/status обновлены намеренно
-(худший прогон 0.076 % < 0.5 %); ui:check:quick 0 новых; 
-pm test 157. Метрики W1–W4/p95 после
-доводки не перемерялись (число узлов списка не выросло).
+### Ревью `CODE_REVIEW_phase3-dom-forms.md` — все замечания закрыты
 
+- **🔴 D4/R6 (блокер).** Phaser-путь `statusModals.js` и `upgrades.js` теперь берёт ВСЕ строки из
+  `statusMessages.js`/`upgradesMessages.js` (заголовки, кнопки, тела окон, «ур. N», «Купить», «макс»,
+  «—», гейты «нужно: …», цены пакета/МАКС, подпись пакета); ярлык шахты — `tierLabelText` для HUD и
+  DOM. Формулировка «Phaser берёт те же строки» теперь верна; страхует `verify:upgrades-dom --legacy`
+  (L3, сверка Phaser-текстов с модулем) и `verify:status-dom --legacy` (L2/L3).
+- **Шаг 3.5.** Строка №4 в `docs/DECISIONS.md` («классификация слоёв закрыта»), правки `AGENTS.md`.
+- **🟡 Пульс ряда.** `pulse(id)` вызывается после перерисовки, `reapplyPulse` переносит класс на новый
+  узел (раньше `renderKeyed` заменял узел и класс терялся); проверка U6e.
+- **🟡 Сценарии `verify:upgrades-dom`.** Добавлены U6d (x100 по плану state + перечитанный сейв),
+  U6f (отказ без руды: уровень/руда/сейв не меняются), U6g/U6h (паритет текстов DOM = модуль, включая
+  гейты), U6i (20 покупок — число узлов стабильно), L3.
+- **🟡 `verify:status-dom`.** SM3d (награда без компонентов / без артефакта / без времени), SM5
+  (Esc не закрывает статус-окно); фиксированные паузы открытия заменены ожиданием готовности.
+- **🟡 Хрупкость `verify:settings-dom`.** `openSettings` ждёт `ui.L` + шрифты + DOM-модалку вместо
+  `waitForTimeout`; бой в ST8 держится «бесконечным» (HP/время), чтобы не заканчиваться раньше проверки;
+  3 прогона подряд 28/0.
+- **🟢 Мелочи.** Спайк-флаг `?domUpgradesSpike` удалён из `UIScene.js`/`formsFlag.js`/verify; тест
+  `tests/characterization/upgrades_messages.test.mjs`; состояния `upgrades-dom` остаются в
+  `scripts/lib/dom-forms.mjs` (поле `kinds`) — это осознанное отклонение от «в `ui-matrix.mjs`»
+  (там только Phaser-матрица), записано в журнале плана; golden `craft`/`settings` в ревью-ветке
+  не менялись (сверка 0.00 %), для `upgrades`/`status` обновлены намеренно.
+- **Внешний долг (не из этой ветки).** Нестабильное по таймингу комбо `ui:check` `l844|boss`
+  воспроизводится на master (`docs/repo-reorg/REPO_REFACTOR_BASELINE.md`).
+
+Проверки: `ui:check:dom` 32×0 err/0 warn; `verify:upgrades-dom` 19/0 (+ `--legacy` 4/0; U1 сверяет
+число рядов с `isUpgradeVisible`, а не фиксированные 20); `verify:status-dom` 30/0 (+ `--legacy` 4/0);
+`verify:settings-dom` 28/0 ×3; `verify:craft-dom` 40/40; `verify:responsive` 81/0; `verify:bulkbuy` 37/0;
+`verify:boss` 90/0; `verify:daily` 25/0; `verify:offline` зелёный; golden (3 прогона) худший **0.105 %**
+(< 0.5 %); `ui:check:quick` 0 новых; `npm test` 162; `test:ui` 4/4.
+
+Метрики после доводки: gzip **413.98 КБ** (11 файлов; +9.97 КБ к master, W2 ≤ 15 КБ на форму —
+выполнен); LOC `upgrades.js` 549 (код) + `gear.js` 193 = 742 против baseline 766 → **W1 теперь выполнен**
+(Phaser-ряд стал короче за счёт общих `computeRowGeom`/модулей текстов); `statusModals.js` 289 (код).
+p95/отклик W3 не перемерялись (число узлов списка не выросло, U7 ≤ 1 кадра).
 ## Как откатить
 
 - Всё: `?phaserForms=settings,status,upgrades`; точечно — `?phaserForms=status` или

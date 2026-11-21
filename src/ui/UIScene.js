@@ -181,11 +181,8 @@ export class UIScene extends Phaser.Scene {
                 console.error('[settings:dom] не загрузился:', err);
             });
 
-        // Список улучшений — DOM-форма фазы 3. Спайк этапа 0: монтируется только
-        // по dev-флагу ?domUpgradesSpike=1 (в прод не попадает). На этапе 2
-        // включается по умолчанию через isPhaserForm('upgrades').
-        this._upgradesDomSpike =
-            import.meta.env.DEV && new URLSearchParams(window.location.search).has('domUpgradesSpike');
+        // Список улучшений — DOM-форма фазы 3: включена по умолчанию, откат — флаг
+        // phaserForms=upgrades (upgradesOnDom). Спайк-флаг этапа 0 удалён (ревью 🟢-8).
         this._domUpgradesReady = this._domSettingsReady
             .then(() => import('./dom/upgradesPanel.js'))
             .then(({ createDomUpgrades }) => {
@@ -245,7 +242,7 @@ export class UIScene extends Phaser.Scene {
             return false;
         }
 
-        return upgradesOnDom() && (this._upgradesDomSpike || gameState.tutorialDone === true);
+        return upgradesOnDom() && gameState.tutorialDone === true;
     }
 
     // Вызывается из finishTutorial: обучение завершилось в этой сессии —

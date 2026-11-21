@@ -18,6 +18,10 @@ export const buyLabel = 'Купить';
 export const maxedLabel = 'макс';
 export const lockedLabel = '—';
 
+/** Ярлык шахты над списком и в HUD: в портрете короткий (полный ужимался до ~7 px). */
+export const tierLabelText = (tierIndex, tierName, portrait) =>
+    portrait ? `Шахта ${tierIndex + 1} · ${tierName}` : `уровень шахты: ${tierIndex + 1} — ${tierName}`;
+
 /** Гейт по глубине: улучшение ещё не открыто на текущем уровне шахты. */
 export const lockTierText = (tierIndex) => `нужно: шахта ${tierIndex + 1}`;
 

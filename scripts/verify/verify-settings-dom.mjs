@@ -65,7 +65,22 @@ async function openSettings({ seed = SEEDS.mid, width = 1280, height = 720, befo
         await page.waitForFunction(() => !!window.__DOM_SETTINGS, null, { timeout: 30000 });
     }
 
-    await page.waitForTimeout(900);
+    // Готовность без фиксированных пауз: шрифты загружены, раскладка построена, DOM-модалка
+    // смонтирована (иначе openSettings/ST1f на свежем 375px-контексте ловили null по [data-dom-modal])
+    await page.waitForFunction(
+        (dom) => {
+            const ui = window.__GAME?.scene?.getScene('UIScene');
+
+            return !!(
+                ui &&
+                ui.L &&
+                document.fonts.status === 'loaded' &&
+                (!dom || document.querySelector('[data-dom-modal]'))
+            );
+        },
+        !legacy,
+        { timeout: 30000 }
+    );
     await page.evaluate(() => {
         const ui = window.__GAME.scene.getScene('UIScene');
         ui._pendingDaily = null;
@@ -78,7 +93,8 @@ async function openSettings({ seed = SEEDS.mid, width = 1280, height = 720, befo
     await page.waitForFunction(() => !window.__GAME.registry.get('blockLocked'), null, { timeout: 5000 });
     if (before) {
         await page.evaluate(before);
-        await page.waitForTimeout(150);
+        // два кадра: эффекты before применены, UI перерисован
+        await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     }
 
     // Открытие кнопкой HUD (ST1): тот же обработчик, что у шестерёнки.
@@ -91,7 +107,7 @@ async function openSettings({ seed = SEEDS.mid, width = 1280, height = 720, befo
         await page.waitForFunction(() => window.__DOM_SETTINGS.isOpen(), null, { timeout: 10000 });
     }
 
-    await page.waitForTimeout(250);
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 
     return { ctx, page };
 }
@@ -591,7 +607,13 @@ try {
             const { ctx, page } = await openSettings({
                 seed: SEEDS.deep,
                 before: async () => {
-                    window.__GAME.scene.getScene('GameScene').startBossFight('boss_copper');
+                    const gs = window.__GAME.scene.getScene('GameScene');
+                    gs.startBossFight('boss_copper');
+                    // Бой не должен кончиться, пока идёт проверка (на deep-сиде босс умирал
+                    // раньше опроса bossActive — флейк ST8): HP/время/живучесть — «бесконечные»
+                    gs.boss.hp = gs.boss.maxHp = 1e300;
+                    gs.boss.endsAt = Infinity;
+                    gs.boss.playerHp = gs.boss.maxPlayer = 1e300;
                 }
             });
             const before = await readState(page);

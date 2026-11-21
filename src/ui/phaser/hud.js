@@ -11,6 +11,7 @@ import {
 } from '../../state.js';
 import { addImg, makeLabel, fitFontSize, setHitRect, setHitWorld } from './uiKit.js';
 import { addButton } from './button.js';
+import { tierLabelText } from '../../state/upgradesMessages.js';
 import { TEXT, DEPTH, TEX, HIT, REG, FONT_SIZE, SPACE, TOUCH_MIN } from '../shared/theme.js';
 import { measureIcon } from '../shared/iconMetrics.js';
 
@@ -402,9 +403,7 @@ export const hudMethods = {
         // Пересчёт только при смене текста (строка меняется раз в спуск).
         // Портрет: короткий формат («Шахта 1 · Уголь») под кегль 22 — полный
         // «уровень шахты: …» ужинался до ~7 экранных px (ревью читаемости)
-        const tierText = this.L.portrait
-            ? `Шахта ${gameState.tier + 1} · ${tier.name}`
-            : `уровень шахты: ${gameState.tier + 1} — ${tier.name}`;
+        const tierText = tierLabelText(gameState.tier, tier.name, this.L.portrait);
         if (this._tierText !== tierText) {
             this._tierText = tierText;
             this.tierLabel.setText(tierText);

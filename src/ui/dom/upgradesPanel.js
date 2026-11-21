@@ -290,6 +290,7 @@ export function createDomUpgrades(scene) {
         fitIcons(layer);
         fitRows();
         fitTier();
+        reapplyPulse();
 
         return snap;
     };
@@ -344,6 +345,13 @@ export function createDomUpgrades(scene) {
         );
     };
 
+    // Тик/перерисовка могут заменить узел ряда внутри окна пульса — вешаем класс на новый узел
+    const reapplyPulse = () => {
+        for (const id of pulseTimers.keys()) {
+            rowsEl.querySelector(`[data-row="${id}"]`)?.classList.add('is-pulse');
+        }
+    };
+
     // D9: перечитывание одного ряда из state (мимо 150-мс тика), без пересборки списка
     const refreshRow = (id) => {
         if (hidden) {
@@ -363,6 +371,7 @@ export function createDomUpgrades(scene) {
         el.replaceWith(next);
         fitIcons(next);
         fitRow(next);
+        reapplyPulse();
     };
 
     // D2/D8: состав покупки как в Phaser — buyBulk (state) -> saveGame -> sfx -> пульс,
@@ -378,7 +387,6 @@ export function createDomUpgrades(scene) {
 
         saveGame();
         playSfx(scene, 'purchase');
-        pulse(id);
         // Строгий пакет меняет только купленный ряд (цены других не зависят от руды);
         // МАКС зависит от текущей руды у всех рядов — тогда перечитываем список целиком.
         if (buyAmount === 'max') {
@@ -386,6 +394,10 @@ export function createDomUpgrades(scene) {
         } else {
             refreshRow(id);
         }
+
+        // Пульс — ПОСЛЕ перерисовки: renderKeyed/refreshRow заменяют узел ряда, и класс со
+        // старого узла пропал бы вместе с ним (замечание ревью 🟡-3)
+        pulse(id);
 
         return true;
     };

@@ -166,6 +166,32 @@ async function runLegacy() {
         `${before.level} -> ${after.level}`
     );
     await ctx.close();
+
+    // L3: Phaser-тексты списка = модуль (D4/R6: литералов в Phaser-пути нет, строки совпадают)
+    {
+        const { ctx, page } = await openGame({ legacy: true });
+        const m = await page.evaluate(async () => {
+            const files = performance.getEntriesByType('resource').map((r) => r.name);
+            const st = await import(files.find((u) => u.includes('/src/state.js')));
+            const ui = window.__GAME.scene.getScene('UIScene');
+            st.gameState.ore = 1e12;
+            ui.switchTab('equipment');
+            ui.buyAmount = 1;
+            ui.refreshUi();
+            const row = ui.rows.find((r) => r && r.def && r.def.id === 'pickaxe');
+            const b = st.getBulkCost('pickaxe', 1);
+
+            return {
+                title: ui.panelTitle.text === st.upgradesTitle,
+                level: row.levelText.text === st.levelText(st.gameState.levels.pickaxe),
+                price: row.priceText.text === st.bulkPriceText({ total: b.total, n: b.n, amount: 1 }),
+                btn: row.btnText.text === st.buyLabel,
+                amount: ui.amountLbl.text === st.bulkLabel(1)
+            };
+        });
+        check('L3 Phaser-тексты списка = upgradesMessages', Object.values(m).every(Boolean), JSON.stringify(m));
+        await ctx.close();
+    }
 }
 
 async function runDom() {
@@ -401,6 +427,130 @@ async function runDom() {
         await ctx.close();
     }
 
+    // ---------- U6d: x100, отказ, сейв до/после, паритет текстов, пульс, утечки ----------
+    {
+        const { ctx, page } = await openGame();
+        const m = await page.evaluate(
+            async ([saveKey]) => {
+                const files = performance.getEntriesByType('resource').map((r) => r.name);
+                const st = await import(files.find((u) => u.includes('/src/state.js')));
+                const saved = () => JSON.parse(localStorage.getItem(saveKey));
+                const rows = () => [...document.querySelectorAll('[data-dom-upgrades] [data-row]')];
+                const rowOf = (id) => rows().find((r) => r.dataset.row === id);
+                const press = (el) => {
+                    const b = el.getBoundingClientRect();
+                    const opts = { bubbles: true, pointerId: 6, clientX: b.left + 3, clientY: b.top + 3 };
+                    el.dispatchEvent(new PointerEvent('pointerdown', opts));
+                    el.dispatchEvent(new PointerEvent('pointerup', opts));
+                };
+                const api = window.__DOM_UPGRADES;
+                const out = {};
+
+                // x100: ровно столько уровней, сколько говорит state; сейв перечитан после покупки
+                st.gameState.ore = 1e30;
+                st.gameState.levels.pickaxe = 0;
+                st.saveGame();
+                api.setBuyAmount(100);
+                api.refreshAll();
+                const plan = st.getBulkCost('pickaxe', 100);
+                const saveBefore = saved().levels.pickaxe;
+                press(rowOf('pickaxe').querySelector('[data-buy]'));
+                out.x100 = {
+                    planN: plan.n,
+                    gained: st.gameState.levels.pickaxe,
+                    saveBefore,
+                    saveAfter: saved().levels.pickaxe
+                };
+
+                // пульс виден на НОВОМ узле ряда сразу после покупки (ревью 🟡-3)
+                api.setBuyAmount(1);
+                api.refreshAll();
+                press(rowOf('pickaxe').querySelector('[data-buy]'));
+                out.pulse = rowOf('pickaxe').classList.contains('is-pulse');
+
+                // отказ: руды нет — уровень, руда и сейв не меняются
+                st.gameState.ore = 0;
+                st.saveGame();
+                api.refreshAll();
+                const lvl = st.gameState.levels.pickaxe;
+                const saveLvl = saved().levels.pickaxe;
+                press(rowOf('pickaxe').querySelector('[data-buy]'));
+                out.refuse = {
+                    same: st.gameState.levels.pickaxe === lvl,
+                    ore: st.gameState.ore,
+                    saveSame: saved().levels.pickaxe === saveLvl
+                };
+
+                // паритет текстов DOM = модуль (из него же читает Phaser-путь)
+                st.gameState.levels.pickaxe = 5;
+                st.gameState.ore = 1e30;
+                api.setBuyAmount(1);
+                api.refreshAll();
+                const row = rowOf('pickaxe');
+                const b = st.getBulkCost('pickaxe', 1);
+                out.parity = {
+                    level:
+                        row.querySelector('.dom-up-level')?.textContent === st.levelText(st.gameState.levels.pickaxe),
+                    buy: row.querySelector('[data-buy]')?.textContent === st.buyLabel,
+                    price:
+                        row.querySelector('.dom-up-price-text')?.textContent.trim() ===
+                        st.bulkPriceText({ total: b.total, n: b.n, amount: 1 }),
+                    bulk: document.querySelector('[data-amount-cycle]')?.textContent === st.bulkLabel(1),
+                    tabs:
+                        [...document.querySelectorAll('[data-tab]')].map((t) => t.textContent).join('|') ===
+                        st.TABS.map((t) => t.label).join('|')
+                };
+                const locks = [...document.querySelectorAll('[data-dom-upgrades] .dom-error')];
+                out.lockRows = locks.length;
+                out.lockOk = locks.every((el) => {
+                    const def = st.UPGRADES.find((u) => u.id === el.closest('[data-row]').dataset.row);
+                    const want =
+                        def.tier !== undefined && st.gameState.tier < def.tier
+                            ? st.lockTierText(def.tier)
+                            : st.lockRequiresText(st.getUpgradeDef(def.requires.id).name, def.requires.level);
+
+                    return el.textContent === want;
+                });
+
+                // долгий прогон: 40 покупок не растят число узлов и слушателей панели
+                st.gameState.levels.pickaxe = 2;
+                api.refreshAll();
+                const nodes0 = document.querySelectorAll('[data-dom-upgrades] *').length;
+                for (let i = 0; i < 20; i++) {
+                    press(rowOf('pickaxe').querySelector('[data-buy]'));
+                }
+
+                await new Promise((r) => setTimeout(r, 300));
+                out.nodes = [nodes0, document.querySelectorAll('[data-dom-upgrades] *').length];
+
+                return out;
+            },
+            [SAVE_KEY]
+        );
+        check(
+            'U6d x100: ровно по плану state, сейв перечитан после покупки',
+            m.x100.gained === m.x100.planN && m.x100.planN > 10 && m.x100.saveAfter === m.x100.gained,
+            JSON.stringify(m.x100)
+        );
+        check('U6e пульс ряда виден после покупки (узел заменён, класс на новом)', m.pulse, JSON.stringify(m.pulse));
+        check(
+            'U6f отказ (нет руды): уровень, руда и сейв не меняются',
+            m.refuse.same && m.refuse.ore === 0 && m.refuse.saveSame,
+            JSON.stringify(m.refuse)
+        );
+        check(
+            'U6g паритет текстов DOM = модуль (уровень, кнопка, цена, пакет, вкладки)',
+            Object.values(m.parity).every(Boolean),
+            JSON.stringify(m.parity)
+        );
+        check('U6h тексты гейтов «нужно: …» = модуль', m.lockRows > 0 && m.lockOk, `rows=${m.lockRows}`);
+        check(
+            'U6i 20 покупок подряд: число узлов панели стабильно',
+            m.nodes[0] === m.nodes[1],
+            JSON.stringify(m.nodes)
+        );
+        await ctx.close();
+    }
     // ---------- U7: отклик покупки ≤ 1 кадра ----------
     {
         const { ctx, page } = await openGame();

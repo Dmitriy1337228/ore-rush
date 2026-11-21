@@ -33,6 +33,18 @@ import {
     tapSlopPx
 } from './uiKit.js';
 import { addButton } from './button.js';
+import {
+    upgradesTitle,
+    bulkLabel,
+    levelText as formatLevel,
+    buyLabel,
+    maxedLabel,
+    lockedLabel,
+    lockTierText,
+    lockRequiresText,
+    bulkPriceText,
+    maxPriceText
+} from '../../state/upgradesMessages.js';
 import { VIEWPORT, ROW_GAP, TABS, BUY_AMOUNTS, computeRowGeom } from '../shared/listGeometry.js';
 import { TEXT, DEPTH, TEX, EVENTS, REG, FONT_SIZE, SPACE } from '../shared/theme.js';
 import { upgradesOnDom } from '../shared/formsFlag.js';
@@ -50,7 +62,7 @@ export const panelMethods = {
 
         this.panelImg = addImg(this, p.px, p.py, 'upgrades_panel_wood', p.pw, p.ph, 10);
         // Планка с заклёпками (143..200): заголовок по её центру
-        this.panelTitle = makeLabel(this, p.px + p.pw / 2, p.py + p.titleDy, 'Улучшения', p.titleSize, TEXT.cream)
+        this.panelTitle = makeLabel(this, p.px + p.pw / 2, p.py + p.titleDy, upgradesTitle, p.titleSize, TEXT.cream)
             .setOrigin(0.5)
             .setDepth(DEPTH.ui);
 
@@ -128,7 +140,7 @@ export const panelMethods = {
         c.on('pointerdown', () => {
             const idx = BUY_AMOUNTS.indexOf(this.buyAmount);
             this.buyAmount = BUY_AMOUNTS[(idx + 1) % BUY_AMOUNTS.length];
-            this.amountLbl.setText(this.buyAmount === 'max' ? 'МАКС' : 'x' + this.buyAmount);
+            this.amountLbl.setText(bulkLabel(this.buyAmount));
             this.refreshUi();
         });
 
@@ -292,7 +304,7 @@ export const panelMethods = {
         priceText.setOrigin(0, 0.5);
         // «ур. N» — верхний правый угол ряда (в строке имени); под кнопкой места
         // больше нет (ряд 132, кнопка 88)
-        const levelText = makeLabel(this, w - g.rightInset, g.levelY, 'ур. 0', g.levelSize, TEXT.bright);
+        const levelText = makeLabel(this, w - g.rightInset, g.levelY, formatLevel(0), g.levelSize, TEXT.bright);
         levelText.setOrigin(1, 0.5);
 
         const { bg: btn, label: btnText } = addButton(this, btnX + btnW / 2, g.btnY + btnH / 2, {
@@ -300,7 +312,7 @@ export const panelMethods = {
             w: btnW,
             h: btnH,
             key: TEX.button,
-            text: 'Купить',
+            text: buyLabel,
             fontSize: g.btnSize,
             color: TEXT.white,
             depth: DEPTH.ui,
@@ -508,7 +520,7 @@ export const panelMethods = {
             }
         } else {
             if (this.panelTitle.text === 'Снаряжение') {
-                this.panelTitle.setText('Улучшения');
+                this.panelTitle.setText(upgradesTitle);
             }
 
             this.panelTitle.setVisible(!chromeHidden);
@@ -692,7 +704,7 @@ export const panelMethods = {
             const available = isUpgradeAvailable(def.id);
             const amount = this.buyAmount;
 
-            row.levelText.setText(`ур. ${level}`);
+            row.levelText.setText(formatLevel(level));
             row.levelText.setVisible(true); // гейт-ряды ниже прячут её (коллизия с «нужно: …»)
 
             // Иконка кирки меняется по уровню + нормируем контент под слот
@@ -704,13 +716,13 @@ export const panelMethods = {
 
             if (!available) {
                 row.btn.setTexture(TEX.buttonDisabled);
-                row.btnText.setText('—').setColor(TEXT.muted);
+                row.btnText.setText(lockedLabel).setColor(TEXT.muted);
                 // Гейт глубины приоритетнее: пока шахта мелкая, цепочку всё равно не докрутить.
                 // Нумерация как в ярлыке «уровень шахты: N — Руда» (с единицы: уголь = 1).
                 const lockTxt =
                     def.tier !== undefined && gameState.tier < def.tier
-                        ? `нужно: шахта ${def.tier + 1}`
-                        : `нужно: ${getUpgradeDef(def.requires.id).name} ${def.requires.level}`;
+                        ? lockTierText(def.tier)
+                        : lockRequiresText(getUpgradeDef(def.requires.id).name, def.requires.level);
                 row.lockText.setText(lockTxt);
                 // «ур. 0» справа наезжала на длинное «нужно: …» (скриншот игрока) —
                 // у заблокированного улучшения уровень неинформативен, прячем бейдж
@@ -728,23 +740,22 @@ export const panelMethods = {
                 row.priceText.setVisible(false);
             } else if (maxed) {
                 row.btn.setTexture(TEX.buttonDisabled);
-                row.btnText.setText('макс').setColor(TEXT.soft);
+                row.btnText.setText(maxedLabel).setColor(TEXT.soft);
                 row.lockText.setText('');
                 row.priceIcon.setVisible(false);
                 row.priceText.setVisible(true);
-                row.priceText.setText('макс').setColor(TEXT.dim);
+                row.priceText.setText(maxedLabel).setColor(TEXT.dim);
             } else if (amount === 'max') {
                 // МАКС: покупаем максимум уровней, на которые хватает руды
                 const r = getAffordableBulk(def.id, Infinity);
                 const afford = r.n > 0;
                 row.btn.setTexture(afford ? TEX.button : TEX.buttonDisabled);
-                row.btnText.setText('Купить').setColor(afford ? TEXT.white : TEXT.muted);
+                row.btnText.setText(buyLabel).setColor(afford ? TEXT.white : TEXT.muted);
                 row.lockText.setText('');
                 this.placeIcon(row.priceIcon, tier.iconKey, row.priceCX, row.priceCY, this.rowGeom().priceIconSize);
                 row.priceIcon.setVisible(true);
                 row.priceText.setVisible(true);
-                const priceStr =
-                    r.n > 0 ? (r.n > 1 ? `${fmt(r.total)} x${r.n}` : fmt(r.total)) : fmt(getUpgradeCost(def.id));
+                const priceStr = maxPriceText({ total: r.total, n: r.n, fallback: getUpgradeCost(def.id) });
                 row.priceText.setText(priceStr).setColor(TEXT.gold);
             } else {
                 // Строгий пакет x{amount}: либо весь пакет целиком, либо ничего
@@ -753,12 +764,12 @@ export const panelMethods = {
                 const r = getAffordableBulk(def.id, amount);
                 const afford = b.n > 0 && r.n === b.n;
                 row.btn.setTexture(afford ? TEX.button : TEX.buttonDisabled);
-                row.btnText.setText('Купить').setColor(afford ? TEXT.white : TEXT.muted);
+                row.btnText.setText(buyLabel).setColor(afford ? TEXT.white : TEXT.muted);
                 row.lockText.setText('');
                 this.placeIcon(row.priceIcon, tier.iconKey, row.priceCX, row.priceCY, this.rowGeom().priceIconSize);
                 row.priceIcon.setVisible(true);
                 row.priceText.setVisible(true);
-                const priceStr = b.n < amount ? `${fmt(b.total)} x${b.n}` : fmt(b.total);
+                const priceStr = bulkPriceText({ total: b.total, n: b.n, amount });
                 row.priceText.setText(priceStr).setColor(TEXT.gold);
             }
         }

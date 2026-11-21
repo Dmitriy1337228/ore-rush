@@ -5,12 +5,20 @@ import {
     getOrePerSecond,
     getOfflineRate,
     OFFLINE_CAP_HOURS,
-    fmt,
-    fmtDuration,
     DAILY_REWARDS,
     COMPONENTS,
     ARTIFACTS
 } from '../../state.js';
+import {
+    statusTitles,
+    statusButtons,
+    offlineBody,
+    dailyStreak,
+    dailyDesc,
+    bossRewardBounty,
+    bossRewardSpeed,
+    playerDownBody
+} from '../../state/statusMessages.js';
 import { makeLabel, addScreenDim, DIM_ALPHA, addModalContainer } from './uiKit.js';
 import { addButton } from './button.js';
 import { createPanel } from './panel.js';
@@ -59,9 +67,9 @@ export const statusModalsMethods = {
         const shell = createAlertShell(this, {
             w: pw,
             h: 300,
-            title: 'С возвращением!',
+            title: statusTitles.offline,
             titleY: -114,
-            okLabel: 'Забрать',
+            okLabel: statusButtons.offline,
             okY: 96,
             onOk: () => this.hideOfflineModal()
         });
@@ -78,13 +86,15 @@ export const statusModalsMethods = {
 
     showOfflinePhaser(info) {
         const tier = TIERS[gameState.tier];
-        const text = [
-            `Пока вас не было (${fmtDuration(info.seconds)}),`,
-            `шахтёры добыли ${fmt(info.reward)} ${tier.name.toLowerCase()}`,
-            '',
-            `фоновая добыча: ${Math.round(getOfflineRate() * 100)}% · ${fmt(getOrePerSecond())} руды/сек`,
-            `лимит склада: ${OFFLINE_CAP_HOURS[Math.min(getUpgradeLevel('warehouse'), OFFLINE_CAP_HOURS.length - 1)]} ч · учтено ${fmtDuration(info.counted)}`
-        ].join('\n');
+        const text = offlineBody({
+            seconds: info.seconds,
+            reward: info.reward,
+            tierName: tier.name,
+            ratePct: Math.round(getOfflineRate() * 100),
+            orePerSec: getOrePerSecond(),
+            capHours: OFFLINE_CAP_HOURS[Math.min(getUpgradeLevel('warehouse'), OFFLINE_CAP_HOURS.length - 1)],
+            counted: info.counted
+        });
         this.offlineBody.setText(text);
         this.offlineDim.setVisible(true);
         this.offlineModal.setVisible(true);
@@ -103,9 +113,9 @@ export const statusModalsMethods = {
         const shell = createAlertShell(this, {
             w: 520,
             h: 420,
-            title: 'Ежедневная награда',
+            title: statusTitles.daily,
             titleY: -170,
-            okLabel: 'Отлично!',
+            okLabel: statusButtons.daily,
             okY: 152,
             onOk: () => this.hideDailyModal()
         });
@@ -145,18 +155,11 @@ export const statusModalsMethods = {
     showDailyPhaser(info) {
         const idx = (info.streak - 1) % DAILY_REWARDS.length;
         const reward = DAILY_REWARDS[idx];
-        this.dailyStreakText.setText(
-            `Серия: ${info.streak} ${info.streak === 1 ? 'день' : info.streak < 5 ? 'дня' : 'дней'}`
-        );
+        this.dailyStreakText.setText(dailyStreak(info.streak));
         this.dailyIcon.setTexture(reward.icon);
         this.placeIcon(this.dailyIcon, reward.icon, 0, -78, 64);
-        let desc = reward.desc;
-        // конкретика дня: сколько руды дал «Накопитель» / какое улучшение выбралось
-        if (info.extra && typeof info.extra === 'number') {
-            desc += `\n+${fmt(info.extra)} руды`;
-        } else if (info.extra && info.extra.name) {
-            desc += `\nулучшение: ${info.extra.name}`;
-        }
+        // конкретика дня (руда «Накопителя» / выбранное улучшение) — внутри dailyDesc
+        const desc = dailyDesc(reward, info);
 
         this.dailyName.setText(reward.name);
         this.dailyDesc.setText(desc);
@@ -182,9 +185,9 @@ export const statusModalsMethods = {
         const shell = createAlertShell(this, {
             w: 480,
             h: 400,
-            title: 'Босс повержен!',
+            title: statusTitles['boss-reward'],
             titleY: -158,
-            okLabel: 'Забрать',
+            okLabel: statusButtons['boss-reward'],
             okY: 150,
             onOk: () => this.hideBossRewardModal()
         });
@@ -223,13 +226,11 @@ export const statusModalsMethods = {
         }
 
         this.bossRewardComps.removeAll(true);
-        this.bossRewardBounty.setText(`Баунти: +${fmt(reward.bounty)} руды`);
+        this.bossRewardBounty.setText(bossRewardBounty(reward.bounty));
         // Бонус за скорость: «Время: 0:32 · бонус x1.50» — пусто, если время не передано
-        if (reward.elapsedSec) {
-            const mm = Math.floor(reward.elapsedSec / 60);
-            const ss = String(reward.elapsedSec % 60).padStart(2, '0');
-            const mult = reward.speedMult ? `x${reward.speedMult.toFixed(2).replace(/\.?0+$/, '')}` : 'x1';
-            this.bossRewardSpeed.setText(`Время: ${mm}:${ss} · бонус ${mult}`).setVisible(true);
+        const speedText = bossRewardSpeed(reward);
+        if (speedText) {
+            this.bossRewardSpeed.setText(speedText).setVisible(true);
         } else {
             this.bossRewardSpeed.setVisible(false);
         }
@@ -321,10 +322,10 @@ export const statusModalsMethods = {
         const shell = createAlertShell(this, {
             w: pw,
             h: 330,
-            title: 'Ты вырубился!',
+            title: statusTitles['player-down'],
             titleY: -124,
             titleColor: '#ff8a7a',
-            okLabel: 'В шахту',
+            okLabel: statusButtons['player-down'],
             okY: 108,
             onOk: () => this.hidePlayerDownModal()
         });
@@ -362,13 +363,7 @@ export const statusModalsMethods = {
         }
 
         this.playerDownBody.setText(
-            [
-                `${info.bossName} отбросил тебя в шахту.`,
-                '',
-                `Удар босса: ${fmt(info.dmg)} · живучесть: ${fmt(info.maxPlayer)}`,
-                'Копи руду, прокачай «Каску» (+HP) и снаряжение,',
-                'докупи бомбы — и возвращайся.'
-            ].join('\n')
+            playerDownBody({ bossName: info.bossName, dmg: info.dmg, maxPlayer: info.maxPlayer })
         );
         this.playerDownDim.setVisible(true);
         this.playerDownModal.setVisible(true);

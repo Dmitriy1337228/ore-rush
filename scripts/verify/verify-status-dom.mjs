@@ -82,12 +82,17 @@ async function openGame({
         timeout: 30000
     });
     await page.waitForFunction(() => !!window.__DOM_STATUS, null, { timeout: 30000 });
-    await page.waitForTimeout(900);
+    // без фиксированной паузы: шрифты и раскладка готовы
+    await page.waitForFunction(
+        () => !!window.__GAME.scene.getScene('UIScene').L && document.fonts.status === 'loaded',
+        null,
+        { timeout: 30000 }
+    );
     await page.evaluate(HIDE_DAILY);
     await page.waitForFunction(() => !window.__GAME.registry.get('blockLocked'), null, { timeout: 5000 });
     if (before) {
         await page.evaluate(before);
-        await page.waitForTimeout(150);
+        await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     }
 
     return { ctx, page };
@@ -390,6 +395,69 @@ async function runDom() {
         await ctx.close();
     }
 
+    // ---------- SM3d: награда босса без компонентов / без артефакта / без времени ----------
+    {
+        const { ctx, page } = await openGame();
+        const m = await page.evaluate(async () => {
+            const ui = window.__GAME.scene.getScene('UIScene');
+            const panel = document.querySelector('[data-dom-modal-kind="status"]');
+            const read = () => ({
+                bounty: !!panel.querySelector('.dom-status-bounty'),
+                comps: panel.querySelectorAll('.dom-comp').length,
+                artifact: !!panel.querySelector('.dom-artifact'),
+                time: [...panel.querySelectorAll('.dom-line')].some((l) => l.textContent.startsWith('Время:'))
+            });
+            const out = {};
+            ui.showBossRewardModal({ bounty: 100, artifactId: 'art_miner_totem' });
+            await new Promise((r) => setTimeout(r, 120));
+            out.onlyArtifact = read();
+            ui.hideBossRewardModal();
+            ui.showBossRewardModal({ bounty: 100, elapsedSec: 10, speedMult: 1, comps: { scrap: 1 } });
+            await new Promise((r) => setTimeout(r, 120));
+            out.onlyComps = read();
+            ui.hideBossRewardModal();
+            ui.showBossRewardModal({ bounty: 100 });
+            await new Promise((r) => setTimeout(r, 120));
+            out.bare = read();
+            ui.hideBossRewardModal();
+
+            return out;
+        });
+        check(
+            'SM3d ветви награды: только артефакт / только компоненты / голая награда',
+            m.onlyArtifact.artifact &&
+                m.onlyArtifact.comps === 0 &&
+                !m.onlyArtifact.time &&
+                !m.onlyComps.artifact &&
+                m.onlyComps.comps === 1 &&
+                m.onlyComps.time &&
+                !m.bare.artifact &&
+                m.bare.comps === 0 &&
+                !m.bare.time &&
+                m.bare.bounty,
+            JSON.stringify(m)
+        );
+        await ctx.close();
+    }
+
+    // ---------- SM5: Esc не закрывает статус-окно (закрывает только кнопка) ----------
+    {
+        const { ctx, page } = await openGame();
+        await page.evaluate(() => {
+            window.__GAME.scene.getScene('UIScene').showOfflineModal({ seconds: 60, reward: 5, counted: 60 });
+        });
+        await page.waitForFunction(() => window.__DOM_STATUS.isOpen('offline'), null, { timeout: 5000 });
+        await page.keyboard.press('Escape');
+        await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+        const still = await flags(page);
+        check(
+            'SM5 Esc не закрывает статус-окно, блокировка остаётся',
+            still.domOpen.includes('offline') && still.locked,
+            JSON.stringify(still)
+        );
+        await clickOk(page);
+        await ctx.close();
+    }
     // ---------- SM6: окна не пишут в state; 20 циклов ----------
     {
         const { ctx, page } = await openGame();
@@ -578,7 +646,7 @@ async function runDom() {
 
     // ---------- Q3/Q5: дейли поверх DOM-списка, клики под скримом не проходят ----------
     {
-        const { ctx, page } = await openGame({ query: 'domUpgradesSpike=1' });
+        const { ctx, page } = await openGame();
         const before = await readState(page);
         const m = await page.evaluate(async () => {
             const ui = window.__GAME.scene.getScene('UIScene');

@@ -60,6 +60,7 @@ import {
     lockedLabel,
     lockRequiresText,
     lockTierText,
+    tierLabelText,
     maxedLabel,
     maxPriceText
 } from '../../state/upgradesMessages.js';
@@ -465,9 +466,7 @@ export function upgradesSnapshot({ tab = 'equipment', buyAmount = 1, bossActive 
     );
     const tier = TIERS[gameState.tier];
     // Тот же ярлык, что HUD: в портрете короткий (полный ужимался до ~7 px)
-    const tierText = portrait
-        ? `Шахта ${gameState.tier + 1} · ${tier.name}`
-        : `уровень шахты: ${gameState.tier + 1} — ${tier.name}`;
+    const tierText = tierLabelText(gameState.tier, tier.name, portrait);
 
     return {
         tab: active,

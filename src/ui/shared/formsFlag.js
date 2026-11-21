@@ -46,17 +46,5 @@ export function isPhaserForm(id) {
 export const UPGRADES_DOM_DEFAULT = true;
 
 export function upgradesOnDom() {
-    if (isPhaserForm('upgrades')) {
-        return false;
-    }
-
-    if (UPGRADES_DOM_DEFAULT) {
-        return true;
-    }
-
-    if (typeof window === 'undefined' || !import.meta.env?.DEV) {
-        return false;
-    }
-
-    return new URLSearchParams(window.location.search).has('domUpgradesSpike');
+    return !isPhaserForm('upgrades') && UPGRADES_DOM_DEFAULT;
 }
