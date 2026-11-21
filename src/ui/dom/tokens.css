@@ -98,5 +98,6 @@
     --dom-upgrades-top-p: 51.95%;
     --dom-upgrades-height-p: 35.86%;
     --dom-upgrades-z: 1;
-    --dom-border-row: 11px;
+    --dom-hairline: 1px;
+    --dom-bevel: 2px;
 }

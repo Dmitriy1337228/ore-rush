@@ -2,9 +2,10 @@
 // Постоянная панель, не модалка (D3): вкладки, переключатель пакета, прокручиваемый
 // список рядов. Данные — только из снимка моста (bridge.upgradesSnapshot); покупка —
 // единственная запись, buyBulk() из state.js; цены и МАКС считает state (D2).
-// Отклик покупки — принудительное перечитывание ряда из state (D9), не оптимистика.
+// Раскладка — обычный flexbox: ряд = иконка | текст | кнопка; тёмная подложка иконки
+// и тон строки рисуются в CSS (никаких запечённых ниш из текстуры карточки).
 import { html, toNode, renderKeyed } from './html.js';
-import { iconSlot, iconBox } from './components.js';
+import { iconBox } from './components.js';
 import { fitIcons } from './iconFit.js';
 import { upgradesSnapshot, PUBLISH_MS } from './bridge.js';
 import { buyBulk, saveGame, gameState } from '../../state.js';
@@ -16,8 +17,8 @@ import './dom.css';
 
 const PULSE_MS = 200; // длительность CSS-пульса ряда (dom.css)
 const TAP_SLOP_CSS = 10; // дрожание пальца ≤ 10 CSS px = тап (R2)
-// Порог узкой панели (l844: 23 % от 844 ≈ 195 CSS px): 3 колонки ряда и две
-// вкладки в строку не помещаются — переключаем CSS-класс is-narrow.
+// Узкая панель (l844 ≈ 160 CSS px): две вкладки и ряд с кнопкой не влезают —
+// CSS-класс переносит кнопку под текст и ставит вкладки в столбик.
 const NARROW_PANEL_CSS = 260;
 
 const rowHtml = (r) =>
@@ -37,12 +38,12 @@ const rowHtml = (r) =>
                               ${iconBox('coal_nugget', 'dom-pair-icon')}<span>${r.priceText}</span>
                           </span>`
                 }
-                ${r.available ? html`<span class="dom-sub dom-level-bottom">${r.levelText}</span>` : ''}
             </div>
         </div>
         <div class="dom-actions">
             <button class="dom-btn ${r.buttonDim ? 'is-disabled' : ''}" type="button"
                 data-buy data-act="buy" data-id="${r.id}">${r.buttonLabel}</button>
+            ${r.available ? html`<span class="dom-sub dom-level-bottom">${r.levelText}</span>` : ''}
         </div>
     </div>`;
 
@@ -117,7 +118,6 @@ export function createDomUpgrades(scene) {
     };
 
     if (typeof ResizeObserver !== 'undefined') {
-        // Панель меняет ширину при повороте/ресайзе — класс пересчитываем без JS-таймера
         new ResizeObserver(syncNarrow).observe(layer);
     } else {
         window.addEventListener('resize', syncNarrow);
@@ -173,6 +173,7 @@ export function createDomUpgrades(scene) {
         const next = toNode(rowHtml(data));
         next.dataset.key = id;
         el.replaceWith(next);
+        fitIcons(next);
     };
 
     // D2/D8: состав покупки как в Phaser — buyBulk (state) -> saveGame -> sfx -> пульс,
@@ -189,7 +190,7 @@ export function createDomUpgrades(scene) {
         saveGame();
         playSfx(scene, 'purchase');
         pulse(id);
-        // D9: строгий пакет меняет только купленный ряд (цены других не зависят от руды);
+        // Строгий пакет меняет только купленный ряд (цены других не зависят от руды);
         // МАКС зависит от текущей руды у всех рядов — тогда перечитываем список целиком.
         if (buyAmount === 'max') {
             refresh();

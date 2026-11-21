@@ -668,9 +668,24 @@
     background: transparent;
 }
 
-/* Узкая панель (класс ставит контроллер по ширине слоя, порог — константа в
-   upgradesPanel.js): l844 ~195 CSS px не вмещает ряд и две вкладки в строку —
-   ряд переносит кнопку на новую строку, вкладки встают в столбик. */
+/* Узкая панель (l844 ≈ 160 CSS px): вкладки в столбик, кнопка ряда — под текстом.
+   Класс ставит контроллер по ширине слоя (NARROW_PANEL_CSS в upgradesPanel.js). */
+.dom-upgrades.is-narrow .dom-tabs {
+    flex-wrap: wrap;
+}
+
+.dom-upgrades.is-narrow .dom-tabs .dom-toggle {
+    flex: 1 1 100%;
+    min-width: 0;
+    font-size: var(--font-caption-sm);
+    white-space: normal;
+}
+
+.dom-upgrades.is-narrow .dom-bulk .dom-toggle {
+    font-size: var(--font-caption-sm);
+    white-space: normal;
+}
+
 .dom-upgrades.is-narrow .dom-upgrades-row {
     flex-wrap: wrap;
 }
@@ -681,23 +696,7 @@
 
 .dom-upgrades.is-narrow .dom-upgrades-row .dom-btn {
     width: 100%;
-}
-
-.dom-upgrades.is-narrow .dom-tabs .dom-toggle {
-    flex: 1 1 100%;
-    font-size: var(--font-caption-sm);
-    white-space: normal;
-}
-
-.dom-upgrades.is-narrow .dom-bulk .dom-toggle {
-    flex: 1 1 40%;
-    font-size: var(--font-caption-sm);
-    white-space: normal;
-}
-
-.dom-upgrades.is-narrow .dom-name,
-.dom-upgrades.is-narrow .dom-desc {
-    overflow-wrap: anywhere;
+    box-sizing: border-box;
 }
 
 .portrait .dom-upgrades {
@@ -726,13 +725,14 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-xs);
-    padding: 0 var(--space-xs);
+    /* Правый отступ не даёт кнопке пакета лечь на рамку панели */
+    padding: 0 var(--space-sm);
 }
 
 .dom-upgrades-tier {
     min-width: 0;
     font-size: var(--font-caption-sm);
-    color: var(--color-soft);
+    color: #c8b78e;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -761,42 +761,45 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     touch-action: pan-y;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-muted) transparent;
+    scrollbar-width: none;
 }
 
 .dom-upgrades-scroll::-webkit-scrollbar {
-    width: var(--space-xs);
-}
-
-.dom-upgrades-scroll::-webkit-scrollbar-thumb {
-    background: var(--color-muted);
+    display: none;
 }
 
 /* Карточка улучшения — обычный флекс: иконка | текст | кнопка.
-   Текстура строки та же, что в Phaser (upgrade_row_card_1, 9-slice). */
+   Фон строки — ровный тон врезки, подложка иконки и фаска нарисованы CSS
+   (текстура row_card с запечённой нишей больше не используется). */
 .dom-upgrades-row {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
     padding: var(--space-xs) var(--space-sm);
-    border: var(--dom-border-row) solid transparent;
-    border-image: url('../../../assets/ui/upgrade_row_card_1.png') 30 fill / var(--dom-border-row) stretch;
-    image-rendering: pixelated;
-    background: none;
+    border: 0;
+    border-image: none;
+    background: #2c2f34;
+    box-shadow: inset 0 0 0 var(--dom-hairline) #17191c;
+    border-radius: var(--space-xs);
+    overflow: hidden;
 }
 
 .dom-upgrades-icon {
     flex: 0 0 var(--dom-slot-size);
+    width: var(--dom-slot-size);
+    height: var(--dom-slot-size);
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Карточка имеет 9-slice борта: сдвиг влево ставит иконку в нишу текстуры */
-    margin-left: calc(-1 * var(--space-xs));
+    background: #1f2226;
+    box-shadow:
+        inset 0 0 0 var(--dom-bevel) #454a51,
+        inset 0 calc(-1 * var(--dom-bevel)) 0 #14161a;
+    border-radius: var(--space-xs);
 }
 
 .dom-upgrades-icon .dom-icon {
-    /* Арт меньше ниши карточки: не вылезает за рамку */
+    /* Арт меньше подложки — центрируется флексом, без привязки к текстуре */
     width: var(--dom-icon-size);
     height: var(--dom-icon-size);
 }
@@ -807,6 +810,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-xs);
+    /* Отступ текста от рамки иконки — как в Phaser (textX за нишей) */
+    padding-left: var(--space-md);
 }
 
 .dom-upgrades-line,
@@ -839,6 +844,17 @@
 .dom-upgrades-row .dom-actions {
     flex: 0 0 26%;
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: var(--space-xs);
+}
+
+.dom-level-bottom {
+    font-size: var(--font-caption-sm);
+    color: var(--color-bright);
+    text-align: right;
+    white-space: nowrap;
 }
 
 .dom-upgrades-row .dom-btn {
@@ -876,10 +892,6 @@
 
 .dom-upgrades-price .dom-sub {
     margin-left: auto;
-}
-
-.dom-upgrades.is-narrow .dom-upgrades-price {
-    font-size: var(--font-caption-sm);
 }
 
 .dom-upgrades-price.is-dim {
